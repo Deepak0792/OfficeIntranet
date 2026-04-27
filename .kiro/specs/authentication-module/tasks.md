@@ -70,7 +70,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Create docker/.env.example for environment variables
     - _Requirements: 24.1_
 
-- [ ] 2. Implement Identity Domain layer
+- [x] 2. Implement Identity Domain layer
   - [x] 2.1 Define domain entities
     - Create SdxCore.Identity.Domain/Entities/UserRecord.cs
     - Create SdxCore.Identity.Domain/Entities/AuditEvent.cs
@@ -107,7 +107,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Create SdxCore.Identity.Domain/Exceptions/AuthProviderUnavailableException.cs
     - _Requirements: 24.2_
 
-- [ ] 2. Implement persistence layer with EF Core
+- [x] 2. Implement persistence layer with EF Core
   - [x] 2.1 Add required NuGet packages to Persistence project
     - Add Microsoft.EntityFrameworkCore.SqlServer
     - Add Microsoft.EntityFrameworkCore.Design
