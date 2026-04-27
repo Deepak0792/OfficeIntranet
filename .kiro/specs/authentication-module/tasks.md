@@ -11,17 +11,17 @@ SdxCore.sln
 │   ├── Gateway/
 │   │   └── SdxCore.Gateway.API (YARP reverse proxy)
 │   ├── Services/
-│   │   ├── Identity/
-│   │   │   ├── SdxCore.Identity.API
-│   │   │   ├── SdxCore.Identity.Application
-│   │   │   ├── SdxCore.Identity.Domain
-│   │   │   └── SdxCore.Identity.Persistence
+│   │   └── Identity/
+│   │       ├── SdxCore.Identity.API
+│   │       ├── SdxCore.Identity.Application
+│   │       ├── SdxCore.Identity.Domain
+│   │       └── SdxCore.Identity.Persistence
 │   └── BuildingBlocks/ (shared code)
 │       ├── SdxCore.SharedKernel
 │       ├── SdxCore.Common
 │       └── SdxCore.Contracts
 ├── tests/
-│   ├── Identity.Tests/
+│   └── Identity.Tests/
 └── docker/
     └── docker-compose.yml
 ```
@@ -33,7 +33,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
 - [ ] 1. Set up solution structure and create projects
   - [x] 1.1 Create solution and folder structure
     - Create SdxCore.sln in root directory
-    - Create folder structure: src/Gateway, src/Services/Identity, src/Services/Product, src/Services/Order, src/BuildingBlocks, tests, docker
+    - Create folder structure: src/Gateway, src/Services/Identity, src/BuildingBlocks, tests, docker
     - _Requirements: 24.1_
 
   - [x] 1.2 Create Gateway project
@@ -63,19 +63,6 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Add project reference to Identity projects
     - Add NuGet packages: xUnit, Moq, FluentAssertions, FsCheck.Xunit, Testcontainers.MsSql
     - Add project to solution under tests solution folder
-    - _Requirements: 24.1_
-
-  - [x] 1.6 Create Product and Order placeholder projects (for future microservices)
-    - Create src/Services/Product/SdxCore.Product.API (ASP.NET Core Web API)
-    - Create src/Services/Product/SdxCore.Product.Application (Class Library)
-    - Create src/Services/Product/SdxCore.Product.Domain (Class Library)
-    - Create src/Services/Product/SdxCore.Product.Persistence (Class Library)
-    - Create src/Services/Order/SdxCore.Order.API (ASP.NET Core Web API)
-    - Create src/Services/Order/SdxCore.Order.Application (Class Library)
-    - Create src/Services/Order/SdxCore.Order.Domain (Class Library)
-    - Create src/Services/Order/SdxCore.Order.Persistence (Class Library)
-    - Add projects to solution under Services/Product and Services/Order solution folders
-    - Add placeholder README.md files explaining these are example microservices
     - _Requirements: 24.1_
 
   - [x] 1.7 Create docker configuration
@@ -470,17 +457,17 @@ SdxCore.sln
 │   ├── Gateway/
 │   │   └── SdxCore.Gateway.API (YARP reverse proxy)
 │   ├── Services/
-│   │   ├── Identity/
-│   │   │   ├── SdxCore.Identity.API
-│   │   │   ├── SdxCore.Identity.Application
-│   │   │   ├── SdxCore.Identity.Domain
-│   │   │   └── SdxCore.Identity.Persistence
+│   │   └── Identity/
+│   │       ├── SdxCore.Identity.API
+│   │       ├── SdxCore.Identity.Application
+│   │       ├── SdxCore.Identity.Domain
+│   │       └── SdxCore.Identity.Persistence
 │   └── BuildingBlocks/ (shared code)
 │       ├── SdxCore.SharedKernel
 │       ├── SdxCore.Common
 │       └── SdxCore.Contracts
 ├── tests/
-│   ├── Identity.Tests/
+│   └── Identity.Tests/
 └── docker/
     └── docker-compose.yml
 ```
