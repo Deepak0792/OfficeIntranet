@@ -52,10 +52,53 @@ public class UserRepository : IUserRepository
 
         user.FailedAttempts++;
 
-        // Check if we need to lock the account
-        // This logic should ideally be in the Application layer, but for simplicity we handle it here
-        // The design document mentions MaxFailedAttempts and LockoutDuration from configuration
-        // For now, we just increment the counter and let the Application layer handle locking
+        await _context.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Locks a user account until the specified timestamp.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="lockedUntil">Timestamp until which the account should be locked.</param>
+    /// <param name="ct">Cancellation token.</param>
+    public async Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default)
+    {
+        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        if (user is null)
+            throw new InvalidOperationException($"User with ID {userId} not found.");
+
+        user.LockedUntil = lockedUntil;
+
+        await _context.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Finds a user by their unique identifier.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>User record if found; otherwise null.</returns>
+    public async Task<UserRecord?> FindByIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        return await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+    }
+
+    /// <summary>
+    /// Updates a user's password hash.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="newPasswordHash">New password hash.</param>
+    /// <param name="ct">Cancellation token.</param>
+    public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(newPasswordHash))
+            throw new ArgumentException("Password hash cannot be null or empty.", nameof(newPasswordHash));
+
+        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        if (user is null)
+            throw new InvalidOperationException($"User with ID {userId} not found.");
+
+        user.PasswordHash = newPasswordHash;
 
         await _context.SaveChangesAsync(ct);
     }

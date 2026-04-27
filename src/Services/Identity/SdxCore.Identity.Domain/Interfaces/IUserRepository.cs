@@ -52,4 +52,28 @@ public interface IUserRepository
     /// <param name="userId">User ID.</param>
     /// <param name="ct">Cancellation token.</param>
     Task DeactivateAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Locks a user account until the specified timestamp.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="lockedUntil">Timestamp until which the account should be locked.</param>
+    /// <param name="ct">Cancellation token.</param>
+    Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default);
+
+    /// <summary>
+    /// Finds a user by their unique identifier.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>User record if found; otherwise null.</returns>
+    Task<UserRecord?> FindByIdAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Updates a user's password hash.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="newPasswordHash">New password hash.</param>
+    /// <param name="ct">Cancellation token.</param>
+    Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default);
 }

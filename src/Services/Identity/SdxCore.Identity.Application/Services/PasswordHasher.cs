@@ -7,21 +7,19 @@ namespace SdxCore.Identity.Application.Services;
 
 /// <summary>
 /// Password hasher implementation using Argon2id algorithm.
-/// Provides secure password hashing with random salts and constant-time verification.
-/// Configured for 200-300ms hashing time for optimal security/performance balance.
+/// Configured for 200-300ms hashing time with random salt generation.
 /// </summary>
 public sealed class PasswordHasher : IPasswordHasher
 {
     // Argon2id parameters tuned for 200-300ms hashing time
     private const int SaltSize = 16; // 128 bits
     private const int HashSize = 32; // 256 bits
-    private const int Iterations = 3;
-    private const int MemorySize = 49152; // 48 MB
-    private const int DegreeOfParallelism = 1;
+    private const int DegreeOfParallelism = 8;
+    private const int Iterations = 4;
+    private const int MemorySize = 128 * 1024; // 128 MB
 
     /// <summary>
     /// Hashes a plaintext password using Argon2id with a random salt.
-    /// Each invocation generates a new random salt, ensuring different outputs for the same password.
     /// </summary>
     /// <param name="password">Plaintext password to hash.</param>
     /// <returns>Base64-encoded string containing salt and hash separated by a dot.</returns>
@@ -36,12 +34,12 @@ public sealed class PasswordHasher : IPasswordHasher
             throw new ArgumentException("Password cannot be empty or whitespace.", nameof(password));
 
         // Generate random salt
-        byte[] salt = GenerateRandomSalt();
+        byte[] salt = GenerateSalt();
 
-        // Hash password with Argon2id
+        // Hash the password with Argon2id
         byte[] hash = HashPassword(password, salt);
 
-        // Return salt and hash as base64 string: "salt.hash"
+        // Return salt and hash as base64 strings separated by a dot
         return $"{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
     }
 
@@ -51,18 +49,17 @@ public sealed class PasswordHasher : IPasswordHasher
     /// <param name="password">Plaintext password to verify.</param>
     /// <param name="hash">Stored password hash in format "salt.hash".</param>
     /// <returns>True if the password matches the hash; otherwise false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when password or hash is null.</exception>
     public bool Verify(string password, string hash)
     {
-        if (password is null)
-            throw new ArgumentNullException(nameof(password));
+        if (password is null || hash is null)
+            return false;
 
-        if (hash is null)
-            throw new ArgumentNullException(nameof(hash));
+        if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(hash))
+            return false;
 
         try
         {
-            // Parse stored hash to extract salt and hash
+            // Parse the stored hash to extract salt and hash
             string[] parts = hash.Split('.');
             if (parts.Length != 2)
                 return false;
@@ -78,7 +75,7 @@ public sealed class PasswordHasher : IPasswordHasher
         }
         catch
         {
-            // If parsing or hashing fails, return false
+            // Return false for any parsing or decoding errors
             return false;
         }
     }
@@ -86,8 +83,8 @@ public sealed class PasswordHasher : IPasswordHasher
     /// <summary>
     /// Generates a cryptographically secure random salt.
     /// </summary>
-    /// <returns>Random byte array of length SaltSize.</returns>
-    private static byte[] GenerateRandomSalt()
+    /// <returns>Random salt bytes.</returns>
+    private static byte[] GenerateSalt()
     {
         byte[] salt = new byte[SaltSize];
         RandomNumberGenerator.Fill(salt);
@@ -95,7 +92,7 @@ public sealed class PasswordHasher : IPasswordHasher
     }
 
     /// <summary>
-    /// Hashes a password using Argon2id with the specified salt.
+    /// Hashes a password using Argon2id with the provided salt.
     /// </summary>
     /// <param name="password">Plaintext password.</param>
     /// <param name="salt">Salt bytes.</param>
@@ -106,8 +103,8 @@ public sealed class PasswordHasher : IPasswordHasher
         {
             Salt = salt,
             DegreeOfParallelism = DegreeOfParallelism,
-            MemorySize = MemorySize,
-            Iterations = Iterations
+            Iterations = Iterations,
+            MemorySize = MemorySize
         };
 
         return argon2.GetBytes(HashSize);
