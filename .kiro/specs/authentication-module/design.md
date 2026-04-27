@@ -2,11 +2,57 @@
 
 ## Overview
 
-This document describes an independent, pluggable authentication module for a C# .NET Core application backed by SQL Server. The module is designed as a self-contained library that handles user verification exclusively — it does not manage authorization, roles, or permissions. It supports five authentication protocols (SAML 2.0, OAuth 2.0, OpenID Connect, JWT, and LDAP) through a unified provider abstraction, integrates seamlessly with a client's existing identity system, and falls back to a built-in in-house provider when no external identity provider (IdP) is configured.
+This document describes an independent, pluggable authentication module for a C# .NET Core application backed by SQL Server. The module is designed as a self-contained library that handles user verification exclusively — it does not manage authorization, roles, or permissions. It supports five authentication protocols (SAML 2.0, OAuth 2.0, OpenID Connect, JWT, and LDAP) through a unified provider abstraction, integrates seamlessly with a client's existing identity system.
+
+The solution includes **SdxCore.Gateway**, a YARP-based reverse proxy that serves as the entry point for all client requests, routing them to the appropriate downstream services including the Identity API.
+
+The module follows **SOLID principles** and **Clean Architecture** patterns, organized into five distinct projects:
+- **SdxCore.Gateway**: YARP reverse proxy serving as the API gateway (entry point for all requests)
+- **SdxCore.Identity.API**: Web API layer exposing authentication endpoints
+- **SdxCore.Identity.Application**: Application services and business logic orchestration
+- **SdxCore.Identity.Domain**: Domain entities, interfaces, and business rules
+- **SdxCore.Identity.Persistence**: Data access layer with Entity Framework Core and SQL Server
 
 The module is protocol-agnostic at its core: all protocol-specific logic is encapsulated in dedicated provider implementations behind a common `IAuthenticationProvider` interface. A central `AuthenticationService` resolves the correct provider at runtime based on the protocol name configured in appsettings.json, ensuring that the consuming application never needs to know which protocol is in use.
 
-The in-house provider stores hashed credentials in SQL Server and is the default when no external IdP is registered. It supports standard username/password flows and issues JWT tokens for stateless session management.
+**Configuration is mandatory and environment-specific**: 
+- The authentication protocol MUST be explicitly configured in appsettings.json
+- All configuration values (connection strings, provider settings, etc.) are read from appsettings.json sections
+- Environment-specific configurations (Development, Production) override base settings
+- If no protocol is configured or the configuration is invalid, the system will throw a `ConfigurationException` rather than falling back to a default provider
+- This ensures explicit intent and prevents unintended authentication behavior
+
+---
+
+## Project Structure
+
+The solution follows Clean Architecture principles with clear separation of concerns and includes a YARP-based reverse proxy gateway:
+
+```
+SdxCore.Authentication/
+├── SdxCore.Gateway/                   # YARP Reverse Proxy (Entry Point)
+├── SdxCore.Identity.API/              # Web API Layer (Controllers, Middleware)
+├── SdxCore.Identity.Application/      # Application Services, DTOs, Interfaces
+├── SdxCore.Identity.Domain/           # Domain Entities, Value Objects, Interfaces
+└── SdxCore.Identity.Persistence/      # EF Core, Repositories, Migrations
+```
+
+### Request Flow
+```
+Client → SdxCore.Gateway (YARP) → SdxCore.Identity.API → Application → Domain
+                                                                          ↑
+                                                                     Persistence
+```
+
+### Dependency Flow (SOLID - Dependency Inversion Principle)
+```
+Gateway (independent) → Identity.API → Application → Domain ← Persistence
+```
+- **Gateway** is independent, routes requests to downstream services
+- **API** depends on Application
+- **Application** depends on Domain (interfaces only)
+- **Persistence** depends on Domain (implements interfaces)
+- **Domain** has no dependencies (pure business logic)
 
 ---
 
@@ -14,8 +60,10 @@ The in-house provider stores hashed credentials in SQL Server and is the default
 
 ```mermaid
 graph TD
-    Client["Client Application"] --> AS["AuthenticationService"]
-    AS --> PR["ProviderRegistry"]
+    Client["Client Application"] --> GW["SdxCore.Gateway<br/>(YARP Reverse Proxy)"]
+    GW --> API["SdxCore.Identity.API<br/>(Controllers)"]
+    API --> AS["AuthenticationService<br/>(Application Layer)"]
+    AS --> PR["ProviderRegistry<br/>(Application Layer)"]
     PR --> SAML["SamlProvider"]
     PR --> OAuth["OAuthProvider"]
     PR --> OIDC["OidcProvider"]
@@ -23,17 +71,20 @@ graph TD
     PR --> LDAP["LdapProvider"]
     PR --> IH["InHouseProvider"]
 
-    IH --> DB[("SQL Server\n(Users / Credentials)")]
-    SAML --> ExtIdP["External IdP\n(SAML)"]
-    OAuth --> ExtIdP2["External IdP\n(OAuth)"]
-    OIDC --> ExtIdP3["External IdP\n(OIDC)"]
+    IH --> Repo["IUserRepository<br/>(Domain Interface)"]
+    Repo --> DB[("SQL Server<br/>(Persistence Layer)")]
+    
+    SAML --> ExtIdP["External IdP<br/>(SAML)"]
+    OAuth --> ExtIdP2["External IdP<br/>(OAuth)"]
+    OIDC --> ExtIdP3["External IdP<br/>(OIDC)"]
     LDAP --> ExtIdP4["LDAP / AD Directory"]
 
-    AS --> TF["TokenFactory"]
-    TF --> JWTLib["JWT Library\n(System.IdentityModel)"]
+    AS --> TF["TokenFactory<br/>(Application Layer)"]
+    TF --> JWTLib["JWT Library<br/>(System.IdentityModel)"]
 
-    AS --> AL["AuditLogger"]
-    AL --> DB
+    AS --> AL["AuditLogger<br/>(Application Layer)"]
+    AL --> AuditRepo["IAuditRepository<br/>(Domain Interface)"]
+    AuditRepo --> DB
 ```
 
 ---
@@ -84,22 +135,27 @@ sequenceDiagram
     AS-->>App: AuthenticationResult (success, token)
 ```
 
-### Fallback Resolution Flow
+### Configuration Error Flow
 
 ```mermaid
 sequenceDiagram
     participant App as Client Application
     participant AS as AuthenticationService
     participant PR as ProviderRegistry
-    participant IH as InHouseProvider
 
     App->>AS: AuthenticateAsync(request)
     AS->>PR: ResolveFromConfiguration()
     PR->>PR: Read "Authentication:Protocol" from appsettings
-    PR-->>AS: InHouseProvider (fallback)
-    AS->>IH: AuthenticateAsync(request)
-    IH-->>AS: ProviderResult
-    AS-->>App: AuthenticationResult
+    alt Protocol is null or empty
+        PR-->>AS: throw ConfigurationException("Authentication protocol not configured")
+        AS-->>App: HTTP 500 (Configuration Error)
+    else Protocol is invalid
+        PR-->>AS: throw ConfigurationException("Invalid protocol: {name}")
+        AS-->>App: HTTP 500 (Configuration Error)
+    else Protocol not registered
+        PR-->>AS: throw ProviderNotFoundException("Provider not registered: {protocol}")
+        AS-->>App: HTTP 500 (Provider Not Found)
+    end
 ```
 
 ---
@@ -108,10 +164,13 @@ sequenceDiagram
 
 ### Component 1: AuthenticationService
 
-**Purpose**: Central orchestrator. Resolves the correct provider, delegates authentication, issues tokens, and records audit events.
+**Purpose**: Central orchestrator. Resolves the correct provider, delegates authentication, issues tokens, and records audit events. (Single Responsibility Principle - orchestration only)
 
-**Interface**:
+**Location**: `SdxCore.Identity.Application/Services/AuthenticationService.cs`
+
+**Interface** (defined in Domain layer):
 ```csharp
+// SdxCore.Identity.Domain/Interfaces/IAuthenticationService.cs
 public interface IAuthenticationService
 {
     Task<AuthenticationResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default);
@@ -122,17 +181,19 @@ public interface IAuthenticationService
 
 **Responsibilities**:
 - Accept authentication requests from the consuming application
-- Read the configured protocol name from appsettings.json
-- Delegate to `ProviderRegistry` for provider resolution based on the configured protocol
+- Delegate to `IProviderRegistry` for provider resolution (Dependency Inversion Principle)
 - Invoke the resolved provider's `AuthenticateAsync`
-- Call `TokenFactory` to issue a signed JWT on success
-- Write audit log entries for all authentication attempts
+- Call `ITokenFactory` to issue a signed JWT on success (Dependency Inversion Principle)
+- Write audit log entries via `IAuditLogger` for all authentication attempts (Dependency Inversion Principle)
+- Handle configuration errors and propagate them appropriately
 
 ---
 
 ### Component 2: ProviderRegistry
 
-**Purpose**: Maintains the map of registered providers and resolves the correct one per request, with fallback to `InHouseProvider`.
+**Purpose**: Maintains the map of registered providers and resolves the correct one per request. **No fallback behavior** — configuration is mandatory.
+
+**Location**: `SdxCore.Identity.Application/Services/ProviderRegistry.cs`
 
 **Interface**:
 ```csharp
@@ -145,19 +206,24 @@ public interface IProviderRegistry
 ```
 
 **Responsibilities**:
-- Hold a dictionary of `AuthProtocol → IAuthenticationProvider`
-- Return the matching provider or throw `ProviderNotFoundException` if not registered
+- Hold a dictionary of `AuthProtocol → IAuthenticationProvider` (Single Responsibility Principle)
 - Read the protocol name from appsettings.json and return the corresponding provider
-- Return `InHouseProvider` when no protocol is configured or no external provider is registered
+- **Throw `ConfigurationException`** when no protocol is configured in appsettings.json
+- **Throw `ConfigurationException`** when the configured protocol name is invalid
+- **Throw `ProviderNotFoundException`** when the configured protocol is not registered
+- Never return null or fall back to a default provider
 
 ---
 
 ### Component 3: IAuthenticationProvider
 
-**Purpose**: Common contract implemented by all protocol-specific providers.
+**Purpose**: Common contract implemented by all protocol-specific providers. (Open/Closed Principle - open for extension via new providers, closed for modification)
+
+**Location**: `SdxCore.Identity.Domain/Interfaces/IAuthenticationProvider.cs`
 
 **Interface**:
 ```csharp
+// SdxCore.Identity.Domain/Interfaces/IAuthenticationProvider.cs
 public interface IAuthenticationProvider
 {
     AuthProtocol Protocol { get; }
@@ -165,24 +231,27 @@ public interface IAuthenticationProvider
 }
 ```
 
-**Implementations**:
-| Class | Protocol |
-|---|---|
-| `SamlProvider` | SAML 2.0 |
-| `OAuthProvider` | OAuth 2.0 |
-| `OidcProvider` | OpenID Connect |
-| `JwtProvider` | JWT (token validation) |
-| `LdapProvider` | LDAP / Active Directory |
-| `InHouseProvider` | Built-in credential store |
+**Implementations** (all in `SdxCore.Identity.Application/Providers/`):
+| Class | Protocol | Location |
+|---|---|---|
+| `SamlProvider` | SAML 2.0 | `Application/Providers/SamlProvider.cs` |
+| `OAuthProvider` | OAuth 2.0 | `Application/Providers/OAuthProvider.cs` |
+| `OidcProvider` | OpenID Connect | `Application/Providers/OidcProvider.cs` |
+| `JwtProvider` | JWT (token validation) | `Application/Providers/JwtProvider.cs` |
+| `LdapProvider` | LDAP / Active Directory | `Application/Providers/LdapProvider.cs` |
+| `InHouseProvider` | Built-in credential store | `Application/Providers/InHouseProvider.cs` |
 
 ---
 
 ### Component 4: InHouseProvider
 
-**Purpose**: Default provider backed by SQL Server. Handles username/password authentication when no external IdP is configured.
+**Purpose**: Provider backed by SQL Server. Handles username/password authentication when "InHouse" is explicitly configured in appsettings.json. (Liskov Substitution Principle - can be substituted for any IAuthenticationProvider)
+
+**Location**: `SdxCore.Identity.Application/Providers/InHouseProvider.cs`
 
 **Interface**:
 ```csharp
+// SdxCore.Identity.Domain/Interfaces/IInHouseProvider.cs
 public interface IInHouseProvider : IAuthenticationProvider
 {
     Task<UserRecord> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default);
@@ -192,8 +261,8 @@ public interface IInHouseProvider : IAuthenticationProvider
 ```
 
 **Responsibilities**:
-- Query SQL Server for the user record by username
-- Verify the submitted password against the stored Argon2id hash
+- Query SQL Server via `IUserRepository` for the user record by username (Dependency Inversion Principle)
+- Verify the submitted password against the stored Argon2id hash via `IPasswordHasher` (Dependency Inversion Principle)
 - Return a `ProviderResult` with standard claims on success
 - Lock accounts after configurable failed attempt threshold
 
@@ -201,10 +270,13 @@ public interface IInHouseProvider : IAuthenticationProvider
 
 ### Component 5: TokenFactory
 
-**Purpose**: Issues and validates signed JWT tokens.
+**Purpose**: Issues and validates signed JWT tokens. (Single Responsibility Principle - token operations only)
 
-**Interface**:
+**Location**: `SdxCore.Identity.Application/Services/TokenFactory.cs`
+
+**Interface** (defined in Domain layer):
 ```csharp
+// SdxCore.Identity.Domain/Interfaces/ITokenFactory.cs
 public interface ITokenFactory
 {
     AuthToken IssueToken(IEnumerable<Claim> claims);
@@ -222,15 +294,20 @@ public interface ITokenFactory
 
 ### Component 6: AuditLogger
 
-**Purpose**: Records all authentication events to SQL Server for compliance and diagnostics.
+**Purpose**: Records all authentication events to SQL Server for compliance and diagnostics. (Single Responsibility Principle - audit logging only)
 
-**Interface**:
+**Location**: `SdxCore.Identity.Application/Services/AuditLogger.cs`
+
+**Interface** (defined in Domain layer):
 ```csharp
+// SdxCore.Identity.Domain/Interfaces/IAuditLogger.cs
 public interface IAuditLogger
 {
     Task LogAsync(AuditEvent auditEvent, CancellationToken ct = default);
 }
 ```
+
+**Implementation**: Uses `IAuditRepository` from Domain layer (Dependency Inversion Principle)
 
 ---
 
@@ -303,9 +380,12 @@ public sealed record ProviderResult
 
 ---
 
-### UserRecord (SQL Server entity)
+### UserRecord (Domain Entity)
+
+**Location**: `SdxCore.Identity.Domain/Entities/UserRecord.cs`
 
 ```csharp
+// SdxCore.Identity.Domain/Entities/UserRecord.cs
 public sealed class UserRecord
 {
     public Guid Id { get; set; }
@@ -320,11 +400,16 @@ public sealed class UserRecord
 }
 ```
 
+**Database Mapping**: Configured in `SdxCore.Identity.Persistence/Configurations/UserRecordConfiguration.cs` using EF Core Fluent API
+
 ---
 
-### AuditEvent
+### AuditEvent (Domain Entity)
+
+**Location**: `SdxCore.Identity.Domain/Entities/AuditEvent.cs`
 
 ```csharp
+// SdxCore.Identity.Domain/Entities/AuditEvent.cs
 public sealed record AuditEvent
 {
     public required string EventType { get; init; }         // "LOGIN_SUCCESS", "LOGIN_FAILURE", etc.
@@ -337,11 +422,16 @@ public sealed record AuditEvent
 }
 ```
 
+**Database Mapping**: Configured in `SdxCore.Identity.Persistence/Configurations/AuditEventConfiguration.cs` using EF Core Fluent API
+
 ---
 
-### AuthProtocol (enum)
+### AuthProtocol (Domain Enum)
+
+**Location**: `SdxCore.Identity.Domain/Enums/AuthProtocol.cs`
 
 ```csharp
+// SdxCore.Identity.Domain/Enums/AuthProtocol.cs
 public enum AuthProtocol
 {
     InHouse,
@@ -469,11 +559,13 @@ public async Task<ProviderResult> AuthenticateAsync(AuthenticationRequest reques
 // INPUT:  None (reads from IConfiguration)
 // OUTPUT: IAuthenticationProvider
 // PRECONDITIONS:
-//   - InHouseProvider is always registered
 //   - IConfiguration is injected and available
+//   - At least one provider is registered
 // POSTCONDITIONS:
 //   - Returns the registered provider for the configured protocol name
-//   - Returns InHouseProvider when no protocol is configured or not registered
+//   - Throws ConfigurationException when no protocol is configured
+//   - Throws ConfigurationException when the configured protocol name is invalid
+//   - Throws ProviderNotFoundException when the configured protocol is not registered
 //   - Never returns null
 
 public IAuthenticationProvider ResolveFromConfiguration()
@@ -481,24 +573,27 @@ public IAuthenticationProvider ResolveFromConfiguration()
     // 1. Read protocol name from appsettings.json
     string? protocolName = _configuration["Authentication:Protocol"];
 
-    // 2. No protocol configured → use InHouse fallback
+    // 2. No protocol configured → throw exception (mandatory configuration)
     if (string.IsNullOrWhiteSpace(protocolName))
-        return _providers[AuthProtocol.InHouse];
+    {
+        _logger.LogError("Authentication protocol is not configured in appsettings.json. Please set 'Authentication:Protocol' to one of: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");
+        throw new ConfigurationException("Authentication protocol is not configured in appsettings.json. Please set 'Authentication:Protocol' to one of: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");
+    }
 
     // 3. Parse protocol name to enum
     if (!Enum.TryParse<AuthProtocol>(protocolName, ignoreCase: true, out AuthProtocol protocol))
     {
-        _logger.LogWarning("Invalid protocol name '{ProtocolName}' in configuration. Falling back to InHouse.", protocolName);
-        return _providers[AuthProtocol.InHouse];
+        _logger.LogError("Invalid protocol name '{ProtocolName}' in configuration. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap", protocolName);
+        throw new ConfigurationException($"Invalid protocol name '{protocolName}' in configuration. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");
     }
 
     // 4. Protocol specified and registered → return it
     if (_providers.TryGetValue(protocol, out IAuthenticationProvider? provider))
         return provider;
 
-    // 5. Protocol specified but not registered → fallback with warning
-    _logger.LogWarning("Provider for {Protocol} not registered. Falling back to InHouse.", protocol);
-    return _providers[AuthProtocol.InHouse];
+    // 5. Protocol specified but not registered → throw exception
+    _logger.LogError("Provider for protocol '{Protocol}' is not registered. Please register the provider using the appropriate extension method (e.g., AddInHouseProvider, AddSamlProvider).", protocol);
+    throw new ProviderNotFoundException($"Provider for protocol '{protocol}' is not registered. Please register the provider using the appropriate extension method.");
 }
 // LOOP INVARIANTS: N/A
 ```
@@ -610,38 +705,226 @@ Task<ProviderResult> AuthenticateAsync(AuthenticationRequest request, Cancellati
 
 ## Example Usage
 
-### Registering the Module (Program.cs / Startup)
+### Gateway Configuration (SdxCore.Gateway)
 
+#### Program.cs
 ```csharp
-// Register the authentication module via DI extension
-builder.Services.AddAuthenticationModule(options =>
-{
-    options.Issuer = "https://auth.myapp.com";
-    options.Audience = "myapp-api";
-    options.TokenLifetime = TimeSpan.FromHours(1);
-    options.SigningKeyPath = "/run/secrets/auth-signing-key.pem";
-    options.MaxFailedAttempts = 5;
-    options.LockoutDuration = TimeSpan.FromMinutes(15);
-});
+// SdxCore.Gateway/Program.cs
+var builder = WebApplication.CreateBuilder(args);
 
-// Register external providers as needed
-builder.Services.AddSamlProvider(options => { options.MetadataUrl = "https://idp.example.com/metadata"; });
-builder.Services.AddOidcProvider(options => { options.Authority = "https://login.microsoftonline.com/tenant"; });
-builder.Services.AddLdapProvider(options => { options.ServerUrl = "ldap://corp.example.com"; options.BaseDn = "dc=corp,dc=example,dc=com"; });
-// InHouseProvider is always registered automatically as fallback
+// Add YARP reverse proxy
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
+var app = builder.Build();
+
+// Map reverse proxy routes
+app.MapReverseProxy();
+
+app.Run();
 ```
 
-### Configuration (appsettings.json)
-
+#### appsettings.json
 ```json
 {
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Yarp": "Information"
+    }
+  },
+  "AllowedHosts": "*",
+  "ReverseProxy": {
+    "Routes": {
+      "identity-route": {
+        "ClusterId": "identity-cluster",
+        "Match": {
+          "Path": "/api/auth/{**catch-all}"
+        }
+      }
+    },
+    "Clusters": {
+      "identity-cluster": {
+        "Destinations": {
+          "identity-api": {
+            "Address": "https://localhost:5001"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+#### appsettings.Development.json
+```json
+{
+  "ReverseProxy": {
+    "Clusters": {
+      "identity-cluster": {
+        "Destinations": {
+          "identity-api": {
+            "Address": "http://localhost:5001"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+#### appsettings.Production.json
+```json
+{
+  "ReverseProxy": {
+    "Clusters": {
+      "identity-cluster": {
+        "Destinations": {
+          "identity-api": {
+            "Address": "https://identity-api.production.com"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+### Identity API Configuration (SdxCore.Identity.API)
+
+#### Program.cs
+```csharp
+// SdxCore.Identity.API/Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Add controllers
+builder.Services.AddControllers();
+
+// Register the authentication module via DI extension
+// All configuration values come from appsettings.json
+builder.Services.AddSdxCoreAuthentication(builder.Configuration);
+
+// Register the persistence layer (EF Core + SQL Server)
+// Connection string comes from appsettings.json
+builder.Services.AddSdxCorePersistence(builder.Configuration);
+
+// Register providers based on what you need
+// IMPORTANT: You must register the provider that matches your appsettings.json "Authentication:Protocol" value
+var protocol = builder.Configuration["Authentication:Protocol"];
+switch (protocol?.ToLowerInvariant())
+{
+    case "inhouse":
+        builder.Services.AddInHouseProvider();
+        break;
+    case "saml":
+        builder.Services.AddSamlProvider(builder.Configuration);
+        break;
+    case "oauth":
+        builder.Services.AddOAuthProvider(builder.Configuration);
+        break;
+    case "oidc":
+        builder.Services.AddOidcProvider(builder.Configuration);
+        break;
+    case "jwt":
+        builder.Services.AddJwtProvider(builder.Configuration);
+        break;
+    case "ldap":
+        builder.Services.AddLdapProvider(builder.Configuration);
+        break;
+    default:
+        throw new InvalidOperationException($"Invalid or missing authentication protocol: {protocol}. Please configure 'Authentication:Protocol' in appsettings.json");
+}
+
+var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+```
+
+#### appsettings.json
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=SdxCoreIdentity;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+  },
   "Authentication": {
-    "Protocol": "InHouse",  // Options: InHouse, Saml, OAuth, Oidc, Jwt, Ldap
+    "Protocol": "InHouse",
     "Issuer": "https://auth.myapp.com",
     "Audience": "myapp-api",
     "TokenLifetime": "01:00:00",
+    "SigningKeyPath": "/run/secrets/auth-signing-key.pem",
     "MaxFailedAttempts": 5,
     "LockoutDuration": "00:15:00"
+  },
+  "Saml": {
+    "MetadataUrl": "https://idp.example.com/metadata",
+    "ServiceProviderEntityId": "https://auth.myapp.com/saml"
+  },
+  "OAuth": {
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret",
+    "AuthorizationEndpoint": "https://oauth.example.com/authorize",
+    "TokenEndpoint": "https://oauth.example.com/token"
+  },
+  "Oidc": {
+    "Authority": "https://login.microsoftonline.com/tenant-id",
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret"
+  },
+  "Ldap": {
+    "ServerUrl": "ldaps://corp.example.com:636",
+    "BaseDn": "dc=corp,dc=example,dc=com",
+    "BindDn": "cn=admin,dc=corp,dc=example,dc=com",
+    "BindPassword": "admin-password"
+  }
+}
+```
+
+#### appsettings.Development.json
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=SdxCoreIdentity_Dev;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+  },
+  "Authentication": {
+    "Protocol": "InHouse",
+    "Issuer": "https://localhost:5001",
+    "Audience": "myapp-api-dev",
+    "SigningKeyPath": "./dev-signing-key.pem"
+  }
+}
+```
+
+#### appsettings.Production.json
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=prod-sql-server.database.windows.net;Database=SdxCoreIdentity;User Id=sqladmin;Password=${SQL_PASSWORD};Encrypt=True;TrustServerCertificate=False"
+  },
+  "Authentication": {
+    "Protocol": "Saml",
+    "Issuer": "https://auth.production.com",
+    "Audience": "myapp-api-prod",
+    "SigningKeyPath": "/run/secrets/prod-signing-key.pem",
+    "MaxFailedAttempts": 3,
+    "LockoutDuration": "00:30:00"
+  },
+  "Saml": {
+    "MetadataUrl": "https://idp.production.com/metadata",
+    "ServiceProviderEntityId": "https://auth.production.com/saml"
   }
 }
 ```
@@ -651,31 +934,65 @@ builder.Services.AddLdapProvider(options => { options.ServerUrl = "ldap://corp.e
 ### Authenticating a User (Controller)
 
 ```csharp
+// SdxCore.Identity.API/Controllers/AuthController.cs
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthenticationService _authService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthenticationService authService) => _authService = authService;
+    public AuthController(IAuthenticationService authService, ILogger<AuthController> logger)
+    {
+        _authService = authService;
+        _logger = logger;
+    }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest body, CancellationToken ct)
     {
-        var request = new AuthenticationRequest
+        try
         {
-            Username = body.Username,
-            Password = body.Password
-        };
+            var request = new AuthenticationRequest
+            {
+                Username = body.Username,
+                Password = body.Password
+            };
 
-        AuthenticationResult result = await _authService.AuthenticateAsync(request, ct);
+            AuthenticationResult result = await _authService.AuthenticateAsync(request, ct);
 
-        if (!result.IsSuccess)
-            return Unauthorized(new { result.ErrorCode, result.ErrorMessage });
+            if (!result.IsSuccess)
+                return Unauthorized(new { result.ErrorCode, result.ErrorMessage });
 
-        return Ok(new { result.Token!.AccessToken, result.Token.ExpiresAt });
+            return Ok(new { result.Token!.AccessToken, result.Token.ExpiresAt });
+        }
+        catch (ConfigurationException ex)
+        {
+            _logger.LogError(ex, "Configuration error during authentication");
+            return StatusCode(500, new { ErrorCode = "CONFIGURATION_ERROR", ErrorMessage = "Authentication service is not properly configured" });
+        }
+        catch (ProviderNotFoundException ex)
+        {
+            _logger.LogError(ex, "Provider not found during authentication");
+            return StatusCode(500, new { ErrorCode = "PROVIDER_NOT_FOUND", ErrorMessage = "Authentication provider is not available" });
+        }
     }
 }
+```
+
+**Client Usage (via Gateway):**
+```bash
+# Client makes request to Gateway
+POST https://gateway.myapp.com/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "john.doe",
+  "password": "SecurePassword123!"
+}
+
+# Gateway forwards to Identity API
+# POST https://identity-api.internal/api/auth/login
 ```
 
 ---
@@ -683,15 +1000,21 @@ public class AuthController : ControllerBase
 ### Validating a Token (Middleware)
 
 ```csharp
+// SdxCore.Identity.API/Middleware/TokenValidationMiddleware.cs
 public class TokenValidationMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IAuthenticationService _authService;
+    private readonly ILogger<TokenValidationMiddleware> _logger;
 
-    public TokenValidationMiddleware(RequestDelegate next, IAuthenticationService authService)
+    public TokenValidationMiddleware(
+        RequestDelegate next, 
+        IAuthenticationService authService,
+        ILogger<TokenValidationMiddleware> logger)
     {
         _next = next;
         _authService = authService;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -704,7 +1027,9 @@ public class TokenValidationMiddleware
             bool valid = await _authService.ValidateTokenAsync(token, context.RequestAborted);
             if (!valid)
             {
+                _logger.LogWarning("Invalid token received from {IpAddress}", context.Connection.RemoteIpAddress);
                 context.Response.StatusCode = 401;
+                await context.Response.WriteAsJsonAsync(new { ErrorCode = "INVALID_TOKEN", ErrorMessage = "Token is invalid, expired, or revoked" });
                 return;
             }
         }
@@ -721,7 +1046,9 @@ public class TokenValidationMiddleware
 - For all `AuthenticationRequest r`, if `AuthenticateAsync(r)` returns `IsSuccess = true`, then `result.Token` is non-null and `result.Token.ExpiresAt > DateTimeOffset.UtcNow`.
 - For all tokens `t` issued by `TokenFactory.IssueToken`, `ValidateToken(t)` returns a non-null `ClaimsPrincipal` until `t` expires or is revoked.
 - For all tokens `t`, after `RevokeTokenAsync(t)` is called, `ValidateTokenAsync(t)` returns `false`.
-- For all authentication requests, when the configured protocol in appsettings.json is null, empty, invalid, or unregistered, `ResolveFromConfiguration` always returns `InHouseProvider` (never null).
+- For all authentication requests, when the configured protocol in appsettings.json is null or empty, `ResolveFromConfiguration` throws `ConfigurationException` (never returns null or falls back).
+- For all authentication requests, when the configured protocol in appsettings.json is invalid, `ResolveFromConfiguration` throws `ConfigurationException`.
+- For all authentication requests, when the configured protocol is not registered, `ResolveFromConfiguration` throws `ProviderNotFoundException`.
 - For all `UserRecord u` created via `CreateUserAsync`, `u.PasswordHash` never equals the plaintext password submitted in the request.
 - For all failed authentication attempts against `InHouseProvider`, `user.FailedAttempts` is monotonically non-decreasing until a successful login resets it.
 - For all authentication attempts (success or failure), exactly one `AuditEvent` is written to SQL Server.
@@ -730,15 +1057,31 @@ public class TokenValidationMiddleware
 
 ## Error Handling
 
-### Error Scenario 1: Provider Not Registered
+### Error Scenario 1: Protocol Not Configured
 
-**Condition**: A protocol is specified in appsettings.json but no provider is registered for it.
-**Response**: `ProviderRegistry.ResolveFromConfiguration` logs a warning and returns `InHouseProvider`.
-**Recovery**: Authentication proceeds via the in-house provider; the caller receives a valid result.
+**Condition**: The "Authentication:Protocol" key is missing, null, or empty in appsettings.json.
+**Response**: `ProviderRegistry.ResolveFromConfiguration` logs an error and throws `ConfigurationException` with message: "Authentication protocol is not configured in appsettings.json. Please set 'Authentication:Protocol' to one of: InHouse, Saml, OAuth, Oidc, Jwt, Ldap"
+**Recovery**: Administrator must add the "Authentication:Protocol" configuration key with a valid protocol name. Application startup should fail fast to prevent running without proper authentication configuration.
 
 ---
 
-### Error Scenario 2: Invalid Credentials (InHouse)
+### Error Scenario 2: Invalid Protocol Name
+
+**Condition**: The "Authentication:Protocol" value in appsettings.json is not a valid protocol name.
+**Response**: `ProviderRegistry.ResolveFromConfiguration` logs an error and throws `ConfigurationException` with message: "Invalid protocol name '{protocolName}' in configuration. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap"
+**Recovery**: Administrator must correct the protocol name in appsettings.json to match one of the valid enum values.
+
+---
+
+### Error Scenario 3: Provider Not Registered
+
+**Condition**: A valid protocol is specified in appsettings.json but no provider is registered for it in the DI container.
+**Response**: `ProviderRegistry.ResolveFromConfiguration` logs an error and throws `ProviderNotFoundException` with message: "Provider for protocol '{protocol}' is not registered. Please register the provider using the appropriate extension method."
+**Recovery**: Developer must register the provider in Program.cs using the appropriate extension method (e.g., `AddInHouseProvider()`, `AddSamlProvider()`, etc.).
+
+---
+
+### Error Scenario 4: Invalid Credentials (InHouse)
 
 **Condition**: Username does not exist or password hash does not match.
 **Response**: Returns `AuthenticationResult { IsSuccess = false, ErrorCode = "AUTH_FAILED" }`. The error message is deliberately generic to prevent user enumeration.
@@ -746,7 +1089,7 @@ public class TokenValidationMiddleware
 
 ---
 
-### Error Scenario 3: Account Locked
+### Error Scenario 5: Account Locked
 
 **Condition**: `user.LockedUntil > DateTimeOffset.UtcNow`.
 **Response**: Returns `AuthenticationResult { IsSuccess = false, ErrorCode = "ACCOUNT_LOCKED" }`.
@@ -754,15 +1097,15 @@ public class TokenValidationMiddleware
 
 ---
 
-### Error Scenario 4: External IdP Unreachable
+### Error Scenario 6: External IdP Unreachable
 
 **Condition**: Network timeout or HTTP error when contacting SAML/OAuth/OIDC/LDAP endpoint.
 **Response**: Provider throws `AuthProviderUnavailableException`. `AuthenticationService` catches it and returns `AuthenticationResult { IsSuccess = false, ErrorCode = "PROVIDER_UNAVAILABLE" }`.
-**Recovery**: Client may retry or fall back to in-house authentication if configured to do so.
+**Recovery**: Client may retry. Administrator should verify external IdP connectivity and configuration.
 
 ---
 
-### Error Scenario 5: Token Expired or Revoked
+### Error Scenario 7: Token Expired or Revoked
 
 **Condition**: `ValidateTokenAsync` is called with an expired or revoked JWT.
 **Response**: Returns `false`. Middleware responds with HTTP 401.
@@ -787,7 +1130,9 @@ Each component is tested in isolation using xUnit and Moq:
 **Property Test Library**: FsCheck (xUnit integration via FsCheck.Xunit)
 
 Key properties to test:
-- When appsettings.json has no protocol configured or an invalid protocol name, `ResolveFromConfiguration` always resolves to `InHouseProvider`.
+- When appsettings.json has no protocol configured, `ResolveFromConfiguration` throws `ConfigurationException`.
+- When appsettings.json has an invalid protocol name, `ResolveFromConfiguration` throws `ConfigurationException`.
+- When the configured protocol is not registered, `ResolveFromConfiguration` throws `ProviderNotFoundException`.
 - `TokenFactory.IssueToken` followed immediately by `ValidateToken` always returns a valid principal.
 - `RevokeToken` followed by `ValidateToken` always returns `false`, for any token.
 - `InHouseProvider` never returns `IsSuccess = true` when `Username` or `Password` is null or empty.
@@ -816,7 +1161,7 @@ Integration tests use `WebApplicationFactory<Program>` with a real SQL Server in
 
 ---
 
-## Security Considerations
+## SOLID Principles Application
 
 - Passwords are hashed with Argon2id (via `Konscious.Security.Cryptography`) — never stored in plaintext or with reversible encryption.
 - JWT signing uses RS256 (asymmetric) by default; the private key is loaded from a secrets store (e.g., Azure Key Vault, AWS Secrets Manager, or a mounted secret).
@@ -831,15 +1176,40 @@ Integration tests use `WebApplicationFactory<Program>` with a real SQL Server in
 
 ## Dependencies
 
+### SdxCore.Gateway
+| Package | Purpose |
+|---|---|
+| `Yarp.ReverseProxy` | YARP reverse proxy for routing |
+
+### SdxCore.Identity.API
 | Package | Purpose |
 |---|---|
 | `Microsoft.AspNetCore.Authentication.JwtBearer` | JWT middleware integration |
+
+### SdxCore.Identity.Application
+| Package | Purpose |
+|---|---|
 | `System.IdentityModel.Tokens.Jwt` | JWT creation and validation |
 | `Konscious.Security.Cryptography.Argon2` | Argon2id password hashing |
 | `ITfoxtec.Identity.Saml2` | SAML 2.0 assertion handling |
 | `Microsoft.AspNetCore.Authentication.OpenIdConnect` | OIDC protocol support |
 | `Novell.Directory.Ldap.NETStandard` | LDAP / Active Directory connectivity |
+
+### SdxCore.Identity.Domain
+| Package | Purpose |
+|---|---|
+| None | Pure domain logic with no external dependencies |
+
+### SdxCore.Identity.Persistence
+| Package | Purpose |
+|---|---|
 | `Microsoft.EntityFrameworkCore.SqlServer` | SQL Server ORM (users, audit log) |
+| `Microsoft.EntityFrameworkCore.Design` | EF Core design-time tools for migrations |
+
+### Testing Projects
+| Package | Purpose |
+|---|---|
 | `FsCheck.Xunit` | Property-based testing |
 | `Testcontainers.MsSql` | SQL Server integration test containers |
 | `Moq` | Unit test mocking |
+| `xUnit` | Test framework |
