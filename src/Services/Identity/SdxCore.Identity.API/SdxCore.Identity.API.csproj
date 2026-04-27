@@ -8,11 +8,16 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SdxCore.Identity.Application\SdxCore.Identity.Application.csproj" />
     <ProjectReference Include="..\SdxCore.Identity.Domain\SdxCore.Identity.Domain.csproj" />
+    <ProjectReference Include="..\SdxCore.Identity.Persistence\SdxCore.Identity.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
