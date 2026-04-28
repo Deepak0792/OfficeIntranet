@@ -142,7 +142,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Register repository implementations
     - _Requirements: 12.6, 12.7, 25.6, 25.7_
 
-- [~] 3. Implement application layer core services
+- [ ] 3. Implement application layer core services
   - [x] 3.1 Add required NuGet packages to Application project
     - Add System.IdentityModel.Tokens.Jwt
     - Add Konscious.Security.Cryptography.Argon2
@@ -273,13 +273,13 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - **Validates: Requirements 2.6**
     - For all failed authentication attempts, FailedAttempts is monotonically non-decreasing until reset
 
-  - [x] 6.5 Create DI registration extension for InHouseProvider
+  - [ ] 6.5 Create DI registration extension for InHouseProvider
     - Create SdxCore.Identity.Application/Extensions/ProviderExtensions.cs
     - Implement AddInHouseProvider extension method
     - Register InHouseProvider with IProviderRegistry
     - _Requirements: 12.8_
 
-- [~] 7. Implement external authentication providers
+- [ ] 7. Implement external authentication providers
   - [ ] 7.1 Add required NuGet packages for external providers
     - Add ITfoxtec.Identity.Saml2 to Application project
     - Add Microsoft.AspNetCore.Authentication.OpenIdConnect to Application project
@@ -292,31 +292,31 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Read configuration from "Saml" section
     - _Requirements: 3.1, 20.1, 20.2, 20.3, 20.4, 20.5_
 
-  - [-] 7.3 Implement OAuthProvider
+  - [x] 7.3 Implement OAuthProvider
     - Create SdxCore.Identity.Application/Providers/OAuthProvider.cs implementing IAuthenticationProvider
     - Implement AuthenticateAsync: exchange authorization code for access token, support PKCE
     - Read configuration from "OAuth" section
     - _Requirements: 3.2, 21.1, 21.2, 21.3, 21.4_
 
-  - [~] 7.4 Implement OidcProvider
+  - [x] 7.4 Implement OidcProvider
     - Create SdxCore.Identity.Application/Providers/OidcProvider.cs implementing IAuthenticationProvider
     - Implement AuthenticateAsync: validate ID token signature and claims
     - Read configuration from "Oidc" section
     - _Requirements: 3.3_
 
-  - [~] 7.5 Implement JwtProvider
+  - [x] 7.5 Implement JwtProvider
     - Create SdxCore.Identity.Application/Providers/JwtProvider.cs implementing IAuthenticationProvider
     - Implement AuthenticateAsync: validate bearer token
     - _Requirements: 3.5_
 
-  - [~] 7.6 Implement LdapProvider
+  - [x] 7.6 Implement LdapProvider
     - Create SdxCore.Identity.Application/Providers/LdapProvider.cs implementing IAuthenticationProvider
     - Implement AuthenticateAsync: perform LDAPS bind operation, use connection pooling
     - Read configuration from "Ldap" section
     - Enforce LDAPS by default, reject plain LDAP unless explicitly enabled
     - _Requirements: 3.4, 13.1, 13.2, 13.3, 13.4_
 
-  - [~] 7.7 Create DI registration extensions for external providers
+  - [x] 7.7 Create DI registration extensions for external providers
     - Update SdxCore.Identity.Application/Extensions/ProviderExtensions.cs
     - Implement AddSamlProvider, AddOAuthProvider, AddOidcProvider, AddJwtProvider, AddLdapProvider extension methods
     - Each method reads configuration from IConfiguration and registers with IProviderRegistry
@@ -335,12 +335,12 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 9. Implement API layer
-  - [~] 9.1 Add required NuGet packages to API project
+  - [x] 9.1 Add required NuGet packages to API project
     - Add Microsoft.AspNetCore.Authentication.JwtBearer to src/Services/Identity/SdxCore.Identity.API
     - Add project references to Application and Domain
     - _Requirements: 24.6_
 
-  - [~] 9.2 Create AuthController
+  - [x] 9.2 Create AuthController
     - Create src/Services/Identity/SdxCore.Identity.API/Controllers/AuthController.cs
     - Create POST /api/auth/login endpoint
     - Inject IAuthenticationService
@@ -349,14 +349,14 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Return HTTP 200 with token on success, HTTP 401 on failure
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 9.1, 9.2, 9.4_
 
-  - [~] 9.3 Create TokenValidationMiddleware
+  - [ ] 9.3 Create TokenValidationMiddleware
     - Create src/Services/Identity/SdxCore.Identity.API/Middleware/TokenValidationMiddleware.cs
     - Extract bearer token from Authorization header
     - Call IAuthenticationService.ValidateTokenAsync
     - Return HTTP 401 for invalid/expired/revoked tokens
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [~] 9.4 Configure API startup and DI
+  - [ ] 9.4 Configure API startup and DI
     - Create src/Services/Identity/SdxCore.Identity.API/Program.cs
     - Register controllers
     - Call AddSdxCoreAuthentication extension method
@@ -366,7 +366,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Register TokenValidationMiddleware
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 12.1, 12.2, 12.3, 12.4, 12.5, 12.10_
 
-  - [~] 9.5 Create appsettings.json configuration files
+  - [-] 9.5 Create appsettings.json configuration files
     - Create src/Services/Identity/SdxCore.Identity.API/appsettings.json with sections: ConnectionStrings, Authentication, Saml, OAuth, Oidc, Ldap
     - Create src/Services/Identity/SdxCore.Identity.API/appsettings.Development.json with development overrides
     - Create src/Services/Identity/SdxCore.Identity.API/appsettings.Production.json with production overrides
@@ -382,7 +382,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Use WebApplicationFactory and Testcontainers.MsSql
     - _Requirements: 2.9, 10.1, 10.2, 10.3, 10.4_
 
-- [~] 10. Implement Gateway with YARP
+- [ ] 10. Implement Gateway with YARP
   - [ ] 10.1 Create Gateway project and configure YARP
     - Verify src/Gateway/SdxCore.Gateway.API project exists with Yarp.ReverseProxy package
     - Create src/Gateway/SdxCore.Gateway.API/Program.cs
@@ -390,14 +390,14 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Map reverse proxy: app.MapReverseProxy()
     - _Requirements: 23.1_
 
-  - [~] 10.2 Configure Gateway routing
+  - [ ] 10.2 Configure Gateway routing
     - Create src/Gateway/SdxCore.Gateway.API/appsettings.json
     - Add ReverseProxy section with routes and clusters
     - Define route for "/api/auth/**" to identity-cluster
     - Define identity-cluster with identity-api destination pointing to Identity API
     - _Requirements: 23.2, 23.3, 23.4_
 
-  - [~] 10.3 Create environment-specific Gateway configurations
+  - [ ] 10.3 Create environment-specific Gateway configurations
     - Create src/Gateway/SdxCore.Gateway.API/appsettings.Development.json with HTTP localhost destination (http://localhost:5001)
     - Create src/Gateway/SdxCore.Gateway.API/appsettings.Production.json with HTTPS production destination
     - _Requirements: 23.5, 23.6, 23.7, 23.8_

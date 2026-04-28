@@ -56,6 +56,48 @@ public class ProviderExtensionsTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => services!.AddInHouseProvider());
     }
+
+    [Fact]
+    public void AddJwtProvider_RegistersJwtProviderSuccessfully()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Add required dependencies
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "Authentication:Protocol", "Jwt" }
+            })
+            .Build();
+        
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging();
+        
+        // Add mock dependencies
+        services.AddScoped<ITokenFactory, MockTokenFactory>();
+        services.AddSingleton<IProviderRegistry, MockProviderRegistry>();
+        
+        // Act
+        services.AddJwtProvider();
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Assert
+        var providers = serviceProvider.GetServices<IAuthenticationProvider>().ToList();
+        var jwtProvider = providers.FirstOrDefault(p => p.Protocol == AuthProtocol.Jwt);
+        Assert.NotNull(jwtProvider);
+        Assert.Equal(AuthProtocol.Jwt, jwtProvider.Protocol);
+    }
+    
+    [Fact]
+    public void AddJwtProvider_ThrowsArgumentNullException_WhenServicesIsNull()
+    {
+        // Arrange
+        IServiceCollection? services = null;
+        
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => services!.AddJwtProvider());
+    }
     
     // Mock implementations for testing
     private class MockUserRepository : IUserRepository
@@ -103,6 +145,29 @@ public class ProviderExtensionsTests
         public IAuthenticationProvider ResolveFromConfiguration()
         {
             return _providers[AuthProtocol.InHouse];
+        }
+    }
+
+    private class MockTokenFactory : ITokenFactory
+    {
+        public Domain.DTOs.AuthToken IssueToken(IEnumerable<System.Security.Claims.Claim> claims)
+        {
+            return new Domain.DTOs.AuthToken
+            {
+                AccessToken = "mock.jwt.token",
+                ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+                TokenType = "Bearer"
+            };
+        }
+
+        public System.Security.Claims.ClaimsPrincipal? ValidateToken(string token)
+        {
+            return new System.Security.Claims.ClaimsPrincipal();
+        }
+
+        public void RevokeToken(string token)
+        {
+            // Mock implementation
         }
     }
 }
