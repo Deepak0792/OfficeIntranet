@@ -1,48 +1,85 @@
-using Microsoft.EntityFrameworkCore;
-using SdxCore.Identity.Persistence.Data;
+using SdxCore.Identity.API.Middleware;
+using SdxCore.Identity.Application.Extensions;
+using SdxCore.Identity.Persistence.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Add controllers
+builder.Services.AddControllers();
 
-// Add DbContext for migrations
-builder.Services.AddDbContext<IdentityDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add health checks
+builder.Services.AddHealthChecks();
+
+// Add OpenAPI/Swagger for development
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Register the persistence layer (EF Core + SQL Server)
+// Connection string comes from appsettings.json
+builder.Services.AddSdxCorePersistence(builder.Configuration);
+
+// Register the authentication module via DI extension
+// All configuration values come from appsettings.json
+builder.Services.AddSdxCoreAuthentication(builder.Configuration);
+
+// Register providers based on what you need
+// IMPORTANT: You must register the provider that matches your appsettings.json "Authentication:Protocol" value
+var protocol = builder.Configuration["Authentication:Protocol"];
+
+if (string.IsNullOrWhiteSpace(protocol))
+{
+    throw new InvalidOperationException(
+        "Authentication protocol is not configured. Please set 'Authentication:Protocol' in appsettings.json to one of: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");
+}
+
+switch (protocol.ToLowerInvariant())
+{
+    case "inhouse":
+        builder.Services.AddInHouseProvider();
+        break;
+    case "saml":
+        builder.Services.AddSamlProvider();
+        break;
+    case "oauth":
+        builder.Services.AddOAuthProvider();
+        break;
+    case "oidc":
+        builder.Services.AddOidcProvider();
+        break;
+    case "jwt":
+        builder.Services.AddJwtProvider();
+        break;
+    case "ldap":
+        // LDAP provider is temporarily disabled due to API compatibility issues
+        throw new InvalidOperationException(
+            "LDAP provider is temporarily disabled. Please use one of: InHouse, Saml, OAuth, Oidc, Jwt");
+    default:
+        throw new InvalidOperationException(
+            $"Invalid authentication protocol: '{protocol}'. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");
+}
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// Register TokenValidationMiddleware
+app.UseTokenValidation();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.UseAuthorization();
+
+// Map health check endpoint
+app.MapHealthChecks("/health");
+
+app.MapControllers();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Make Program class accessible for integration tests
+public partial class Program { }

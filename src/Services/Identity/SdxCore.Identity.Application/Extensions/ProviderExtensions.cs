@@ -152,6 +152,7 @@ public static class ProviderExtensions
     /// <param name="services">The service collection to add services to.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when services is null.</exception>
+    /* TEMPORARILY DISABLED - LDAP provider has API compatibility issues
     public static IServiceCollection AddLdapProvider(this IServiceCollection services)
     {
         if (services is null)
@@ -171,4 +172,5 @@ public static class ProviderExtensions
 
         return services;
     }
+    */
 }

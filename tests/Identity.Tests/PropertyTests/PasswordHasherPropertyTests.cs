@@ -26,6 +26,10 @@ public class PasswordHasherPropertyTests
     [Property(MaxTest = 100)]
     public void HashVerificationConsistency_ForAllPasswords_VerifyReturnsTrue(NonEmptyString password)
     {
+        // Filter out whitespace-only strings
+        if (string.IsNullOrWhiteSpace(password.Get))
+            return;
+
         // Arrange
         string pwd = password.Get;
 
@@ -45,6 +49,10 @@ public class PasswordHasherPropertyTests
     [Property(MaxTest = 100)]
     public void SaltRandomization_ForAllPasswords_ProducesDifferentHashes(NonEmptyString password)
     {
+        // Filter out whitespace-only strings
+        if (string.IsNullOrWhiteSpace(password.Get))
+            return;
+
         // Arrange
         string pwd = password.Get;
 

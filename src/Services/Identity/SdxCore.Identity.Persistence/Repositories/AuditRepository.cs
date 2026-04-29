@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces;
 using SdxCore.Identity.Persistence.Data;
@@ -30,5 +31,17 @@ public class AuditRepository : IAuditRepository
 
         _context.AuditEvents.Add(auditEvent);
         await _context.SaveChangesAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<AuditEvent>> GetByUsernameAsync(string username, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return Array.Empty<AuditEvent>();
+
+        return await _context.AuditEvents
+            .Where(e => e.Username == username)
+            .OrderByDescending(e => e.OccurredAt)
+            .ToListAsync(ct);
     }
 }

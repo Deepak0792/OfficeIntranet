@@ -104,6 +104,19 @@ public sealed class AuthController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// Test endpoint for validating token middleware functionality.
+    /// This endpoint is protected by TokenValidationMiddleware.
+    /// </summary>
+    /// <returns>Success message if token is valid.</returns>
+    [HttpGet("test-protected")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public IActionResult TestProtected()
+    {
+        return Ok(new { Message = "Token is valid", Timestamp = DateTimeOffset.UtcNow });
+    }
 }
 
 /// <summary>

@@ -102,4 +102,72 @@ public class ProviderRegistryPropertyTests
         // Verify the exception message matches the requirement
         Assert.Contains("Authentication protocol is not configured in appsettings.json", exception.Message);
     }
+
+    /// <summary>
+    /// Property 6: Configuration exception for invalid protocol
+    /// **Validates: Requirements 1.3**
+    /// When "Authentication:Protocol" is invalid, ResolveFromConfiguration throws ConfigurationException
+    /// </summary>
+    [Theory]
+    [InlineData("InvalidProtocol")]
+    [InlineData("NotAProtocol")]
+    [InlineData("Random123")]
+    [InlineData("INVALID")]
+    public void ConfigurationException_WhenProtocolIsInvalid_ThrowsConfigurationException(string invalidProtocol)
+    {
+        // Arrange
+        var configurationData = new Dictionary<string, string?>
+        {
+            { "Authentication:Protocol", invalidProtocol }
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configurationData)
+            .Build();
+
+        var mockLogger = new Mock<ILogger<ProviderRegistry>>();
+        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+
+        // Act & Assert
+        var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
+        
+        // Verify the exception message contains the invalid protocol name
+        Assert.Contains("Invalid protocol name", exception.Message);
+        Assert.Contains(invalidProtocol, exception.Message);
+    }
+
+    /// <summary>
+    /// Property 7: Provider not found exception
+    /// **Validates: Requirements 1.4**
+    /// When configured protocol is not registered, ResolveFromConfiguration throws ProviderNotFoundException
+    /// </summary>
+    [Theory]
+    [InlineData("InHouse")]
+    [InlineData("Saml")]
+    [InlineData("OAuth")]
+    [InlineData("Oidc")]
+    [InlineData("Jwt")]
+    [InlineData("Ldap")]
+    public void ProviderNotFoundException_WhenProtocolNotRegistered_ThrowsProviderNotFoundException(string validProtocol)
+    {
+        // Arrange - Configure a valid protocol but don't register any provider
+        var configurationData = new Dictionary<string, string?>
+        {
+            { "Authentication:Protocol", validProtocol }
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configurationData)
+            .Build();
+
+        var mockLogger = new Mock<ILogger<ProviderRegistry>>();
+        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+        // Note: No provider is registered
+
+        // Act & Assert
+        var exception = Assert.Throws<ProviderNotFoundException>(() => registry.ResolveFromConfiguration());
+        
+        // Verify the exception message contains the protocol name
+        Assert.Contains($"Provider for protocol '{validProtocol}' is not registered", exception.Message);
+    }
 }

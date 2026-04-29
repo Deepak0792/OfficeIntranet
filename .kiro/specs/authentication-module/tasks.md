@@ -32,7 +32,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
 
 ## Tasks
 
-- [ ] 1. Set up solution structure and create projects
+- [x] 1. Set up solution structure and create projects
   - [x] 1.1 Create solution and folder structure
     - Create SdxCore.sln in root directory
     - Create folder structure: src/Gateway, src/Services/Identity, src/BuildingBlocks, tests, docker
@@ -142,7 +142,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Register repository implementations
     - _Requirements: 12.6, 12.7, 25.6, 25.7_
 
-- [ ] 3. Implement application layer core services
+- [x] 3. Implement application layer core services
   - [x] 3.1 Add required NuGet packages to Application project
     - Add System.IdentityModel.Tokens.Jwt
     - Add Konscious.Security.Cryptography.Argon2
@@ -158,13 +158,13 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Configure Argon2id parameters for 200-300ms hashing time
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ]* 3.3 Write property test for PasswordHasher
+  - [x] 3.3 Write property test for PasswordHasher
     - Create tests/Identity.Tests/PropertyTests/PasswordHasherPropertyTests.cs
     - **Property 1: Hash verification consistency**
     - **Validates: Requirements 8.1, 8.2, 8.3**
     - For all passwords, Verify(password, Hash(password)) returns true
 
-  - [ ]* 3.4 Write property test for PasswordHasher salt randomization
+  - [x] 3.4 Write property test for PasswordHasher salt randomization
     - **Property 2: Salt randomization**
     - **Validates: Requirements 8.5**
     - For all passwords, Hash(password) called twice produces different outputs
@@ -177,12 +177,12 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Load signing credentials from configuration
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
 
-  - [ ]* 3.6 Write property test for TokenFactory issuance and validation
+  - [x] 3.6 Write property test for TokenFactory issuance and validation
     - **Property 3: Token issuance and immediate validation**
     - **Validates: Requirements 4.1, 4.6, 4.7**
     - For all claim sets, IssueToken followed by ValidateToken returns non-null ClaimsPrincipal
 
-  - [ ]* 3.7 Write property test for TokenFactory revocation
+  - [x] 3.7 Write property test for TokenFactory revocation
     - **Property 4: Token revocation**
     - **Validates: Requirements 4.9, 4.10**
     - For all tokens, RevokeToken followed by ValidateToken returns false
@@ -193,10 +193,10 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Use fire-and-forget pattern with bounded channel for performance
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement provider registry and authentication service
+- [x] 5. Implement provider registry and authentication service
   - [x] 5.1 Implement ProviderRegistry
     - Create SdxCore.Identity.Application/Services/ProviderRegistry.cs implementing IProviderRegistry
     - Use ConcurrentDictionary for provider storage
@@ -211,12 +211,12 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - **Validates: Requirements 1.2**
     - When "Authentication:Protocol" is null or empty, ResolveFromConfiguration throws ConfigurationException
 
-  - [ ]* 5.3 Write property test for ProviderRegistry invalid protocol
+  - [x] 5.3 Write property test for ProviderRegistry invalid protocol
     - **Property 6: Configuration exception for invalid protocol**
     - **Validates: Requirements 1.3**
     - When "Authentication:Protocol" is invalid, ResolveFromConfiguration throws ConfigurationException
 
-  - [ ]* 5.4 Write property test for ProviderRegistry unregistered protocol
+  - [x] 5.4 Write property test for ProviderRegistry unregistered protocol
     - **Property 7: Provider not found exception**
     - **Validates: Requirements 1.4**
     - When configured protocol is not registered, ResolveFromConfiguration throws ProviderNotFoundException
@@ -229,7 +229,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Handle ConfigurationException and ProviderNotFoundException
     - _Requirements: 1.1, 6.7, 9.3, 9.4, 9.5, 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [ ]* 5.6 Write property test for AuthenticationService audit logging
+  - [x] 5.6 Write property test for AuthenticationService audit logging
     - **Property 8: Audit event always written**
     - **Validates: Requirements 6.7**
     - For all authentication attempts, exactly one AuditEvent is written regardless of outcome
@@ -251,7 +251,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Use generic error messages to prevent user enumeration
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 16.1, 16.2, 16.3, 17.2, 17.3, 17.4_
 
-  - [ ]* 6.2 Write unit tests for InHouseProvider
+  - [x] 6.2 Write unit tests for InHouseProvider
     - Create tests/Identity.Tests/UnitTests/InHouseProviderTests.cs
     - Test successful authentication flow
     - Test invalid credentials (username not found, wrong password)
@@ -262,25 +262,25 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Test failed attempt reset on success
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9_
 
-  - [ ]* 6.3 Write property test for InHouseProvider password storage
+  - [x] 6.3 Write property test for InHouseProvider password storage
     - Create tests/Identity.Tests/PropertyTests/InHouseProviderPropertyTests.cs
     - **Property 9: Password never stored in plaintext**
     - **Validates: Requirements 5.6**
     - For all CreateUserAsync calls, UserRecord.PasswordHash never equals the plaintext password
 
-  - [ ]* 6.4 Write property test for InHouseProvider failed attempts
+  - [x] 6.4 Write property test for InHouseProvider failed attempts
     - **Property 10: Failed attempts monotonically increase**
     - **Validates: Requirements 2.6**
     - For all failed authentication attempts, FailedAttempts is monotonically non-decreasing until reset
 
-  - [ ] 6.5 Create DI registration extension for InHouseProvider
+  - [x] 6.5 Create DI registration extension for InHouseProvider
     - Create SdxCore.Identity.Application/Extensions/ProviderExtensions.cs
     - Implement AddInHouseProvider extension method
     - Register InHouseProvider with IProviderRegistry
     - _Requirements: 12.8_
 
-- [ ] 7. Implement external authentication providers
-  - [ ] 7.1 Add required NuGet packages for external providers
+- [x] 7. Implement external authentication providers
+  - [x] 7.1 Add required NuGet packages for external providers
     - Add ITfoxtec.Identity.Saml2 to Application project
     - Add Microsoft.AspNetCore.Authentication.OpenIdConnect to Application project
     - Add Novell.Directory.Ldap.NETStandard to Application project
@@ -322,7 +322,7 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Each method reads configuration from IConfiguration and registers with IProviderRegistry
     - _Requirements: 12.8, 12.9_
 
-  - [ ]* 7.8 Write unit tests for external providers
+  - [x] 7.8 Write unit tests for external providers
     - Create tests/Identity.Tests/UnitTests/ExternalProvidersTests.cs
     - Test SAML assertion validation (valid, invalid signature, expired)
     - Test OAuth code exchange flow
@@ -331,10 +331,10 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Test LDAP bind success and failure
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 8. Checkpoint - Ensure all tests pass
+- [x] 8. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Implement API layer
+- [x] 9. Implement API layer
   - [x] 9.1 Add required NuGet packages to API project
     - Add Microsoft.AspNetCore.Authentication.JwtBearer to src/Services/Identity/SdxCore.Identity.API
     - Add project references to Application and Domain
@@ -349,14 +349,14 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Return HTTP 200 with token on success, HTTP 401 on failure
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 9.1, 9.2, 9.4_
 
-  - [ ] 9.3 Create TokenValidationMiddleware
+  - [x] 9.3 Create TokenValidationMiddleware
     - Create src/Services/Identity/SdxCore.Identity.API/Middleware/TokenValidationMiddleware.cs
     - Extract bearer token from Authorization header
     - Call IAuthenticationService.ValidateTokenAsync
     - Return HTTP 401 for invalid/expired/revoked tokens
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [ ] 9.4 Configure API startup and DI
+  - [x] 9.4 Configure API startup and DI
     - Create src/Services/Identity/SdxCore.Identity.API/Program.cs
     - Register controllers
     - Call AddSdxCoreAuthentication extension method
@@ -366,13 +366,13 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Register TokenValidationMiddleware
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 12.1, 12.2, 12.3, 12.4, 12.5, 12.10_
 
-  - [-] 9.5 Create appsettings.json configuration files
+  - [x] 9.5 Create appsettings.json configuration files
     - Create src/Services/Identity/SdxCore.Identity.API/appsettings.json with sections: ConnectionStrings, Authentication, Saml, OAuth, Oidc, Ldap
     - Create src/Services/Identity/SdxCore.Identity.API/appsettings.Development.json with development overrides
     - Create src/Services/Identity/SdxCore.Identity.API/appsettings.Production.json with production overrides
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 11.10, 11.11, 11.12, 11.14_
 
-  - [ ]* 9.6 Write integration tests for API endpoints
+  - [x] 9.6 Write integration tests for API endpoints
     - Create tests/Identity.Tests/IntegrationTests/AuthControllerIntegrationTests.cs
     - Test POST /api/auth/login with valid credentials returns token
     - Test POST /api/auth/login with invalid credentials returns 401
@@ -382,28 +382,28 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Use WebApplicationFactory and Testcontainers.MsSql
     - _Requirements: 2.9, 10.1, 10.2, 10.3, 10.4_
 
-- [ ] 10. Implement Gateway with YARP
-  - [ ] 10.1 Create Gateway project and configure YARP
+- [x] 10. Implement Gateway with YARP
+  - [x] 10.1 Create Gateway project and configure YARP
     - Verify src/Gateway/SdxCore.Gateway.API project exists with Yarp.ReverseProxy package
     - Create src/Gateway/SdxCore.Gateway.API/Program.cs
     - Add YARP services: builder.Services.AddReverseProxy().LoadFromConfig(...)
     - Map reverse proxy: app.MapReverseProxy()
     - _Requirements: 23.1_
 
-  - [ ] 10.2 Configure Gateway routing
+  - [x] 10.2 Configure Gateway routing
     - Create src/Gateway/SdxCore.Gateway.API/appsettings.json
     - Add ReverseProxy section with routes and clusters
     - Define route for "/api/auth/**" to identity-cluster
     - Define identity-cluster with identity-api destination pointing to Identity API
     - _Requirements: 23.2, 23.3, 23.4_
 
-  - [ ] 10.3 Create environment-specific Gateway configurations
+  - [x] 10.3 Create environment-specific Gateway configurations
     - Create src/Gateway/SdxCore.Gateway.API/appsettings.Development.json with HTTP localhost destination (http://localhost:5001)
     - Create src/Gateway/SdxCore.Gateway.API/appsettings.Production.json with HTTPS production destination
     - _Requirements: 23.5, 23.6, 23.7, 23.8_
 
-- [ ] 11. Final integration and wiring
-  - [ ] 11.1 Create solution-level documentation
+- [x] 11. Final integration and wiring
+  - [x] 11.1 Create solution-level documentation
     - Create README.md in root directory
     - Document solution structure and microservices architecture
     - Document configuration requirements for each service
@@ -411,13 +411,13 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Document how to switch authentication protocols via appsettings.json
     - Document docker-compose usage
 
-  - [ ] 11.2 Create docker-compose configuration
+  - [x] 11.2 Create docker-compose configuration
     - Create docker/docker-compose.yml with services: gateway, identity-api, sql-server
     - Create docker/.env.example for environment variables
     - Create Dockerfiles for Gateway and Identity API
     - _Requirements: 23.1_
 
-  - [ ] 11.3 Verify end-to-end flow
+  - [x] 11.3 Verify end-to-end flow
     - Start SQL Server (via docker or local instance)
     - Run database migrations: dotnet ef database update --project src/Services/Identity/SdxCore.Identity.Persistence --startup-project src/Services/Identity/SdxCore.Identity.API
     - Start Identity API: dotnet run --project src/Services/Identity/SdxCore.Identity.API
@@ -427,14 +427,14 @@ The implementation follows a bottom-up approach: Domain → Persistence → Appl
     - Verify audit logging in database
     - Test with multiple protocols (InHouse, SAML, OAuth) by changing appsettings.json
 
-  - [ ]* 11.4 Write end-to-end integration tests
+  - [x] 11.4 Write end-to-end integration tests
     - Create tests/Identity.Tests/IntegrationTests/EndToEndTests.cs
     - Test full flow: Client → Gateway → Identity API → Database
     - Test protocol switching via configuration
     - Test configuration error handling (missing protocol, invalid protocol, unregistered provider)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 23.3_
 
-- [ ] 12. Final checkpoint - Ensure all tests pass
+- [x] 12. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

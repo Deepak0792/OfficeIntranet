@@ -15,4 +15,13 @@ public interface IAuditRepository
     /// <param name="auditEvent">Audit event to insert.</param>
     /// <param name="ct">Cancellation token.</param>
     Task InsertAsync(AuditEvent auditEvent, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves audit events for a specific username.
+    /// Used for testing and compliance reporting.
+    /// </summary>
+    /// <param name="username">Username to search for.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>List of audit events for the specified username.</returns>
+    Task<IReadOnlyList<AuditEvent>> GetByUsernameAsync(string username, CancellationToken ct = default);
 }
