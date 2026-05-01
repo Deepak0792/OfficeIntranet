@@ -4,7 +4,8 @@ using Moq;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Interfaces.Services;
 using Xunit;
 
 namespace SdxCore.Identity.Tests.UnitTests;

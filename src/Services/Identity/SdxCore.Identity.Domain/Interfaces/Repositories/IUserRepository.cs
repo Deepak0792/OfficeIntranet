@@ -1,6 +1,6 @@
 using SdxCore.Identity.Domain.Entities;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Repositories;
 
 /// <summary>
 /// Repository interface for user account data access.

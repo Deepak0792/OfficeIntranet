@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Konscious.Security.Cryptography;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Security;
 
 namespace SdxCore.Identity.Application.Services;
 

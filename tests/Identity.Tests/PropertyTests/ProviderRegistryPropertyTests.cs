@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.Exceptions;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 
 namespace SdxCore.Identity.Tests.PropertyTests;
 

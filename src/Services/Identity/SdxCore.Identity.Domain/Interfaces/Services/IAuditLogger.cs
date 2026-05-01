@@ -1,6 +1,6 @@
 using SdxCore.Identity.Domain.Entities;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Services;
 
 /// <summary>
 /// Audit logger interface for recording authentication events.

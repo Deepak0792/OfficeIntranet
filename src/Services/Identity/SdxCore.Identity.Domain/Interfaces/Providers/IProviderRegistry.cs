@@ -1,6 +1,6 @@
 using SdxCore.Identity.Domain.Enums;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Providers;
 
 /// <summary>
 /// Provider registry interface for managing and resolving authentication providers.

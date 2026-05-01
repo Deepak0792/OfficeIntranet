@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 using System.Xml;
 using Microsoft.IdentityModel.Tokens.Saml2;
 using Microsoft.IdentityModel.Tokens;

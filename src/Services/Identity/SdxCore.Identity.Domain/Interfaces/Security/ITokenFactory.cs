@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using SdxCore.Identity.Domain.DTOs;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Security;
 
 /// <summary>
 /// Token factory interface for JWT token operations.

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Application.Extensions;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 using Xunit;
 
 namespace SdxCore.Identity.Tests.UnitTests;

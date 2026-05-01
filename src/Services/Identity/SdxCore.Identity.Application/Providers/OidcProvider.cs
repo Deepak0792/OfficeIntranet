@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 
 namespace SdxCore.Identity.Application.Providers;
 

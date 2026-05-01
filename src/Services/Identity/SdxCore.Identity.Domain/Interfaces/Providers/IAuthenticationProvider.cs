@@ -1,7 +1,7 @@
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Enums;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Providers;
 
 /// <summary>
 /// Common contract for all authentication provider implementations.

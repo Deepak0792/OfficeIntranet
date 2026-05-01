@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using SdxCore.Common.Models;
 using SdxCore.Identity.API.Controllers;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Xunit;

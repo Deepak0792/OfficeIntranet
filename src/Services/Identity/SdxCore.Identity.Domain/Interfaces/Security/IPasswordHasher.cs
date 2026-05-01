@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Security;
 
 /// <summary>
 /// Password hasher interface for secure password hashing and verification.

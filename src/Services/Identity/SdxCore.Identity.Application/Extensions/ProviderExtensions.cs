@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Application.Providers;
 
 namespace SdxCore.Identity.Application.Extensions;

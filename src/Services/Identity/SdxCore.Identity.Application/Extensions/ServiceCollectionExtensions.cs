@@ -1,7 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Identity.Application.Services;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Interfaces.Security;
+using SdxCore.Identity.Domain.Interfaces.Services;
 
 namespace SdxCore.Identity.Application.Extensions;
 

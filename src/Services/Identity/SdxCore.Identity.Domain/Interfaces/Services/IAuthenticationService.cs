@@ -1,6 +1,6 @@
 using SdxCore.Identity.Domain.DTOs;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Services;
 
 /// <summary>
 /// Central authentication service interface.

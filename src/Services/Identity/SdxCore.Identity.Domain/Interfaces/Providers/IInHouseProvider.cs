@@ -1,7 +1,7 @@
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Entities;
 
-namespace SdxCore.Identity.Domain.Interfaces;
+namespace SdxCore.Identity.Domain.Interfaces.Providers;
 
 /// <summary>
 /// Extended authentication provider interface for in-house credential management.

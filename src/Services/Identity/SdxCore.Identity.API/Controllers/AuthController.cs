@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Exceptions;
-using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Identity.Domain.Interfaces.Services;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
 using SdxCore.Common.Http;
+using SdxCore.Identity.API.DTOs;
 
 namespace SdxCore.Identity.API.Controllers;
 
@@ -259,71 +260,4 @@ public sealed class AuthController : ControllerBase
     {
         return JwtTokenUtilities.ExtractTokenClaims(token, _logger);
     }
-}
-
-/// <summary>
-/// Login request model for the API endpoint.
-/// </summary>
-public sealed record LoginRequest
-{
-    /// <summary>
-    /// Username for InHouse authentication.
-    /// </summary>
-    public string? Username { get; init; }
-
-    /// <summary>
-    /// Password for InHouse authentication.
-    /// </summary>
-    public string? Password { get; init; }
-
-    /// <summary>
-    /// SAML assertion for SAML authentication.
-    /// </summary>
-    public string? SamlAssertion { get; init; }
-
-    /// <summary>
-    /// OAuth authorization code.
-    /// </summary>
-    public string? OAuthCode { get; init; }
-
-    /// <summary>
-    /// OpenID Connect ID token.
-    /// </summary>
-    public string? IdToken { get; init; }
-
-    /// <summary>
-    /// JWT bearer token for JWT authentication.
-    /// </summary>
-    public string? BearerToken { get; init; }
-
-    /// <summary>
-    /// Additional protocol-specific parameters.
-    /// </summary>
-    public IDictionary<string, string>? ExtraParameters { get; init; }
-}
-
-/// <summary>
-/// Login response model containing the issued token.
-/// </summary>
-public sealed record LoginResponse
-{
-    /// <summary>
-    /// The issued JWT access token.
-    /// </summary>
-    public required string AccessToken { get; init; }
-
-    /// <summary>
-    /// Token type (typically "Bearer").
-    /// </summary>
-    public required string TokenType { get; init; }
-
-    /// <summary>
-    /// Token expiration timestamp.
-    /// </summary>
-    public required DateTimeOffset ExpiresAt { get; init; }
-
-    /// <summary>
-    /// Optional refresh token for token renewal.
-    /// </summary>
-    public string? RefreshToken { get; init; }
 }
