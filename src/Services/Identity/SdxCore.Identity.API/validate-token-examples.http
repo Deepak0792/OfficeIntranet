@@ -1,0 +1,102 @@
+### Validate Token Examples
+### IMPORTANT: The validate-token endpoint is NOT publicly accessible!
+### It's only accessible by the Gateway middleware with internal API key.
+### Only the login endpoint is public.
+
+### 1. Login first to get a token (InHouse provider example) - PUBLIC ENDPOINT
+POST https://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "password123"
+}
+
+### 2. ❌ DIRECT ACCESS TO VALIDATE-TOKEN IS FORBIDDEN
+### This will return 403 Forbidden because validate-token is internal only
+POST https://localhost:5001/api/auth/validate-token
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 3. ✅ GATEWAY ACCESS (how it actually works)
+### The Gateway middleware calls validate-token internally with API key
+### Users should call protected endpoints through the Gateway:
+GET https://localhost:5000/api/orders
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 4. Example with SAML token (replace with actual SAML assertion) - PUBLIC ENDPOINT
+POST https://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "samlAssertion": "PHNhbWw6QXNzZXJ0aW9uIC4uLg=="
+}
+
+### 5. Example with OAuth token (replace with actual OAuth code) - PUBLIC ENDPOINT
+POST https://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "oAuthCode": "auth_code_12345",
+  "extraParameters": {
+    "client_id": "your_client_id",
+    "redirect_uri": "https://your-app.com/callback"
+  }
+}
+
+### 6. Example with OIDC token (replace with actual ID token) - PUBLIC ENDPOINT
+POST https://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "idToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+### 7. Example with JWT bearer token (replace with actual JWT) - PUBLIC ENDPOINT
+POST https://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+  "bearerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+### 8. ❌ SECURITY TESTS - These should all fail with 403 Forbidden
+
+# Missing API key - should return 403
+POST https://localhost:5001/api/auth/validate-token
+Authorization: Bearer valid-token-here
+
+# Invalid API key - should return 403
+POST https://localhost:5001/api/auth/validate-token
+Authorization: Bearer valid-token-here
+X-Internal-API-Key: invalid-key
+
+# Direct access through Gateway (should also be blocked)
+POST https://localhost:5000/api/auth/validate-token
+Authorization: Bearer valid-token-here
+
+### 9. ✅ CORRECT USAGE PATTERN
+### Users authenticate via login, then use tokens for protected resources through Gateway
+
+# Step 1: Login to get token
+POST https://localhost:5001/api/auth/login
+Content-Type: application/json
+{
+  "username": "admin",
+  "password": "password123"
+}
+
+# Step 2: Use token for protected resources (Gateway handles validation internally)
+GET https://localhost:5000/api/orders
+Authorization: Bearer <token-from-step-1>
+
+### SECURITY ARCHITECTURE:
+# 1. Only /api/auth/login is publicly accessible
+# 2. /api/auth/validate-token is INTERNAL ONLY (Gateway ↔ Identity)
+# 3. All other endpoints go through Gateway with token validation
+# 4. Gateway adds user context headers for downstream services
+
+### Expected Response for Direct validate-token Access:
+# {
+#   "errorCode": "FORBIDDEN",
+#   "errorMessage": "This endpoint is only accessible by the Gateway"
+# }

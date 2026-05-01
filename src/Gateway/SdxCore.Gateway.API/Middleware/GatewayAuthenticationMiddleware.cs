@@ -1,13 +1,11 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace SdxCore.Gateway.API.Middleware;
 
 /// <summary>
 /// Gateway middleware that validates JWT tokens before forwarding requests to downstream services.
-/// Supports selective authentication based on route configuration.
+/// Delegates all token validation, error handling, and claims extraction to the Identity service.
 /// </summary>
 public sealed class GatewayAuthenticationMiddleware
 {
@@ -49,56 +47,43 @@ public sealed class GatewayAuthenticationMiddleware
             return;
         }
 
-        // Extract bearer token from Authorization header
-        var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
-        
-        if (string.IsNullOrWhiteSpace(authorizationHeader))
-        {
-            _logger.LogWarning("No authorization header provided for protected route: {Path}", path);
-            await WriteUnauthorizedResponse(context, "MISSING_TOKEN", "Authorization header is required");
-            return;
-        }
-
-        // Check if it's a Bearer token
-        if (!authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-        {
-            _logger.LogWarning("Invalid authorization header format for route: {Path}", path);
-            await WriteUnauthorizedResponse(context, "INVALID_TOKEN_FORMAT", "Authorization header must use Bearer scheme");
-            return;
-        }
-
-        // Extract the token
-        var token = authorizationHeader.Substring("Bearer ".Length).Trim();
-
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            _logger.LogWarning("Empty bearer token provided for route: {Path}", path);
-            await WriteUnauthorizedResponse(context, "EMPTY_TOKEN", "Bearer token is empty");
-            return;
-        }
-
-        // Validate the token with the Identity service
+        // Validate the token with the Identity service (which handles ALL validation logic)
         try
         {
-            var isValid = await ValidateTokenWithIdentityService(token, context.RequestAborted);
+            var validationResult = await ValidateTokenWithIdentityService(context, context.RequestAborted);
 
-            if (!isValid)
+            if (validationResult == null)
             {
                 _logger.LogWarning("Token validation failed for route: {Path}", path);
                 await WriteUnauthorizedResponse(context, "INVALID_TOKEN", "Token is invalid, expired, or revoked");
                 return;
             }
 
-            // Extract user ID from token and add to headers
-            var userId = ExtractUserIdFromToken(token);
-            if (!string.IsNullOrEmpty(userId))
+            // Add user context to headers for downstream services
+            if (!string.IsNullOrEmpty(validationResult.UserId))
             {
-                context.Request.Headers["X-User-Id"] = userId;
-                _logger.LogDebug("Added X-User-Id header: {UserId} for route: {Path}", userId, path);
+                context.Request.Headers["X-User-Id"] = validationResult.UserId;
+                _logger.LogDebug("Added X-User-Id header: {UserId} for route: {Path}", validationResult.UserId, path);
             }
-            else
+
+            if (!string.IsNullOrEmpty(validationResult.Username))
             {
-                _logger.LogWarning("Could not extract user ID from token for route: {Path}", path);
+                context.Request.Headers["X-Username"] = validationResult.Username;
+            }
+
+            if (!string.IsNullOrEmpty(validationResult.Email))
+            {
+                context.Request.Headers["X-User-Email"] = validationResult.Email;
+            }
+
+            if (validationResult.Roles.Any())
+            {
+                context.Request.Headers["X-User-Roles"] = string.Join(",", validationResult.Roles);
+            }
+
+            if (!string.IsNullOrEmpty(validationResult.Provider))
+            {
+                context.Request.Headers["X-Auth-Provider"] = validationResult.Provider;
             }
 
             // Token is valid - continue to downstream service
@@ -160,45 +145,11 @@ public sealed class GatewayAuthenticationMiddleware
         return false;
     }
 
-    private string? ExtractUserIdFromToken(string token)
-    {
-        try
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            
-            // Check if the token is a valid JWT format
-            if (!tokenHandler.CanReadToken(token))
-            {
-                _logger.LogWarning("Token is not in valid JWT format");
-                return null;
-            }
-
-            // Read the token without validation (we already validated it with Identity service)
-            var jwtToken = tokenHandler.ReadJwtToken(token);
-            
-            // Try to extract user ID from common claim types
-            var userId = jwtToken.Claims.FirstOrDefault(c => 
-                c.Type == ClaimTypes.NameIdentifier || 
-                c.Type == "sub" || 
-                c.Type == "user_id" ||
-                c.Type == "userId")?.Value;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogDebug("No user ID claim found in token. Available claims: {Claims}", 
-                    string.Join(", ", jwtToken.Claims.Select(c => c.Type)));
-            }
-
-            return userId;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error extracting user ID from token");
-            return null;
-        }
-    }
-
-    private async Task<bool> ValidateTokenWithIdentityService(string token, CancellationToken cancellationToken)
+    /// <summary>
+    /// Validates token with Identity service and returns user information if valid.
+    /// Uses internal API key to authenticate Gateway calls to validate-token endpoint.
+    /// </summary>
+    private async Task<TokenValidationResponse?> ValidateTokenWithIdentityService(HttpContext context, CancellationToken cancellationToken)
     {
         using var httpClient = _httpClientFactory.CreateClient("IdentityService");
         
@@ -208,26 +159,60 @@ public sealed class GatewayAuthenticationMiddleware
             httpClient.BaseAddress = new Uri(_identityServiceUrl);
         }
 
-        // Add the token to the request
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        // Add internal API key for authentication with Identity service
+        var internalApiKey = _configuration["Authentication:InternalApiKey"];
+        if (string.IsNullOrEmpty(internalApiKey))
+        {
+            _logger.LogError("Internal API key not configured for Gateway authentication");
+            return null;
+        }
+        
+        httpClient.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
+
+        // Forward the Authorization header exactly as received (AuthController will handle all validation)
+        var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        if (!string.IsNullOrEmpty(authorizationHeader))
+        {
+            httpClient.DefaultRequestHeaders.Authorization = AuthenticationHeaderValue.Parse(authorizationHeader);
+        }
 
         try
         {
-            // Call the Identity service's token validation endpoint
-            var response = await httpClient.GetAsync("/api/auth/test-protected", cancellationToken);
+            // Call the Identity service's INTERNAL token validation endpoint
+            var response = await httpClient.PostAsync("/api/auth/validate-token", null, cancellationToken);
             
-            // Return true if the response is successful (200 OK)
-            return response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                // Log the error details for debugging but don't duplicate error handling
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogDebug("Token validation failed with status {StatusCode}: {ErrorContent}", 
+                    response.StatusCode, errorContent);
+                return null;
+            }
+
+            // Parse the successful response
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var validationResult = JsonSerializer.Deserialize<TokenValidationResponse>(responseContent, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            return validationResult;
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "HTTP error while validating token with Identity service");
-            return false;
+            return null;
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
             _logger.LogError(ex, "Timeout while validating token with Identity service");
-            return false;
+            return null;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Error parsing token validation response from Identity service");
+            return null;
         }
     }
 
@@ -250,6 +235,21 @@ public sealed class GatewayAuthenticationMiddleware
 
         await context.Response.WriteAsync(json);
     }
+}
+
+/// <summary>
+/// Token validation response model from Identity service.
+/// </summary>
+public sealed record TokenValidationResponse
+{
+    public bool IsValid { get; init; }
+    public string? UserId { get; init; }
+    public string? Username { get; init; }
+    public string? Email { get; init; }
+    public IReadOnlyList<string> Roles { get; init; } = [];
+    public string? Provider { get; init; }
+    public DateTimeOffset? ExpiresAt { get; init; }
+    public DateTimeOffset ValidatedAt { get; init; }
 }
 
 /// <summary>
