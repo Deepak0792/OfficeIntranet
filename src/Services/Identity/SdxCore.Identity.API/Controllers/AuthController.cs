@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Exceptions;
 using SdxCore.Identity.Domain.Interfaces;
+using SdxCore.Common.Models;
+using SdxCore.Common.Security;
+using SdxCore.Common.Http;
 
 namespace SdxCore.Identity.API.Controllers;
 
@@ -218,31 +221,9 @@ public sealed class AuthController : ControllerBase
     /// <returns>True if the request is from Gateway, false otherwise.</returns>
     private bool IsInternalGatewayCall()
     {
-        // Check for internal API key header
-        var internalApiKey = Request.Headers["X-Internal-API-Key"].FirstOrDefault();
-        var expectedApiKey = HttpContext.RequestServices
-            .GetRequiredService<IConfiguration>()["Authentication:InternalApiKey"];
-
-        if (string.IsNullOrEmpty(expectedApiKey))
-        {
-            _logger.LogError("Internal API key not configured in appsettings");
-            return false;
-        }
-
-        if (string.IsNullOrEmpty(internalApiKey))
-        {
-            _logger.LogWarning("Missing X-Internal-API-Key header for validate-token endpoint");
-            return false;
-        }
-
-        var isValidKey = string.Equals(internalApiKey, expectedApiKey, StringComparison.Ordinal);
-        
-        if (!isValidKey)
-        {
-            _logger.LogWarning("Invalid X-Internal-API-Key header for validate-token endpoint");
-        }
-
-        return isValidKey;
+        return InternalApiKeyValidator.IsInternalGatewayCall(Request, 
+            HttpContext.RequestServices.GetRequiredService<IConfiguration>(), 
+            _logger);
     }
 
     /// <summary>
@@ -276,69 +257,7 @@ public sealed class AuthController : ControllerBase
     /// <returns>Token claims information.</returns>
     private TokenClaims ExtractTokenClaims(string token)
     {
-        try
-        {
-            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
-            
-            if (!tokenHandler.CanReadToken(token))
-            {
-                _logger.LogWarning("Token is not in valid JWT format during claims extraction");
-                return new TokenClaims();
-            }
-
-            var jwtToken = tokenHandler.ReadJwtToken(token);
-            var claims = jwtToken.Claims.ToList();
-
-            // Extract common claims
-            var userId = claims.FirstOrDefault(c => 
-                c.Type == System.Security.Claims.ClaimTypes.NameIdentifier || 
-                c.Type == "sub" || 
-                c.Type == "user_id" ||
-                c.Type == "userId")?.Value;
-
-            var username = claims.FirstOrDefault(c => 
-                c.Type == System.Security.Claims.ClaimTypes.Name || 
-                c.Type == "username" ||
-                c.Type == "preferred_username")?.Value;
-
-            var email = claims.FirstOrDefault(c => 
-                c.Type == System.Security.Claims.ClaimTypes.Email || 
-                c.Type == "email")?.Value;
-
-            var roles = claims.Where(c => 
-                c.Type == System.Security.Claims.ClaimTypes.Role || 
-                c.Type == "role" ||
-                c.Type == "roles")
-                .Select(c => c.Value)
-                .ToList();
-
-            var provider = claims.FirstOrDefault(c => 
-                c.Type == "provider" || 
-                c.Type == "auth_provider" ||
-                c.Type == "identity_provider")?.Value;
-
-            // Extract expiration time
-            DateTimeOffset? expiresAt = null;
-            if (jwtToken.ValidTo != DateTime.MinValue)
-            {
-                expiresAt = new DateTimeOffset(jwtToken.ValidTo);
-            }
-
-            return new TokenClaims
-            {
-                UserId = userId,
-                Username = username,
-                Email = email,
-                Roles = roles,
-                Provider = provider,
-                ExpiresAt = expiresAt
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error extracting claims from token");
-            return new TokenClaims();
-        }
+        return JwtTokenUtilities.ExtractTokenClaims(token, _logger);
     }
 }
 
@@ -407,79 +326,4 @@ public sealed record LoginResponse
     /// Optional refresh token for token renewal.
     /// </summary>
     public string? RefreshToken { get; init; }
-}
-
-/// <summary>
-/// Token validation response model containing validation result and user information.
-/// </summary>
-public sealed record TokenValidationResponse
-{
-    /// <summary>
-    /// Indicates whether the token is valid.
-    /// </summary>
-    public required bool IsValid { get; init; }
-
-    /// <summary>
-    /// User identifier extracted from the token.
-    /// </summary>
-    public string? UserId { get; init; }
-
-    /// <summary>
-    /// Username extracted from the token.
-    /// </summary>
-    public string? Username { get; init; }
-
-    /// <summary>
-    /// Email address extracted from the token.
-    /// </summary>
-    public string? Email { get; init; }
-
-    /// <summary>
-    /// User roles extracted from the token.
-    /// </summary>
-    public IReadOnlyList<string> Roles { get; init; } = [];
-
-    /// <summary>
-    /// Authentication provider that issued the token (InHouse, SAML, OAuth, OIDC, JWT).
-    /// </summary>
-    public string? Provider { get; init; }
-
-    /// <summary>
-    /// Token expiration timestamp.
-    /// </summary>
-    public DateTimeOffset? ExpiresAt { get; init; }
-
-    /// <summary>
-    /// Timestamp when the validation was performed.
-    /// </summary>
-    public required DateTimeOffset ValidatedAt { get; init; }
-}
-
-/// <summary>
-/// Internal helper class for extracting token claims.
-/// </summary>
-internal sealed record TokenClaims
-{
-    public string? UserId { get; init; }
-    public string? Username { get; init; }
-    public string? Email { get; init; }
-    public IReadOnlyList<string> Roles { get; init; } = [];
-    public string? Provider { get; init; }
-    public DateTimeOffset? ExpiresAt { get; init; }
-}
-
-/// <summary>
-/// Error response model for failed requests.
-/// </summary>
-public sealed record ErrorResponse
-{
-    /// <summary>
-    /// Machine-readable error code.
-    /// </summary>
-    public required string ErrorCode { get; init; }
-
-    /// <summary>
-    /// Human-readable error message.
-    /// </summary>
-    public required string ErrorMessage { get; init; }
 }

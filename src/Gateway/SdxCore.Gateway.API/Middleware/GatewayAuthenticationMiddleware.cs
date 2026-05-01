@@ -1,5 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using SdxCore.Common.Models;
+using SdxCore.Common.Routing;
+using SdxCore.Common.Http;
 
 namespace SdxCore.Gateway.API.Middleware;
 
@@ -13,7 +16,7 @@ public sealed class GatewayAuthenticationMiddleware
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GatewayAuthenticationMiddleware> _logger;
-    private readonly HashSet<string> _publicRoutes;
+    private readonly PublicRouteValidator _publicRouteValidator;
     private readonly string _identityServiceUrl;
 
     public GatewayAuthenticationMiddleware(
@@ -27,8 +30,8 @@ public sealed class GatewayAuthenticationMiddleware
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        // Load public routes that don't require authentication
-        _publicRoutes = LoadPublicRoutes();
+        // Initialize public route validator
+        _publicRouteValidator = new PublicRouteValidator(_configuration);
         
         // Get Identity service URL for token validation
         _identityServiceUrl = _configuration["Authentication:IdentityServiceUrl"] 
@@ -40,7 +43,7 @@ public sealed class GatewayAuthenticationMiddleware
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
 
         // Check if this is a public route that doesn't require authentication
-        if (IsPublicRoute(path))
+        if (_publicRouteValidator.IsPublicRoute(path))
         {
             _logger.LogDebug("Allowing public route: {Path}", path);
             await _next(context);
@@ -55,7 +58,7 @@ public sealed class GatewayAuthenticationMiddleware
             if (validationResult == null)
             {
                 _logger.LogWarning("Token validation failed for route: {Path}", path);
-                await WriteUnauthorizedResponse(context, "INVALID_TOKEN", "Token is invalid, expired, or revoked");
+                await HttpResponseUtilities.WriteUnauthorizedResponseAsync(context, "INVALID_TOKEN", "Token is invalid, expired, or revoked");
                 return;
             }
 
@@ -93,56 +96,8 @@ public sealed class GatewayAuthenticationMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating token for route: {Path}", path);
-            await WriteUnauthorizedResponse(context, "TOKEN_VALIDATION_ERROR", "An error occurred while validating the token");
+            await HttpResponseUtilities.WriteUnauthorizedResponseAsync(context, "TOKEN_VALIDATION_ERROR", "An error occurred while validating the token");
         }
-    }
-
-    private HashSet<string> LoadPublicRoutes()
-    {
-        var publicRoutes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        
-        // Load from configuration
-        var configRoutes = _configuration.GetSection("Authentication:PublicRoutes").Get<string[]>();
-        if (configRoutes != null)
-        {
-            foreach (var route in configRoutes)
-            {
-                publicRoutes.Add(route.ToLowerInvariant());
-            }
-        }
-
-        // Always allow health checks and login endpoints
-        publicRoutes.Add("/health");
-        publicRoutes.Add("/api/auth/login");
-
-        _logger.LogInformation("Loaded {Count} public routes: {Routes}", 
-            publicRoutes.Count, string.Join(", ", publicRoutes));
-
-        return publicRoutes;
-    }
-
-    private bool IsPublicRoute(string path)
-    {
-        // Check exact matches first
-        if (_publicRoutes.Contains(path))
-        {
-            return true;
-        }
-
-        // Check wildcard patterns (routes ending with /*)
-        foreach (var publicRoute in _publicRoutes)
-        {
-            if (publicRoute.EndsWith("/*"))
-            {
-                var prefix = publicRoute.Substring(0, publicRoute.Length - 2);
-                if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     /// <summary>
@@ -215,41 +170,6 @@ public sealed class GatewayAuthenticationMiddleware
             return null;
         }
     }
-
-    private static async Task WriteUnauthorizedResponse(HttpContext context, string errorCode, string errorMessage)
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = "application/json";
-
-        var errorResponse = new
-        {
-            ErrorCode = errorCode,
-            ErrorMessage = errorMessage,
-            Timestamp = DateTimeOffset.UtcNow
-        };
-
-        var json = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
-
-        await context.Response.WriteAsync(json);
-    }
-}
-
-/// <summary>
-/// Token validation response model from Identity service.
-/// </summary>
-public sealed record TokenValidationResponse
-{
-    public bool IsValid { get; init; }
-    public string? UserId { get; init; }
-    public string? Username { get; init; }
-    public string? Email { get; init; }
-    public IReadOnlyList<string> Roles { get; init; } = [];
-    public string? Provider { get; init; }
-    public DateTimeOffset? ExpiresAt { get; init; }
-    public DateTimeOffset ValidatedAt { get; init; }
 }
 
 /// <summary>

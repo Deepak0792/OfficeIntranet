@@ -21,6 +21,7 @@
     <ProjectReference Include="..\SdxCore.Identity.Application\SdxCore.Identity.Application.csproj" />
     <ProjectReference Include="..\SdxCore.Identity.Domain\SdxCore.Identity.Domain.csproj" />
     <ProjectReference Include="..\SdxCore.Identity.Persistence\SdxCore.Identity.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
   </ItemGroup>
 
 </Project>

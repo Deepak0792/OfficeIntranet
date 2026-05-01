@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
+using SdxCore.Common.Models;
 using SdxCore.Identity.API.Controllers;
 using SdxCore.Identity.Domain.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
