@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Application.Extensions;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Interfaces.Security;
 using Xunit;
 
 namespace SdxCore.Identity.Tests.UnitTests;
@@ -130,7 +133,7 @@ public class ProviderExtensionsTests
     
     private class MockProviderRegistry : IProviderRegistry
     {
-        private readonly Dictionary<AuthProtocol, IAuthenticationProvider> _providers = new();
+        private readonly Dictionary<AuthProtocol, IAuthenticationProvider> _providers = [];
         
         public void Register(AuthProtocol protocol, IAuthenticationProvider provider)
         {

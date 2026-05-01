@@ -5,6 +5,7 @@ using SdxCore.Identity.Application.Providers;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Domain.Interfaces.Security;
 using Xunit;
 
 namespace SdxCore.Identity.Tests.UnitTests;
@@ -147,8 +148,8 @@ public class JwtProviderTests
 
         var claims = new List<Claim>
         {
-            new Claim("email", "user@example.com"),
-            new Claim("name", "Test User")
+            new ("email", "user@example.com"),
+            new ("name", "Test User")
         };
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
@@ -180,9 +181,9 @@ public class JwtProviderTests
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "user123"),
-            new Claim("email", "user@example.com"),
-            new Claim("name", "Test User")
+            new(ClaimTypes.NameIdentifier, "user123"),
+            new("email", "user@example.com"),
+            new("name", "Test User")
         };
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
@@ -217,8 +218,8 @@ public class JwtProviderTests
 
         var claims = new List<Claim>
         {
-            new Claim("sub", "user456"),
-            new Claim("email", "user@example.com")
+            new ("sub", "user456"),
+            new ("email", "user@example.com")
         };
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
@@ -277,7 +278,7 @@ public class JwtProviderTests
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "user123")
+            new (ClaimTypes.NameIdentifier, "user123")
         };
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));

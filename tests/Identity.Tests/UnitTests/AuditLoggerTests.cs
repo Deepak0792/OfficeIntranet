@@ -45,9 +45,9 @@ public class AuditLoggerTests : IDisposable
 
         // Assert
         _repositoryMock.Verify(
-            r => r.InsertAsync(It.Is<AuditEvent>(e => 
-                e.EventType == "LOGIN_SUCCESS" && 
-                e.Username == "testuser"), 
+            r => r.InsertAsync(It.Is<AuditEvent>(e =>
+                e.EventType == "LOGIN_SUCCESS" &&
+                e.Username == "testuser"),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -175,12 +175,12 @@ public class AuditLoggerTests : IDisposable
         stopwatch.Stop();
 
         // Assert - LogAsync should return immediately (< 100ms)
-        Assert.True(stopwatch.ElapsedMilliseconds < 100, 
+        Assert.True(stopwatch.ElapsedMilliseconds < 100,
             $"LogAsync took {stopwatch.ElapsedMilliseconds}ms, expected < 100ms for fire-and-forget");
     }
 
     [Fact]
-    public void Dispose_WaitsForPendingEvents_BeforeShutdown()
+    public async Task Dispose_WaitsForPendingEvents_BeforeShutdown()
     {
         // Arrange
         var auditEvent = new AuditEvent
@@ -193,7 +193,7 @@ public class AuditLoggerTests : IDisposable
         };
 
         // Act
-        _auditLogger.LogAsync(auditEvent).Wait();
+        await _auditLogger.LogAsync(auditEvent);
         _auditLogger.Dispose();
 
         // Assert - Repository should have been called before disposal
@@ -204,6 +204,7 @@ public class AuditLoggerTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         _auditLogger?.Dispose();
     }
 }

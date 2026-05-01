@@ -10,25 +10,18 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// Uses Entity Framework Core to manage AuditEvent entities in SQL Server.
 /// This is an append-only repository - audit events should never be modified or deleted.
 /// </summary>
-public class AuditRepository : IAuditRepository
+/// <remarks>
+/// Initializes a new instance of the <see cref="AuditRepository"/> class.
+/// </remarks>
+/// <param name="context">The database context.</param>
+public class AuditRepository(IdentityDbContext context) : IAuditRepository
 {
-    private readonly IdentityDbContext _context;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AuditRepository"/> class.
-    /// </summary>
-    /// <param name="context">The database context.</param>
-    public AuditRepository(IdentityDbContext context)
-    {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-    }
+    private readonly IdentityDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
     /// <inheritdoc />
     public async Task InsertAsync(AuditEvent auditEvent, CancellationToken ct = default)
     {
-        if (auditEvent is null)
-            throw new ArgumentNullException(nameof(auditEvent));
-
+        ArgumentNullException.ThrowIfNull(auditEvent);
         _context.AuditEvents.Add(auditEvent);
         await _context.SaveChangesAsync(ct);
     }
@@ -37,7 +30,7 @@ public class AuditRepository : IAuditRepository
     public async Task<IReadOnlyList<AuditEvent>> GetByUsernameAsync(string username, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(username))
-            return Array.Empty<AuditEvent>();
+            return [];
 
         return await _context.AuditEvents
             .Where(e => e.Username == username)

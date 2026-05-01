@@ -12,6 +12,7 @@ using Moq.Protected;
 using SdxCore.Identity.Application.Providers;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Domain.Interfaces.Security;
 using Xunit;
 
 namespace SdxCore.Identity.Tests.UnitTests;
@@ -151,12 +152,12 @@ public sealed class ExternalProvidersTests
         var provider = new SamlProvider(configuration, logger);
 
         // Create an expired SAML assertion (NotOnOrAfter in the past)
-        var expiredTime = DateTime.UtcNow.AddHours(-1).ToString("o");
-        var notBeforeTime = DateTime.UtcNow.AddHours(-2).ToString("o");
-        var expiredSamlAssertion = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+        string expiredTime = DateTime.UtcNow.AddHours(-1).ToString("o");
+        string notBeforeTime = DateTime.UtcNow.AddHours(-2).ToString("o");
+        string expiredSamlAssertion = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <saml2:Assertion xmlns:saml2=""urn:oasis:names:tc:SAML:2.0:assertion"" 
                  ID=""_test123"" 
-                 IssueInstant=""{DateTime.UtcNow.ToString("o")}"" 
+                 IssueInstant=""{DateTime.UtcNow:o}"" 
                  Version=""2.0"">
     <saml2:Issuer>https://idp.example.com</saml2:Issuer>
     <saml2:Subject>
@@ -211,7 +212,7 @@ public sealed class ExternalProvidersTests
         var wrongAudienceSamlAssertion = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <saml2:Assertion xmlns:saml2=""urn:oasis:names:tc:SAML:2.0:assertion"" 
                  ID=""_test456"" 
-                 IssueInstant=""{DateTime.UtcNow.ToString("o")}"" 
+                 IssueInstant=""{DateTime.UtcNow:o}"" 
                  Version=""2.0"">
     <saml2:Issuer>https://idp.example.com</saml2:Issuer>
     <saml2:Subject>
@@ -702,9 +703,9 @@ public sealed class ExternalProvidersTests
         // Arrange
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "user-123"),
-            new Claim("sub", "user-123"),
-            new Claim(ClaimTypes.Email, "user@example.com")
+            new (ClaimTypes.NameIdentifier, "user-123"),
+            new ("sub", "user-123"),
+            new (ClaimTypes.Email, "user@example.com")
         };
 
         var identity = new ClaimsIdentity(claims, "Bearer");
@@ -740,7 +741,7 @@ public sealed class ExternalProvidersTests
         // Arrange
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Email, "user@example.com")
+            new (ClaimTypes.Email, "user@example.com")
             // Missing subject claim
         };
 
