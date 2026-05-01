@@ -107,15 +107,25 @@ public sealed class AuthController : ControllerBase
 
     /// <summary>
     /// Test endpoint for validating token middleware functionality.
-    /// This endpoint is protected by TokenValidationMiddleware.
+    /// This endpoint is protected by TokenValidationMiddleware and shows user context.
     /// </summary>
-    /// <returns>Success message if token is valid.</returns>
+    /// <returns>Success message if token is valid, including user context from Gateway.</returns>
     [HttpGet("test-protected")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public IActionResult TestProtected()
     {
-        return Ok(new { Message = "Token is valid", Timestamp = DateTimeOffset.UtcNow });
+        // Check if X-User-Id header was added by the Gateway
+        var userIdFromGateway = Request.Headers["X-User-Id"].FirstOrDefault();
+        
+        return Ok(new { 
+            Message = "Token is valid", 
+            Timestamp = DateTimeOffset.UtcNow,
+            UserIdFromGateway = userIdFromGateway,
+            Note = userIdFromGateway != null 
+                ? "X-User-Id header was provided by Gateway" 
+                : "X-User-Id header not present (direct call to Identity service)"
+        });
     }
 }
 

@@ -1,6 +1,59 @@
-@SdxCore.Gateway.API_HostAddress = http://localhost:5084
+### Gateway API Test Requests
 
-GET {{SdxCore.Gateway.API_HostAddress}}/weatherforecast/
-Accept: application/json
+# Variables
+@gateway_url = https://localhost:5000
+@identity_url = https://localhost:5001
+
+### Health Check (Public)
+GET {{gateway_url}}/health
+
+### Login to get JWT token (Public)
+POST {{gateway_url}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin@example.com",
+  "password": "Admin123!"
+}
+
+### Test protected endpoint in Identity service (requires token)
+# Note: Gateway will add X-User-Id header when forwarding this request
+GET {{gateway_url}}/api/auth/test-protected
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Public catalog endpoint (no authentication required)
+# Note: No X-User-Id header will be added for public routes
+GET {{gateway_url}}/api/catalog/products
+
+### Protected catalog endpoint (requires token)
+# Note: Gateway will add X-User-Id header when forwarding this request
+GET {{gateway_url}}/api/catalog/admin/products
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Protected orders endpoint (requires token)
+# Note: Gateway will add X-User-Id header when forwarding this request
+# The orders service can use Request.Headers["X-User-Id"] to get the user ID
+GET {{gateway_url}}/api/orders
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Protected users endpoint (requires token)
+# Note: Gateway will add X-User-Id header when forwarding this request
+GET {{gateway_url}}/api/users/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Public API endpoint (no authentication required)
+# Note: No X-User-Id header will be added for public routes
+GET {{gateway_url}}/api/public/status
+
+### Test invalid token (should return 401)
+GET {{gateway_url}}/api/orders
+Authorization: Bearer invalid_token
+
+### Test missing token (should return 401)
+GET {{gateway_url}}/api/orders
+
+### Test malformed authorization header (should return 401)
+GET {{gateway_url}}/api/orders
+Authorization: InvalidScheme token_here
 
 ###
