@@ -31,14 +31,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{F7DC2D7A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.Identity.Tests", "tests\Identity.Tests\SdxCore.Identity.Tests.csproj", "{D5B9E8E0-8D9D-4B43-AB65-DE0596AC97B0}"
 EndProject
-
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.PasswordHasher.Tests", "tests\PasswordHasher.Tests\SdxCore.PasswordHasher.Tests.csproj", "{0918197F-8C2F-4F33-939E-139DA879C148}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{44601684-94ED-4393-A023-6AE7E917809F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -77,6 +75,13 @@ Global
 		{D5B9E8E0-8D9D-4B43-AB65-DE0596AC97B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5B9E8E0-8D9D-4B43-AB65-DE0596AC97B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5B9E8E0-8D9D-4B43-AB65-DE0596AC97B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0918197F-8C2F-4F33-939E-139DA879C148}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0918197F-8C2F-4F33-939E-139DA879C148}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0918197F-8C2F-4F33-939E-139DA879C148}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0918197F-8C2F-4F33-939E-139DA879C148}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{44601684-94ED-4393-A023-6AE7E917809F} = {1E2DAAC3-0EBF-4FBD-A362-C8C89DB6B861}
@@ -89,5 +94,6 @@ Global
 		{99F9EA94-D76A-4FEE-97A3-F08AF221CF7C} = {0A832D69-5E1E-4611-A5F3-9A8E4AA38B2F}
 		{7128A260-82EE-419C-B725-AECAC645AE94} = {0A832D69-5E1E-4611-A5F3-9A8E4AA38B2F}
 		{D5B9E8E0-8D9D-4B43-AB65-DE0596AC97B0} = {F7DC2D7A-5C29-4BB1-A490-821269025B26}
+		{0918197F-8C2F-4F33-939E-139DA879C148} = {F7DC2D7A-5C29-4BB1-A490-821269025B26}
 	EndGlobalSection
 EndGlobal
