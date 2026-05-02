@@ -164,3 +164,10 @@ Client → Gateway (port 5000) → Identity API (internal) → SQL Server (inter
 ```
 
 Only the Gateway is exposed to external clients. The Identity API and SQL Server are only accessible within the Docker network.
+
+## Database Migration
+# Navigate to the Identity API project directory
+cd src/Services/Identity/SdxCore.Identity.API
+
+# Update the database (this will apply all pending migrations)
+dotnet ef database update --connection "Server=localhost,1434;Database=SdxCoreIdentity;User Id=sa;Password=Office.1234!;TrustServerCertificate=True;MultipleActiveResultSets=true"
