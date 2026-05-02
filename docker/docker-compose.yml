@@ -9,7 +9,7 @@ services:
       - SA_PASSWORD=${SQL_SA_PASSWORD}
       - MSSQL_PID=Developer
     ports:
-      - "1433:1433"
+      - "1434:1433"
     volumes:
       - sql-server-data:/var/opt/mssql
     networks:
@@ -37,6 +37,7 @@ services:
       - Authentication__MaxFailedAttempts=${AUTH_MAX_FAILED_ATTEMPTS:-5}
       - Authentication__LockoutDuration=${AUTH_LOCKOUT_DURATION:-00:15:00}
       - Authentication__SigningKeyPath=${AUTH_SIGNING_KEY_PATH:-/app/dev-signing-key.pem}
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5001:80"
     depends_on:
@@ -60,6 +61,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=http://+:80
       - ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address=http://identity-api:80
+      - Authentication__IdentityServiceUrl=http://identity-api:80
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5000:80"
     depends_on:

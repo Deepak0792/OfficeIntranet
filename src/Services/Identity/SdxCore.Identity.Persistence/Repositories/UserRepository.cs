@@ -7,7 +7,7 @@ namespace SdxCore.Identity.Persistence.Repositories;
 
 /// <summary>
 /// Repository implementation for user account data access.
-/// Uses Entity Framework Core to manage UserRecord entities in SQL Server.
+/// Uses Entity Framework Core to manage User entities in SQL Server.
 /// </summary>
 public class UserRepository : IUserRepository
 {
@@ -23,22 +23,22 @@ public class UserRepository : IUserRepository
     }
 
     /// <inheritdoc />
-    public async Task<UserRecord?> FindByUsernameAsync(string username, CancellationToken ct = default)
+    public async Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(username))
             throw new ArgumentException("Username cannot be null or empty.", nameof(username));
 
-        return await _context.UserRecords
+        return await _context.Users
             .FirstOrDefaultAsync(u => u.Username == username, ct);
     }
 
     /// <inheritdoc />
-    public async Task<UserRecord> CreateAsync(UserRecord user, CancellationToken ct = default)
+    public async Task<User> CreateAsync(User user, CancellationToken ct = default)
     {
         if (user is null)
             throw new ArgumentNullException(nameof(user));
 
-        _context.UserRecords.Add(user);
+        _context.Users.Add(user);
         await _context.SaveChangesAsync(ct);
         return user;
     }
@@ -46,7 +46,7 @@ public class UserRepository : IUserRepository
     /// <inheritdoc />
     public async Task IncrementFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
         if (user is null)
             throw new InvalidOperationException($"User with ID {userId} not found.");
 
@@ -63,7 +63,7 @@ public class UserRepository : IUserRepository
     /// <param name="ct">Cancellation token.</param>
     public async Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default)
     {
-        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
         if (user is null)
             throw new InvalidOperationException($"User with ID {userId} not found.");
 
@@ -78,9 +78,9 @@ public class UserRepository : IUserRepository
     /// <param name="userId">User ID.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>User record if found; otherwise null.</returns>
-    public async Task<UserRecord?> FindByIdAsync(Guid userId, CancellationToken ct = default)
+    public async Task<User?> FindByIdAsync(Guid userId, CancellationToken ct = default)
     {
-        return await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        return await _context.Users.FindAsync(new object[] { userId }, ct);
     }
 
     /// <summary>
@@ -94,7 +94,7 @@ public class UserRepository : IUserRepository
         if (string.IsNullOrWhiteSpace(newPasswordHash))
             throw new ArgumentException("Password hash cannot be null or empty.", nameof(newPasswordHash));
 
-        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
         if (user is null)
             throw new InvalidOperationException($"User with ID {userId} not found.");
 
@@ -106,7 +106,7 @@ public class UserRepository : IUserRepository
     /// <inheritdoc />
     public async Task ResetFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
         if (user is null)
             throw new InvalidOperationException($"User with ID {userId} not found.");
 
@@ -119,7 +119,7 @@ public class UserRepository : IUserRepository
     /// <inheritdoc />
     public async Task UpdateLastLoginAsync(Guid userId, DateTimeOffset loginTime, CancellationToken ct = default)
     {
-        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
         if (user is null)
             throw new InvalidOperationException($"User with ID {userId} not found.");
 
@@ -131,7 +131,7 @@ public class UserRepository : IUserRepository
     /// <inheritdoc />
     public async Task DeactivateAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await _context.UserRecords.FindAsync(new object[] { userId }, ct);
+        var user = await _context.Users.FindAsync(new object[] { userId }, ct);
         if (user is null)
             throw new InvalidOperationException($"User with ID {userId} not found.");
 

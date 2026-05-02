@@ -123,7 +123,7 @@ For the InHouse protocol, you'll need to create test users. This can be done thr
 2. **Direct Database Insert** (for testing only)
    ```sql
    -- Note: Use proper password hashing in production
-   INSERT INTO UserRecords (Id, Username, PasswordHash, Email, IsActive, CreatedAt)
+   INSERT INTO Users (Id, Username, PasswordHash, Email, IsActive, CreatedAt)
    VALUES (NEWID(), 'testuser', '[Argon2id hash]', 'test@example.com', 1, GETUTCDATE())
    ```
 

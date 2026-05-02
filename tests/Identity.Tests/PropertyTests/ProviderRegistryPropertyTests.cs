@@ -15,6 +15,12 @@ namespace SdxCore.Identity.Tests.PropertyTests;
 /// </summary>
 public class ProviderRegistryPropertyTests
 {
+    private readonly Mock<IServiceProvider> _serviceProvider;
+    public ProviderRegistryPropertyTests()
+    {
+        _serviceProvider = new Mock<IServiceProvider>();
+    }
+
     /// <summary>
     /// Property 5: Configuration exception when protocol not configured
     /// **Validates: Requirements 1.2**
@@ -34,7 +40,7 @@ public class ProviderRegistryPropertyTests
             .Build();
 
         var mockLogger = new Mock<ILogger<ProviderRegistry>>();
-        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+        var registry = new ProviderRegistry(configuration, mockLogger.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -62,7 +68,7 @@ public class ProviderRegistryPropertyTests
             .Build();
 
         var mockLogger = new Mock<ILogger<ProviderRegistry>>();
-        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+        var registry = new ProviderRegistry(configuration, mockLogger.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -94,7 +100,7 @@ public class ProviderRegistryPropertyTests
             .Build();
 
         var mockLogger = new Mock<ILogger<ProviderRegistry>>();
-        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+        var registry = new ProviderRegistry(configuration, mockLogger.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -126,7 +132,7 @@ public class ProviderRegistryPropertyTests
             .Build();
 
         var mockLogger = new Mock<ILogger<ProviderRegistry>>();
-        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+        var registry = new ProviderRegistry(configuration, mockLogger.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -161,7 +167,7 @@ public class ProviderRegistryPropertyTests
             .Build();
 
         var mockLogger = new Mock<ILogger<ProviderRegistry>>();
-        var registry = new ProviderRegistry(configuration, mockLogger.Object);
+        var registry = new ProviderRegistry(configuration, mockLogger.Object, _serviceProvider.Object);
         // Note: No provider is registered
 
         // Act & Assert

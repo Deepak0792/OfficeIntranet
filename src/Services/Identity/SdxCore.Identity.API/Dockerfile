@@ -10,20 +10,22 @@ COPY src/Services/Identity/SdxCore.Identity.API/SdxCore.Identity.API.csproj src/
 COPY src/Services/Identity/SdxCore.Identity.Application/SdxCore.Identity.Application.csproj src/Services/Identity/SdxCore.Identity.Application/
 COPY src/Services/Identity/SdxCore.Identity.Domain/SdxCore.Identity.Domain.csproj src/Services/Identity/SdxCore.Identity.Domain/
 COPY src/Services/Identity/SdxCore.Identity.Persistence/SdxCore.Identity.Persistence.csproj src/Services/Identity/SdxCore.Identity.Persistence/
+COPY src/BuildingBlocks/SdxCore.Common/SdxCore.Common.csproj src/BuildingBlocks/SdxCore.Common/
 
 # Restore dependencies
 RUN dotnet restore src/Services/Identity/SdxCore.Identity.API/SdxCore.Identity.API.csproj
 
 # Copy source code
 COPY src/Services/Identity/ src/Services/Identity/
+COPY src/BuildingBlocks/SdxCore.Common/ src/BuildingBlocks/SdxCore.Common/
 
 # Build the application
-WORKDIR /src/src/Services/Identity/SdxCore.Identity.API
-RUN dotnet build -c Release -o /app/build
+WORKDIR /src
+RUN dotnet build src/Services/Identity/SdxCore.Identity.API/SdxCore.Identity.API.csproj -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish src/Services/Identity/SdxCore.Identity.API/SdxCore.Identity.API.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
@@ -44,7 +46,7 @@ USER appuser
 
 # Generate development signing key if not provided
 RUN if [ ! -f /app/dev-signing-key.pem ]; then \
-    openssl genpkey -algorithm RSA -out /app/dev-signing-key.pem -pkcs8 -pkeyopt rsa_keygen_bits:2048; \
+    openssl genpkey -algorithm RSA -out /app/dev-signing-key.pem -pkeyopt rsa_keygen_bits:2048; \
     fi
 
 # Health check

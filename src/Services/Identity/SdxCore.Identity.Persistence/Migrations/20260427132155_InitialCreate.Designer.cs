@@ -83,7 +83,7 @@ namespace SdxCore.Identity.Persistence.Migrations
                     b.ToTable("AuditEvents", (string)null);
                 });
 
-            modelBuilder.Entity("SdxCore.Identity.Domain.Entities.UserRecord", b =>
+            modelBuilder.Entity("SdxCore.Identity.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -126,16 +126,16 @@ namespace SdxCore.Identity.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .HasDatabaseName("IX_UserRecords_Email");
+                        .HasDatabaseName("IX_Users_Email");
 
                     b.HasIndex("IsActive")
-                        .HasDatabaseName("IX_UserRecords_IsActive");
+                        .HasDatabaseName("IX_Users_IsActive");
 
                     b.HasIndex("Username")
                         .IsUnique()
-                        .HasDatabaseName("IX_UserRecords_Username");
+                        .HasDatabaseName("IX_Users_Username");
 
-                    b.ToTable("UserRecords", (string)null);
+                    b.ToTable("Users", (string)null);
                 });
 #pragma warning restore 612, 618
         }

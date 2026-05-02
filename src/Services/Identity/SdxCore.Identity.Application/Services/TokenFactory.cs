@@ -69,8 +69,8 @@ public sealed class TokenFactory : ITokenFactory
         // Build complete claims list with standard JWT claims
         var allClaims = new List<Claim>(claims)
         {
-            new Claim(JwtRegisteredClaimNames.Jti, jti),
-            new Claim(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            new (JwtRegisteredClaimNames.Jti, jti),
+            new (JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor

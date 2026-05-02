@@ -1,4 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Application.Providers;
@@ -25,14 +28,8 @@ public static class ProviderExtensions
         // Register InHouseProvider as a scoped service
         services.AddScoped<IInHouseProvider, InHouseProvider>();
 
-        // Register the provider with the provider registry
-        services.AddScoped<IAuthenticationProvider>(sp =>
-        {
-            var inHouseProvider = sp.GetRequiredService<IInHouseProvider>();
-            var registry = sp.GetRequiredService<IProviderRegistry>();
-            registry.Register(AuthProtocol.InHouse, inHouseProvider);
-            return inHouseProvider;
-        });
+        // Register a transient factory for the provider
+        services.AddTransient<IAuthenticationProvider>(sp => sp.GetRequiredService<IInHouseProvider>());
 
         return services;
     }

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Exceptions;
@@ -17,12 +18,14 @@ public sealed class ProviderRegistry : IProviderRegistry
     private readonly ConcurrentDictionary<AuthProtocol, IAuthenticationProvider> _providers;
     private readonly IConfiguration _configuration;
     private readonly ILogger<ProviderRegistry> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ProviderRegistry(IConfiguration configuration, ILogger<ProviderRegistry> logger)
+    public ProviderRegistry(IConfiguration configuration, ILogger<ProviderRegistry> logger, IServiceProvider serviceProvider)
     {
         _providers = new ConcurrentDictionary<AuthProtocol, IAuthenticationProvider>();
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
     }
 
     /// <summary>
@@ -83,15 +86,35 @@ public sealed class ProviderRegistry : IProviderRegistry
             throw new ConfigurationException($"Invalid protocol name '{protocolName}' in configuration. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");
         }
 
-        // 4. Protocol specified and registered → return it
+        // 4. Protocol specified and registered as instance → return it
         if (_providers.TryGetValue(protocol, out IAuthenticationProvider? provider))
         {
             _logger.LogDebug("Resolved authentication provider for protocol: {Protocol}", protocol);
             return provider;
         }
 
-        // 5. Protocol specified but not registered → throw exception
-        _logger.LogError("Provider for protocol '{Protocol}' is not registered. Please register the provider using the appropriate extension method (e.g., AddInHouseProvider, AddSamlProvider).", protocol);
-        throw new ProviderNotFoundException($"Provider for protocol '{protocol}' is not registered. Please register the provider using the appropriate extension method.");
+        // 5. Try to resolve the provider directly from DI based on protocol
+        try
+        {
+            IAuthenticationProvider resolvedProvider = protocol switch
+            {
+                AuthProtocol.InHouse => _serviceProvider.GetRequiredService<IInHouseProvider>(),
+                AuthProtocol.Saml => _serviceProvider.GetRequiredService<IAuthenticationProvider>(),
+                AuthProtocol.OAuth => _serviceProvider.GetRequiredService<IAuthenticationProvider>(),
+                AuthProtocol.Oidc => _serviceProvider.GetRequiredService<IAuthenticationProvider>(),
+                AuthProtocol.Jwt => _serviceProvider.GetRequiredService<IAuthenticationProvider>(),
+                AuthProtocol.Ldap => _serviceProvider.GetRequiredService<IAuthenticationProvider>(),
+                // Other providers are not implemented yet
+                _ => throw new ProviderNotFoundException($"Provider for protocol '{protocol}' is not implemented yet.")
+            };
+
+            _logger.LogDebug("Resolved authentication provider from DI for protocol: {Protocol}", protocol);
+            return resolvedProvider;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Failed to resolve provider from DI for protocol: {Protocol}", protocol);
+            throw new ProviderNotFoundException($"Provider for protocol '{protocol}' is not registered. Please register the provider using the appropriate extension method (e.g., AddInHouseProvider, AddSamlProvider).");
+        }
     }
 }

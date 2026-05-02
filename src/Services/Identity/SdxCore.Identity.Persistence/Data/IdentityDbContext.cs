@@ -6,7 +6,7 @@ namespace SdxCore.Identity.Persistence.Data;
 
 /// <summary>
 /// Entity Framework Core database context for the Identity service.
-/// Manages UserRecord and AuditEvent entities with SQL Server.
+/// Manages User and AuditEvent entities with SQL Server.
 /// </summary>
 public class IdentityDbContext : DbContext
 {
@@ -20,9 +20,9 @@ public class IdentityDbContext : DbContext
     }
 
     /// <summary>
-    /// Gets or sets the DbSet for UserRecord entities.
+    /// Gets or sets the DbSet for User entities.
     /// </summary>
-    public DbSet<UserRecord> UserRecords => Set<UserRecord>();
+    public DbSet<User> Users => Set<User>();
 
     /// <summary>
     /// Gets or sets the DbSet for AuditEvent entities.
@@ -38,7 +38,7 @@ public class IdentityDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         // Apply entity configurations
-        modelBuilder.ApplyConfiguration(new UserRecordConfiguration());
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new AuditEventConfiguration());
     }
 }

@@ -105,9 +105,9 @@ public class ProviderExtensionsTests
     // Mock implementations for testing
     private class MockUserRepository : IUserRepository
     {
-        public Task<Domain.Entities.UserRecord?> FindByUsernameAsync(string username, CancellationToken ct = default) 
-            => Task.FromResult<Domain.Entities.UserRecord?>(null);
-        public Task<Domain.Entities.UserRecord> CreateAsync(Domain.Entities.UserRecord user, CancellationToken ct = default) 
+        public Task<Domain.Entities.User?> FindByUsernameAsync(string username, CancellationToken ct = default) 
+            => Task.FromResult<Domain.Entities.User?>(null);
+        public Task<Domain.Entities.User> CreateAsync(Domain.Entities.User user, CancellationToken ct = default) 
             => Task.FromResult(user);
         public Task IncrementFailedAttemptsAsync(Guid userId, CancellationToken ct = default) 
             => Task.CompletedTask;
@@ -119,8 +119,8 @@ public class ProviderExtensionsTests
             => Task.CompletedTask;
         public Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default) 
             => Task.CompletedTask;
-        public Task<Domain.Entities.UserRecord?> FindByIdAsync(Guid userId, CancellationToken ct = default) 
-            => Task.FromResult<Domain.Entities.UserRecord?>(null);
+        public Task<Domain.Entities.User?> FindByIdAsync(Guid userId, CancellationToken ct = default) 
+            => Task.FromResult<Domain.Entities.User?>(null);
         public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default) 
             => Task.CompletedTask;
     }

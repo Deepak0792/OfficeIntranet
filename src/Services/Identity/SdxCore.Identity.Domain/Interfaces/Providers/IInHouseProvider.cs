@@ -15,7 +15,7 @@ public interface IInHouseProvider : IAuthenticationProvider
     /// <param name="request">User creation request containing username, password, and email.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The created user record with assigned ID.</returns>
-    Task<UserRecord> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default);
+    Task<User> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Changes a user's password.

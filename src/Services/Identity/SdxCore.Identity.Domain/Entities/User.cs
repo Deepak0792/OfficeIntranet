@@ -4,7 +4,7 @@ namespace SdxCore.Identity.Domain.Entities;
 /// Domain entity representing a user account with credentials.
 /// Stores user authentication information including hashed passwords and account status.
 /// </summary>
-public sealed class UserRecord
+public sealed class User
 {
     /// <summary>
     /// Unique identifier for the user account.

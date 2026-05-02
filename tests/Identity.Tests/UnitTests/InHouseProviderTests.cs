@@ -69,7 +69,7 @@ public sealed class InHouseProviderTests
         var email = "test@example.com";
         var passwordHash = "hashed_password";
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -171,7 +171,7 @@ public sealed class InHouseProviderTests
 
         _mockUserRepository
             .Setup(r => r.FindByUsernameAsync("nonexistent", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserRecord?)null);
+            .ReturnsAsync((User?)null);
 
         // Act
         ProviderResult result = await _provider.AuthenticateAsync(request);
@@ -191,7 +191,7 @@ public sealed class InHouseProviderTests
         var wrongPassword = "WrongPassword";
         var passwordHash = "hashed_password";
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -242,7 +242,7 @@ public sealed class InHouseProviderTests
         var username = "testuser";
         var password = "password";
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -286,7 +286,7 @@ public sealed class InHouseProviderTests
         var password = "password";
         var lockedUntil = DateTimeOffset.UtcNow.AddMinutes(10); // Locked for 10 more minutes
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -331,7 +331,7 @@ public sealed class InHouseProviderTests
         var passwordHash = "hashed_password";
         var lockedUntil = DateTimeOffset.UtcNow.AddMinutes(-5); // Lock expired 5 minutes ago
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -384,7 +384,7 @@ public sealed class InHouseProviderTests
         var wrongPassword = "WrongPassword";
         var passwordHash = "hashed_password";
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -432,7 +432,7 @@ public sealed class InHouseProviderTests
         var wrongPassword = "WrongPassword";
         var passwordHash = "hashed_password";
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -488,7 +488,7 @@ public sealed class InHouseProviderTests
         var password = "password";
         var passwordHash = "hashed_password";
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,
@@ -548,7 +548,7 @@ public sealed class InHouseProviderTests
         customMaxAttemptsSection.Setup(s => s.Value).Returns("3");
         _mockConfiguration.Setup(c => c.GetSection("Authentication:MaxFailedAttempts")).Returns(customMaxAttemptsSection.Object);
 
-        var user = new UserRecord
+        var user = new User
         {
             Id = userId,
             Username = username,

@@ -49,9 +49,9 @@ public static class ServiceCollectionExtensions
         // Requirement 12.2: IAuthenticationService registered as scoped service
         services.AddScoped<IAuthenticationService, AuthenticationService>();
 
-        // Register IProviderRegistry as singleton (shared across all requests)
-        // Requirement 12.3: IProviderRegistry registered as singleton
-        services.AddSingleton<IProviderRegistry, ProviderRegistry>();
+        // Register IProviderRegistry as scoped (can resolve scoped services)
+        // Changed from singleton to scoped to allow resolving scoped providers
+        services.AddScoped<IProviderRegistry, ProviderRegistry>();
 
         // Register ITokenFactory as singleton (shared signing credentials)
         // Requirement 12.4: ITokenFactory registered as singleton

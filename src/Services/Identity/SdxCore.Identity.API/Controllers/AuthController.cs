@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Exceptions;
 using SdxCore.Identity.Domain.Interfaces.Services;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
 using SdxCore.Common.Http;
@@ -17,13 +18,16 @@ namespace SdxCore.Identity.API.Controllers;
 public sealed class AuthController : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService;
+    private readonly IProviderRegistry _providerRegistry;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IAuthenticationService authenticationService,
+        IProviderRegistry providerRegistry,
         ILogger<AuthController> logger)
     {
         _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
+        _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -259,5 +263,56 @@ public sealed class AuthController : ControllerBase
     private TokenClaims ExtractTokenClaims(string token)
     {
         return JwtTokenUtilities.ExtractTokenClaims(token, _logger);
+    }
+
+    /// <summary>
+    /// TEMPORARY: Creates a test user for development purposes.
+    /// This endpoint should be removed in production.
+    /// </summary>
+    /// <param name="request">User creation request.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Created user information.</returns>
+    [HttpPost("create-user")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CreateUser([FromBody] SdxCore.Identity.Domain.DTOs.CreateUserRequest request, CancellationToken ct)
+    {
+        try
+        {
+            // Get the InHouse provider from the registry
+            var provider = _providerRegistry.ResolveFromConfiguration() as IInHouseProvider;
+            
+            if (provider == null)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorCode = "INVALID_PROVIDER",
+                    ErrorMessage = "InHouse provider is not configured"
+                });
+            }
+            
+            // Create the user
+            var user = await provider.CreateUserAsync(request, ct);
+            
+            _logger.LogInformation("Created test user: {UserId}, Username: {Username}", user.Id, user.Username);
+            
+            return Created($"/api/auth/users/{user.Id}", new 
+            { 
+                Id = user.Id, 
+                Username = user.Username, 
+                Email = user.Email,
+                CreatedAt = user.CreatedAt
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "USER_CREATION_ERROR",
+                ErrorMessage = ex.Message
+            });
+        }
     }
 }

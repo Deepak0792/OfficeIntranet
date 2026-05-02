@@ -14,7 +14,7 @@ public interface IUserRepository
     /// <param name="username">Username to search for.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>User record if found; otherwise null.</returns>
-    Task<UserRecord?> FindByUsernameAsync(string username, CancellationToken ct = default);
+    Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default);
 
     /// <summary>
     /// Creates a new user record.
@@ -22,7 +22,7 @@ public interface IUserRepository
     /// <param name="user">User record to create.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The created user record with assigned ID.</returns>
-    Task<UserRecord> CreateAsync(UserRecord user, CancellationToken ct = default);
+    Task<User> CreateAsync(User user, CancellationToken ct = default);
 
     /// <summary>
     /// Increments the failed authentication attempts counter for a user.
@@ -67,7 +67,7 @@ public interface IUserRepository
     /// <param name="userId">User ID.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>User record if found; otherwise null.</returns>
-    Task<UserRecord?> FindByIdAsync(Guid userId, CancellationToken ct = default);
+    Task<User?> FindByIdAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>
     /// Updates a user's password hash.

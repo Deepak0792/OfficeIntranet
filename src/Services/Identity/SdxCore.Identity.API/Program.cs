@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.API.Middleware;
 using SdxCore.Identity.Application.Extensions;
 using SdxCore.Identity.Persistence.Extensions;
@@ -59,6 +60,13 @@ switch (protocol.ToLowerInvariant())
 }
 
 var app = builder.Build();
+
+// Apply database migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<SdxCore.Identity.Persistence.Data.IdentityDbContext>();
+    context.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

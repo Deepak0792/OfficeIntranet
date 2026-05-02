@@ -14,11 +14,13 @@ public class ProviderRegistryTests
 {
     private readonly Mock<ILogger<ProviderRegistry>> _loggerMock;
     private readonly Mock<IAuthenticationProvider> _mockProvider;
+    private readonly Mock<IServiceProvider> _serviceProvider;
 
     public ProviderRegistryTests()
     {
         _loggerMock = new Mock<ILogger<ProviderRegistry>>();
         _mockProvider = new Mock<IAuthenticationProvider>();
+        _serviceProvider = new Mock<IServiceProvider>();
     }
 
     private IConfiguration CreateConfiguration(string? protocolValue)
@@ -28,7 +30,7 @@ public class ProviderRegistryTests
         {
             configData["Authentication:Protocol"] = protocolValue;
         }
-        
+
         return new ConfigurationBuilder()
             .AddInMemoryCollection(configData!)
             .Build();
@@ -39,7 +41,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InHouse");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
         _mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
 
         // Act
@@ -56,7 +58,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InHouse");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => registry.Register(AuthProtocol.InHouse, null!));
@@ -67,7 +69,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InHouse");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
         _mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         registry.Register(AuthProtocol.InHouse, _mockProvider.Object);
 
@@ -84,7 +86,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InHouse");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ProviderNotFoundException>(() => registry.Resolve(AuthProtocol.Saml));
@@ -96,7 +98,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InHouse");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
         _mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         registry.Register(AuthProtocol.InHouse, _mockProvider.Object);
 
@@ -113,7 +115,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration(null);
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -125,7 +127,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -137,7 +139,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("   ");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -149,7 +151,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InvalidProtocol");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ConfigurationException>(() => registry.ResolveFromConfiguration());
@@ -161,7 +163,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("Saml");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
 
         // Act & Assert
         var exception = Assert.Throws<ProviderNotFoundException>(() => registry.ResolveFromConfiguration());
@@ -173,7 +175,7 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("inhouse"); // lowercase
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
         _mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         registry.Register(AuthProtocol.InHouse, _mockProvider.Object);
 
@@ -190,11 +192,11 @@ public class ProviderRegistryTests
     {
         // Arrange
         var config = CreateConfiguration("InHouse");
-        var registry = new ProviderRegistry(config, _loggerMock.Object);
-        
+        var registry = new ProviderRegistry(config, _loggerMock.Object, _serviceProvider.Object);
+
         var inHouseProvider = new Mock<IAuthenticationProvider>();
         inHouseProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
-        
+
         var samlProvider = new Mock<IAuthenticationProvider>();
         samlProvider.Setup(p => p.Protocol).Returns(AuthProtocol.Saml);
 
@@ -205,7 +207,7 @@ public class ProviderRegistryTests
         // Assert
         var resolvedInHouse = registry.Resolve(AuthProtocol.InHouse);
         var resolvedSaml = registry.Resolve(AuthProtocol.Saml);
-        
+
         Assert.Same(inHouseProvider.Object, resolvedInHouse);
         Assert.Same(samlProvider.Object, resolvedSaml);
     }
@@ -214,7 +216,7 @@ public class ProviderRegistryTests
     public void Constructor_WithNullConfiguration_ThrowsArgumentNullException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new ProviderRegistry(null!, _loggerMock.Object));
+        Assert.Throws<ArgumentNullException>(() => new ProviderRegistry(null!, _loggerMock.Object, _serviceProvider.Object));
     }
 
     [Fact]
@@ -224,6 +226,16 @@ public class ProviderRegistryTests
         var config = CreateConfiguration("InHouse");
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new ProviderRegistry(config, null!));
+        Assert.Throws<ArgumentNullException>(() => new ProviderRegistry(config, null!, _serviceProvider.Object));
+    }
+
+    [Fact]
+    public void Constructor_WithNullServiceProvider_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var config = CreateConfiguration("InHouse");
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new ProviderRegistry(config, _loggerMock.Object, null!));
     }
 }

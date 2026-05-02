@@ -31,7 +31,7 @@ namespace SdxCore.Identity.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserRecords",
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -46,7 +46,7 @@ namespace SdxCore.Identity.Persistence.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserRecords", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
@@ -75,18 +75,18 @@ namespace SdxCore.Identity.Persistence.Migrations
                 columns: new[] { "Username", "OccurredAt" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserRecords_Email",
-                table: "UserRecords",
+                name: "IX_Users_Email",
+                table: "Users",
                 column: "Email");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserRecords_IsActive",
-                table: "UserRecords",
+                name: "IX_Users_IsActive",
+                table: "Users",
                 column: "IsActive");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserRecords_Username",
-                table: "UserRecords",
+                name: "IX_Users_Username",
+                table: "Users",
                 column: "Username",
                 unique: true);
         }
@@ -98,7 +98,7 @@ namespace SdxCore.Identity.Persistence.Migrations
                 name: "AuditEvents");
 
             migrationBuilder.DropTable(
-                name: "UserRecords");
+                name: "Users");
         }
     }
 }

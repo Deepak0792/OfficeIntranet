@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using SdxCore.Common.Models;
 using SdxCore.Identity.API.Controllers;
+using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -21,13 +22,15 @@ public sealed class ValidateTokenEndpointTests
 {
     private readonly Mock<IAuthenticationService> _authenticationServiceMock;
     private readonly Mock<ILogger<AuthController>> _loggerMock;
+    private readonly Mock<IProviderRegistry> _providerRegistry;
     private readonly AuthController _controller;
 
     public ValidateTokenEndpointTests()
     {
         _authenticationServiceMock = new Mock<IAuthenticationService>();
         _loggerMock = new Mock<ILogger<AuthController>>();
-        _controller = new AuthController(_authenticationServiceMock.Object, _loggerMock.Object);
+        _providerRegistry = new Mock<IProviderRegistry>();
+        _controller = new AuthController(_authenticationServiceMock.Object, _providerRegistry.Object, _loggerMock.Object);
         
         // Setup HTTP context with headers
         _controller.ControllerContext = new ControllerContext

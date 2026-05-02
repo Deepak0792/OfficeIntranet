@@ -62,7 +62,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // 2. Load user from SQL Server
-        UserRecord? user = await _userRepository.FindByUsernameAsync(request.Username, ct);
+        User? user = await _userRepository.FindByUsernameAsync(request.Username, ct);
         if (user is null)
         {
             _logger.LogWarning("Authentication attempt for non-existent user");
@@ -126,7 +126,7 @@ public sealed class InHouseProvider : IInHouseProvider
     }
 
     /// <inheritdoc />
-    public async Task<UserRecord> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default)
+    public async Task<User> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default)
     {
         if (request is null)
             throw new ArgumentNullException(nameof(request));
@@ -141,7 +141,7 @@ public sealed class InHouseProvider : IInHouseProvider
             throw new ArgumentException("Email cannot be null or empty.", nameof(request));
 
         // Validate uniqueness
-        UserRecord? existingUser = await _userRepository.FindByUsernameAsync(request.Username, ct);
+        User? existingUser = await _userRepository.FindByUsernameAsync(request.Username, ct);
         if (existingUser is not null)
         {
             _logger.LogWarning("Attempt to create user with duplicate username: {Username}", request.Username);
@@ -151,8 +151,8 @@ public sealed class InHouseProvider : IInHouseProvider
         // Hash password
         string passwordHash = _passwordHasher.Hash(request.Password);
 
-        // Create UserRecord with defaults
-        var user = new UserRecord
+        // Create User with defaults
+        var user = new User
         {
             Id = Guid.NewGuid(),
             Username = request.Username,
@@ -165,7 +165,7 @@ public sealed class InHouseProvider : IInHouseProvider
             LastLoginAt = null
         };
 
-        UserRecord createdUser = await _userRepository.CreateAsync(user, ct);
+        User createdUser = await _userRepository.CreateAsync(user, ct);
         
         _logger.LogInformation("Created new user: {UserId}, Username: {Username}", createdUser.Id, createdUser.Username);
 
@@ -195,7 +195,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // Load user
-        UserRecord? user = await _userRepository.FindByIdAsync(userId, ct);
+        User? user = await _userRepository.FindByIdAsync(userId, ct);
         if (user is null)
         {
             _logger.LogWarning("User not found: {UserId}", userId);
@@ -266,13 +266,13 @@ public sealed class InHouseProvider : IInHouseProvider
     /// </summary>
     /// <param name="user">User record.</param>
     /// <returns>List of claims.</returns>
-    private static IReadOnlyList<Claim> BuildClaims(UserRecord user)
+    private static IReadOnlyList<Claim> BuildClaims(User user)
     {
         return new List<Claim>
         {
-            new Claim("sub", user.Id.ToString()),
-            new Claim("username", user.Username),
-            new Claim("email", user.Email)
+            new ("sub", user.Id.ToString()),
+            new ("username", user.Username),
+            new ("email", user.Email)
         };
     }
 }

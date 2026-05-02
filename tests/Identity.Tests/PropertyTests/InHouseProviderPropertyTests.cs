@@ -22,7 +22,7 @@ public class InHouseProviderPropertyTests
     /// <summary>
     /// Property 9: Password never stored in plaintext
     /// **Validates: Requirements 5.6**
-    /// For all CreateUserAsync calls, UserRecord.PasswordHash never equals the plaintext password
+    /// For all CreateUserAsync calls, User.PasswordHash never equals the plaintext password
     /// </summary>
     [Property(MaxTest = 100)]
     public async Task PasswordNeverStoredInPlaintext_ForAllPasswords_HashNeverEqualsPlaintext(
@@ -54,13 +54,13 @@ public class InHouseProviderPropertyTests
         // Mock FindByUsernameAsync to return null (username doesn't exist)
         userRepositoryMock
             .Setup(repo => repo.FindByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserRecord?)null);
+            .ReturnsAsync((User?)null);
 
-        // Capture the UserRecord that gets created
-        UserRecord? capturedUser = null;
+        // Capture the User that gets created
+        User? capturedUser = null;
         userRepositoryMock
-            .Setup(repo => repo.CreateAsync(It.IsAny<UserRecord>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((UserRecord user, CancellationToken ct) =>
+            .Setup(repo => repo.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User user, CancellationToken ct) =>
             {
                 capturedUser = user;
                 return user;
@@ -138,7 +138,7 @@ public class InHouseProviderPropertyTests
             .Build();
 
         // Create a user with correct password hash
-        var user = new UserRecord
+        var user = new User
         {
             Id = Guid.NewGuid(),
             Username = username.Get,
