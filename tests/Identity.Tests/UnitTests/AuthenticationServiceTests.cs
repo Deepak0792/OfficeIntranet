@@ -1,15 +1,17 @@
-using System.Security.Claims;
 using Microsoft.Extensions.Logging;
 using Moq;
+using SdxCore.Common.Contexts;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Exceptions;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Security;
 using SdxCore.Identity.Domain.Interfaces.Services;
-using Xunit;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Tests.UnitTests;
 
@@ -20,7 +22,10 @@ public class AuthenticationServiceTests
     private readonly Mock<IAuditLogger> _auditLoggerMock;
     private readonly Mock<ILogger<AuthenticationService>> _loggerMock;
     private readonly Mock<IAuthenticationProvider> _mockProvider;
-    private readonly AuthenticationService _authenticationService;
+    private readonly IAuthenticationService _authenticationService;
+    private readonly Mock<IRequestContext> _requestContextMock;
+    private readonly Mock<IRefreshTokenService> _refreshTokenServiceMock;
+    private readonly Mock<IAuditLoggerService> _auditLoggerServiceMock;
 
     public AuthenticationServiceTests()
     {
@@ -29,12 +34,17 @@ public class AuthenticationServiceTests
         _auditLoggerMock = new Mock<IAuditLogger>();
         _loggerMock = new Mock<ILogger<AuthenticationService>>();
         _mockProvider = new Mock<IAuthenticationProvider>();
+        _requestContextMock = new Mock<IRequestContext>();
+        _refreshTokenServiceMock = new Mock<IRefreshTokenService>();
+        _auditLoggerServiceMock = new Mock<IAuditLoggerService>();
 
         _authenticationService = new AuthenticationService(
-            _providerRegistryMock.Object,
-            _tokenFactoryMock.Object,
-            _auditLoggerMock.Object,
-            _loggerMock.Object);
+          _requestContextMock.Object,
+          _providerRegistryMock.Object,
+          _tokenFactoryMock.Object,
+          _auditLoggerServiceMock.Object,
+          _refreshTokenServiceMock.Object,
+          _loggerMock.Object);
     }
 
     [Fact]
@@ -53,7 +63,7 @@ public class AuthenticationServiceTests
             new Claim(ClaimTypes.Name, "testuser")
         };
 
-        var providerResult = new ProviderResult
+        var providerResult = new ProviderResponse
         {
             IsSuccess = true,
             Claims = claims
@@ -106,7 +116,7 @@ public class AuthenticationServiceTests
             Password = "wrongpassword"
         };
 
-        var providerResult = new ProviderResult
+        var providerResult = new ProviderResponse
         {
             IsSuccess = false,
             FailureReason = "Invalid credentials"
@@ -270,11 +280,11 @@ public class AuthenticationServiceTests
     {
         // Arrange
         var token = "valid-token";
-
+        var refreshToken = "valid-token";
         _tokenFactoryMock.Setup(t => t.RevokeToken(token));
 
         // Act
-        await _authenticationService.RevokeTokenAsync(token);
+        await _authenticationService.RevokeTokenAsync(token, refreshToken);
 
         // Assert
         _tokenFactoryMock.Verify(t => t.RevokeToken(token), Times.Once);
@@ -285,7 +295,7 @@ public class AuthenticationServiceTests
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _authenticationService.RevokeTokenAsync(null!));
+            _authenticationService.RevokeTokenAsync(null!, null!));
     }
 
     [Fact]
@@ -293,7 +303,20 @@ public class AuthenticationServiceTests
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _authenticationService.RevokeTokenAsync(""));
+            _authenticationService.RevokeTokenAsync("", ""));
+    }
+
+    [Fact]
+    public void Constructor_WithNullRequestContext_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new AuthenticationService(
+            null!,
+          _providerRegistryMock.Object,
+          _tokenFactoryMock.Object,
+          _auditLoggerServiceMock.Object,
+          _refreshTokenServiceMock.Object,
+          _loggerMock.Object));
     }
 
     [Fact]
@@ -301,10 +324,12 @@ public class AuthenticationServiceTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new AuthenticationService(
-            null!,
-            _tokenFactoryMock.Object,
-            _auditLoggerMock.Object,
-            _loggerMock.Object));
+            _requestContextMock.Object,
+          null!,
+          _tokenFactoryMock.Object,
+          _auditLoggerServiceMock.Object,
+          _refreshTokenServiceMock.Object,
+          _loggerMock.Object));
     }
 
     [Fact]
@@ -312,21 +337,38 @@ public class AuthenticationServiceTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new AuthenticationService(
-            _providerRegistryMock.Object,
-            null!,
-            _auditLoggerMock.Object,
-            _loggerMock.Object));
+            _requestContextMock.Object,
+          _providerRegistryMock.Object,
+          null!,
+          _auditLoggerServiceMock.Object,
+          _refreshTokenServiceMock.Object,
+          _loggerMock.Object));
     }
 
     [Fact]
-    public void Constructor_WithNullAuditLogger_ThrowsArgumentNullException()
+    public void Constructor_WithAuditLoggerService_ThrowsArgumentNullException()
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new AuthenticationService(
-            _providerRegistryMock.Object,
-            _tokenFactoryMock.Object,
-            null!,
-            _loggerMock.Object));
+            _requestContextMock.Object,
+          _providerRegistryMock.Object,
+          _tokenFactoryMock.Object,
+          null!,
+          _refreshTokenServiceMock.Object,
+          _loggerMock.Object));
+    }
+
+    [Fact]
+    public void Constructor_WithNullRefreshTokenService_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new AuthenticationService(
+            _requestContextMock.Object,
+          _providerRegistryMock.Object,
+          _tokenFactoryMock.Object,
+          _auditLoggerServiceMock.Object,
+          null!,
+          _loggerMock.Object));
     }
 
     [Fact]
@@ -334,10 +376,12 @@ public class AuthenticationServiceTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new AuthenticationService(
-            _providerRegistryMock.Object,
-            _tokenFactoryMock.Object,
-            _auditLoggerMock.Object,
-            null!));
+            _requestContextMock.Object,
+          _providerRegistryMock.Object,
+          _tokenFactoryMock.Object,
+         _auditLoggerServiceMock.Object,
+          _refreshTokenServiceMock.Object,
+          null!));
     }
 
     [Fact]

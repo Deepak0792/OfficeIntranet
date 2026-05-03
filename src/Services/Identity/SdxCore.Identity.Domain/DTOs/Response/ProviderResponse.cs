@@ -1,11 +1,11 @@
 using System.Security.Claims;
 
-namespace SdxCore.Identity.Domain.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Response;
 
 /// <summary>
 /// Represents the result returned by an authentication provider after processing credentials.
 /// </summary>
-public sealed record ProviderResult
+public sealed record ProviderResponse
 {
     /// <summary>
     /// Indicates whether the provider successfully authenticated the user.

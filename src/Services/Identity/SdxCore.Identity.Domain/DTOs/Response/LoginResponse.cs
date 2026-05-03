@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.API.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Response;
 
 /// <summary>
 /// Login response model containing the issued token.

@@ -1,14 +1,14 @@
-using System.Security.Claims;
-using System.ServiceModel.Channels;
 using Microsoft.Extensions.Logging;
 using SdxCore.Common.Contexts;
 using SdxCore.Identity.Domain.DTOs;
-using SdxCore.Identity.Domain.Entities;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Exceptions;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Security;
 using SdxCore.Identity.Domain.Interfaces.Services;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Application.Services;
 
@@ -47,7 +47,7 @@ public sealed class AuthenticationService : IAuthenticationService
     /// <param name="request">Authentication request containing credentials and protocol-specific parameters.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Authentication result containing success status, token, and claims.</returns>
-    public async Task<AuthenticationResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    public async Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
     {
         if (request is null)
         {
@@ -69,7 +69,7 @@ public sealed class AuthenticationService : IAuthenticationService
             ValidateRequest(request, protocol);
 
             // 3. Delegate authentication to provider
-            ProviderResult providerResult = await provider.AuthenticateAsync(request, ct);
+            ProviderResponse providerResult = await provider.AuthenticateAsync(request, ct);
 
             // 4. Handle authentication failure
             if (!providerResult.IsSuccess)
@@ -89,7 +89,7 @@ public sealed class AuthenticationService : IAuthenticationService
                     FailureReason = providerResult.FailureReason,
                 }, ct);
 
-                return new AuthenticationResult
+                return new AuthenticationResponse
                 {
                     IsSuccess = false,
                     ErrorCode = "AUTH_FAILED",
@@ -117,12 +117,9 @@ public sealed class AuthenticationService : IAuthenticationService
 
             // 5.1 Generate refresh token
             // Store new refresh token
-            var refreshTokenResult = 
+            var refreshTokenResult =
                 await _refreshTokenService.CreateAsync(
-                    Guid.Parse(userId), 
-                    _requestContext.IpAddress, 
-                    _requestContext.UserAgent, 
-                    _requestContext.Device, 
+                    Guid.Parse(userId),
                     ct);
 
             token.RefreshToken = refreshTokenResult.RawToken;
@@ -138,7 +135,7 @@ public sealed class AuthenticationService : IAuthenticationService
             }, ct);
 
             // 7. Return successful result
-            return new AuthenticationResult
+            return new AuthenticationResponse
             {
                 IsSuccess = true,
                 Token = token,
@@ -158,7 +155,7 @@ public sealed class AuthenticationService : IAuthenticationService
                 FailureReason = "Configuration error"
             }, ct);
 
-            return new AuthenticationResult
+            return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "CONFIGURATION_ERROR",
@@ -178,7 +175,7 @@ public sealed class AuthenticationService : IAuthenticationService
                 FailureReason = "Provider not found"
             }, ct);
 
-            return new AuthenticationResult
+            return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "PROVIDER_NOT_FOUND",
@@ -199,7 +196,7 @@ public sealed class AuthenticationService : IAuthenticationService
             }, ct);
 
 
-            return new AuthenticationResult
+            return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "INTERNAL_ERROR",
@@ -251,7 +248,7 @@ public sealed class AuthenticationService : IAuthenticationService
     /// </summary>
     /// <param name="token">JWT token to revoke.</param>
     /// <param name="ct">Cancellation token.</param>
-    public Task RevokeTokenAsync(string token, CancellationToken ct = default)
+    public async Task RevokeTokenAsync(string token, string refreshToken, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -261,8 +258,12 @@ public sealed class AuthenticationService : IAuthenticationService
         try
         {
             _tokenFactory.RevokeToken(token);
+
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                await _refreshTokenService.RevokeRefreshTokenAsync(token);
+            }
             _logger.LogInformation("Token revoked successfully");
-            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -315,7 +316,7 @@ public sealed class AuthenticationService : IAuthenticationService
             default:
                 throw new ArgumentException($"Unsupported authentication protocol: {protocol}", nameof(protocol));
         }
-    }  
+    }
 
     /// <summary>
     /// Extracts the subject (user ID) from claims.

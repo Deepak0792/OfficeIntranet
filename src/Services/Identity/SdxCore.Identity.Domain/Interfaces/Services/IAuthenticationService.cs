@@ -1,4 +1,5 @@
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 
 namespace SdxCore.Identity.Domain.Interfaces.Services;
 
@@ -15,7 +16,7 @@ public interface IAuthenticationService
     /// <param name="request">Authentication request containing credentials and protocol-specific parameters.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Authentication result containing success status, token, and claims.</returns>
-    Task<AuthenticationResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default);
+    Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Validates a JWT token.
@@ -29,6 +30,7 @@ public interface IAuthenticationService
     /// Revokes a JWT token before its expiration.
     /// </summary>
     /// <param name="token">JWT token to revoke.</param>
+    /// <param name="refreshToken">Refresh Token to revoke.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task RevokeTokenAsync(string token, CancellationToken ct = default);
+    Task RevokeTokenAsync(string token, string refreshToken, CancellationToken ct = default);
 }

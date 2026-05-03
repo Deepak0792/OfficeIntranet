@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 
@@ -68,7 +69,7 @@ public sealed class OidcProvider : IAuthenticationProvider
     public AuthProtocol Protocol => AuthProtocol.Oidc;
 
     /// <inheritdoc />
-    public async Task<ProviderResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    public async Task<ProviderResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
     {
         // 1. Validate input (Requirement 7.5)
         if (string.IsNullOrWhiteSpace(request.IdToken))
@@ -181,7 +182,7 @@ public sealed class OidcProvider : IAuthenticationProvider
 
             _logger.LogInformation("Successfully validated OIDC ID token for subject: {Subject}", subjectClaim.Value);
 
-            return new ProviderResult { IsSuccess = true, Claims = claims };
+            return new ProviderResponse { IsSuccess = true, Claims = claims };
         }
         catch (Exception ex)
         {
@@ -196,9 +197,9 @@ public sealed class OidcProvider : IAuthenticationProvider
     /// </summary>
     /// <param name="reason">Failure reason.</param>
     /// <returns>Provider result indicating failure.</returns>
-    private static ProviderResult Fail(string reason)
+    private static ProviderResponse Fail(string reason)
     {
-        return new ProviderResult
+        return new ProviderResponse
         {
             IsSuccess = false,
             FailureReason = reason

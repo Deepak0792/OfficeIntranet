@@ -1,5 +1,6 @@
 ﻿using SdxCore.Common.Contexts;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Exceptions;
@@ -35,7 +36,7 @@ public class RefreshTokenService : IRefreshTokenService
         _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory)); ;
     }
 
-    public async Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenRequest refreshTokenRequest, CancellationToken ct = default)
+    public async Task<AuthenticationResponse> RefreshTokenAsync(RefreshTokenRequest refreshTokenRequest, CancellationToken ct = default)
     {
         if (refreshTokenRequest is null)
         {
@@ -44,7 +45,7 @@ public class RefreshTokenService : IRefreshTokenService
 
         if (string.IsNullOrWhiteSpace(refreshTokenRequest.RefreshToken))
         {
-            return new AuthenticationResult
+            return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "INVALID_REFRESH_TOKEN",
@@ -56,7 +57,7 @@ public class RefreshTokenService : IRefreshTokenService
 
         if (existingToken is null)
         {
-            return new AuthenticationResult
+            return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "INVALID_REFRESH_TOKEN",
@@ -85,9 +86,6 @@ public class RefreshTokenService : IRefreshTokenService
         var refreshTokenResult =
             await CreateAsync(
                 existingToken.UserId,
-                _requestContext.IpAddress,
-                _requestContext.UserAgent,
-                _requestContext.Device,
                 ct);
 
         if (refreshTokenResult.RawToken is null)
@@ -111,7 +109,7 @@ public class RefreshTokenService : IRefreshTokenService
             UserId = existingToken.UserId.ToString()
         }, ct);
 
-        return new AuthenticationResult
+        return new AuthenticationResponse
         {
             IsSuccess = true,
             Token = newAccessToken,
@@ -142,11 +140,8 @@ public class RefreshTokenService : IRefreshTokenService
     /// <param name="rawRefreshToken"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public async Task<RefreshTokenResult> CreateAsync(
+    public async Task<RefreshTokenResponse> CreateAsync(
         Guid userId,
-        string? ipAddress,
-        string? userAgent,
-        string? device,
         CancellationToken ct = default)
     {
         string rawRefreshToken = GenerateRefreshToken();
@@ -158,14 +153,14 @@ public class RefreshTokenService : IRefreshTokenService
             HashToken = _passwordHasher.HashToken(rawRefreshToken),
             CreatedAt = DateTimeOffset.UtcNow,
             ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
-            CreatedByIp = ipAddress,
-            UserAgent = userAgent,
-            Device = device
+            CreatedByIp = _requestContext.IpAddress,
+            UserAgent = _requestContext.UserAgent,
+            Device = _requestContext.Device
         };
 
         await _refreshTokenRepository.AddAsync(entity, ct);
        
-        var result = new RefreshTokenResult
+        var result = new RefreshTokenResponse
         {
             Id = entity.Id,
             UserId = entity.UserId,
@@ -231,7 +226,7 @@ public class RefreshTokenService : IRefreshTokenService
     /// <param name="ipAddress"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    private async Task RevokeAsync(string refreshToken, string ipAddress, CancellationToken ct = default)
+    public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
         var hash = _passwordHasher.HashToken(refreshToken);
 
@@ -241,7 +236,7 @@ public class RefreshTokenService : IRefreshTokenService
             return;
 
         token.RevokedAt = DateTimeOffset.UtcNow;
-        token.RevokedByIp = ipAddress;
+        token.RevokedByIp = _requestContext.IpAddress;
 
         await _refreshTokenRepository.UpdateAsync(token, ct);
     }

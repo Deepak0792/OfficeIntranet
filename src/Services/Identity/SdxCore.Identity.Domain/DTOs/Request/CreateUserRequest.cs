@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.Domain.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Request;
 
 /// <summary>
 /// Represents a request to create a new user in the InHouse provider.

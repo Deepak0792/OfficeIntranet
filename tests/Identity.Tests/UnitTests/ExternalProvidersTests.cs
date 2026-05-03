@@ -1,19 +1,15 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Moq.Protected;
 using SdxCore.Identity.Application.Providers;
-using SdxCore.Identity.Domain.DTOs;
-using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Interfaces.Security;
-using Xunit;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Security.Claims;
+using System.Text;
 
 namespace SdxCore.Identity.Tests.UnitTests;
 

@@ -1,9 +1,10 @@
-using FsCheck;
-using FsCheck.Xunit;
 using Microsoft.Extensions.Logging;
 using Moq;
+using SdxCore.Common.Contexts;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
@@ -28,15 +29,18 @@ public class AuthenticationServicePropertyTests
     public async Task AuditEvent_AlwaysWritten_OnSuccessfulAuthentication()
     {
         // Arrange
-        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRequestContext = new Mock<IRequestContext>();
         var mockTokenFactory = new Mock<ITokenFactory>();
+        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRefreshTokenService = new Mock<IRefreshTokenService>();
         var mockAuditLogger = new Mock<IAuditLogger>();
+        var mockAuditLoggerService = new Mock<IAuditLoggerService>();
         var mockLogger = new Mock<ILogger<AuthenticationService>>();
 
-        var mockProvider = new Mock<IAuthenticationProvider>();
+    var mockProvider = new Mock<IAuthenticationProvider>();
         mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         mockProvider.Setup(p => p.AuthenticateAsync(It.IsAny<AuthenticationRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ProviderResult
+            .ReturnsAsync(new ProviderResponse
             {
                 IsSuccess = true,
                 Claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user123") }
@@ -53,9 +57,11 @@ public class AuthenticationServicePropertyTests
             });
 
         var service = new AuthenticationService(
+            mockRequestContext.Object,
             mockProviderRegistry.Object,
             mockTokenFactory.Object,
-            mockAuditLogger.Object,
+            mockAuditLoggerService.Object,
+            mockRefreshTokenService.Object,
             mockLogger.Object);
 
         var request = new AuthenticationRequest
@@ -83,15 +89,18 @@ public class AuthenticationServicePropertyTests
     public async Task AuditEvent_AlwaysWritten_OnFailedAuthentication()
     {
         // Arrange
-        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRequestContext = new Mock<IRequestContext>();
         var mockTokenFactory = new Mock<ITokenFactory>();
+        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRefreshTokenService = new Mock<IRefreshTokenService>();
         var mockAuditLogger = new Mock<IAuditLogger>();
+        var mockAuditLoggerService = new Mock<IAuditLoggerService>();
         var mockLogger = new Mock<ILogger<AuthenticationService>>();
 
         var mockProvider = new Mock<IAuthenticationProvider>();
         mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         mockProvider.Setup(p => p.AuthenticateAsync(It.IsAny<AuthenticationRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ProviderResult
+            .ReturnsAsync(new ProviderResponse
             {
                 IsSuccess = false,
                 FailureReason = "Invalid credentials"
@@ -100,9 +109,11 @@ public class AuthenticationServicePropertyTests
         mockProviderRegistry.Setup(r => r.ResolveFromConfiguration()).Returns(mockProvider.Object);
 
         var service = new AuthenticationService(
+            mockRequestContext.Object,
             mockProviderRegistry.Object,
             mockTokenFactory.Object,
-            mockAuditLogger.Object,
+            mockAuditLoggerService.Object,
+            mockRefreshTokenService.Object,
             mockLogger.Object);
 
         var request = new AuthenticationRequest
@@ -131,9 +142,12 @@ public class AuthenticationServicePropertyTests
     public async Task AuditEvent_AlwaysWritten_OnProviderException()
     {
         // Arrange
-        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRequestContext = new Mock<IRequestContext>();
         var mockTokenFactory = new Mock<ITokenFactory>();
+        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRefreshTokenService = new Mock<IRefreshTokenService>();
         var mockAuditLogger = new Mock<IAuditLogger>();
+        var mockAuditLoggerService = new Mock<IAuditLoggerService>();
         var mockLogger = new Mock<ILogger<AuthenticationService>>();
 
         var mockProvider = new Mock<IAuthenticationProvider>();
@@ -144,9 +158,11 @@ public class AuthenticationServicePropertyTests
         mockProviderRegistry.Setup(r => r.ResolveFromConfiguration()).Returns(mockProvider.Object);
 
         var service = new AuthenticationService(
+            mockRequestContext.Object,
             mockProviderRegistry.Object,
             mockTokenFactory.Object,
-            mockAuditLogger.Object,
+            mockAuditLoggerService.Object,
+            mockRefreshTokenService.Object,
             mockLogger.Object);
 
         var request = new AuthenticationRequest
@@ -177,15 +193,18 @@ public class AuthenticationServicePropertyTests
     public async Task AuditEvent_WritesLoginSuccess_OnSuccessfulAuthentication()
     {
         // Arrange
-        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRequestContext = new Mock<IRequestContext>();
         var mockTokenFactory = new Mock<ITokenFactory>();
+        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRefreshTokenService = new Mock<IRefreshTokenService>();
         var mockAuditLogger = new Mock<IAuditLogger>();
+        var mockAuditLoggerService = new Mock<IAuditLoggerService>();
         var mockLogger = new Mock<ILogger<AuthenticationService>>();
 
         var mockProvider = new Mock<IAuthenticationProvider>();
         mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         mockProvider.Setup(p => p.AuthenticateAsync(It.IsAny<AuthenticationRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ProviderResult
+            .ReturnsAsync(new ProviderResponse
             {
                 IsSuccess = true,
                 Claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user123") }
@@ -202,9 +221,11 @@ public class AuthenticationServicePropertyTests
             });
 
         var service = new AuthenticationService(
+            mockRequestContext.Object,
             mockProviderRegistry.Object,
             mockTokenFactory.Object,
-            mockAuditLogger.Object,
+            mockAuditLoggerService.Object,
+            mockRefreshTokenService.Object,
             mockLogger.Object);
 
         var request = new AuthenticationRequest
@@ -234,15 +255,18 @@ public class AuthenticationServicePropertyTests
     public async Task AuditEvent_WritesLoginFailure_OnFailedAuthentication()
     {
         // Arrange
-        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRequestContext = new Mock<IRequestContext>();
         var mockTokenFactory = new Mock<ITokenFactory>();
+        var mockProviderRegistry = new Mock<IProviderRegistry>();
+        var mockRefreshTokenService = new Mock<IRefreshTokenService>();
         var mockAuditLogger = new Mock<IAuditLogger>();
+        var mockAuditLoggerService = new Mock<IAuditLoggerService>();
         var mockLogger = new Mock<ILogger<AuthenticationService>>();
 
         var mockProvider = new Mock<IAuthenticationProvider>();
         mockProvider.Setup(p => p.Protocol).Returns(AuthProtocol.InHouse);
         mockProvider.Setup(p => p.AuthenticateAsync(It.IsAny<AuthenticationRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ProviderResult
+            .ReturnsAsync(new ProviderResponse
             {
                 IsSuccess = false,
                 FailureReason = "Invalid credentials"
@@ -251,9 +275,11 @@ public class AuthenticationServicePropertyTests
         mockProviderRegistry.Setup(r => r.ResolveFromConfiguration()).Returns(mockProvider.Object);
 
         var service = new AuthenticationService(
+            mockRequestContext.Object,
             mockProviderRegistry.Object,
             mockTokenFactory.Object,
-            mockAuditLogger.Object,
+            mockAuditLoggerService.Object,
+            mockRefreshTokenService.Object,
             mockLogger.Object);
 
         var request = new AuthenticationRequest

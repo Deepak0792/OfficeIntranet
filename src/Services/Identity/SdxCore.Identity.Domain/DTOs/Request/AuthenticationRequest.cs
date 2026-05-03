@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.Domain.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Request;
 
 /// <summary>
 /// Represents an authentication request containing credentials and protocol-specific parameters.

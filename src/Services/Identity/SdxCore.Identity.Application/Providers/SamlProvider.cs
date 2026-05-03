@@ -3,12 +3,13 @@ using ITfoxtec.Identity.Saml2;
 using ITfoxtec.Identity.Saml2.Schemas;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using System.Xml;
 using Microsoft.IdentityModel.Tokens.Saml2;
 using Microsoft.IdentityModel.Tokens;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 
 namespace SdxCore.Identity.Application.Providers;
 
@@ -69,7 +70,7 @@ public sealed class SamlProvider : IAuthenticationProvider
     public AuthProtocol Protocol => AuthProtocol.Saml;
 
     /// <inheritdoc />
-    public async Task<ProviderResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    public async Task<ProviderResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
     {
         // 1. Validate input
         if (string.IsNullOrWhiteSpace(request.SamlAssertion))
@@ -140,7 +141,7 @@ public sealed class SamlProvider : IAuthenticationProvider
 
             _logger.LogInformation("Successful SAML authentication for subject: {Subject}", subjectClaim.Value);
 
-            return new ProviderResult { IsSuccess = true, Claims = claims };
+            return new ProviderResponse { IsSuccess = true, Claims = claims };
         }
         catch (Exception ex)
         {
@@ -277,9 +278,9 @@ public sealed class SamlProvider : IAuthenticationProvider
     /// </summary>
     /// <param name="reason">Failure reason.</param>
     /// <returns>Provider result indicating failure.</returns>
-    private static ProviderResult Fail(string reason)
+    private static ProviderResponse Fail(string reason)
     {
-        return new ProviderResult
+        return new ProviderResponse
         {
             IsSuccess = false,
             FailureReason = reason

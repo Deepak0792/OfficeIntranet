@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using SdxCore.Identity.Domain.DTOs;
-using SdxCore.Identity.Domain.Exceptions;
-using SdxCore.Identity.Domain.Interfaces.Services;
-using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Common.Http;
-using SdxCore.Identity.API.DTOs;
-using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
+using SdxCore.Identity.Domain.Exceptions;
+using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Domain.Interfaces.Services;
 
 namespace SdxCore.Identity.API.Controllers;
 
@@ -192,6 +190,62 @@ public sealed class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Revokes an access token and its associated refresh token before expiration.
+    /// </summary>
+    /// <param name="request">Token revocation request containing access and refresh tokens.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Success or error response.</returns>
+    [HttpPost("revoke-token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenRequest request, CancellationToken ct)
+    {
+        if (request == null ||
+            string.IsNullOrWhiteSpace(request.Token) ||
+            string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "INVALID_REQUEST",
+                ErrorMessage = "Token and refresh token are required"
+            });
+        }
+
+        try
+        {
+            await _authenticationService.RevokeTokenAsync(request.Token, request.RefreshToken, ct);
+
+            _logger.LogInformation("Token and refresh token revoked successfully");
+
+            return Ok(new
+            {
+                Message = "Token revoked successfully"
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid token provided for revocation");
+
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "INVALID_TOKEN",
+                ErrorMessage = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during token revocation");
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "INTERNAL_ERROR",
+                ErrorMessage = "An unexpected error occurred"
+            });
+        }
+    }
+
+    /// <summary>
     /// Validates a JWT token for all supported authentication providers.
     /// This endpoint is ONLY accessible by the Gateway middleware via internal API key.
     /// NOT exposed publicly - only login endpoint is public.
@@ -354,7 +408,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateUser([FromBody] SdxCore.Identity.Domain.DTOs.CreateUserRequest request, CancellationToken ct)
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request, CancellationToken ct)
     {
         try
         {

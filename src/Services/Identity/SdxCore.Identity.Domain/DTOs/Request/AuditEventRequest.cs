@@ -1,6 +1,6 @@
 ﻿using SdxCore.Identity.Domain.Enums;
 
-namespace SdxCore.Identity.Domain.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Request;
 
 public sealed class AuditEventRequest
 {

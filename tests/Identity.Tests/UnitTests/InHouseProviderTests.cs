@@ -1,15 +1,13 @@
-using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Identity.Application.Providers;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Domain.Interfaces.Security;
-using Xunit;
 
 namespace Identity.Tests.UnitTests;
 
@@ -105,7 +103,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -132,7 +130,7 @@ public sealed class InHouseProviderTests
         };
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -151,7 +149,7 @@ public sealed class InHouseProviderTests
         };
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -174,7 +172,7 @@ public sealed class InHouseProviderTests
             .ReturnsAsync((User?)null);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -223,7 +221,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -266,7 +264,7 @@ public sealed class InHouseProviderTests
             .ReturnsAsync(user);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -310,7 +308,7 @@ public sealed class InHouseProviderTests
             .ReturnsAsync(user);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -367,7 +365,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -416,7 +414,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -468,7 +466,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -524,7 +522,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -584,7 +582,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         // Act
-        ProviderResult result = await _provider.AuthenticateAsync(request);
+        ProviderResponse result = await _provider.AuthenticateAsync(request);
 
         // Assert
         Assert.False(result.IsSuccess);

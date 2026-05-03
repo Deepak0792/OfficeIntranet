@@ -1,7 +1,8 @@
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Exceptions;
@@ -53,7 +54,7 @@ public sealed class InHouseProvider : IInHouseProvider
     public AuthProtocol Protocol => AuthProtocol.InHouse;
 
     /// <inheritdoc />
-    public async Task<ProviderResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    public async Task<ProviderResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
     {
         // 1. Validate inputs
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
@@ -123,7 +124,7 @@ public sealed class InHouseProvider : IInHouseProvider
         // 6. Build claims
         IReadOnlyList<Claim> claims = BuildClaims(user);
 
-        return new ProviderResult { IsSuccess = true, Claims = claims };
+        return new ProviderResponse { IsSuccess = true, Claims = claims };
     }
 
     /// <inheritdoc />
@@ -253,9 +254,9 @@ public sealed class InHouseProvider : IInHouseProvider
     /// </summary>
     /// <param name="reason">Failure reason.</param>
     /// <returns>Provider result indicating failure.</returns>
-    private static ProviderResult Fail(string reason)
+    private static ProviderResponse Fail(string reason)
     {
-        return new ProviderResult
+        return new ProviderResponse
         {
             IsSuccess = false,
             FailureReason = reason

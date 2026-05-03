@@ -1,4 +1,4 @@
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
 
 namespace SdxCore.Identity.Domain.Interfaces.Providers;

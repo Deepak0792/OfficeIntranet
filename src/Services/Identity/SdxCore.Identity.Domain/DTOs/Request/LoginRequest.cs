@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.API.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Request;
 
 /// <summary>
 /// Login request model for the API endpoint.

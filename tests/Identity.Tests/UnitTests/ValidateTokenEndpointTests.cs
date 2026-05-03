@@ -10,7 +10,6 @@ using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Xunit;
 
 namespace SdxCore.Identity.Tests.UnitTests;
 
@@ -21,6 +20,7 @@ namespace SdxCore.Identity.Tests.UnitTests;
 public sealed class ValidateTokenEndpointTests
 {
     private readonly Mock<IAuthenticationService> _authenticationServiceMock;
+    private readonly Mock<IRefreshTokenService> _refreshTokenServiceMock;
     private readonly Mock<ILogger<AuthController>> _loggerMock;
     private readonly Mock<IProviderRegistry> _providerRegistry;
     private readonly AuthController _controller;
@@ -30,7 +30,12 @@ public sealed class ValidateTokenEndpointTests
         _authenticationServiceMock = new Mock<IAuthenticationService>();
         _loggerMock = new Mock<ILogger<AuthController>>();
         _providerRegistry = new Mock<IProviderRegistry>();
-        _controller = new AuthController(_authenticationServiceMock.Object, _providerRegistry.Object, _loggerMock.Object);
+        _refreshTokenServiceMock = new Mock<IRefreshTokenService>();
+        _controller = new AuthController(
+            _authenticationServiceMock.Object, 
+            _refreshTokenServiceMock.Object, 
+            _providerRegistry.Object,
+            _loggerMock.Object);
         
         // Setup HTTP context with headers
         _controller.ControllerContext = new ControllerContext

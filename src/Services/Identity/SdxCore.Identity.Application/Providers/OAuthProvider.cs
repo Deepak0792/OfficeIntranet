@@ -4,7 +4,8 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 
@@ -59,7 +60,7 @@ public sealed class OAuthProvider : IAuthenticationProvider
     public AuthProtocol Protocol => AuthProtocol.OAuth;
 
     /// <inheritdoc />
-    public async Task<ProviderResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    public async Task<ProviderResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
     {
         // 1. Validate input (Requirement 7.4)
         if (string.IsNullOrWhiteSpace(request.OAuthCode))
@@ -213,7 +214,7 @@ public sealed class OAuthProvider : IAuthenticationProvider
 
             _logger.LogInformation("Successfully exchanged OAuth authorization code for access token");
 
-            return new ProviderResult { IsSuccess = true, Claims = claims };
+            return new ProviderResponse { IsSuccess = true, Claims = claims };
         }
         catch (Exception ex)
         {
@@ -392,9 +393,9 @@ public sealed class OAuthProvider : IAuthenticationProvider
     /// </summary>
     /// <param name="reason">Failure reason.</param>
     /// <returns>Provider result indicating failure.</returns>
-    private static ProviderResult Fail(string reason)
+    private static ProviderResponse Fail(string reason)
     {
-        return new ProviderResult
+        return new ProviderResponse
         {
             IsSuccess = false,
             FailureReason = reason

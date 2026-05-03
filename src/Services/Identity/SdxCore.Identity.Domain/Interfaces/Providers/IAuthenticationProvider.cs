@@ -1,4 +1,5 @@
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Enums;
 
 namespace SdxCore.Identity.Domain.Interfaces.Providers;
@@ -20,5 +21,5 @@ public interface IAuthenticationProvider
     /// <param name="request">Authentication request containing credentials and protocol-specific parameters.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Provider result containing success status, claims, or failure reason.</returns>
-    Task<ProviderResult> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default);
+    Task<ProviderResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default);
 }

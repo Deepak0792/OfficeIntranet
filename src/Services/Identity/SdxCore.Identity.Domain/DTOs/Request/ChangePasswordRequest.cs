@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.Domain.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Request;
 
 /// <summary>
 /// Represents a request to change a user's password in the InHouse provider.

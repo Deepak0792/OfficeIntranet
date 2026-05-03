@@ -1,11 +1,10 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.DTOs;
-using Xunit;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Tests.UnitTests;
 

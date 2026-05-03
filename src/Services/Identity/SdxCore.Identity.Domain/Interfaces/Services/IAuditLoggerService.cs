@@ -1,4 +1,4 @@
-﻿using SdxCore.Identity.Domain.DTOs;
+﻿using SdxCore.Identity.Domain.DTOs.Request;
 
 namespace SdxCore.Identity.Domain.Interfaces.Services;
 public interface IAuditLoggerService

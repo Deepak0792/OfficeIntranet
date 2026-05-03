@@ -1,13 +1,11 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Application.Extensions;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Domain.Interfaces.Security;
-using Xunit;
+using System.Reflection.Metadata.Ecma335;
 
 namespace SdxCore.Identity.Tests.UnitTests;
 
@@ -21,7 +19,7 @@ public class ProviderExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
-        
+
         // Add required dependencies
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -31,31 +29,31 @@ public class ProviderExtensionsTests
                 { "Authentication:LockoutDuration", "00:15:00" }
             })
             .Build();
-        
+
         services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging();
-        
+
         // Add mock repositories
         services.AddScoped<IUserRepository, MockUserRepository>();
         services.AddScoped<IPasswordHasher, MockPasswordHasher>();
         services.AddSingleton<IProviderRegistry, MockProviderRegistry>();
-        
+
         // Act
         services.AddInHouseProvider();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         // Assert
         var inHouseProvider = serviceProvider.GetService<IInHouseProvider>();
         Assert.NotNull(inHouseProvider);
         Assert.Equal(AuthProtocol.InHouse, inHouseProvider.Protocol);
     }
-    
+
     [Fact]
     public void AddInHouseProvider_ThrowsArgumentNullException_WhenServicesIsNull()
     {
         // Arrange
         IServiceCollection? services = null;
-        
+
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => services!.AddInHouseProvider());
     }
@@ -65,7 +63,7 @@ public class ProviderExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
-        
+
         // Add required dependencies
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -73,78 +71,82 @@ public class ProviderExtensionsTests
                 { "Authentication:Protocol", "Jwt" }
             })
             .Build();
-        
+
         services.AddSingleton<IConfiguration>(configuration);
         services.AddLogging();
-        
+
         // Add mock dependencies
         services.AddScoped<ITokenFactory, MockTokenFactory>();
         services.AddSingleton<IProviderRegistry, MockProviderRegistry>();
-        
+
         // Act
         services.AddJwtProvider();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         // Assert
         var providers = serviceProvider.GetServices<IAuthenticationProvider>().ToList();
         var jwtProvider = providers.FirstOrDefault(p => p.Protocol == AuthProtocol.Jwt);
         Assert.NotNull(jwtProvider);
         Assert.Equal(AuthProtocol.Jwt, jwtProvider.Protocol);
     }
-    
+
     [Fact]
     public void AddJwtProvider_ThrowsArgumentNullException_WhenServicesIsNull()
     {
         // Arrange
         IServiceCollection? services = null;
-        
+
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => services!.AddJwtProvider());
     }
-    
+
     // Mock implementations for testing
     private class MockUserRepository : IUserRepository
     {
-        public Task<Domain.Entities.User?> FindByUsernameAsync(string username, CancellationToken ct = default) 
+        public Task<Domain.Entities.User?> FindByUsernameAsync(string username, CancellationToken ct = default)
             => Task.FromResult<Domain.Entities.User?>(null);
-        public Task<Domain.Entities.User> CreateAsync(Domain.Entities.User user, CancellationToken ct = default) 
+        public Task<Domain.Entities.User> CreateAsync(Domain.Entities.User user, CancellationToken ct = default)
             => Task.FromResult(user);
-        public Task IncrementFailedAttemptsAsync(Guid userId, CancellationToken ct = default) 
+        public Task IncrementFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task ResetFailedAttemptsAsync(Guid userId, CancellationToken ct = default) 
+        public Task ResetFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task UpdateLastLoginAsync(Guid userId, DateTimeOffset loginTime, CancellationToken ct = default) 
+        public Task UpdateLastLoginAsync(Guid userId, DateTimeOffset loginTime, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task DeactivateAsync(Guid userId, CancellationToken ct = default) 
+        public Task DeactivateAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default) 
+        public Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task<Domain.Entities.User?> FindByIdAsync(Guid userId, CancellationToken ct = default) 
+        public Task<Domain.Entities.User?> FindByIdAsync(Guid userId, CancellationToken ct = default)
             => Task.FromResult<Domain.Entities.User?>(null);
-        public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default) 
+        public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default)
             => Task.CompletedTask;
     }
-    
+
     private class MockPasswordHasher : IPasswordHasher
     {
         public string Hash(string password) => "hashed_" + password;
         public bool Verify(string password, string hash) => hash == "hashed_" + password;
+
+        public string HashToken(string token) => "hashed_" + token;
+
+        public bool VerifyToken(string token, string storedHash) => storedHash.Equals("hashed_" + token);
     }
-    
+
     private class MockProviderRegistry : IProviderRegistry
     {
         private readonly Dictionary<AuthProtocol, IAuthenticationProvider> _providers = [];
-        
+
         public void Register(AuthProtocol protocol, IAuthenticationProvider provider)
         {
             _providers[protocol] = provider;
         }
-        
+
         public IAuthenticationProvider Resolve(AuthProtocol protocol)
         {
             return _providers[protocol];
         }
-        
+
         public IAuthenticationProvider ResolveFromConfiguration()
         {
             return _providers[AuthProtocol.InHouse];

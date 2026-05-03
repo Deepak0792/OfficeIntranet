@@ -1,11 +1,11 @@
 using System.Security.Claims;
 
-namespace SdxCore.Identity.Domain.DTOs;
+namespace SdxCore.Identity.Domain.DTOs.Response;
 
 /// <summary>
 /// Represents the result of an authentication attempt.
 /// </summary>
-public sealed record AuthenticationResult
+public sealed record AuthenticationResponse
 {
     /// <summary>
     /// Indicates whether the authentication was successful.
@@ -16,7 +16,7 @@ public sealed record AuthenticationResult
     /// The issued authentication token. Non-null when IsSuccess is true.
     /// </summary>
     public AuthToken? Token { get; init; }
-    
+
     /// <summary>
     /// Error code when authentication fails. Null when IsSuccess is true.
     /// </summary>
