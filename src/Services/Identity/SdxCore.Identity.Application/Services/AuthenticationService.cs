@@ -259,9 +259,9 @@ public sealed class AuthenticationService : IAuthenticationService
         {
             _tokenFactory.RevokeToken(token);
 
-            if (string.IsNullOrEmpty(refreshToken))
+            if (!string.IsNullOrEmpty(refreshToken))
             {
-                await _refreshTokenService.RevokeRefreshTokenAsync(token);
+                await _refreshTokenService.RevokeRefreshTokenAsync(refreshToken);
             }
             _logger.LogInformation("Token revoked successfully");
         }
