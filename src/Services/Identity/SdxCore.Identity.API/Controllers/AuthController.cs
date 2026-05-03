@@ -27,7 +27,7 @@ public sealed class AuthController : ControllerBase
         IProviderRegistry providerRegistry,
         ILogger<AuthController> logger)
     {
-        _authenticationService = authenticationService ??throw new ArgumentNullException(nameof(authenticationService));
+        _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
         _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
         _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -80,7 +80,7 @@ public sealed class AuthController : ControllerBase
             _logger.LogWarning("Authentication failed: {ErrorCode} - {ErrorMessage}", result.ErrorCode, result.ErrorMessage);
             return Unauthorized(new ErrorResponse
             {
-                ErrorCode = result.ErrorCode ?? "AUTH_FAILED",
+                ErrorCode = result.ErrorCode ?? "AUTH_TOKEN_FAILED",
                 ErrorMessage = result.ErrorMessage ?? "Authentication failed"
             });
         }
@@ -104,13 +104,22 @@ public sealed class AuthController : ControllerBase
                 ErrorMessage = "Authentication provider is not available"
             });
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Unexpected error during authentication");
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "AUTH_TOKEN_ERROR",
+                ErrorMessage = ex.Message
+            });
+        }
         catch (Exception ex)
         {
             // Unexpected errors
             _logger.LogError(ex, "Unexpected error during authentication");
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "INTERNAL_ERROR",
+                ErrorCode = "AUTH_TOKEN_ERROR",
                 ErrorMessage = "An unexpected error occurred"
             });
         }
@@ -163,7 +172,7 @@ public sealed class AuthController : ControllerBase
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "USER_NOT_FOUND",
+                ErrorCode = "REFRESH_TOKEN_NOT_FOUND",
                 ErrorMessage = "User associated with refresh token does not exist"
             });
         }
@@ -183,7 +192,7 @@ public sealed class AuthController : ControllerBase
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "INTERNAL_ERROR",
+                ErrorCode = "REFRESH_TOKEN_ERROR",
                 ErrorMessage = "An unexpected error occurred"
             });
         }
@@ -201,20 +210,9 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenRequest request, CancellationToken ct)
     {
-        if (request == null ||
-            string.IsNullOrWhiteSpace(request.Token) ||
-            string.IsNullOrWhiteSpace(request.RefreshToken))
-        {
-            return BadRequest(new ErrorResponse
-            {
-                ErrorCode = "INVALID_REQUEST",
-                ErrorMessage = "Token and refresh token are required"
-            });
-        }
-
         try
         {
-            await _authenticationService.RevokeTokenAsync(request.Token, request.RefreshToken, ct);
+            await _authenticationService.RevokeTokenAsync(request, ct);
 
             _logger.LogInformation("Token and refresh token revoked successfully");
 
@@ -223,14 +221,13 @@ public sealed class AuthController : ControllerBase
                 Message = "Token revoked successfully"
             });
         }
-        catch (ArgumentException ex)
+        catch (ArgumentNullException ex)
         {
-            _logger.LogWarning(ex, "Invalid token provided for revocation");
-
+            _logger.LogWarning(ex, "Token and refresh token are required");
             return BadRequest(new ErrorResponse
             {
-                ErrorCode = "INVALID_TOKEN",
-                ErrorMessage = ex.Message
+                ErrorCode = "REVOKE_TOKEN_ERROR",
+                ErrorMessage = "Token and refresh token are required"
             });
         }
         catch (Exception ex)
@@ -239,7 +236,7 @@ public sealed class AuthController : ControllerBase
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "INTERNAL_ERROR",
+                ErrorCode = "REVOKE_TOKEN_ERROR",
                 ErrorMessage = "An unexpected error occurred"
             });
         }
@@ -265,7 +262,7 @@ public sealed class AuthController : ControllerBase
             // SECURITY: Verify this is an internal call from Gateway middleware
             if (!IsInternalGatewayCall())
             {
-                _logger.LogWarning("Unauthorized access attempt to validate-token endpoint from {RemoteIpAddress}", 
+                _logger.LogWarning("Unauthorized access attempt to validate-token endpoint from {RemoteIpAddress}",
                     Request.HttpContext.Connection.RemoteIpAddress);
                 return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
                 {
@@ -276,7 +273,7 @@ public sealed class AuthController : ControllerBase
 
             // Extract bearer token from Authorization header
             var authorizationHeader = Request.Headers.Authorization.FirstOrDefault();
-            
+
             if (string.IsNullOrWhiteSpace(authorizationHeader))
             {
                 _logger.LogWarning("No authorization header provided for token validation");
@@ -358,8 +355,8 @@ public sealed class AuthController : ControllerBase
     /// <returns>True if the request is from Gateway, false otherwise.</returns>
     private bool IsInternalGatewayCall()
     {
-        return InternalApiKeyValidator.IsInternalGatewayCall(Request, 
-            HttpContext.RequestServices.GetRequiredService<IConfiguration>(), 
+        return InternalApiKeyValidator.IsInternalGatewayCall(Request,
+            HttpContext.RequestServices.GetRequiredService<IConfiguration>(),
             _logger);
     }
 
@@ -375,13 +372,14 @@ public sealed class AuthController : ControllerBase
     {
         // Check if X-User-Id header was added by the Gateway
         var userIdFromGateway = Request.Headers["X-User-Id"].FirstOrDefault();
-        
-        return Ok(new { 
-            Message = "Token is valid", 
+
+        return Ok(new
+        {
+            Message = "Token is valid",
             Timestamp = DateTimeOffset.UtcNow,
             UserIdFromGateway = userIdFromGateway,
-            Note = userIdFromGateway != null 
-                ? "X-User-Id header was provided by Gateway" 
+            Note = userIdFromGateway != null
+                ? "X-User-Id header was provided by Gateway"
                 : "X-User-Id header not present (direct call to Identity service)"
         });
     }
@@ -414,7 +412,7 @@ public sealed class AuthController : ControllerBase
         {
             // Get the InHouse provider from the registry
             var provider = _providerRegistry.ResolveFromConfiguration() as IInHouseProvider;
-            
+
             if (provider == null)
             {
                 return BadRequest(new ErrorResponse
@@ -423,18 +421,37 @@ public sealed class AuthController : ControllerBase
                     ErrorMessage = "InHouse provider is not configured"
                 });
             }
-            
+
             // Create the user
             var user = await provider.CreateUserAsync(request, ct);
-            
+
             _logger.LogInformation("Created test user: {UserId}, Username: {Username}", user.Id, user.Username);
-            
-            return Created($"/api/auth/users/{user.Id}", new 
-            { 
-                Id = user.Id, 
-                Username = user.Username, 
+
+            return Created($"/api/auth/users/{user.Id}", new
+            {
+                Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 CreatedAt = user.CreatedAt
+            });
+        }
+        catch (ProviderNotFoundException ex)
+        {
+            // Provider not found is a server error (HTTP 500)
+            _logger.LogError(ex, "Provider not found during authentication");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "PROVIDER_NOT_FOUND",
+                ErrorMessage = "Authentication provider is not available"
+            });
+        }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Error while deactivating user");
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "CREATE_USER_ERROR",
+                ErrorMessage = ex.Message
             });
         }
         catch (Exception ex)
@@ -442,8 +459,159 @@ public sealed class AuthController : ControllerBase
             _logger.LogError(ex, "Error creating user");
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "USER_CREATION_ERROR",
+                ErrorCode = "CREATE_USER_ERROR",
+                ErrorMessage = "Error creating user"
+            });
+        }
+    }
+
+    /// <summary>
+    /// TEMPORARY: Creates a test user for development purposes.
+    /// This endpoint should be removed in production.
+    /// </summary>
+    /// <param name="request">User creation request.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Created user information.</returns>
+    [HttpPost("change-password")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> UpdatePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
+    {
+        try
+        {
+            // Get the InHouse provider from the registry
+            var provider = _providerRegistry.ResolveFromConfiguration() as IInHouseProvider;
+
+            if (provider == null)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorCode = "INVALID_PROVIDER",
+                    ErrorMessage = "InHouse provider is not configured"
+                });
+            }
+
+            // Chaneg the password
+            var status = await provider.ChangePasswordAsync(request, ct);
+
+            if (!status)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    ErrorCode = "CHANGE_PASSWORD_ERROR",
+                    ErrorMessage = "Failed to change the password"
+                });
+            }
+            _logger.LogInformation("Password Changed for: {UserId}, Username: {Username}", 2, 2);
+
+            return Ok(new
+            {
+                Message = "Password changed successfully"
+            });
+        }
+        catch (ProviderNotFoundException ex)
+        {
+            // Provider not found is a server error (HTTP 500)
+            _logger.LogError(ex, "Provider not found during authentication");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "PROVIDER_NOT_FOUND",
+                ErrorMessage = "Authentication provider is not available"
+            });
+        }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Error while changing password");
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "CHANGE_PASSWORD_ERROR",
                 ErrorMessage = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while changing password");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "CHANGE_PASSWORD_ERROR",
+                ErrorMessage = "Error while changing password"
+            });
+        }
+    }
+
+    /// <summary>
+    /// TEMPORARY: Creates a test user for development purposes.
+    /// This endpoint should be removed in production.
+    /// </summary>
+    /// <param name="request">User creation request.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Created user information.</returns>
+    [HttpPost("deactivate-user")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DeactivatePassword([FromBody] string userId, CancellationToken ct)
+    {
+        try
+        {
+            // Get the InHouse provider from the registry
+            var provider = _providerRegistry.ResolveFromConfiguration() as IInHouseProvider;
+
+            if (provider == null)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErrorCode = "INVALID_PROVIDER",
+                    ErrorMessage = "InHouse provider is not configured"
+                });
+            }
+
+            // Deactivating user
+            var status = await provider.DeactivateUserAsync(userId, ct);
+
+            if (!status)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    ErrorCode = "DEACTIVATE_USER_ERROR",
+                    ErrorMessage = "Failed to deactivate user"
+                });
+            }
+            _logger.LogInformation($"User deactivate successfully {userId}");
+
+            return Ok(new
+            {
+                Message = "User deactivate successfully"
+            });
+        }
+        catch (ProviderNotFoundException ex)
+        {
+            // Provider not found is a server error (HTTP 500)
+            _logger.LogError(ex, "Provider not found during authentication");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "PROVIDER_NOT_FOUND",
+                ErrorMessage = "Authentication provider is not available"
+            });
+        }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Error while deactivating user");
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "DEACTIVATE_USER_ERROR",
+                ErrorMessage = ex.Message
+
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while deactivating user");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "DEACTIVATE_USER_ERROR",
+                ErrorMessage = "Error while deactivating user"
             });
         }
     }

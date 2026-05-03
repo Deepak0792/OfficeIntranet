@@ -284,7 +284,7 @@ public class AuthenticationServiceTests
         _tokenFactoryMock.Setup(t => t.RevokeToken(token));
 
         // Act
-        await _authenticationService.RevokeTokenAsync(token, refreshToken);
+        await _authenticationService.RevokeTokenAsync(new RevokeTokenRequest { Token=token, RefreshToken=refreshToken});
 
         // Assert
         _tokenFactoryMock.Verify(t => t.RevokeToken(token), Times.Once);
@@ -294,16 +294,16 @@ public class AuthenticationServiceTests
     public async Task RevokeTokenAsync_WithNullToken_ThrowsArgumentException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            _authenticationService.RevokeTokenAsync(null!, null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _authenticationService.RevokeTokenAsync(null!));
     }
 
     [Fact]
     public async Task RevokeTokenAsync_WithEmptyToken_ThrowsArgumentException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            _authenticationService.RevokeTokenAsync("", ""));
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            _authenticationService.RevokeTokenAsync(null!));
     }
 
     [Fact]

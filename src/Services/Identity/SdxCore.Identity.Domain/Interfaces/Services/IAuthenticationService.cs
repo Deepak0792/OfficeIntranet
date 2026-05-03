@@ -32,5 +32,5 @@ public interface IAuthenticationService
     /// <param name="token">JWT token to revoke.</param>
     /// <param name="refreshToken">Refresh Token to revoke.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task RevokeTokenAsync(string token, string refreshToken, CancellationToken ct = default);
+    Task RevokeTokenAsync(RevokeTokenRequest request, CancellationToken ct = default);
 }

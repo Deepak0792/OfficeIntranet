@@ -8,7 +8,7 @@ public sealed record ChangePasswordRequest
     /// <summary>
     /// The unique identifier of the user whose password is being changed.
     /// </summary>
-    public required string UserId { get; init; }
+    public required string UserId { get; set; }
 
     /// <summary>
     /// The current password for verification.

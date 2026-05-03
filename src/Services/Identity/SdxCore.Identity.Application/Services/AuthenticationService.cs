@@ -248,20 +248,22 @@ public sealed class AuthenticationService : IAuthenticationService
     /// </summary>
     /// <param name="token">JWT token to revoke.</param>
     /// <param name="ct">Cancellation token.</param>
-    public async Task RevokeTokenAsync(string token, string refreshToken, CancellationToken ct = default)
+    public async Task RevokeTokenAsync(RevokeTokenRequest request, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(token))
+        if (request == null ||
+           string.IsNullOrWhiteSpace(request.Token) ||
+           string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            throw new ArgumentException("Token cannot be null or empty", nameof(token));
+            throw new ArgumentNullException("Token cannot be null or empty", nameof(request));
         }
 
         try
         {
-            _tokenFactory.RevokeToken(token);
+            _tokenFactory.RevokeToken(request.Token);
 
-            if (!string.IsNullOrEmpty(refreshToken))
+            if (!string.IsNullOrEmpty(request.RefreshToken))
             {
-                await _refreshTokenService.RevokeRefreshTokenAsync(refreshToken);
+                await _refreshTokenService.RevokeRefreshTokenAsync(request.RefreshToken);
             }
             _logger.LogInformation("Token revoked successfully");
         }
@@ -281,40 +283,40 @@ public sealed class AuthenticationService : IAuthenticationService
         {
             case AuthProtocol.InHouse:
                 if (string.IsNullOrWhiteSpace(request.Username))
-                    throw new ArgumentException("Username is required for InHouse authentication", nameof(request));
+                    throw new ArgumentNullException("Username is required for InHouse authentication", nameof(request));
                 if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ArgumentException("Password is required for InHouse authentication", nameof(request));
+                    throw new ArgumentNullException("Password is required for InHouse authentication", nameof(request));
                 break;
 
             case AuthProtocol.Saml:
                 if (string.IsNullOrWhiteSpace(request.SamlAssertion))
-                    throw new ArgumentException("SAML assertion is required for SAML authentication", nameof(request));
+                    throw new ArgumentNullException("SAML assertion is required for SAML authentication", nameof(request));
                 break;
 
             case AuthProtocol.OAuth:
                 if (string.IsNullOrWhiteSpace(request.OAuthCode))
-                    throw new ArgumentException("OAuth code is required for OAuth authentication", nameof(request));
+                    throw new ArgumentNullException("OAuth code is required for OAuth authentication", nameof(request));
                 break;
 
             case AuthProtocol.Oidc:
                 if (string.IsNullOrWhiteSpace(request.IdToken))
-                    throw new ArgumentException("ID token is required for OIDC authentication", nameof(request));
+                    throw new ArgumentNullException("ID token is required for OIDC authentication", nameof(request));
                 break;
 
             case AuthProtocol.Jwt:
                 if (string.IsNullOrWhiteSpace(request.BearerToken))
-                    throw new ArgumentException("Bearer token is required for JWT authentication", nameof(request));
+                    throw new ArgumentNullException("Bearer token is required for JWT authentication", nameof(request));
                 break;
 
             case AuthProtocol.Ldap:
                 if (string.IsNullOrWhiteSpace(request.Username))
-                    throw new ArgumentException("Username is required for LDAP authentication", nameof(request));
+                    throw new ArgumentNullException("Username is required for LDAP authentication", nameof(request));
                 if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ArgumentException("Password is required for LDAP authentication", nameof(request));
+                    throw new ArgumentNullException("Password is required for LDAP authentication", nameof(request));
                 break;
 
             default:
-                throw new ArgumentException($"Unsupported authentication protocol: {protocol}", nameof(protocol));
+                throw new ArgumentNullException($"Unsupported authentication protocol: {protocol}", nameof(protocol));
         }
     }
 

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SdxCore.Common.Contexts;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
@@ -21,6 +22,7 @@ public sealed class InHouseProvider : IInHouseProvider
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IConfiguration _configuration;
+
     private readonly ILogger<InHouseProvider> _logger;
 
     // Configuration keys
@@ -227,7 +229,7 @@ public sealed class InHouseProvider : IInHouseProvider
     public async Task<bool> DeactivateUserAsync(string userId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentException("UserId cannot be null or empty.", nameof(userId));
+            throw new ArgumentNullException("UserId cannot be null or empty.", nameof(userId));
 
         // Parse user ID
         if (!Guid.TryParse(userId, out Guid userGuid))
