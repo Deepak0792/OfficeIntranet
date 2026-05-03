@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add controllers
 builder.Services.AddControllers();
 
+// HttpContext Access (Required for RequestContext)
+builder.Services.AddHttpContextAccessor();
 // Add health checks
 builder.Services.AddHealthChecks();
 
@@ -62,11 +64,11 @@ switch (protocol.ToLowerInvariant())
 var app = builder.Build();
 
 // Apply database migrations automatically on startup
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<SdxCore.Identity.Persistence.Data.IdentityDbContext>();
-    context.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var context = scope.ServiceProvider.GetRequiredService<SdxCore.Identity.Persistence.Data.IdentityDbContext>();
+//    context.Database.Migrate();
+//}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

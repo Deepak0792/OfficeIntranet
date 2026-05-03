@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.Common.Contexts;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.Interfaces.Providers;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Domain.Interfaces.Security;
 using SdxCore.Identity.Domain.Interfaces.Services;
 
@@ -45,9 +45,13 @@ public static class ServiceCollectionExtensions
         if (configuration is null)
             throw new ArgumentNullException(nameof(configuration));
 
+        services.AddScoped<IRequestContext, RequestContext>();
         // Register IAuthenticationService as scoped (per-request lifetime)
-        // Requirement 12.2: IAuthenticationService registered as scoped service
+        // Requirement 12.2: IAuthenticationService registered as scoped service             
+        services.AddScoped<IAuditLoggerService, AuditLoggerService>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+
 
         // Register IProviderRegistry as scoped (can resolve scoped services)
         // Changed from singleton to scoped to allow resolving scoped providers

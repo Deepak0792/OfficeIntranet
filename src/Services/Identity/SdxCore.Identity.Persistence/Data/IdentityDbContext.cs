@@ -25,6 +25,12 @@ public class IdentityDbContext : DbContext
     public DbSet<User> Users => Set<User>();
 
     /// <summary>
+    /// Gets or sets the DbSet for RefreshToken entities.
+    /// </summary>
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+
+    /// <summary>
     /// Gets or sets the DbSet for AuditEvent entities.
     /// </summary>
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();

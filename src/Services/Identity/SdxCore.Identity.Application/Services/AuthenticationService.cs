@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using System.ServiceModel.Channels;
 using Microsoft.Extensions.Logging;
+using SdxCore.Common.Contexts;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
@@ -16,20 +18,26 @@ namespace SdxCore.Identity.Application.Services;
 /// </summary>
 public sealed class AuthenticationService : IAuthenticationService
 {
+    private readonly IRequestContext _requestContext;
     private readonly IProviderRegistry _providerRegistry;
     private readonly ITokenFactory _tokenFactory;
-    private readonly IAuditLogger _auditLogger;
+    private readonly IAuditLoggerService _auditLoggerService;
     private readonly ILogger<AuthenticationService> _logger;
+    private readonly IRefreshTokenService _refreshTokenService;
 
     public AuthenticationService(
+        IRequestContext requestContext,
         IProviderRegistry providerRegistry,
         ITokenFactory tokenFactory,
-        IAuditLogger auditLogger,
+        IAuditLoggerService auditLoggerService,
+        IRefreshTokenService refreshTokenService,
         ILogger<AuthenticationService> logger)
     {
+        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
         _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
         _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory));
-        _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
+        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(auditLoggerService));
+        _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -73,12 +81,13 @@ public sealed class AuthenticationService : IAuthenticationService
                     providerResult.FailureReason);
 
                 // Log audit event for failure
-                await LogAuditEventAsync(
-                    eventType: "LOGIN_FAILURE",
-                    protocol: protocol,
-                    request: request,
-                    failureReason: providerResult.FailureReason,
-                    ct: ct);
+                await _auditLoggerService.LogAsync(new AuditEventRequest
+                {
+                    EventType = "LOGIN_FAILURE",
+                    Protocol = protocol,
+                    Username = request.Username,
+                    FailureReason = providerResult.FailureReason,
+                }, ct);
 
                 return new AuthenticationResult
                 {
@@ -91,18 +100,42 @@ public sealed class AuthenticationService : IAuthenticationService
             // 5. Issue token from claims
             AuthToken token = _tokenFactory.IssueToken(providerResult.Claims);
 
+            if (token is null)
+                throw new ArgumentNullException("Token Generation failed");
+
+            string? userId = ExtractSubjectFromClaims(providerResult.Claims);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException("UserId is empty");
+            }
+
             _logger.LogInformation(
-                "Authentication successful for user {Username} using protocol {Protocol}",
-                request.Username ?? ExtractSubjectFromClaims(providerResult.Claims),
-                protocol);
+               "Authentication successful for user {Username} using protocol {Protocol}",
+               request.Username ?? ExtractSubjectFromClaims(providerResult.Claims),
+            protocol);
+
+            // 5.1 Generate refresh token
+            // Store new refresh token
+            var refreshTokenResult = 
+                await _refreshTokenService.CreateAsync(
+                    Guid.Parse(userId), 
+                    _requestContext.IpAddress, 
+                    _requestContext.UserAgent, 
+                    _requestContext.Device, 
+                    ct);
+
+            token.RefreshToken = refreshTokenResult.RawToken;
+            token.RefreshTokenExpiresAt = refreshTokenResult.ExpiresAt;
 
             // 6. Log audit event for success
-            await LogAuditEventAsync(
-                eventType: "LOGIN_SUCCESS",
-                protocol: protocol,
-                request: request,
-                userId: ExtractSubjectFromClaims(providerResult.Claims),
-                ct: ct);
+            await _auditLoggerService.LogAsync(new AuditEventRequest
+            {
+                EventType = "LOGIN_SUCCESS",
+                Protocol = protocol,
+                Username = request.Username,
+                UserId = userId
+            }, ct);
 
             // 7. Return successful result
             return new AuthenticationResult
@@ -117,12 +150,13 @@ public sealed class AuthenticationService : IAuthenticationService
             _logger.LogError(ex, "Configuration error during authentication");
 
             // Log audit event for configuration error
-            await LogAuditEventAsync(
-                eventType: "LOGIN_FAILURE",
-                protocol: protocol,
-                request: request,
-                failureReason: "Configuration error",
-                ct: ct);
+            await _auditLoggerService.LogAsync(new AuditEventRequest
+            {
+                EventType = "LOGIN_FAILURE",
+                Protocol = protocol,
+                Username = request.Username,
+                FailureReason = "Configuration error"
+            }, ct);
 
             return new AuthenticationResult
             {
@@ -136,12 +170,13 @@ public sealed class AuthenticationService : IAuthenticationService
             _logger.LogError(ex, "Provider not found during authentication");
 
             // Log audit event for provider not found
-            await LogAuditEventAsync(
-                eventType: "LOGIN_FAILURE",
-                protocol: protocol,
-                request: request,
-                failureReason: "Provider not found",
-                ct: ct);
+            await _auditLoggerService.LogAsync(new AuditEventRequest
+            {
+                EventType = "LOGIN_FAILURE",
+                Protocol = protocol,
+                Username = request.Username,
+                FailureReason = "Provider not found"
+            }, ct);
 
             return new AuthenticationResult
             {
@@ -155,12 +190,14 @@ public sealed class AuthenticationService : IAuthenticationService
             _logger.LogError(ex, "Unexpected error during authentication");
 
             // Log audit event for unexpected error
-            await LogAuditEventAsync(
-                eventType: "LOGIN_FAILURE",
-                protocol: provider?.Protocol ?? protocol,
-                request: request,
-                failureReason: "Internal error",
-                ct: ct);
+            await _auditLoggerService.LogAsync(new AuditEventRequest
+            {
+                EventType = "LOGIN_FAILURE",
+                Protocol = protocol,
+                Username = request.Username,
+                FailureReason = "Internal error"
+            }, ct);
+
 
             return new AuthenticationResult
             {
@@ -207,6 +244,7 @@ public sealed class AuthenticationService : IAuthenticationService
             return Task.FromResult(false);
         }
     }
+
 
     /// <summary>
     /// Revokes a JWT token before its expiration.
@@ -277,40 +315,7 @@ public sealed class AuthenticationService : IAuthenticationService
             default:
                 throw new ArgumentException($"Unsupported authentication protocol: {protocol}", nameof(protocol));
         }
-    }
-
-    /// <summary>
-    /// Logs an audit event for an authentication attempt.
-    /// </summary>
-    private async Task LogAuditEventAsync(
-        string eventType,
-        AuthProtocol protocol,
-        AuthenticationRequest request,
-        string? failureReason = null,
-        string? userId = null,
-        CancellationToken ct = default)
-    {
-        try
-        {
-            var auditEvent = new AuditEvent
-            {
-                EventType = eventType,
-                Protocol = protocol,
-                UserId = userId,
-                Username = request.Username,
-                IpAddress = "0.0.0.0", // TODO: Extract from HttpContext when available
-                OccurredAt = DateTimeOffset.UtcNow,
-                FailureReason = failureReason
-            };
-
-            await _auditLogger.LogAsync(auditEvent, ct);
-        }
-        catch (Exception ex)
-        {
-            // Audit logging failure should not prevent authentication from completing
-            _logger.LogError(ex, "Failed to log audit event for {EventType}", eventType);
-        }
-    }
+    }  
 
     /// <summary>
     /// Extracts the subject (user ID) from claims.

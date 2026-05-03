@@ -7,6 +7,7 @@ using SdxCore.Common.Models;
 using SdxCore.Common.Security;
 using SdxCore.Common.Http;
 using SdxCore.Identity.API.DTOs;
+using SdxCore.Identity.Application.Services;
 
 namespace SdxCore.Identity.API.Controllers;
 
@@ -18,15 +19,18 @@ namespace SdxCore.Identity.API.Controllers;
 public sealed class AuthController : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService;
+    private readonly IRefreshTokenService _refreshTokenService;
     private readonly IProviderRegistry _providerRegistry;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IAuthenticationService authenticationService,
+        IRefreshTokenService refreshTokenService,
         IProviderRegistry providerRegistry,
         ILogger<AuthController> logger)
     {
-        _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
+        _authenticationService = authenticationService ??throw new ArgumentNullException(nameof(authenticationService));
+        _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
         _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -69,7 +73,8 @@ public sealed class AuthController : ControllerBase
                     AccessToken = result.Token.AccessToken,
                     TokenType = result.Token.TokenType,
                     ExpiresAt = result.Token.ExpiresAt,
-                    RefreshToken = result.Token.RefreshToken
+                    RefreshToken = result.Token.RefreshToken,
+                    RefreshTokenExpiresAt = result.Token.RefreshTokenExpiresAt
                 });
             }
 
@@ -105,6 +110,79 @@ public sealed class AuthController : ControllerBase
         {
             // Unexpected errors
             _logger.LogError(ex, "Unexpected error during authentication");
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "INTERNAL_ERROR",
+                ErrorMessage = "An unexpected error occurred"
+            });
+        }
+    }
+
+    /// <summary>
+    /// Issues a new access token using a valid refresh token.
+    /// </summary>
+    /// <param name="request">Refresh token request.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>New JWT access token and rotated refresh token.</returns>
+    [HttpPost("refresh-token")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _refreshTokenService.RefreshTokenAsync(request, ct);
+
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning(
+                    "Refresh token failed: {ErrorCode} - {ErrorMessage}",
+                    result.ErrorCode,
+                    result.ErrorMessage);
+
+                return Unauthorized(new ErrorResponse
+                {
+                    ErrorCode = result.ErrorCode ?? "INVALID_REFRESH_TOKEN",
+                    ErrorMessage = result.ErrorMessage ?? "Refresh token failed"
+                });
+            }
+
+            _logger.LogInformation("Refresh token successful");
+
+            return Ok(new LoginResponse
+            {
+                AccessToken = result.Token!.AccessToken,
+                TokenType = result.Token.TokenType,
+                ExpiresAt = result.Token.ExpiresAt,
+                RefreshToken = result.Token.RefreshToken,
+                RefreshTokenExpiresAt = result.Token.RefreshTokenExpiresAt
+            });
+        }
+        catch (RecordNotFoundException ex)
+        {
+            _logger.LogError(ex, "User not found during refresh token flow");
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "USER_NOT_FOUND",
+                ErrorMessage = "User associated with refresh token does not exist"
+            });
+        }
+        catch (ConfigurationException ex)
+        {
+            _logger.LogError(ex, "Configuration error during refresh token flow");
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                ErrorCode = "CONFIGURATION_ERROR",
+                ErrorMessage = "Authentication service is not properly configured"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during refresh token flow");
+
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
                 ErrorCode = "INTERNAL_ERROR",

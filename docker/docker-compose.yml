@@ -37,6 +37,7 @@ services:
       - Authentication__MaxFailedAttempts=${AUTH_MAX_FAILED_ATTEMPTS:-5}
       - Authentication__LockoutDuration=${AUTH_LOCKOUT_DURATION:-00:15:00}
       - Authentication__SigningKeyPath=${AUTH_SIGNING_KEY_PATH:-/app/dev-signing-key.pem}
+      # - Authentication__SigningKey=${AUTH_SIGNING_KEY}
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5001:80"

@@ -215,7 +215,7 @@ public sealed class TokenFactory : ITokenFactory
         else if (signingAlgorithm.Equals("HS256", StringComparison.OrdinalIgnoreCase))
         {
             // Symmetric signing with HMAC
-            var signingKey = _configuration["Authentication:SigningKey"];
+            var signingKey = _configuration["Authentication:SecretKey"];
             
             if (string.IsNullOrWhiteSpace(signingKey))
             {

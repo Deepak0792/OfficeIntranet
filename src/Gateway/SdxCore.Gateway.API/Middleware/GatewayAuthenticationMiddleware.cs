@@ -3,6 +3,8 @@ using System.Text.Json;
 using SdxCore.Common.Models;
 using SdxCore.Common.Routing;
 using SdxCore.Common.Http;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
 
 namespace SdxCore.Gateway.API.Middleware;
 
@@ -32,15 +34,19 @@ public sealed class GatewayAuthenticationMiddleware
 
         // Initialize public route validator
         _publicRouteValidator = new PublicRouteValidator(_configuration);
-        
+
         // Get Identity service URL for token validation
-        _identityServiceUrl = _configuration["Authentication:IdentityServiceUrl"] 
+        _identityServiceUrl = _configuration["Authentication:IdentityServiceUrl"]
             ?? throw new InvalidOperationException("Authentication:IdentityServiceUrl is not configured");
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
+
+        // ALWAYS ADD HEADERS
+        // (public + private routes)
+        EnrichHeaders(context);
 
         // Check if this is a public route that doesn't require authentication
         if (_publicRouteValidator.IsPublicRoute(path))
@@ -62,32 +68,7 @@ public sealed class GatewayAuthenticationMiddleware
                 return;
             }
 
-            // Add user context to headers for downstream services
-            if (!string.IsNullOrEmpty(validationResult.UserId))
-            {
-                context.Request.Headers["X-User-Id"] = validationResult.UserId;
-                _logger.LogDebug("Added X-User-Id header: {UserId} for route: {Path}", validationResult.UserId, path);
-            }
-
-            if (!string.IsNullOrEmpty(validationResult.Username))
-            {
-                context.Request.Headers["X-Username"] = validationResult.Username;
-            }
-
-            if (!string.IsNullOrEmpty(validationResult.Email))
-            {
-                context.Request.Headers["X-User-Email"] = validationResult.Email;
-            }
-
-            if (validationResult.Roles.Any())
-            {
-                context.Request.Headers["X-User-Roles"] = string.Join(",", validationResult.Roles);
-            }
-
-            if (!string.IsNullOrEmpty(validationResult.Provider))
-            {
-                context.Request.Headers["X-Auth-Provider"] = validationResult.Provider;
-            }
+            AttachIdentityHeaders(context, validationResult);
 
             // Token is valid - continue to downstream service
             _logger.LogDebug("Token validated successfully for route: {Path}", path);
@@ -107,7 +88,7 @@ public sealed class GatewayAuthenticationMiddleware
     private async Task<TokenValidationResponse?> ValidateTokenWithIdentityService(HttpContext context, CancellationToken cancellationToken)
     {
         using var httpClient = _httpClientFactory.CreateClient("IdentityService");
-        
+
         // Set the base address if not already configured
         if (httpClient.BaseAddress == null)
         {
@@ -115,14 +96,7 @@ public sealed class GatewayAuthenticationMiddleware
         }
 
         // Add internal API key for authentication with Identity service
-        var internalApiKey = _configuration["Authentication:InternalApiKey"];
-        if (string.IsNullOrEmpty(internalApiKey))
-        {
-            _logger.LogError("Internal API key not configured for Gateway authentication");
-            return null;
-        }
-        
-        httpClient.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
+        AttachInternalApiKey(httpClient);
 
         // Forward the Authorization header exactly as received (AuthController will handle all validation)
         var authorizationHeader = context.Request.Headers.Authorization.FirstOrDefault();
@@ -135,12 +109,12 @@ public sealed class GatewayAuthenticationMiddleware
         {
             // Call the Identity service's INTERNAL token validation endpoint
             var response = await httpClient.PostAsync("/api/auth/validate-token", null, cancellationToken);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 // Log the error details for debugging but don't duplicate error handling
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogDebug("Token validation failed with status {StatusCode}: {ErrorContent}", 
+                _logger.LogDebug("Token validation failed with status {StatusCode}: {ErrorContent}",
                     response.StatusCode, errorContent);
                 return null;
             }
@@ -170,7 +144,102 @@ public sealed class GatewayAuthenticationMiddleware
             return null;
         }
     }
+
+    private static void EnrichHeaders(HttpContext context)
+    {
+        var headers = context.Request.Headers;
+
+        // Trace
+        headers["X-Trace-Id"] = context.TraceIdentifier;
+        headers["X-Correlation-Id"] = context.TraceIdentifier;
+
+        // IP (proxy-safe)
+        var forwardedFor = headers["X-Forwarded-For"].FirstOrDefault();
+
+        var clientIp = forwardedFor ??
+                       context.Connection.RemoteIpAddress?.ToString();
+
+        if (!string.IsNullOrEmpty(clientIp))
+        {
+            headers["X-Client-Ip"] = clientIp.Split(',')[0].Trim();
+        }
+
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            headers["X-Forwarded-For"] = forwardedFor;
+        }
+
+        // User-Agent
+        var userAgent = headers.UserAgent.ToString();
+        headers["X-User-Agent"] = userAgent;
+
+        // Device detection
+        var device =
+            userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase) ? "Mobile" :
+            userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase) ? "Desktop-Windows" :
+            userAgent.Contains("Mac", StringComparison.OrdinalIgnoreCase) ? "Desktop-Mac" :
+            "Unknown";
+
+        headers["X-Device"] = device;
+
+        // Gateway info
+        headers["X-Gateway"] = "YARP";
+        headers["X-Gateway-Time"] = DateTime.UtcNow.ToString("O");
+    }
+
+    private static void AttachIdentityHeaders(
+    HttpContext context,
+    TokenValidationResponse validationResult)
+    {
+        var headers = context.Request.Headers;
+
+        // Add user context to headers for downstream services
+        if (!string.IsNullOrEmpty(validationResult.UserId))
+        {
+            context.Request.Headers["X-User-Id"] = validationResult.UserId;
+        }
+
+        if (!string.IsNullOrEmpty(validationResult.Username))
+        {
+            context.Request.Headers["X-Username"] = validationResult.Username;
+        }
+
+        if (!string.IsNullOrEmpty(validationResult.Email))
+        {
+            context.Request.Headers["X-User-Email"] = validationResult.Email;
+        }
+
+        if (validationResult.Roles.Any())
+        {
+            context.Request.Headers["X-User-Roles"] = string.Join(",", validationResult.Roles);
+        }
+
+        if (!string.IsNullOrEmpty(validationResult.Provider))
+        {
+            context.Request.Headers["X-Auth-Provider"] = validationResult.Provider;
+        }
+    }
+
+    private bool AttachInternalApiKey(HttpClient httpClient)
+    {
+        var internalApiKey = _configuration["Authentication:InternalApiKey"];
+
+        if (string.IsNullOrWhiteSpace(internalApiKey))
+        {
+            _logger.LogError("Internal API key not configured for Gateway authentication");
+            return false;
+        }
+
+        // Avoid duplicate header issues
+        if (httpClient.DefaultRequestHeaders.Contains("X-Internal-API-Key"))
+            httpClient.DefaultRequestHeaders.Remove("X-Internal-API-Key");
+
+        httpClient.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
+
+        return true;
+    }
 }
+
 
 /// <summary>
 /// Extension methods for registering GatewayAuthenticationMiddleware.

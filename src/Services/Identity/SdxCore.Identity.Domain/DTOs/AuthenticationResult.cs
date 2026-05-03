@@ -16,7 +16,7 @@ public sealed record AuthenticationResult
     /// The issued authentication token. Non-null when IsSuccess is true.
     /// </summary>
     public AuthToken? Token { get; init; }
-
+    
     /// <summary>
     /// Error code when authentication fails. Null when IsSuccess is true.
     /// </summary>

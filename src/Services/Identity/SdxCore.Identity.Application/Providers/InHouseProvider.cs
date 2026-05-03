@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
+using SdxCore.Identity.Domain.Exceptions;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Domain.Interfaces.Security;
@@ -79,7 +80,7 @@ public sealed class InHouseProvider : IInHouseProvider
 
         if (user.LockedUntil.HasValue && user.LockedUntil > DateTimeOffset.UtcNow)
         {
-            _logger.LogWarning("Authentication attempt for locked account: {UserId}, locked until {LockedUntil}", 
+            _logger.LogWarning("Authentication attempt for locked account: {UserId}, locked until {LockedUntil}",
                 user.Id, user.LockedUntil);
             return Fail("Account is temporarily locked.");
         }
@@ -90,25 +91,25 @@ public sealed class InHouseProvider : IInHouseProvider
         if (!passwordValid)
         {
             _logger.LogWarning("Failed authentication attempt for user: {UserId}", user.Id);
-            
+
             // Check if we need to lock the account after incrementing
             int maxFailedAttempts = _configuration.GetValue<int>(MaxFailedAttemptsKey, DefaultMaxFailedAttempts);
             int newFailedAttempts = user.FailedAttempts + 1;
-            
+
             // Increment failed attempts
             await _userRepository.IncrementFailedAttemptsAsync(user.Id, ct);
-            
+
             // Lock account if threshold reached
             if (newFailedAttempts >= maxFailedAttempts)
             {
                 TimeSpan lockoutDuration = _configuration.GetValue<TimeSpan>(LockoutDurationKey, DefaultLockoutDuration);
                 DateTimeOffset lockedUntil = DateTimeOffset.UtcNow.Add(lockoutDuration);
                 await _userRepository.LockAccountAsync(user.Id, lockedUntil, ct);
-                
-                _logger.LogWarning("Account {UserId} locked until {LockedUntil} after {FailedAttempts} failed attempts", 
+
+                _logger.LogWarning("Account {UserId} locked until {LockedUntil} after {FailedAttempts} failed attempts",
                     user.Id, lockedUntil, newFailedAttempts);
             }
-            
+
             // Use generic error message to prevent user enumeration
             return Fail("Invalid credentials.");
         }
@@ -166,7 +167,7 @@ public sealed class InHouseProvider : IInHouseProvider
         };
 
         User createdUser = await _userRepository.CreateAsync(user, ct);
-        
+
         _logger.LogInformation("Created new user: {UserId}, Username: {Username}", createdUser.Id, createdUser.Username);
 
         return createdUser;

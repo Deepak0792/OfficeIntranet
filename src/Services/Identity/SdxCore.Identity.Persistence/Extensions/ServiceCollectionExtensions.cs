@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
 
         // Register repository implementations
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuditRepository, AuditRepository>();
 
         return services;

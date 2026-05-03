@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
     <ProjectReference Include="..\SdxCore.Identity.Domain\SdxCore.Identity.Domain.csproj" />
   </ItemGroup>
 

@@ -16,9 +16,11 @@ public sealed record AuthToken
     public required DateTimeOffset ExpiresAt { get; init; }
 
     /// <summary>
-    /// Optional refresh token for obtaining new access tokens.
+    /// The issued authentication refresh token. Non-null when IsSuccess is true.
     /// </summary>
-    public string? RefreshToken { get; init; }
+    public string? RefreshToken { get; set; }
+
+    public DateTimeOffset RefreshTokenExpiresAt { get; set; }
 
     /// <summary>
     /// The token type. Defaults to "Bearer".

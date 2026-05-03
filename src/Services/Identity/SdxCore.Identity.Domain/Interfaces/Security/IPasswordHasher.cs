@@ -20,4 +20,8 @@ public interface IPasswordHasher
     /// <param name="hash">Stored password hash.</param>
     /// <returns>True if the password matches the hash; otherwise false.</returns>
     bool Verify(string password, string hash);
+
+    string HashToken(string token);
+
+    bool VerifyToken(string token, string storedHash);
 }

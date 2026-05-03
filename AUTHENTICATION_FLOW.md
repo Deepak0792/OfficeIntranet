@@ -6,14 +6,14 @@ This document describes the complete authentication flow in the SdxCore microser
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Client    │───▶│   Gateway   │───▶│ Identity Service │    │ Other Services  │
+│   Client    │───▶│   Gateway   │───▶│ Identity Service│   │ Other Services  │
 │             │    │   (YARP)    │    │                 │    │ (Catalog, etc.) │
 └─────────────┘    └─────────────┘    └─────────────────┘    └─────────────────┘
                           │                     │                      │
                           │                     │                      │
                           └─────────────────────┼──────────────────────┘
-                                               │
-                                    Token Validation
+                                                │
+                                        Token Validation
 ```
 
 ## Components

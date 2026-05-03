@@ -24,4 +24,6 @@ public sealed record LoginResponse
     /// Optional refresh token for token renewal.
     /// </summary>
     public string? RefreshToken { get; init; }
+
+    public required DateTimeOffset RefreshTokenExpiresAt { get; init; }
 }

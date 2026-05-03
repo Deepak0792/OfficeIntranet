@@ -37,7 +37,7 @@ public sealed class PasswordHasher : IPasswordHasher
         byte[] salt = GenerateSalt();
 
         // Hash the password with Argon2id
-        byte[] hash = HashPassword(password, salt);
+        byte[] hash = PasswordHash(password, salt);
 
         // Return salt and hash as base64 strings separated by a dot
         return $"{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
@@ -68,7 +68,7 @@ public sealed class PasswordHasher : IPasswordHasher
             byte[] storedHash = Convert.FromBase64String(parts[1]);
 
             // Hash the provided password with the extracted salt
-            byte[] computedHash = HashPassword(password, salt);
+            byte[] computedHash = PasswordHash(password, salt);
 
             // Constant-time comparison to prevent timing attacks
             return CryptographicOperations.FixedTimeEquals(storedHash, computedHash);
@@ -97,7 +97,7 @@ public sealed class PasswordHasher : IPasswordHasher
     /// <param name="password">Plaintext password.</param>
     /// <param name="salt">Salt bytes.</param>
     /// <returns>Hash bytes.</returns>
-    private static byte[] HashPassword(string password, byte[] salt)
+    private static byte[] PasswordHash(string password, byte[] salt)
     {
         using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(password))
         {
@@ -108,5 +108,21 @@ public sealed class PasswordHasher : IPasswordHasher
         };
 
         return argon2.GetBytes(HashSize);
+    }
+
+    public string HashToken(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(bytes);
+    }
+
+    // Secure compare
+    public bool VerifyToken(string token, string storedHash)
+    {
+        var hash = HashToken(token);
+        return CryptographicOperations.FixedTimeEquals(
+            Convert.FromBase64String(hash),
+            Convert.FromBase64String(storedHash)
+        );
     }
 }
