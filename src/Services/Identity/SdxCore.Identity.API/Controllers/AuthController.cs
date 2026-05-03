@@ -39,11 +39,11 @@ public sealed class AuthController : ControllerBase
     /// <param name="request">Login request containing credentials.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Authentication result with token on success, error details on failure.</returns>
-    [HttpPost("login")]
+    [HttpPost("token")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+    public async Task<IActionResult> Token([FromBody] LoginRequest request, CancellationToken ct)
     {
         try
         {
