@@ -431,7 +431,7 @@ CREATE TABLE Status (
 -- JobPosting
 -- Purpose : Tracks every open or closed job requisition with full details
 --           including location, required experience, and approval status.
-CREATE TABLE JobPosting (
+CREATE TABLE hr.JobPosting (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     Title               NVARCHAR(200)   NOT NULL,
     DepartmentId        BIGINT          NOT NULL,
@@ -486,7 +486,7 @@ CREATE TABLE JobPosting (
 -- Candidate
 -- Purpose : Master profile of every applicant, independent of any specific
 --           job application. One candidate can apply to multiple postings.
-CREATE TABLE Candidate (
+CREATE TABLE hr.Candidate (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     FirstName           NVARCHAR(200)   NOT NULL,
     MiddleName          NVARCHAR(200)   NOT NULL,
@@ -523,7 +523,7 @@ CREATE TABLE Candidate (
 -- Application
 -- Purpose : Junction between Candidate and JobPosting. Tracks pipeline
 --           status from applied through hired or rejected.
-CREATE TABLE Application (
+CREATE TABLE hr.Application (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     JobPostingId        BIGINT          NOT NULL,
     CandidateId         BIGINT          NOT NULL,
@@ -561,7 +561,7 @@ CREATE TABLE Application (
 -- ApplicationStatusHistory
 -- Purpose : Immutable audit trail of every status transition an application
 --           goes through, enabling full funnel analytics.
-CREATE TABLE ApplicationStatusHistory (
+CREATE TABLE hr.ApplicationStatusHistory (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     ApplicationId               BIGINT          NOT NULL,
     OldStatus                   NVARCHAR(50)    NULL,
@@ -591,7 +591,7 @@ CREATE TABLE ApplicationStatusHistory (
 -- Purpose : Master lookup of all interview format types.
 --           Governs the InterviewType column across Interview and
 --           InterviewRoundConfig tables.
-CREATE TABLE InterviewType (
+CREATE TABLE hr.InterviewType (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     InterviewTypeCode   NVARCHAR(50)    NOT NULL,   -- Phone | Video | InPerson | Assignment | Panel
     InterviewTypeName   NVARCHAR(150)   NOT NULL,   -- e.g. "Video Call", "In-Person", "Take-Home Assignment"
@@ -612,7 +612,7 @@ CREATE TABLE InterviewType (
 --           Governs RoundNumber and RoundName across Interview and
 --           InterviewRoundConfig tables. Each round has a fixed sequence
 --           number and an associated default interview type.
-CREATE TABLE InterviewRound (
+CREATE TABLE hr.InterviewRound (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     RoundNumber         INT             NOT NULL,
     RoundCode           NVARCHAR(50)    NOT NULL,   -- HR_SCREEN | TECH_1 | TECH_2 | MANAGER | CULTURE | FINAL
@@ -645,7 +645,7 @@ CREATE TABLE InterviewRound (
 --           to the master tables above.
 -- =============================================================================
  
-CREATE TABLE InterviewRoundConfig (
+CREATE TABLE hr.InterviewRoundConfig (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     JobPostingId            BIGINT          NOT NULL,
     InterviewRoundId        BIGINT          NOT NULL,   -- FK → InterviewRound (carries RoundNumber + RoundName)
@@ -681,7 +681,7 @@ CREATE TABLE InterviewRoundConfig (
 --           FK references to master tables.
 -- =============================================================================
  
-CREATE TABLE Interview (
+CREATE TABLE hr.Interview (
     Id                       BIGINT          NOT NULL IDENTITY(1,1),
     ApplicationId            BIGINT          NOT NULL,
     InterviewRoundConfigId   BIGINT          NOT NULL,
@@ -726,7 +726,7 @@ CREATE TABLE Interview (
 -- Purpose : Governs what capacity each interviewer sits in within a panel.
 -- =============================================================================
  
-CREATE TABLE PanelRole (
+CREATE TABLE hr.PanelRole (
     Id              BIGINT          NOT NULL IDENTITY(1,1),
     RoleCode        NVARCHAR(50)    NOT NULL,
     RoleName        NVARCHAR(150)   NOT NULL,
@@ -759,7 +759,7 @@ CREATE TABLE PanelRole (
 --           Multiple interviewers in the same panel each own a different purpose.
 -- =============================================================================
  
-CREATE TABLE InterviewPurpose (
+CREATE TABLE hr.InterviewPurpose (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     PurposeCode         NVARCHAR(50)    NOT NULL,
     PurposeName         NVARCHAR(150)   NOT NULL,
@@ -803,7 +803,7 @@ CREATE TABLE InterviewPurpose (
 --   └───────────────────────────────────────────────────────────────────┘
 -- =============================================================================
  
-CREATE TABLE InterviewPanel (
+CREATE TABLE hr.InterviewPanel (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     InterviewId             BIGINT          NOT NULL,
     InterviewerEmployeeId   BIGINT          NOT NULL,
@@ -850,7 +850,7 @@ CREATE TABLE InterviewPanel (
 --           scoped to the interviewer's assigned role and purpose.
 -- =============================================================================
  
-CREATE TABLE InterviewFeedback (
+CREATE TABLE hr.InterviewFeedback (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     InterviewPanelId        BIGINT          NOT NULL,
     OverallRating           DECIMAL(3,1)    NULL,           -- 1.0 to 10.0
@@ -886,7 +886,7 @@ CREATE TABLE InterviewFeedback (
 -- PackageNegotiation
 -- Purpose : Captures the full salary and benefits negotiation thread between
 --           HR and the candidate, with each counter-offer as a new row.
-CREATE TABLE PackageNegotiation (
+CREATE TABLE hr.PackageNegotiation (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     ApplicationId           BIGINT          NOT NULL,
     HREmployeeId            BIGINT          NOT NULL,
@@ -922,7 +922,7 @@ CREATE TABLE PackageNegotiation (
 -- OfferLetter
 -- Purpose : Represents the formal offer document sent to a candidate after
 --           negotiation is complete. Tracks acceptance/rejection and expiry.
-CREATE TABLE OfferLetter (
+CREATE TABLE hr.OfferLetter (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     ApplicationId       BIGINT          NOT NULL,
     PackageNegotiationId BIGINT         NULL,
@@ -970,7 +970,7 @@ CREATE TABLE OfferLetter (
 -- | 1  | Full-Time Day One Checklist | DayOne        | FullTime       |
 -- | 2  | Intern Joining Checklist    | PreOnboarding | Intern         |
 
-CREATE TABLE OnboardingChecklist (
+CREATE TABLE hr.OnboardingChecklist (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     ChecklistName           NVARCHAR(200)   NOT NULL,
     Phase                   NVARCHAR(30)    NOT NULL,   -- PreOnboarding | DayOne | FirstWeek | PostOnboarding
@@ -992,7 +992,7 @@ CREATE TABLE OnboardingChecklist (
 -- | 3  | 1                     | Conduct HR induction    | HR        |
 -- | 4  | 1                     | Submit signed documents | Employee  |
 
-CREATE TABLE OnboardingChecklistItem (
+CREATE TABLE hr.OnboardingChecklistItem (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     OnboardingChecklistId       BIGINT          NOT NULL,
     TaskName                    NVARCHAR(250)   NOT NULL,
@@ -1017,7 +1017,7 @@ CREATE TABLE OnboardingChecklistItem (
 -- | ---------- | --------------- | ------- |
 -- | 101        | Allocate laptop | Pending |
 
-CREATE TABLE OnboardingTask (
+CREATE TABLE hr.OnboardingTask (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId                  BIGINT          NOT NULL,
     OnboardingChecklistItemId   BIGINT          NULL,
@@ -1059,7 +1059,7 @@ CREATE TABLE OnboardingTask (
 -- DocumentType
 -- Purpose : Master catalog of accepted document types with rules on which
 --           phase they are required in (PreOnboarding, PostOnboarding, or Both).
-CREATE TABLE DocumentType (
+CREATE TABLE hr.DocumentType (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     DocumentTypeName    NVARCHAR(150)   NOT NULL,   -- Aadhaar | PAN | Degree Certificate | etc.
     Category            NVARCHAR(100)   NULL,       -- Identity | Address | Educational | Experience
@@ -1078,7 +1078,7 @@ CREATE TABLE DocumentType (
 -- DocumentVerification
 -- Purpose : Tracks every document submitted by an employee and its verification
 --           status across both pre- and post-onboarding phases.
-CREATE TABLE DocumentVerification (
+CREATE TABLE hr.DocumentVerification (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId              BIGINT          NOT NULL,
     DocumentTypeId          BIGINT          NOT NULL,
@@ -1129,7 +1129,7 @@ CREATE TABLE DocumentVerification (
 -- BGVAgency
 -- Purpose : Master list of third-party background verification agencies
 --           used by the organisation.
-CREATE TABLE BGVAgency (
+CREATE TABLE hr.BGVAgency (
     Id              BIGINT          NOT NULL IDENTITY(1,1),
     AgencyName      NVARCHAR(200)   NOT NULL,
     ContactPerson   NVARCHAR(200)   NULL,
@@ -1146,7 +1146,7 @@ CREATE TABLE BGVAgency (
 -- BackgroundVerification
 -- Purpose : Tracks each type of background check (criminal, employment history,
 --           education, reference) per employee across pre- and post-onboarding.
-CREATE TABLE BackgroundVerification (
+CREATE TABLE hr.BackgroundVerification (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId                  BIGINT          NOT NULL,
     BGVAgencyId                 BIGINT          NULL,
@@ -1205,7 +1205,7 @@ CREATE TABLE BackgroundVerification (
 -- PerformanceCycle
 -- Purpose : Defines appraisal periods (annual, bi-annual, quarterly) during
 --           which goal setting and performance reviews are conducted.
-CREATE TABLE PerformanceCycle (
+CREATE TABLE hr.PerformanceCycle (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     CycleName               NVARCHAR(150)   NOT NULL,
     PerformanceCycleTypeStatusId BIGINT          NOT NULL,  -- Annual | BiAnnual | Quarterly | Probation
@@ -1241,7 +1241,7 @@ CREATE TABLE PerformanceCycle (
 
 -- Goal
 -- Purpose : Individual goals set by an employee for a given performance cycle.
-CREATE TABLE Goal (
+CREATE TABLE hr.Goal (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId              BIGINT          NOT NULL,
     PerformanceCycleId      BIGINT          NOT NULL,
@@ -1281,7 +1281,7 @@ CREATE TABLE Goal (
 
 -- GoalKeyResult
 -- Purpose : Measurable key results or milestones under each goal (OKR support).
-CREATE TABLE GoalKeyResult (
+CREATE TABLE hr.GoalKeyResult (
     Id              BIGINT          NOT NULL IDENTITY(1,1),
     GoalId          BIGINT          NOT NULL,
     Description     NVARCHAR(MAX)   NOT NULL,
@@ -1305,7 +1305,7 @@ CREATE TABLE GoalKeyResult (
 -- PerformanceReview
 -- Purpose : Formal review record for each employee in a cycle, capturing
 --           self-assessment and manager evaluation with final rating.
-CREATE TABLE PerformanceReview (
+CREATE TABLE hr.PerformanceReview (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId              BIGINT          NOT NULL,
     PerformanceCycleId      BIGINT          NOT NULL,
@@ -1348,7 +1348,7 @@ CREATE TABLE PerformanceReview (
 
 -- PerformanceReviewHistory
 -- Purpose : Tracks every status change in a review for audit and escalation.
-CREATE TABLE PerformanceReviewHistory (
+CREATE TABLE hr.PerformanceReviewHistory (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     PerformanceReviewId         BIGINT          NOT NULL,
     OldStatus                   NVARCHAR(30)    NULL,
@@ -1377,7 +1377,7 @@ CREATE TABLE PerformanceReviewHistory (
 -- TrainingCategory
 -- Purpose : Top-level grouping of all training programs
 --           (e.g. Technical, Compliance, Leadership, Soft Skills).
-CREATE TABLE TrainingCategory (
+CREATE TABLE hr.TrainingCategory (
     Id                  BIGINT          NOT NULL IDENTITY(1,1),
     CategoryName        NVARCHAR(150)   NOT NULL,
     Description         NVARCHAR(MAX)   NULL,
@@ -1395,7 +1395,7 @@ CREATE TABLE TrainingCategory (
 -- TrainingProgram
 -- Purpose : Individual courses or training modules within a category.
 --           Tracks delivery mode, duration, and whether it is mandatory.
-CREATE TABLE TrainingProgram (
+CREATE TABLE hr.TrainingProgram (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     TrainingCategoryId      BIGINT          NOT NULL,
     Title                   NVARCHAR(300)   NOT NULL,
@@ -1423,7 +1423,7 @@ CREATE TABLE TrainingProgram (
 -- TrainingBatch
 -- Purpose : Scheduled batch/cohort of a training program with dates,
 --           venue/link, and facilitator information.
-CREATE TABLE TrainingBatch (
+CREATE TABLE hr.TrainingBatch (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     TrainingProgramId       BIGINT          NOT NULL,
     BatchName               NVARCHAR(200)   NULL,
@@ -1455,7 +1455,7 @@ CREATE TABLE TrainingBatch (
 -- EmployeeTrainingRecord
 -- Purpose : Tracks each employee's enrollment and completion status for
 --           every training program/batch they participate in.
-CREATE TABLE EmployeeTrainingRecord (
+CREATE TABLE hr.EmployeeTrainingRecord (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId                  BIGINT          NOT NULL,
     TrainingProgramId           BIGINT          NOT NULL,
@@ -1501,7 +1501,7 @@ CREATE TABLE EmployeeTrainingRecord (
 -- ExitReason
 -- Purpose : Master lookup of standardised exit reason categories to ensure
 --           consistent reporting across voluntary and involuntary departures.
-CREATE TABLE ExitReason (
+CREATE TABLE hr.ExitReason (
     Id              BIGINT          NOT NULL IDENTITY(1,1),
     ReasonText      NVARCHAR(200)   NOT NULL,    -- Better Opportunity | Personal | Relocation | etc.
     Category        NVARCHAR(50)    NOT NULL,    -- Voluntary | Involuntary
@@ -1518,7 +1518,7 @@ CREATE TABLE ExitReason (
 -- ExitRecord
 -- Purpose : Captures everything about an employee's departure — reason, dates,
 --           exit interview outcome, clearance, and final settlement status.
-CREATE TABLE ExitRecord (
+CREATE TABLE hr.ExitRecord (
     Id                          BIGINT          NOT NULL IDENTITY(1,1),
     EmployeeId                  BIGINT          NOT NULL,
     ExitReasonId                BIGINT          NULL,
@@ -1583,7 +1583,7 @@ CREATE TABLE ExitRecord (
 -- ExitClearanceItem
 -- Purpose : Per-employee checklist of clearance tasks (asset return, access
 --           revocation, knowledge transfer) tracked against each exit record.
-CREATE TABLE ExitClearanceItem (
+CREATE TABLE hr.ExitClearanceItem (
     Id                      BIGINT          NOT NULL IDENTITY(1,1),
     ExitRecordId            BIGINT          NOT NULL,
     ItemName                NVARCHAR(200)   NOT NULL,   -- Laptop Returned | ID Card Collected | etc.
