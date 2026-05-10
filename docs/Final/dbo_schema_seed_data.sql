@@ -1083,43 +1083,6 @@ INSERT INTO CompOffBalance (EmployeeId, CompOffTypeId, EarnedDate, ExpiryDate, T
  '2025-01-26', '2025-04-26', 1.00, 0.00, NULL);
 
 
--- =============================================================================================================
--- MODULE 13: PAYROLL
--- =============================================================================================================
-
-PRINT 'Inserting PayrollComponent...';
-INSERT INTO PayrollComponent (ComponentCode, ComponentName, IsEarning, IsDeduction) VALUES
-('BASIC',       'Basic Salary',                 1, 0),
-('HRA',         'House Rent Allowance',         1, 0),
-('TA',          'Transport Allowance',          1, 0),
-('MEDICAL_ALL', 'Medical Allowance',            1, 0),
-('SPECIAL_ALL', 'Special Allowance',            1, 0),
-('NIGHTALL',    'Night Shift Allowance',        1, 0),
-('OTPAY',       'Overtime Pay',                 1, 0),
-('BONUS',       'Performance Bonus',            1, 0),
-('PF_EMP',      'Provident Fund (Employee)',    0, 1),
-('PF_ER',       'Provident Fund (Employer)',    1, 0),
-('ESI_EMP',     'ESI (Employee Contribution)',  0, 1),
-('ESI_ER',      'ESI (Employer Contribution)',  1, 0),
-('PT',          'Professional Tax',             0, 1),
-('TDS',         'Income Tax (TDS)',             0, 1),
-('ADVANCE_DED', 'Salary Advance Deduction',     0, 1),
-('GRATUITY',    'Gratuity Provision',           1, 0);
-
-
-PRINT 'Inserting PayrollAttendanceSummary (March 2025)...';
-INSERT INTO PayrollAttendanceSummary (EmployeeId, PayrollMonth, PayrollYear, TotalWorkingDays, PresentDays, LeaveDays, AbsentDays, OvertimeMinutes, ProcessedAt) VALUES
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP001'), 3, 2025, 21.00, 21.00,  0.00, 0.00, 35,  '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP002'), 3, 2025, 21.00, 20.00,  1.00, 0.00, 0,   '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP003'), 3, 2025, 25.00, 25.00,  0.00, 0.00, 120, '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP004'), 3, 2025, 21.00, 21.00,  0.00, 0.00, 0,   '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP005'), 3, 2025, 21.00, 20.50,  0.50, 0.00, 0,   '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP009'), 3, 2025, 25.00, 22.00,  3.00, 0.00, 60,  '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP010'), 3, 2025, 26.00, 26.00,  0.00, 0.00, 90,  '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP011'), 3, 2025, 26.00, 25.00,  0.00, 1.00, 0,   '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP012'), 3, 2025, 25.00, 25.00,  0.00, 0.00, 0,   '2025-04-01 02:00:00'),
-((SELECT Id FROM Employee WHERE EmployeeCode='EMP020'), 3, 2025, 15.00, 15.00,  0.00, 0.00, 180, '2025-04-01 02:00:00');
-
 
 -- =============================================================================================================
 -- MODULE 14: BIOMETRIC & GEO-FENCE
@@ -1267,8 +1230,6 @@ SELECT 'LeaveRequest',                    COUNT(*)               FROM LeaveReque
 SELECT 'LeaveBalance',                    COUNT(*)               FROM LeaveBalance         UNION ALL
 SELECT 'CompOffType',                     COUNT(*)               FROM CompOffType          UNION ALL
 SELECT 'CompOffBalance',                  COUNT(*)               FROM CompOffBalance       UNION ALL
-SELECT 'PayrollComponent',                COUNT(*)               FROM PayrollComponent     UNION ALL
-SELECT 'PayrollAttendanceSummary',        COUNT(*)               FROM PayrollAttendanceSummary UNION ALL
 SELECT 'BiometricDevice',                 COUNT(*)               FROM BiometricDevice      UNION ALL
 SELECT 'BiometricEmployeeMapping',        COUNT(*)               FROM BiometricEmployeeMapping UNION ALL
 SELECT 'GeoFence',                        COUNT(*)               FROM GeoFence             UNION ALL

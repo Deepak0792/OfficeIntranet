@@ -1,6 +1,7 @@
 -- =============================================================================================================
 -- ENTERPRISE DYNAMIC APPROVAL WORKFLOW ENGINE
 -- SQL SERVER DATABASE SCHEMA
+-- Schema: workflow
 -- =============================================================================================================
 -- PURPOSE:
 --   Reusable, configuration-driven approval workflow engine that operates across all business modules.
@@ -24,6 +25,16 @@
 -- =============================================================================================================
 
 
+-- =============================================================================================================
+-- SCHEMA CREATION
+-- =============================================================================================================
+
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'workflow')
+BEGIN
+    EXEC('CREATE SCHEMA workflow');
+END;
+GO
+
 
 -- =============================================================================================================
 -- MODULE 1: WORKFLOW CONFIGURATION
@@ -37,7 +48,7 @@
 -- (e.g. Leave, Attendance Regularization, Shift Swap).
 -- EntityName maps to the source database entity/table name.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowModule (
+CREATE TABLE workflow.WorkflowModule (
     Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
     ModuleCode      NVARCHAR(100)   NOT NULL UNIQUE,
     ModuleName      NVARCHAR(200)   NOT NULL,
@@ -53,7 +64,7 @@ CREATE TABLE WorkflowModule (
 -- business module. Multiple versions can coexist;
 -- VersionNo differentiates them. WorkflowCode is globally unique.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowDefinition (
+CREATE TABLE workflow.WorkflowDefinition (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     WorkflowModuleId    BIGINT          NOT NULL,
     WorkflowCode        NVARCHAR(100)   NOT NULL UNIQUE,
@@ -65,7 +76,7 @@ CREATE TABLE WorkflowDefinition (
 
     CONSTRAINT FK_WorkflowDefinition_Module
         FOREIGN KEY (WorkflowModuleId)
-        REFERENCES WorkflowModule(Id)
+        REFERENCES workflow.WorkflowModule(Id)
 );
 
 
@@ -75,7 +86,7 @@ CREATE TABLE WorkflowDefinition (
 -- Examples: Approval, Review, Notification, Auto Approval.
 -- Drives application-layer handling logic per step.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowStepType (
+CREATE TABLE workflow.WorkflowStepType (
     Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
     StepTypeCode    NVARCHAR(100)   NOT NULL UNIQUE,
     StepTypeName    NVARCHAR(200)   NOT NULL,
@@ -92,7 +103,7 @@ CREATE TABLE WorkflowStepType (
 -- Unique constraint on (WorkflowDefinitionId, StepNo) prevents
 -- duplicate step ordering within a workflow.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowStep (
+CREATE TABLE workflow.WorkflowStep (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     WorkflowDefinitionId    BIGINT          NOT NULL,
     StepNo                  INT             NOT NULL,
@@ -106,11 +117,11 @@ CREATE TABLE WorkflowStep (
 
     CONSTRAINT FK_WorkflowStep_Definition
         FOREIGN KEY (WorkflowDefinitionId)
-        REFERENCES WorkflowDefinition(Id),
+        REFERENCES workflow.WorkflowDefinition(Id),
 
     CONSTRAINT FK_WorkflowStep_StepType
         FOREIGN KEY (WorkflowStepTypeId)
-        REFERENCES WorkflowStepType(Id),
+        REFERENCES workflow.WorkflowStepType(Id),
 
     CONSTRAINT UQ_WorkflowStep_Order
         UNIQUE (WorkflowDefinitionId, StepNo)
@@ -123,7 +134,7 @@ CREATE TABLE WorkflowStep (
 -- Examples: Reporting Manager (dynamic), Role-based, Specific User,
 -- Department Head, HR Manager.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowApproverType (
+CREATE TABLE workflow.WorkflowApproverType (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     ApproverTypeCode    NVARCHAR(100)   NOT NULL UNIQUE,
     ApproverTypeName    NVARCHAR(200)   NOT NULL,
@@ -140,7 +151,7 @@ CREATE TABLE WorkflowApproverType (
 -- PriorityOrder supports parallel approvers on the same step.
 -- IsMandatory distinguishes required from optional approvers.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowStepApprover (
+CREATE TABLE workflow.WorkflowStepApprover (
     Id                      BIGINT  PRIMARY KEY IDENTITY(1,1),
     WorkflowStepId          BIGINT  NOT NULL,
     WorkflowApproverTypeId  BIGINT  NOT NULL,
@@ -152,11 +163,11 @@ CREATE TABLE WorkflowStepApprover (
 
     CONSTRAINT FK_WorkflowStepApprover_Step
         FOREIGN KEY (WorkflowStepId)
-        REFERENCES WorkflowStep(Id),
+        REFERENCES workflow.WorkflowStep(Id),
 
     CONSTRAINT FK_WorkflowStepApprover_ApproverType
         FOREIGN KEY (WorkflowApproverTypeId)
-        REFERENCES WorkflowApproverType(Id)
+        REFERENCES workflow.WorkflowApproverType(Id)
 );
 
 
@@ -176,7 +187,7 @@ CREATE TABLE WorkflowStepApprover (
 -- apply to the same employee. EffectiveFrom / EffectiveTo
 -- supports advance-scheduled workflow changes.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowAssignment (
+CREATE TABLE workflow.WorkflowAssignment (
     Id                      BIGINT  PRIMARY KEY IDENTITY(1,1),
     WorkflowDefinitionId    BIGINT  NOT NULL,
     ScopeTypeId             BIGINT  NOT NULL,
@@ -189,7 +200,7 @@ CREATE TABLE WorkflowAssignment (
 
     CONSTRAINT FK_WorkflowAssignment_Definition
         FOREIGN KEY (WorkflowDefinitionId)
-        REFERENCES WorkflowDefinition(Id)
+        REFERENCES workflow.WorkflowDefinition(Id)
 );
 
 
@@ -206,7 +217,7 @@ CREATE TABLE WorkflowAssignment (
 -- IsFinalStatus flags terminal states (Approved, Rejected, Cancelled)
 -- after which no further actions are permitted.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowStatus (
+CREATE TABLE workflow.WorkflowStatus (
     Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
     StatusCode      NVARCHAR(100)   NOT NULL UNIQUE,
     StatusName      NVARCHAR(200)   NOT NULL,
@@ -225,7 +236,7 @@ CREATE TABLE WorkflowStatus (
 -- CurrentWorkflowStepId tracks the active step awaiting action.
 -- CompletedAt is populated when the instance reaches a final status.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowInstance (
+CREATE TABLE workflow.WorkflowInstance (
     Id                      BIGINT      PRIMARY KEY IDENTITY(1,1),
     WorkflowDefinitionId    BIGINT      NOT NULL,
     WorkflowModuleId        BIGINT      NOT NULL,
@@ -238,19 +249,19 @@ CREATE TABLE WorkflowInstance (
 
     CONSTRAINT FK_WorkflowInstance_Definition
         FOREIGN KEY (WorkflowDefinitionId)
-        REFERENCES WorkflowDefinition(Id),
+        REFERENCES workflow.WorkflowDefinition(Id),
 
     CONSTRAINT FK_WorkflowInstance_Module
         FOREIGN KEY (WorkflowModuleId)
-        REFERENCES WorkflowModule(Id),
+        REFERENCES workflow.WorkflowModule(Id),
 
     CONSTRAINT FK_WorkflowInstance_CurrentStep
         FOREIGN KEY (CurrentWorkflowStepId)
-        REFERENCES WorkflowStep(Id),
+        REFERENCES workflow.WorkflowStep(Id),
 
     CONSTRAINT FK_WorkflowInstance_Status
         FOREIGN KEY (WorkflowStatusId)
-        REFERENCES WorkflowStatus(Id)
+        REFERENCES workflow.WorkflowStatus(Id)
 );
 
 
@@ -267,7 +278,7 @@ CREATE TABLE WorkflowInstance (
 -- system can perform on a workflow instance.
 -- Examples: Submit, Approve, Reject, Return, Escalate, Cancel.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowActionType (
+CREATE TABLE workflow.WorkflowActionType (
     Id          BIGINT          PRIMARY KEY IDENTITY(1,1),
     ActionCode  NVARCHAR(100)   NOT NULL UNIQUE,
     ActionName  NVARCHAR(200)   NOT NULL,
@@ -284,7 +295,7 @@ CREATE TABLE WorkflowActionType (
 -- WorkflowStepId is nullable to support instance-level actions
 -- (e.g. Cancel) that are not tied to a specific step.
 -- -------------------------------------------------------
-CREATE TABLE WorkflowActionHistory (
+CREATE TABLE workflow.WorkflowActionHistory (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     WorkflowInstanceId      BIGINT          NOT NULL,
     WorkflowStepId          BIGINT          NULL,
@@ -297,24 +308,25 @@ CREATE TABLE WorkflowActionHistory (
 
     CONSTRAINT FK_WorkflowActionHistory_Instance
         FOREIGN KEY (WorkflowInstanceId)
-        REFERENCES WorkflowInstance(Id),
+        REFERENCES workflow.WorkflowInstance(Id),
 
     CONSTRAINT FK_WorkflowActionHistory_Step
         FOREIGN KEY (WorkflowStepId)
-        REFERENCES WorkflowStep(Id),
+        REFERENCES workflow.WorkflowStep(Id),
 
     CONSTRAINT FK_WorkflowActionHistory_ActionType
         FOREIGN KEY (WorkflowActionTypeId)
-        REFERENCES WorkflowActionType(Id),
+        REFERENCES workflow.WorkflowActionType(Id),
 
     CONSTRAINT FK_WorkflowActionHistory_FromStatus
         FOREIGN KEY (FromWorkflowStatusId)
-        REFERENCES WorkflowStatus(Id),
+        REFERENCES workflow.WorkflowStatus(Id),
 
     CONSTRAINT FK_WorkflowActionHistory_ToStatus
         FOREIGN KEY (ToWorkflowStatusId)
-        REFERENCES WorkflowStatus(Id)
+        REFERENCES workflow.WorkflowStatus(Id)
 );
+
 
 
 
@@ -324,24 +336,24 @@ CREATE TABLE WorkflowActionHistory (
 
 -- Workflow Assignment: scope-based lookup (primary query path for resolving active workflow)
 CREATE INDEX IX_WorkflowAssignment_Scope
-ON WorkflowAssignment (ScopeTypeId, ScopeReferenceId);
+ON workflow.WorkflowAssignment (ScopeTypeId, ScopeReferenceId);
 
 -- Workflow Instance: lookup by module and source transaction
 CREATE INDEX IX_WorkflowInstance_Module_Transaction
-ON WorkflowInstance (WorkflowModuleId, ReferenceTransactionId);
+ON workflow.WorkflowInstance (WorkflowModuleId, ReferenceTransactionId);
 
 -- Workflow Instance: filter by current status (e.g. all pending instances)
 CREATE INDEX IX_WorkflowInstance_Status
-ON WorkflowInstance (WorkflowStatusId);
+ON workflow.WorkflowInstance (WorkflowStatusId);
 
 -- Workflow Action History: all actions for a given instance
 CREATE INDEX IX_WorkflowActionHistory_Instance
-ON WorkflowActionHistory (WorkflowInstanceId);
+ON workflow.WorkflowActionHistory (WorkflowInstanceId);
 
 -- Workflow Step: ordered step resolution within a workflow definition
 CREATE INDEX IX_WorkflowStep_Definition_StepNo
-ON WorkflowStep (WorkflowDefinitionId, StepNo);
+ON workflow.WorkflowStep (WorkflowDefinitionId, StepNo);
 
 -- Workflow Step Approver: approver lookup for a given step
 CREATE INDEX IX_WorkflowStepApprover_Step
-ON WorkflowStepApprover (WorkflowStepId);
+ON workflow.WorkflowStepApprover (WorkflowStepId);

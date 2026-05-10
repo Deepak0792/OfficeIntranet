@@ -17,7 +17,7 @@ BEGIN TRANSACTION;
 -- SECTION 1: WORKFLOW MODULES
 -- =============================================================================================================
 
-INSERT INTO WorkflowModule (ModuleCode, ModuleName, EntityName)
+INSERT INTO workflow.WorkflowModule (ModuleCode, ModuleName, EntityName)
 SELECT v.ModuleCode, v.ModuleName, v.EntityName
 FROM (VALUES
     ('LEAVE',               'Leave Management',              'LeaveRequest'),
@@ -31,7 +31,7 @@ FROM (VALUES
     ('PAYROLL_CORRECTION',  'Payroll Attendance Correction', 'PayrollAttendanceSummary')
 ) AS v(ModuleCode, ModuleName, EntityName)
 WHERE NOT EXISTS (
-    SELECT 1 FROM WorkflowModule wm WHERE wm.ModuleCode = v.ModuleCode
+    SELECT 1 FROM workflow.WorkflowModule wm WHERE wm.ModuleCode = v.ModuleCode
 );
 GO
 
@@ -42,9 +42,9 @@ GO
 -- WorkflowModuleId resolved via ModuleCode subquery
 -- =============================================================================================================
 
-INSERT INTO WorkflowDefinition (WorkflowModuleId, WorkflowCode, WorkflowName, VersionNo, Description)
+INSERT INTO workflow.WorkflowDefinition (WorkflowModuleId, WorkflowCode, WorkflowName, VersionNo, Description)
 SELECT
-    (SELECT Id FROM WorkflowModule WHERE ModuleCode = v.ModuleCode),
+    (SELECT Id FROM workflow.WorkflowModule WHERE ModuleCode = v.ModuleCode),
     v.WorkflowCode, v.WorkflowName, v.VersionNo, v.Description
 FROM (VALUES
 
@@ -80,7 +80,7 @@ FROM (VALUES
 
 ) AS v(ModuleCode, WorkflowCode, WorkflowName, VersionNo, Description)
 WHERE NOT EXISTS (
-    SELECT 1 FROM WorkflowDefinition wd WHERE wd.WorkflowCode = v.WorkflowCode
+    SELECT 1 FROM workflow.WorkflowDefinition wd WHERE wd.WorkflowCode = v.WorkflowCode
 );
 GO
 
@@ -89,7 +89,7 @@ GO
 -- Healthcare Organization (MediCore Health Systems)
 -- =============================================================================================================
 
-INSERT INTO WorkflowStepType (StepTypeCode, StepTypeName)
+INSERT INTO workflow.WorkflowStepType (StepTypeCode, StepTypeName)
 SELECT v.StepTypeCode, v.StepTypeName
 FROM (VALUES
     ('APPROVAL',      'Approval'),
@@ -98,7 +98,7 @@ FROM (VALUES
     ('AUTO_APPROVAL', 'Auto Approval')
 ) AS v(StepTypeCode, StepTypeName)
 WHERE NOT EXISTS (
-    SELECT 1 FROM WorkflowStepType wst WHERE wst.StepTypeCode = v.StepTypeCode
+    SELECT 1 FROM workflow.WorkflowStepType wst WHERE wst.StepTypeCode = v.StepTypeCode
 );
 
 GO
@@ -109,13 +109,13 @@ GO
 -- WorkflowStepTypeId resolved via StepTypeCode subquery
 -- =============================================================================================================
 
-INSERT INTO WorkflowStep
+INSERT INTO workflow.WorkflowStep
     (WorkflowDefinitionId, StepNo, StepName, WorkflowStepTypeId, IsFinalStep, AllowDelegation, EscalationAfterHours)
 SELECT
-    (SELECT Id FROM WorkflowDefinition WHERE WorkflowCode  = v.WorkflowCode),
+    (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode  = v.WorkflowCode),
     v.StepNo,
     v.StepName,
-    (SELECT Id FROM WorkflowStepType   WHERE StepTypeCode  = v.StepTypeCode),
+    (SELECT Id FROM workflow.WorkflowStepType   WHERE StepTypeCode  = v.StepTypeCode),
     v.IsFinalStep,
     v.AllowDelegation,
     v.EscalationAfterHours
@@ -163,8 +163,8 @@ FROM (VALUES
 ) AS v(WorkflowCode, StepNo, StepName, StepTypeCode, IsFinalStep, AllowDelegation, EscalationAfterHours)
 WHERE NOT EXISTS (
     SELECT 1
-    FROM   WorkflowStep ws
-    INNER JOIN WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
+    FROM   workflow.WorkflowStep ws
+    INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
     WHERE  wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
 );
 GO
@@ -175,7 +175,7 @@ GO
 -- Healthcare Organization (MediCore Health Systems)
 -- =============================================================================================================
 
-INSERT INTO WorkflowApproverType (ApproverTypeCode, ApproverTypeName)
+INSERT INTO workflow.WorkflowApproverType (ApproverTypeCode, ApproverTypeName)
 SELECT v.ApproverTypeCode, v.ApproverTypeName
 FROM (VALUES
     ('REPORTING_MANAGER', 'Reporting Manager'),
@@ -185,7 +185,7 @@ FROM (VALUES
     ('USER',              'Specific User')
 ) AS v(ApproverTypeCode, ApproverTypeName)
 WHERE NOT EXISTS (
-    SELECT 1 FROM WorkflowApproverType wat WHERE wat.ApproverTypeCode = v.ApproverTypeCode
+    SELECT 1 FROM workflow.WorkflowApproverType wat WHERE wat.ApproverTypeCode = v.ApproverTypeCode
 );
 
 -- =============================================================================================================
@@ -198,15 +198,15 @@ WHERE NOT EXISTS (
 --   EmployeeId 2 = Chief Medical Officer
 -- =============================================================================================================
 
-INSERT INTO WorkflowStepApprover
+INSERT INTO workflow.WorkflowStepApprover
     (WorkflowStepId, WorkflowApproverTypeId, ApproverReferenceId, PriorityOrder, IsMandatory)
 SELECT
     (
-        SELECT ws.Id FROM WorkflowStep ws
-        INNER JOIN WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
+        SELECT ws.Id FROM workflow.WorkflowStep ws
+        INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
         WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
     ),
-    (SELECT Id FROM WorkflowApproverType WHERE ApproverTypeCode = v.ApproverTypeCode),
+    (SELECT Id FROM workflow.WorkflowApproverType WHERE ApproverTypeCode = v.ApproverTypeCode),
     v.ApproverReferenceId,
     v.PriorityOrder,
     v.IsMandatory
@@ -263,10 +263,10 @@ GO
 -- =============================================================================================================
 
 
-INSERT INTO WorkflowAssignment
+INSERT INTO workflow.WorkflowAssignment
     (WorkflowDefinitionId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, EffectiveTo, PriorityOrder)
 SELECT
-    (SELECT Id FROM WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
+    (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
     v.ScopeTypeId,
     CASE v.ScopeTypeId
         WHEN 1 THEN 1  -- GLOBAL
@@ -321,8 +321,8 @@ FROM (VALUES
 ) AS v(WorkflowCode, ScopeTypeId, ScopeRefCode, EffectiveFrom, EffectiveTo, PriorityOrder)
 WHERE NOT EXISTS (
     SELECT 1
-    FROM   WorkflowAssignment  wa
-    INNER JOIN WorkflowDefinition wd ON wd.Id = wa.WorkflowDefinitionId
+    FROM   workflow.WorkflowAssignment  wa
+    INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = wa.WorkflowDefinitionId
     WHERE  wd.WorkflowCode   = v.WorkflowCode
       AND  wa.ScopeTypeId    = v.ScopeTypeId
       AND  wa.ScopeReferenceId = CASE v.ScopeTypeId
@@ -341,7 +341,7 @@ GO
 -- Healthcare Organization (MediCore Health Systems)
 -- =============================================================================================================
 
-INSERT INTO WorkflowStatus (StatusCode, StatusName, IsFinalStatus)
+INSERT INTO workflow.WorkflowStatus (StatusCode, StatusName, IsFinalStatus)
 SELECT v.StatusCode, v.StatusName, v.IsFinalStatus
 FROM (VALUES
     ('PENDING',     'Pending',     0),
@@ -351,7 +351,7 @@ FROM (VALUES
     ('CANCELLED',   'Cancelled',   1)
 ) AS v(StatusCode, StatusName, IsFinalStatus)
 WHERE NOT EXISTS (
-    SELECT 1 FROM WorkflowStatus ws WHERE ws.StatusCode = v.StatusCode
+    SELECT 1 FROM workflow.WorkflowStatus ws WHERE ws.StatusCode = v.StatusCode
 );
 
 -- =============================================================================================================
@@ -360,21 +360,21 @@ WHERE NOT EXISTS (
 -- CurrentWorkflowStepId: resolved by (WorkflowCode + StepNo); NULL for completed instances
 -- =============================================================================================================
 
-INSERT INTO WorkflowInstance
+INSERT INTO workflow.WorkflowInstance
     (WorkflowDefinitionId, WorkflowModuleId, ReferenceTransactionId,
      CurrentWorkflowStepId, WorkflowStatusId, InitiatedBy, InitiatedAt, CompletedAt)
 SELECT
-    (SELECT Id FROM WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
-    (SELECT Id FROM WorkflowModule     WHERE ModuleCode   = v.ModuleCode),
+    (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
+    (SELECT Id FROM workflow.WorkflowModule     WHERE ModuleCode   = v.ModuleCode),
     v.ReferenceTransactionId,
     CASE WHEN v.CurrentStepNo IS NULL THEN NULL
          ELSE (
-             SELECT ws.Id FROM WorkflowStep ws
-             INNER JOIN WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
+             SELECT ws.Id FROM workflow.WorkflowStep ws
+             INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
              WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.CurrentStepNo
          )
     END,
-    (SELECT Id FROM WorkflowStatus WHERE StatusCode = v.StatusCode),
+    (SELECT Id FROM workflow.WorkflowStatus WHERE StatusCode = v.StatusCode),
     v.InitiatedBy,
     v.InitiatedAt,
     v.CompletedAt
@@ -405,7 +405,7 @@ GO
 -- Healthcare Organization (MediCore Health Systems)
 -- =============================================================================================================
 
-INSERT INTO WorkflowActionType (ActionCode, ActionName)
+INSERT INTO workflow.WorkflowActionType (ActionCode, ActionName)
 SELECT v.ActionCode, v.ActionName
 FROM (VALUES
     ('SUBMIT',   'Submit'),
@@ -416,7 +416,7 @@ FROM (VALUES
     ('CANCEL',   'Cancel')
 ) AS v(ActionCode, ActionName)
 WHERE NOT EXISTS (
-    SELECT 1 FROM WorkflowActionType wat WHERE wat.ActionCode = v.ActionCode
+    SELECT 1 FROM workflow.WorkflowActionType wat WHERE wat.ActionCode = v.ActionCode
 );
 
 
@@ -428,32 +428,32 @@ WHERE NOT EXISTS (
 -- FromWorkflowStatusId / ToWorkflowStatusId resolved via StatusCode; NULL = no prior state
 -- =============================================================================================================
 
-INSERT INTO WorkflowActionHistory
+INSERT INTO workflow.WorkflowActionHistory
     (WorkflowInstanceId, WorkflowStepId, WorkflowActionTypeId,
      ActionBy, ActionAt, Remarks, FromWorkflowStatusId, ToWorkflowStatusId)
 SELECT
     (
-        SELECT wi.Id FROM WorkflowInstance wi
-        INNER JOIN WorkflowDefinition wd ON wd.Id = wi.WorkflowDefinitionId
-        INNER JOIN WorkflowModule     wm ON wm.Id = wi.WorkflowModuleId
+        SELECT wi.Id FROM workflow.WorkflowInstance wi
+        INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = wi.WorkflowDefinitionId
+        INNER JOIN workflow.WorkflowModule     wm ON wm.Id = wi.WorkflowModuleId
         WHERE wd.WorkflowCode             = v.WorkflowCode
           AND wm.ModuleCode               = v.ModuleCode
           AND wi.ReferenceTransactionId   = v.ReferenceTransactionId
     ),
     CASE WHEN v.StepNo IS NULL THEN NULL
          ELSE (
-             SELECT ws.Id FROM WorkflowStep ws
-             INNER JOIN WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
+             SELECT ws.Id FROM workflow.WorkflowStep ws
+             INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
              WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
          )
     END,
-    (SELECT Id FROM WorkflowActionType  WHERE ActionCode  = v.ActionCode),
+    (SELECT Id FROM workflow.WorkflowActionType  WHERE ActionCode  = v.ActionCode),
     v.ActionBy,
     v.ActionAt,
     v.Remarks,
     CASE WHEN v.FromStatusCode IS NULL THEN NULL
-         ELSE (SELECT Id FROM WorkflowStatus WHERE StatusCode = v.FromStatusCode) END,
-    (SELECT Id FROM WorkflowStatus WHERE StatusCode = v.ToStatusCode)
+         ELSE (SELECT Id FROM workflow.WorkflowStatus WHERE StatusCode = v.FromStatusCode) END,
+    (SELECT Id FROM workflow.WorkflowStatus WHERE StatusCode = v.ToStatusCode)
 FROM (VALUES
 
 --  WorkflowCode            ModuleCode              RefTxId  StepNo  ActionCode  By   ActionAt                        Remarks                                                                                                                 FromStatus      ToStatus

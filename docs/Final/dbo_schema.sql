@@ -1214,51 +1214,6 @@ CREATE TABLE CompOffBalance (
 
 
 -- =============================================================================================================
--- MODULE 13: PAYROLL
--- =============================================================================================================
-
-
--- -------------------------------------------------------
--- PAYROLL COMPONENT
--- Defines payroll earning and deduction heads (e.g. Basic, HRA, PF)
--- -------------------------------------------------------
-CREATE TABLE PayrollComponent (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ComponentCode   NVARCHAR(100)   NOT NULL UNIQUE,
-    ComponentName   NVARCHAR(200)   NOT NULL,
-    IsEarning       BIT             NOT NULL DEFAULT 1,
-    IsDeduction     BIT             NOT NULL DEFAULT 0,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
-);
-
-
--- -------------------------------------------------------
--- PAYROLL ATTENDANCE SUMMARY
--- Aggregated monthly attendance figures used by payroll processing;
--- one record per employee per payroll month/year
--- -------------------------------------------------------
-CREATE TABLE PayrollAttendanceSummary (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    PayrollMonth        INT             NOT NULL,
-    PayrollYear         INT             NOT NULL,
-    TotalWorkingDays    DECIMAL(10,2)   NOT NULL,
-    PresentDays         DECIMAL(10,2)   NOT NULL,
-    LeaveDays           DECIMAL(10,2)   NOT NULL,
-    AbsentDays          DECIMAL(10,2)   NOT NULL,
-    OvertimeMinutes     INT             NOT NULL DEFAULT 0,
-    ProcessedAt         DATETIME2       NULL,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-
-    CONSTRAINT FK_PayrollSummary_Employee
-        FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id)
-);
-
-
-
--- =============================================================================================================
 -- MODULE 14: BIOMETRIC & GEO-FENCE
 -- =============================================================================================================
 
@@ -1390,8 +1345,6 @@ CREATE INDEX IX_LeaveBalance_Employee        ON LeaveBalance (EmployeeId, LeaveT
 -- Comp-Off
 CREATE INDEX IX_CompOffBalance_Employee      ON CompOffBalance (EmployeeId, CompOffTypeId);
 
--- Payroll
-CREATE INDEX IX_PayrollSummary_Employee      ON PayrollAttendanceSummary (EmployeeId, PayrollMonth, PayrollYear);
 
 -- Biometric
 CREATE INDEX IX_BiometricEmployeeMapping_Employee  ON BiometricEmployeeMapping (EmployeeId, BiometricDeviceId);
