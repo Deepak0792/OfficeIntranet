@@ -46,6 +46,8 @@
 --   18. payroll.TaxDeclarationProof
 --   19. payroll.EmployeeTaxDeduction
 --   20. payroll.TaxDeductionBreakdown
+--   21. INDEXES
+--   22. VIEWS
 -- =============================================================================================================
 
 
@@ -85,7 +87,7 @@ GO
 --   enforced at the database level, not only at the application layer.
 --
 --   Example:
---     MyStatus      NVARCHAR(20) NOT NULL DEFAULT 'PENDING',
+--     MyStatus      NVARCHAR(50) NOT NULL DEFAULT 'PENDING',
 --     MyStatusGroup AS CAST('PROOF_REVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
 --     CONSTRAINT FK_MyTable_MyStatus
 --         FOREIGN KEY (MyStatus, MyStatusGroup)
@@ -98,7 +100,7 @@ CREATE TABLE dbo.StatusLookup (
     Label           NVARCHAR(100)   NOT NULL,
     Description     NVARCHAR(500)   NULL,
     DisplayOrder    TINYINT         NOT NULL DEFAULT 0,
-    IsTerminal      BIT             NOT NULL DEFAULT 0,   -- 1 = no further transitions allowed
+    IsTerminal      BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -124,8 +126,8 @@ CREATE TABLE payroll.TaxProofCategory (
     CategoryCode            NVARCHAR(20)    NOT NULL
         CONSTRAINT UQ_TPC_CategoryCode UNIQUE,
     CategoryName            NVARCHAR(200)   NOT NULL,
-    Section                 NVARCHAR(100)   NULL,           -- IT Act reference e.g. 'Section 80C'
-    StatutoryMaxLimit       DECIMAL(18,2)   NULL,           -- NULL = no cap
+    Section                 NVARCHAR(100)   NULL,
+    StatutoryMaxLimit       DECIMAL(18,2)   NULL,
     IsApplicableOldRegime   BIT             NOT NULL DEFAULT 1,
     IsApplicableNewRegime   BIT             NOT NULL DEFAULT 0,
     RequiresDocument        BIT             NOT NULL DEFAULT 1,
@@ -269,8 +271,8 @@ CREATE TABLE payroll.PayrollAttendanceSummary (
     PayrollYear         INT             NOT NULL,
     TotalWorkingDays    DECIMAL(10,2)   NOT NULL,
     PresentDays         DECIMAL(10,2)   NOT NULL,
-    LeaveDays           DECIMAL(10,2)   NOT NULL,
-    AbsentDays          DECIMAL(10,2)   NOT NULL,
+    LeaveDays           DECIMAL(10,2)   NOT NULL DEFAULT 0,
+    AbsentDays          DECIMAL(10,2)   NOT NULL DEFAULT 0,
     OvertimeMinutes     INT             NOT NULL DEFAULT 0,
     ProcessedAt         DATETIME2       NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -346,11 +348,11 @@ CREATE TABLE payroll.EmployeeSalaryComponent (
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_ESC_EmployeeSalary
-        FOREIGN KEY (EmployeeSalaryId)
+        FOREIGN KEY (EmployeeSalaryId) 
         REFERENCES payroll.EmployeeSalary(Id),
 
     CONSTRAINT FK_ESC_StructureComponent
-        FOREIGN KEY (SalaryStructureComponentId)
+        FOREIGN KEY (SalaryStructureComponentId) 
         REFERENCES payroll.SalaryStructureComponent(Id),
 
     CONSTRAINT UQ_EmployeeSalaryComponent
@@ -368,7 +370,7 @@ CREATE TABLE payroll.EmployeeSalaryComponent (
 CREATE TABLE payroll.SalaryRevision (
     Id                   BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId           BIGINT          NOT NULL,
-    OldEmployeeSalaryId  BIGINT          NULL,       -- NULL for the very first salary record
+    OldEmployeeSalaryId  BIGINT          NULL,
     NewEmployeeSalaryId  BIGINT          NOT NULL,
     RevisionType         NVARCHAR(50)    NOT NULL,
     RevisionTypeGroup    AS CAST('SALARY_REVISION_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -384,18 +386,18 @@ CREATE TABLE payroll.SalaryRevision (
 
     CONSTRAINT FK_SalaryRevision_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES dbo.Employee(Id),
+         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_SalaryRevision_OldSalary
-        FOREIGN KEY (OldEmployeeSalaryId)
+        FOREIGN KEY (OldEmployeeSalaryId) 
         REFERENCES payroll.EmployeeSalary(Id),
 
     CONSTRAINT FK_SalaryRevision_NewSalary
-        FOREIGN KEY (NewEmployeeSalaryId)
+        FOREIGN KEY (NewEmployeeSalaryId) 
         REFERENCES payroll.EmployeeSalary(Id),
 
     CONSTRAINT FK_SalaryRevision_ApprovedBy
-        FOREIGN KEY (ApprovedBy)
+        FOREIGN KEY (ApprovedBy) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_SalaryRevision_RevisionType
@@ -419,8 +421,8 @@ CREATE TABLE payroll.BankMaster (
     Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
     BankCode        NVARCHAR(50)    NOT NULL UNIQUE,
     BankName        NVARCHAR(300)   NOT NULL,
-    IfscPrefix      NVARCHAR(10)    NULL,       -- First 4 chars of IFSC (India)
-    SwiftCode       NVARCHAR(20)    NULL,       -- BIC/SWIFT for international transfers
+    IfscPrefix      NVARCHAR(10)    NULL,
+    SwiftCode       NVARCHAR(20)    NULL,
     CountryCode     NVARCHAR(10)    NOT NULL DEFAULT 'IN',
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
@@ -443,7 +445,7 @@ CREATE TABLE payroll.EmployeeBankAccount (
     EmployeeId          BIGINT          NOT NULL,
     BankMasterId        BIGINT          NOT NULL,
     AccountHolderName   NVARCHAR(300)   NOT NULL,
-    AccountNumber       NVARCHAR(100)   NOT NULL,   -- store encrypted at app layer
+    AccountNumber       NVARCHAR(100)   NOT NULL,
     AccountType         NVARCHAR(50)    NOT NULL DEFAULT 'SAVINGS',
     AccountTypeGroup    AS CAST('BANK_ACCOUNT_TYPE' AS NVARCHAR(50)) PERSISTED,
     IfscCode            NVARCHAR(20)    NULL,
@@ -460,15 +462,15 @@ CREATE TABLE payroll.EmployeeBankAccount (
     UpdatedAt           DATETIME2       NULL,
 
     CONSTRAINT FK_EBA_Employee
-        FOREIGN KEY (EmployeeId)
+        FOREIGN KEY (EmployeeId) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_EBA_BankMaster
-        FOREIGN KEY (BankMasterId)
+        FOREIGN KEY (BankMasterId) 
         REFERENCES payroll.BankMaster(Id),
 
     CONSTRAINT FK_EBA_VerifiedBy
-        FOREIGN KEY (VerifiedBy)
+        FOREIGN KEY (VerifiedBy) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_EBA_AccountType
@@ -507,15 +509,15 @@ CREATE TABLE payroll.PayrollDisbursement (
     UpdatedAt               DATETIME2       NULL,
 
     CONSTRAINT FK_PD_LegalEntity
-        FOREIGN KEY (LegalEntityId)
+        FOREIGN KEY (LegalEntityId) 
         REFERENCES dbo.LegalEntity(Id),
 
     CONSTRAINT FK_PD_InitiatedBy
-        FOREIGN KEY (InitiatedBy)
+        FOREIGN KEY (InitiatedBy) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_PD_ApprovedBy
-        FOREIGN KEY (ApprovedBy)
+        FOREIGN KEY (ApprovedBy) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_PD_DisbursementStatus
@@ -550,8 +552,8 @@ CREATE TABLE payroll.PayrollDisbursementTransaction (
     CurrencyCode            NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     TransactionStatus       NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     TransactionStatusGroup  AS CAST('TRANSACTION_STATUS' AS NVARCHAR(50)) PERSISTED,
-    BankTransactionId       NVARCHAR(300)   NULL,   -- UTR / NEFT ref / SWIFT ref from bank
-    PaymentMode             NVARCHAR(50)    NULL,   -- NEFT | RTGS | IMPS | SWIFT | CHEQUE
+    BankTransactionId       NVARCHAR(300)   NULL,
+    PaymentMode             NVARCHAR(50)    NULL,
     InitiatedAt             DATETIME2       NULL,
     ConfirmedAt             DATETIME2       NULL,
     FailureReason           NVARCHAR(1000)  NULL,
@@ -562,15 +564,15 @@ CREATE TABLE payroll.PayrollDisbursementTransaction (
     UpdatedAt               DATETIME2       NULL,
 
     CONSTRAINT FK_PDT_Disbursement
-        FOREIGN KEY (PayrollDisbursementId)
+        FOREIGN KEY (PayrollDisbursementId) 
         REFERENCES payroll.PayrollDisbursement(Id),
 
     CONSTRAINT FK_PDT_Employee
-        FOREIGN KEY (EmployeeId)
+        FOREIGN KEY (EmployeeId) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_PDT_BankAccount
-        FOREIGN KEY (EmployeeBankAccountId)
+        FOREIGN KEY (EmployeeBankAccountId) 
         REFERENCES payroll.EmployeeBankAccount(Id),
 
     CONSTRAINT FK_PDT_TransactionStatus
@@ -597,7 +599,7 @@ CREATE TABLE payroll.TaxRegime (
     RegimeCode      NVARCHAR(100)   NOT NULL UNIQUE,
     RegimeName      NVARCHAR(300)   NOT NULL,
     CountryCode     NVARCHAR(10)    NOT NULL,
-    FiscalYearStart NVARCHAR(10)    NULL,   -- e.g. "04-01" for India (April 1)
+    FiscalYearStart NVARCHAR(10)    NULL,
     Description     NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
@@ -619,7 +621,7 @@ CREATE TABLE payroll.TaxSlab (
     FiscalYear      INT             NOT NULL,
     SlabOrder       INT             NOT NULL,
     MinIncome       DECIMAL(18,2)   NOT NULL DEFAULT 0,
-    MaxIncome       DECIMAL(18,2)   NULL,               -- NULL = no upper cap (top slab)
+    MaxIncome       DECIMAL(18,2)   NULL,
     TaxRate         DECIMAL(10,4)   NOT NULL DEFAULT 0,
     SurchargeRate   DECIMAL(10,4)   NOT NULL DEFAULT 0,
     CessRate        DECIMAL(10,4)   NOT NULL DEFAULT 0,
@@ -627,7 +629,7 @@ CREATE TABLE payroll.TaxSlab (
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_TaxSlab_TaxRegime
-        FOREIGN KEY (TaxRegimeId)
+        FOREIGN KEY (TaxRegimeId) 
         REFERENCES payroll.TaxRegime(Id),
 
     CONSTRAINT UQ_TaxSlab
@@ -666,15 +668,15 @@ CREATE TABLE payroll.EmployeeTaxDeclaration (
         UNIQUE (EmployeeId, FiscalYear),
 
     CONSTRAINT FK_ETD_Employee
-        FOREIGN KEY (EmployeeId)
+        FOREIGN KEY (EmployeeId) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_ETD_TaxRegime
-        FOREIGN KEY (TaxRegimeId)
+        FOREIGN KEY (TaxRegimeId) 
         REFERENCES payroll.TaxRegime(Id),
 
     CONSTRAINT FK_ETD_VerifiedBy
-        FOREIGN KEY (VerifiedBy)
+        FOREIGN KEY (VerifiedBy) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_ETD_DeclarationStatus
@@ -711,11 +713,11 @@ CREATE TABLE payroll.TaxDeclarationItem (
         UNIQUE (EmployeeTaxDeclarationId, TaxProofCategoryId),
 
     CONSTRAINT FK_TDI_Declaration
-        FOREIGN KEY (EmployeeTaxDeclarationId)
+        FOREIGN KEY (EmployeeTaxDeclarationId) 
         REFERENCES payroll.EmployeeTaxDeclaration(Id),
 
     CONSTRAINT FK_TDI_Category
-        FOREIGN KEY (TaxProofCategoryId)
+        FOREIGN KEY (TaxProofCategoryId) 
         REFERENCES payroll.TaxProofCategory(Id)
 );
 
@@ -750,11 +752,11 @@ CREATE TABLE payroll.TaxDeclarationProof (
     CreatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_TDP_DeclarationItem
-        FOREIGN KEY (TaxDeclarationItemId)
+        FOREIGN KEY (TaxDeclarationItemId) 
         REFERENCES payroll.TaxDeclarationItem(Id),
 
     CONSTRAINT FK_TDP_ReviewedBy
-        FOREIGN KEY (ReviewedBy)
+        FOREIGN KEY (ReviewedBy) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_TDP_ReviewStatus
@@ -773,7 +775,7 @@ CREATE TABLE payroll.TaxDeclarationProof (
 CREATE TABLE payroll.EmployeeTaxDeduction (
     Id                               BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                       BIGINT          NOT NULL,
-    EmployeeTaxDeclarationId         BIGINT          NULL,   -- NULL if no declaration on file
+    EmployeeTaxDeclarationId         BIGINT          NULL,
     TaxRegimeId                      BIGINT          NOT NULL,
     PayrollMonth                     INT             NOT NULL,
     PayrollYear                      INT             NOT NULL,
@@ -797,15 +799,15 @@ CREATE TABLE payroll.EmployeeTaxDeduction (
         UNIQUE (EmployeeId, PayrollMonth, PayrollYear),
 
     CONSTRAINT FK_ETaxDed_Employee
-        FOREIGN KEY (EmployeeId)
+        FOREIGN KEY (EmployeeId) 
         REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_ETaxDed_Declaration
-        FOREIGN KEY (EmployeeTaxDeclarationId)
+        FOREIGN KEY (EmployeeTaxDeclarationId) 
         REFERENCES payroll.EmployeeTaxDeclaration(Id),
 
     CONSTRAINT FK_ETaxDed_TaxRegime
-        FOREIGN KEY (TaxRegimeId)
+        FOREIGN KEY (TaxRegimeId) 
         REFERENCES payroll.TaxRegime(Id),
 
     CONSTRAINT FK_ETaxDed_DisbursementTransaction
@@ -830,7 +832,7 @@ CREATE TABLE payroll.TaxDeductionBreakdown (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeTaxDeductionId  BIGINT          NOT NULL,
     DeductionHead           NVARCHAR(200)   NOT NULL,
-    DeductionCategory       NVARCHAR(50)   NULL,
+    DeductionCategory       NVARCHAR(50)    NULL,
     DeductionCategoryGroup  AS CAST('DEDUCTION_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     DeclaredAmount          DECIMAL(18,2)   NOT NULL DEFAULT 0,
     ApprovedAmount          DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -840,7 +842,7 @@ CREATE TABLE payroll.TaxDeductionBreakdown (
 
     CONSTRAINT FK_TaxBreakdown_TaxDeduction
         FOREIGN KEY (EmployeeTaxDeductionId)
-        REFERENCES payroll.EmployeeTaxDeduction(Id),
+         REFERENCES payroll.EmployeeTaxDeduction(Id),
 
     CONSTRAINT FK_TaxBreakdown_DeductionCategory
         FOREIGN KEY (DeductionCategory, DeductionCategoryGroup)
