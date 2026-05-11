@@ -66,6 +66,13 @@ INSERT INTO dbo.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTe
 ('FAILED',            'TRANSACTION_STATUS',   'Failed',            4, 1),
 ('REVERSED',          'TRANSACTION_STATUS',   'Reversed',          5, 1);
 
+-- Payment Mode
+INSERT INTO dbo.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTerminal) VALUES
+('NEFT',           'PAYMENT_MODE_TYPE',   'neft',           1, 0),
+('RTGS',           'PAYMENT_MODE_TYPE',   'rtgs',           2, 0),
+('IMPS',           'PAYMENT_MODE_TYPE',   'imps',           3, 0),
+('SWIFT',          'PAYMENT_MODE_TYPE',   'swift',          4, 0);
+
 -- Salary revision types
 INSERT INTO dbo.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTerminal) VALUES
 ('ANNUAL_INCREMENT',  'SALARY_REVISION_TYPE', 'Annual Increment',  1, 0),

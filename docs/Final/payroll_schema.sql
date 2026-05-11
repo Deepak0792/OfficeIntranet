@@ -554,6 +554,7 @@ CREATE TABLE payroll.PayrollDisbursementTransaction (
     TransactionStatusGroup  AS CAST('TRANSACTION_STATUS' AS NVARCHAR(50)) PERSISTED,
     BankTransactionId       NVARCHAR(300)   NULL,
     PaymentMode             NVARCHAR(50)    NULL,
+    PaymentModeType         AS CAST('PAYMENT_MODE_TYPE' AS NVARCHAR(50)) PERSISTED,
     InitiatedAt             DATETIME2       NULL,
     ConfirmedAt             DATETIME2       NULL,
     FailureReason           NVARCHAR(1000)  NULL,
@@ -577,6 +578,10 @@ CREATE TABLE payroll.PayrollDisbursementTransaction (
 
     CONSTRAINT FK_PDT_TransactionStatus
         FOREIGN KEY (TransactionStatus, TransactionStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+    
+    CONSTRAINT FK_PDT_PaymentMode
+        FOREIGN KEY (PaymentMode, PaymentModeType)
         REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
 
     CONSTRAINT UQ_DisbursementTransaction
