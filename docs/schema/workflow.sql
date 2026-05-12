@@ -357,3 +357,18 @@ ON workflow.WorkflowStep (WorkflowDefinitionId, StepNo);
 -- Workflow Step Approver: approver lookup for a given step
 CREATE INDEX IX_WorkflowStepApprover_Step
 ON workflow.WorkflowStepApprover (WorkflowStepId);
+
+-- Supports lookups of all workflow instances initiated by
+-- a specific employee (e.g. My Pending Approvals dashboard)
+CREATE INDEX IX_WorkflowInstance_InitiatedBy
+    ON workflow.WorkflowInstance (InitiatedBy);
+
+-- Supports lookups of all instances awaiting action on a
+-- specific workflow step (e.g. approver inbox resolution)
+CREATE INDEX IX_WorkflowInstance_CurrentStep
+    ON workflow.WorkflowInstance (CurrentWorkflowStepId);
+
+-- Supports bulk status queries per workflow definition
+-- (e.g. all pending leave workflow instances)
+CREATE INDEX IX_WorkflowInstance_Definition_Status
+    ON workflow.WorkflowInstance (WorkflowDefinitionId, WorkflowStatusId);
