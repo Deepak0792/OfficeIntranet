@@ -23,12 +23,34 @@
 --  14. Biometric           : BiometricDevice, BiometricEmployeeMapping, GeoFence
 -- =============================================================================================================
 
-
-
 -- =============================================================================================================
--- MODULE 1: MASTER DATA
+-- CREATE DATABASE DB
 -- =============================================================================================================
 
+CREATE DATABASE OfficeDB;
+GO
+USE OfficeDB
+GO
+-- =============================================================================================================
+-- MODULE 1: MASTER SCHEMA
+-- =============================================================================================================
+
+-- -------------------------------------------------------
+-- DESIGNATION
+-- Stores statuses across the schema tables
+-- STATUS GROUPS SEEDED INTO dbo.StatusLookup FOR SCHEMAS:
+-- -------------------------------------------------------
+CREATE TABLE dbo.StatusLookup (
+    StatusCode      NVARCHAR(50)    NOT NULL,
+    StatusGroup     NVARCHAR(50)    NOT NULL,
+    Label           NVARCHAR(100)   NOT NULL,
+    Description     NVARCHAR(500)   NULL,
+    DisplayOrder    TINYINT         NOT NULL DEFAULT 0,
+    IsTerminal      BIT             NOT NULL DEFAULT 0,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CONSTRAINT PK_StatusLookup PRIMARY KEY (StatusCode, StatusGroup)
+);
 
 -- -------------------------------------------------------
 -- DESIGNATION
@@ -212,6 +234,7 @@ CREATE TABLE DocumentType (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     DocumentTypeCode    NVARCHAR(50)    NOT NULL UNIQUE,
     DocumentTypeName    NVARCHAR(200)   NOT NULL,
+    Category            NVARCHAR(100)   NULL,
     Description         NVARCHAR(1000)  NULL,
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
@@ -242,7 +265,8 @@ CREATE TABLE Employee (
     PreferredLanguage       NVARCHAR(20)    NULL,
     PreferredTimeZoneId     BIGINT          NULL,
     DateOfJoining           DATE            NULL,
-    EmploymentType          NVARCHAR(50)    NULL,
+    EmploymentType          NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
+    EmploymentTypeGroup AS CAST('EMPLOYMENT_TYPE' AS NVARCHAR(50)) PERSISTED,
     AboutMe                 NVARCHAR(MAX)   NULL,
     ProfilePhotoUrl         NVARCHAR(1000)  NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
@@ -255,7 +279,11 @@ CREATE TABLE Employee (
 
     CONSTRAINT FK_Employee_TimeZoneMaster
         FOREIGN KEY (PreferredTimeZoneId)
-        REFERENCES TimeZoneMaster(Id)
+        REFERENCES TimeZoneMaster(Id),
+
+    CONSTRAINT FK_Employee_EmploymentType
+        FOREIGN KEY (EmploymentType, EmploymentTypeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
@@ -370,18 +398,26 @@ CREATE TABLE EmployeeRelationship (
 -- Stores additional contact methods per employee
 -- e.g. work phone, personal email, Slack handle
 -- -------------------------------------------------------
+
 CREATE TABLE EmployeeContact (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId      BIGINT          NOT NULL,
-    ContactType     NVARCHAR(50)    NULL,
-    ContactValue    NVARCHAR(500)   NULL,
-    IsPrimary       BIT             NOT NULL DEFAULT 0,
+    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          BIGINT          NOT NULL,
+    ContactType         NVARCHAR(50)    NOT NULL,
+    ContactTypeGroup AS CAST('CONTACT_TYPE' AS NVARCHAR(50)) PERSISTED,
+    ContactValue        NVARCHAR(500)   NOT NULL,
+    IsPrimary           BIT             NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt           DATETIME2       NULL,
 
     CONSTRAINT FK_EmployeeContact_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id)
-);
+        REFERENCES Employee(Id),
 
+    CONSTRAINT FK_EmployeeContact_ContactType
+        FOREIGN KEY (ContactType, ContactTypeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
+);
 
 -- -------------------------------------------------------
 -- EMPLOYEE DOCUMENT

@@ -1,1642 +1,1791 @@
--- Recruitment
--- ---------------
--- job_postings — open positions with department, location, and status
--- candidates — applicant profiles with contact and resume info
--- applications — links candidates to job postings; tracks application status
-
--- Interview Process
--- -------------------
--- interviews — individual interview rounds with type, schedule, and interviewer; supports unlimited rounds via round_number
--- interview_feedback — per-interviewer feedback for each interview, with rating and recommendation
-
--- Offer & Joining
--- --------------------
--- package_negotiations — HR-managed salary negotiation trail from offer to final figure
--- offer_letters — issued offer documents linked to the final negotiated package
-
--- Onboarding
--- ---------------------
--- employees — master employee record, created when an applicant accepts the offer
--- onboarding_tasks — checklist of onboarding steps with phase (pre/post) and completion tracking
--- document_verification — tracks document submissions and verification status across pre- and post-onboarding phases
--- background_verification — tracks background check types (criminal, employment, education, etc.) by phase and agency
-
--- Performance
--- -----------------------
--- performance_cycles — annual or quarterly review cycles
--- goals — individual goals set by employees against a cycle
--- performance_reviews — manager and self-ratings with comments, tied to a cycle
-
--- Training
--- ------------------------
--- training_categories — top-level groupings (technical, compliance, leadership, etc.)
--- training_programs — specific courses under each category with mode and duration
--- employee_training_records — enrollment, completion, scores, and certificates per employee
-
--- Exit
--- -------------------------
--- exit_records — departure reason, notice period, exit interview status, and clearance tracking
-
--- =============================================================================
--- HR MANAGEMENT SYSTEM — COMPLETE DATABASE SCHEMA
--- Convention : BIGINT PRIMARY KEY IDENTITY(1,1)
---              All FK constraints named explicitly as CONSTRAINT FK_<Table>_<Ref>
---              All PK constraints named explicitly as CONSTRAINT PK_<Table>
--- =============================================================================
-
-
--- =============================================================================
--- SECTION 0 : FOUNDATION / LOOKUP TABLES
--- =============================================================================
-
--- Department
--- Purpose : Master list of all company departments.
--- CREATE TABLE Department (
---     DepartmentId        BIGINT          NOT NULL,
---     DepartmentName      NVARCHAR(150)   NOT NULL,
---     DepartmentCode      NVARCHAR(20)    NOT NULL,
---     ParentDepartmentId  BIGINT          NULL,
---     HeadEmployeeId      BIGINT          NULL,       -- FK to Employee (added after Employee table)
---     IsActive            BIT             NOT NULL DEFAULT 1,
---     CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
---     UpdatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
---     CONSTRAINT PK_Department
---         PRIMARY KEY (DepartmentId),
-
---     CONSTRAINT UQ_Department_Code
---         UNIQUE (DepartmentCode),
-
---     CONSTRAINT FK_Department_ParentDepartment
---         FOREIGN KEY (ParentDepartmentId)
---         REFERENCES Department(DepartmentId)
--- );
-
-
--- -- Designation
--- -- Purpose : Job titles / grades used across recruitment and employee records.
--- CREATE TABLE Designation (
---     DesignationId       BIGINT          NOT NULL IDENTITY(1,1),
---     DesignationTitle    NVARCHAR(150)   NOT NULL,
---     Level               NVARCHAR(50)    NULL,       -- e.g. L1, L2, Senior, Lead
---     DepartmentId        BIGINT          NULL,
---     IsActive            BIT             NOT NULL DEFAULT 1,
---     CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
---     CONSTRAINT PK_Designation
---         PRIMARY KEY (DesignationId),
-
---     CONSTRAINT FK_Designation_Department
---         FOREIGN KEY (DepartmentId)
---         REFERENCES Department(DepartmentId)
--- );
-
-
--- -- =============================================================================
--- -- SECTION 1 : EMPLOYEE (CENTRAL TABLE)
--- -- =============================================================================
-
--- -- Employee
--- -- Purpose : Central employee master record. Created when an offer is accepted.
--- --           All HR processes (onboarding, performance, training, exit) link here.
--- CREATE TABLE Employee (
---     EmployeeId          BIGINT          NOT NULL IDENTITY(1,1),
---     EmployeeCode        NVARCHAR(50)    NOT NULL,
---     FullName            NVARCHAR(200)   NOT NULL,
---     Email               NVARCHAR(255)   NOT NULL,
---     PersonalEmail       NVARCHAR(255)   NULL,
---     Phone               NVARCHAR(20)    NULL,
---     DateOfBirth         DATE            NULL,
---     Gender              NVARCHAR(20)    NULL,
---     BloodGroup          NVARCHAR(5)     NULL,
---     DepartmentId        BIGINT          NOT NULL,
---     DesignationId       BIGINT          NOT NULL,
---     ManagerId           BIGINT          NULL,       -- self-ref to Employee
---     EmploymentType      NVARCHAR(50)    NOT NULL DEFAULT 'FullTime',
---     WorkLocation        NVARCHAR(150)   NULL,
---     JoiningDate         DATE            NOT NULL,
---     ConfirmationDate    DATE            NULL,
---     ProbationEndDate    DATE            NULL,
---     EmploymentStatus    NVARCHAR(30)    NOT NULL DEFAULT 'Active',
---                                                     -- Active | Probation | NoticePeriod | OnLeave | Separated | Terminated
---     PANNumber           NVARCHAR(20)    NULL,
---     AadhaarNumber       NVARCHAR(20)    NULL,
---     BankAccountNo       NVARCHAR(30)    NULL,
---     BankIFSC            NVARCHAR(15)    NULL,
---     IsActive            BIT             NOT NULL DEFAULT 1,
---     CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
---     UpdatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
---     CONSTRAINT PK_Employee
---         PRIMARY KEY (EmployeeId),
-
---     CONSTRAINT UQ_Employee_Code
---         UNIQUE (EmployeeCode),
-
---     CONSTRAINT UQ_Employee_Email
---         UNIQUE (Email),
-
---     CONSTRAINT FK_Employee_Department
---         FOREIGN KEY (DepartmentId)
---         REFERENCES Department(DepartmentId),
-
---     CONSTRAINT FK_Employee_Designation
---         FOREIGN KEY (DesignationId)
---         REFERENCES Designation(DesignationId),
-
---     CONSTRAINT FK_Employee_Manager
---         FOREIGN KEY (ManagerId)
---         REFERENCES Employee(EmployeeId)
--- );
+-- =============================================================================================================
+-- ENTERPRISE HRMS — HR MODULES EXTENSION
+-- SQL SERVER DATABASE SCHEMA
+-- Schema: hr
+-- Compatible: SQL Server 2016+
+-- =============================================================================================================
+-- PURPOSE:
+--   Extends the core HRMS platform (dbo), payroll, and workflow schemas with dedicated HR lifecycle
+--   modules covering the complete employee journey from onboarding through exit, plus supporting
+--   modules for policy documents, salary slips, performance reviews, and training records.
+--
+-- DESIGN PRINCIPLES:
+--   - All tables reside in the [hr] schema to isolate HR lifecycle concerns from core HRMS (dbo),
+--     payroll, and workflow schemas.
+--   - dbo.StatusLookup is reused as the single cross-schema master for ALL workflow status codes.
+--     Status columns carry a persisted computed group column enabling composite FK domain isolation.
+--   - Foreign keys reference dbo.Employee, dbo.Department, dbo.Designation, dbo.OfficeLocation,
+--     dbo.LegalEntity, and payroll.PayrollDisbursementTransaction wherever normalization applies.
+--   - hr.SalarySlipPublication is intentionally thin: it records only the PDF artefact lifecycle
+--     (FileUrl, SlipStatus, download timestamps). All financial figures (gross, deductions, net,
+--     currency, month, year, component breakdown) are owned by payroll.PayrollDisbursementTransaction
+--     and payroll.EmployeeSalaryComponent — no duplication.
+--   - The workflow schema (workflow.WorkflowInstance) is used for approval routing on onboarding
+--     tasks, policy acknowledgements, performance reviews, and exit clearances — no inline approval
+--     logic is hardcoded in this schema.
+--   - Computed columns are used for derived figures (IsPassed, RemainingNoticeDays).
+--   - Audit columns (CreatedAt, UpdatedAt) on every table for change tracking.
+--   - Soft-delete via IsActive rather than physical DELETE to preserve audit trails.
+--
+-- STATUS GROUPS SEEDED INTO dbo.StatusLookup FOR THIS SCHEMA:
+--   ONBOARDING_TASK_STATUS   -> PENDING | IN_PROGRESS | COMPLETED | WAIVED
+--   DOC_VERIFY_STATUS        -> PENDING | SUBMITTED | UNDER_REVIEW | VERIFIED | REJECTED | RESUBMITTED | EXPIRED | WAIVED
+--   BGV_STATUS               -> PENDING | IN_PROGRESS | COMPLETED | DISCREPANCY_FOUND | FAILED | WAIVED
+--   BGV_RESULT               -> CLEAR | DISCREPANCY | UNABLE_TO_VERIFY | FAILED
+--   BGV_CHECK_TYPE           -> CRIMINAL | EMPLOYMENT_HISTORY | EDUCATION | IDENTITY | CREDIT | REFERENCE | DRUG_TEST | ADDRESS
+--   ONBOARDING_PHASE         -> PRE_ONBOARDING | POST_ONBOARDING
+--   EXIT_TYPE                -> RESIGNATION | TERMINATION | RETIREMENT | CONTRACT_END | ABSCONDING
+--   EXIT_INTERVIEW_STATUS    -> PENDING | SCHEDULED | COMPLETED | SKIPPED
+--   CLEARANCE_STATUS         -> PENDING | IN_PROGRESS | COMPLETED
+--   FINAL_SETTLEMENT_STATUS  -> PENDING | PROCESSED | PAID
+--   CLEARANCE_ITEM_STATUS    -> PENDING | COMPLETED | WAIVED
+--   POLICY_STATUS            -> DRAFT | ACTIVE | ARCHIVED | SUPERSEDED
+--   POLICY_ACK_STATUS        -> PENDING | ACKNOWLEDGED | OVERDUE
+--   SALARY_SLIP_STATUS       -> DRAFT | PUBLISHED | DOWNLOADED | REVISED
+--   PERF_CYCLE_TYPE          -> ANNUAL | BI_ANNUAL | QUARTERLY | PROBATION
+--   PERF_CYCLE_STATUS        -> UPCOMING | GOAL_SETTING | IN_REVIEW | COMPLETED | ARCHIVED
+--   PERF_REVIEW_STATUS       -> PENDING | SELF_SUBMITTED | MANAGER_REVIEW | HRBP_REVIEW | COMPLETED | ACKNOWLEDGED
+--   GOAL_STATUS              -> DRAFT | SUBMITTED | APPROVED | IN_PROGRESS | COMPLETED | CANCELLED
+--   GOAL_KR_STATUS           -> PENDING | ON_TRACK | AT_RISK | ACHIEVED | NOT_ACHIEVED
+--   TRAINING_MODE            -> ONLINE | OFFLINE | HYBRID | SELF_PACED
+--   TRAINING_BATCH_STATUS    -> UPCOMING | ONGOING | COMPLETED | CANCELLED
+--   TRAINING_RECORD_STATUS   -> ENROLLED | IN_PROGRESS | COMPLETED | FAILED | DROPPED | ABSENT
+--   RECOMMENDATION_STATUS    -> STRONG_YES | YES | MAYBE | NO | STRONG_NO
+--   INTERVIEW_STATUS         -> SCHEDULED | COMPLETED | CANCELLED | RESCHEDULED | NO_SHOW
+--   JOB_POSTING_STATUS       -> DRAFT | OPEN | ON_HOLD | CLOSED | CANCELLED
+--   APPLICATION_STATUS       -> APPLIED | SCREENING | INTERVIEW | OFFER | NEGOTIATION | HIRED | REJECTED | WITHDRAWN
+--   OFFER_STATUS             -> ISSUED | ACCEPTED | REJECTED | EXPIRED | REVOKED
+--   NEGOTIATION_STATUS       -> IN_PROGRESS | ACCEPTED | REJECTED | COUNTERED | WITHDRAWN
+--
+-- TABLE CREATION ORDER (respects FK dependencies):
+--   MODULE A — RECRUITMENT & SELECTION
+--     A1.  hr.InterviewType
+--     A2.  hr.InterviewRound
+--     A3.  hr.PanelRole
+--     A4.  hr.InterviewPurpose
+--     A5.  hr.JobPosting
+--     A6.  hr.Candidate
+--     A7.  hr.Application
+--     A8.  hr.ApplicationStatusHistory
+--     A9.  hr.InterviewRoundConfig
+--     A10. hr.Interview
+--     A11. hr.InterviewPanel
+--     A12. hr.InterviewFeedback
+--     A13. hr.PackageNegotiation
+--     A14. hr.OfferLetter
+--
+--   MODULE B — ONBOARDING
+--     B1.  hr.OnboardingChecklist
+--     B2.  hr.OnboardingChecklistItem
+--     B3.  hr.OnboardingTask
+--     B4.  dbo.DocumentType
+--     B5.  hr.DocumentVerification
+--     B6.  hr.BGVAgency
+--     B7.  hr.BackgroundVerification
+--
+--   MODULE C — POLICY DOCUMENTS
+--     C1.  hr.PolicyCategory
+--     C2.  hr.PolicyDocument
+--     C3.  hr.PolicyVersion
+--     C4.  hr.PolicyAcknowledgement
+--
+--   MODULE D — SALARY SLIPS
+--     D1.  hr.SalarySlipPublication
+--           (links to payroll.PayrollDisbursementTransaction; no duplicate component table)
+--
+--   MODULE E — PERFORMANCE REVIEWS
+--     E1.  hr.PerformanceCycle
+--     E2.  hr.Goal
+--     E3.  hr.GoalKeyResult
+--     E4.  hr.PerformanceReview
+--     E5.  hr.PerformanceReviewHistory
+--
+--   MODULE F — TRAINING RECORDS
+--     F1.  hr.TrainingCategory
+--     F2.  hr.TrainingProgram
+--     F3.  hr.TrainingBatch
+--     F4.  hr.EmployeeTrainingRecord
+--
+--   MODULE G — EXIT MANAGEMENT
+--     G1.  hr.ExitReason
+--     G2.  hr.ExitRecord
+--     G3.  hr.ExitClearanceItem
+--
+--   INDEXES
+-- =============================================================================================================
 
 
--- -- Add deferred FK back on Department for HeadEmployee (now Employee exists)
--- ALTER TABLE Department
---     ADD CONSTRAINT FK_Department_HeadEmployee
---         FOREIGN KEY (HeadEmployeeId)
---         REFERENCES Employee(EmployeeId);
+-- =============================================================================================================
+-- SCHEMA CREATION
+-- =============================================================================================================
+
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'hr')
+    EXEC('CREATE SCHEMA hr');
+GO
 
 
--- =============================================================================
--- SECTION 2 : RECRUITMENT
--- =============================================================================
--- Status
-CREATE TABLE Status (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    StatusCategory      NVARCHAR(100)   NOT NULL,
-    StatusCode          NVARCHAR(50)    NOT NULL,
-    StatusName          NVARCHAR(100)   NOT NULL,
-    Description         NVARCHAR(500)   NULL,
-    DisplayOrder        INT             NOT NULL DEFAULT 0,
+-- =============================================================================================================
+-- MODULE A: RECRUITMENT & SELECTION
+-- Manages the full hiring pipeline from job requisition through offer acceptance.
+-- =============================================================================================================
+
+
+-- -------------------------------------------------------
+-- INTERVIEW TYPE
+-- Master lookup for interview delivery formats.
+-- e.g. Phone Screen, Video Call, In-Person, Take-Home Assignment, Panel.
+-- Decouples format from round definition so the same round
+-- can be delivered in different modes per job posting.
+-- -------------------------------------------------------
+CREATE TABLE hr.InterviewType (
+    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    InterviewTypeCode   NVARCHAR(50)    NOT NULL UNIQUE,
+    InterviewTypeName   NVARCHAR(150)   NOT NULL,
+    Description         NVARCHAR(1000)  NULL,
+    DisplayOrder        TINYINT         NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_Status
-        PRIMARY KEY (Id),
-
-    CONSTRAINT UQ_StatusMaster
-        UNIQUE (StatusCategory, StatusCode)
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE()
 );
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('OfferLetterStatus', 'ISSUED', 'Issued', 1),
--- ('OfferLetterStatus', 'ACCEPTED', 'Accepted', 2),
--- ('OfferLetterStatus', 'REJECTED', 'Rejected', 3),
--- ('OfferLetterStatus', 'EXPIRED', 'Expired', 4),
--- ('OfferLetterStatus', 'REVOKED', 'Revoked', 5);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('PackageNegotiationStatus', 'INPROGRESS', 'InProgress', 1),
--- ('PackageNegotiationStatus', 'ACCEPTED', 'Accepted', 2),
--- ('PackageNegotiationStatus', 'REJECTED', 'Rejected', 3),
--- ('PackageNegotiationStatus', 'COUNTERED', 'Countered', 4),
--- ('PackageNegotiationStatus', 'WITHDRAWN', 'Withdrawn', 5);
+-- -------------------------------------------------------
+-- INTERVIEW ROUND
+-- Master sequence of named interview rounds used across
+-- all job postings (e.g. HR Screen, Technical Round 1,
+-- Manager, Culture Fit, Final).
+-- RoundNumber enforces a canonical ordering; individual
+-- job postings can override or skip rounds via
+-- hr.InterviewRoundConfig.
+-- DefaultInterviewTypeId: suggested format for this round
+-- (overrideable at job-posting level).
+-- -------------------------------------------------------
+CREATE TABLE hr.InterviewRound (
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    RoundNumber             INT             NOT NULL UNIQUE,
+    RoundCode               NVARCHAR(50)    NOT NULL UNIQUE,
+    RoundName               NVARCHAR(150)   NOT NULL,
+    Description             NVARCHAR(1000)  NULL,
+    DefaultInterviewTypeId  BIGINT          NULL,
+    IsMandatory             BIT             NOT NULL DEFAULT 1,
+    DisplayOrder            TINYINT         NOT NULL DEFAULT 0,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('OnboardingTaskStatus', 'PENDING', 'Pending', 1),
--- ('OnboardingTaskStatus', 'INPROGRESS', 'InProgress', 2),
--- ('OnboardingTaskStatus', 'COMPLETED', 'Completed', 3),
--- ('OnboardingTaskStatus', 'WAIVED', 'Waived', 4);
+    CONSTRAINT FK_InterviewRound_DefaultType
+        FOREIGN KEY (DefaultInterviewTypeId)
+        REFERENCES hr.InterviewType(Id)
+);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('BackgroundVerification', 'PENDING', 'Pending', 1),
--- ('BackgroundVerification', 'INPROGRESS', 'InProgress', 2),
--- ('BackgroundVerification', 'COMPLETED', 'Completed', 3),
--- ('BackgroundVerification', 'DISCREPANCYFOUND', 'DiscrepancyFound', 4),
--- ('BackgroundVerification', 'FAILED', 'Failed', 5),
--- ('BackgroundVerification', 'WAIVED', 'Waived', 6);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('CaseStatus', 'DRAFT', 'Draft', 1),
--- ('CaseStatus', 'OPEN', 'Open', 2),
--- ('CaseStatus', 'ONHOLD', 'OnHold', 3),
--- ('CaseStatus', 'CLOSED', 'Closed', 4),
--- ('CaseStatus', 'CANCELLED', 'Cancelled', 5);
+-- -------------------------------------------------------
+-- PANEL ROLE
+-- Defines the capacity in which each panelist participates
+-- in an interview (e.g. Panel Lead, Interviewer, Observer).
+-- CanSubmitFeedback = 0 for observer/note-taker roles
+-- so the application layer suppresses the feedback form.
+-- -------------------------------------------------------
+CREATE TABLE hr.PanelRole (
+    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    RoleCode            NVARCHAR(50)    NOT NULL UNIQUE,
+    RoleName            NVARCHAR(150)   NOT NULL,
+    Description         NVARCHAR(1000)  NULL,
+    CanSubmitFeedback   BIT             NOT NULL DEFAULT 1,
+    DisplayOrder        TINYINT         NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('RecommendationStatus', 'STRONGYES', 'StrongYes', 1),
--- ('RecommendationStatus', 'YES', 'Yes', 2),
--- ('RecommendationStatus', 'MAYBE', 'Maybe', 3),
--- ('RecommendationStatus', 'NO', 'No', 4),
--- ('RecommendationStatus', 'STRONGNO', 'StrongNo', 5);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('GoalStatus', 'PENDING', 'Pending', 1),
--- ('GoalStatus', 'ONTRACK', 'OnTrack', 2),
--- ('GoalStatus', 'ATRISK', 'AtRisk', 3),
--- ('GoalStatus', 'ACHIEVED', 'Achieved', 4),
--- ('GoalStatus', 'NOTACHIEVED', 'NotAchieved', 5);
+-- -------------------------------------------------------
+-- INTERVIEW PURPOSE
+-- Defines the evaluation area each panelist is assigned to
+-- within a session (e.g. Technical Depth, System Design,
+-- Culture Fit, HR Fitment).
+-- Enables structured, purpose-driven feedback collection
+-- rather than free-form overall assessments.
+-- -------------------------------------------------------
+CREATE TABLE hr.InterviewPurpose (
+    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    PurposeCode     NVARCHAR(50)    NOT NULL UNIQUE,
+    PurposeName     NVARCHAR(150)   NOT NULL,
+    Description     NVARCHAR(1000)  NULL,
+    DisplayOrder    TINYINT         NOT NULL DEFAULT 0,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('PerformanceReviewStatus', 'PENDING', 'Pending', 1),
--- ('PerformanceReviewStatus', 'SELFSUBMITTED', 'SelfSubmitted', 2),
--- ('PerformanceReviewStatus', 'MANAGERREVIEW', 'ManagerReview', 3),
--- ('PerformanceReviewStatus', 'HRBPREVIEW', 'HRBPReview', 4),
--- ('PerformanceReviewStatus', 'COMPLETED', 'Completed', 5),
--- ('PerformanceReviewStatus', 'ACKNOWLEDGED', 'Acknowledged', 6);
 
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('InterviewStatus', 'SCHEDULED', 'Scheduled', 1),
--- ('InterviewStatus', 'COMPLETED', 'Completed', 2),
--- ('InterviewStatus', 'CANCELLED', 'Cancelled', 3),
--- ('InterviewStatus', 'RESCHEDULED', 'Rescheduled', 4),
--- ('InterviewStatus', 'NOSHOW', 'NoShow', 5);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('OnboardingPhaseStatus', 'PREONBOARDING', 'PreOnboarding', 1),
--- ('OnboardingPhaseStatus', 'POSTONBOARDING', 'PostOnboarding', 2);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('BGVCheckTypeStatus', 'CRIMINAL', 'Criminal', 1),
--- ('BGVCheckTypeStatus', 'EMPLOYMENTHISTORY', 'EmploymentHistory', 2),
--- ('BGVCheckTypeStatus', 'EDUCATION', 'Education', 3),
--- ('BGVCheckTypeStatus', 'IDENTITY', 'Identity', 4),
--- ('BGVCheckTypeStatus', 'CREDIT', 'Credit', 5),
--- ('BGVCheckTypeStatus', 'REFERENCE', 'Reference', 6),
--- ('BGVCheckTypeStatus', 'DRUGTEST', 'DrugTest', 7),
--- ('BGVCheckTypeStatus', 'ADDRESS', 'Address', 8);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('BGVResultStstus', 'CLEAR', 'Clear', 1),
--- ('BGVResultStstus', 'DISCREPANCY', 'Discrepancy', 2),
--- ('BGVResultStstus', 'UNABLETOVERIFY', 'UnableToVerify', 3),
--- ('BGVResultStstus', 'FAILED', 'Failed', 4);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('PerformanceCycleStatus', 'UPCOMING', 'Upcoming', 1),
--- ('PerformanceCycleStatus', 'GOALSETTING', 'GoalSetting', 2),
--- ('PerformanceCycleStatus', 'INREVIEW', 'InReview', 3),
--- ('PerformanceCycleStatus', 'COMPLETED', 'Completed', 4),
--- ('PerformanceCycleStatus', 'ARCHIVED', 'Archived', 5);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('PerformanceCycleType', 'ANNUAL', 'Annual', 1),
--- ('PerformanceCycleType', 'BIANNUAL', 'BiAnnual', 2),
--- ('PerformanceCycleType', 'QUARTERLY', 'Quarterly', 3),
--- ('PerformanceCycleType', 'PROBATION', 'Probation', 4);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('GoalKeyResultStatus', 'PENDING', 'Pending', 1),
--- ('GoalKeyResultStatus', 'ONTRACK', 'OnTrack', 2),
--- ('GoalKeyResultStatus', 'ATRISK', 'AtRisk', 3),
--- ('GoalKeyResultStatus', 'ACHIEVED', 'Achieved', 4),
--- ('GoalKeyResultStatus', 'NOTACHIEVED', 'NotAchieved', 5);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('PerformanceReviewStatus', 'PENDING', 'Pending', 1),
--- ('PerformanceReviewStatus', 'SELFSUBMITTED', 'SelfSubmitted', 2),
--- ('PerformanceReviewStatus', 'MANAGERREVIEW', 'ManagerReview', 3),
--- ('PerformanceReviewStatus', 'HRBPREVIEW', 'HRBPReview', 4),
--- ('PerformanceReviewStatus', 'COMPLETED', 'Completed', 5),
--- ('PerformanceReviewStatus', 'ACKNOWLEDGED', 'Acknowledged', 6);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('TrainingModeStatus', 'ONLINE', 'Online', 1),
--- ('TrainingModeStatus', 'OFFLINE', 'Offline', 2),
--- ('TrainingModeStatus', 'HYBRID', 'Hybrid', 3),
--- ('TrainingModeStatus', 'SELFPACED', 'SelfPaced', 4);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('TrainingBatchStatus', 'UPCOMING', 'Upcoming', 1),
--- ('TrainingBatchStatus', 'ONGOING', 'Ongoing', 2),
--- ('TrainingBatchStatus', 'COMPLETED', 'Completed', 3),
--- ('TrainingBatchStatus', 'CANCELLED', 'Cancelled', 4);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('EmployeeTrainingRecordStatus', 'ENROLLED', 'Enrolled', 1),
--- ('EmployeeTrainingRecordStatus', 'INPROGRESS', 'InProgress', 2),
--- ('EmployeeTrainingRecordStatus', 'COMPLETED', 'Completed', 3),
--- ('EmployeeTrainingRecordStatus', 'FAILED', 'Failed', 4),
--- ('EmployeeTrainingRecordStatus', 'DROPPED', 'Dropped', 5),
--- ('EmployeeTrainingRecordStatus', 'ABSENT', 'Absent', 6);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('ExitInterviewStatus', 'PENDING', 'Pending', 1),
--- ('ExitInterviewStatus', 'SCHEDULED', 'Scheduled', 2),
--- ('ExitInterviewStatus', 'COMPLETED', 'Completed', 3),
--- ('ExitInterviewStatus', 'SKIPPED', 'Skipped', 4);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('ClearanceStatus', 'PENDING', 'Pending', 1),
--- ('ClearanceStatus', 'INPROGRESS', 'InProgress', 2),
--- ('ClearANCESTATUS', 'COMPLETED', 'Completed', 3);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('FinalSettlementStatus', 'PENDING', 'Pending', 1),
--- ('FinalSettlementStatus', 'PROCESSED', 'Processed', 2),
--- ('FinalSettlementStatus', 'PAID', 'Paid', 3);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('ExitTypeStatus', 'RESIGNATION', 'Resignation', 1),
--- ('ExitTypeStatus', 'TERMINATION', 'Termination', 2),
--- ('ExitTypeStatus', 'RETIREMENT', 'Retirement', 3),
--- ('ExitTypeStatus', 'CONTRACTEND', 'ContractEnd', 4),
--- ('ExitTypeStatus', 'ABSCONDING', 'Absconding', 5);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('ExitClearanceItemStatus', 'PENDING', 'Pending', 1),
--- ('ExitClearanceItemStatus', 'COMPLETED', 'Completed', 2),
--- ('ExitClearanceItemStatus', 'WAIVED', 'Waived', 3);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('JobPostingStatus', 'DRAFT', 'Draft', 1),
--- ('JobPostingStatus', 'OPEN', 'Open', 2),
--- ('JobPostingStatus', 'ON_HOLD', 'OnHold', 3),
--- ('JobPostingStatus', 'CLOSED', 'Closed', 4),
--- ('JobPostingStatus', 'CANCELLED', 'Cancelled', 5);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('ApplicationStatus', 'APPLIED', 'Applied', 1),
--- ('ApplicationStatus', 'SCREENING', 'Screening', 2),
--- ('ApplicationStatus', 'INTERVIEW', 'Interview', 3),
--- ('ApplicationStatus', 'OFFER', 'Offer', 4),
--- ('ApplicationStatus', 'NEGOTIATION', 'Negotiation', 5),
--- ('ApplicationStatus', 'HIRED', 'Hired', 6),
--- ('ApplicationStatus', 'REJECTED', 'Rejected', 7),
--- ('ApplicationStatus', 'WITHDRAWN', 'Withdrawn', 8);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('InterviewStatus', 'SCHEDULED', 'Scheduled', 1),
--- ('InterviewStatus', 'COMPLETED', 'Completed', 2),
--- ('InterviewStatus', 'CANCELLED', 'Cancelled', 3),
--- ('InterviewStatus', 'RESCHEDULED', 'Rescheduled', 4),
--- ('InterviewStatus', 'NOSHOW', 'NoShow', 5);
-
--- INSERT INTO StatusMaster
--- (StatusCategory, StatusCode, StatusName, DisplayOrder)
--- VALUES
--- ('DocumentVerificationStatus', 'PENDING', 'Pending', 1),
--- ('DocumentVerificationStatus', 'SUBMITTED', 'Submitted', 2),
--- ('DocumentVerificationStatus', 'UNDERREVIEW', 'UnderReview', 3),
--- ('DocumentVerificationStatus', 'VERIFIED', 'Verified', 4),
--- ('DocumentVerificationStatus', 'REJECTED', 'Rejected', 5),
--- ('DocumentVerificationStatus', 'RESUBMITTED', 'Resubmitted', 6),
--- ('DocumentVerificationStatus', 'EXPIRED', 'Expired', 7),
--- ('DocumentVerificationStatus', 'WAIVED', 'Waived', 8);
-
--- JobPosting
--- Purpose : Tracks every open or closed job requisition with full details
---           including location, required experience, and approval status.
+-- -------------------------------------------------------
+-- JOB POSTING
+-- Tracks every open or closed job requisition with full
+-- details including location, experience band, salary range,
+-- and lifecycle status.
+-- References dbo.Department, dbo.Designation, and
+-- dbo.OfficeLocation for consistent master-data reuse.
+-- JobPostingStatus references dbo.StatusLookup (JOB_POSTING_STATUS).
+-- -------------------------------------------------------
 CREATE TABLE hr.JobPosting (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
+    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     Title               NVARCHAR(200)   NOT NULL,
     DepartmentId        BIGINT          NOT NULL,
     DesignationId       BIGINT          NOT NULL,
-    LocationId          NVARCHAR(150)   NULL,
-    EmploymentType      NVARCHAR(50)    NOT NULL DEFAULT 'FullTime',
+    LocationId          BIGINT          NULL,
+    LegalEntityId       BIGINT          NULL,
+    EmploymentType      NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
+    EmploymentTypeGroup AS CAST('EMPLOYMENT_TYPE' AS NVARCHAR(50)) PERSISTED,
     ExperienceMinYrs    DECIMAL(4,1)    NULL,
     ExperienceMaxYrs    DECIMAL(4,1)    NULL,
-    SalaryMin           DECIMAL(14,2)   NULL,
-    SalaryMax           DECIMAL(14,2)   NULL,
-    CurrencyId          BIGINT          NOT NULL,
+    SalaryMin           DECIMAL(18,2)   NULL,
+    SalaryMax           DECIMAL(18,2)   NULL,
+    CurrencyCode        NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     Description         NVARCHAR(MAX)   NULL,
     Requirements        NVARCHAR(MAX)   NULL,
     OpeningsCount       INT             NOT NULL DEFAULT 1,
-    JobPostingStatusId  BIGINT          NOT NULL
+    JobPostingStatus    NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
+    JobPostingStatusGroup AS CAST('JOB_POSTING_STATUS' AS NVARCHAR(50)) PERSISTED,
     PostedByEmployeeId  BIGINT          NULL,
     PostedDate          DATE            NULL,
     ClosingDate         DATE            NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_JobPosting
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_JobPosting_Location
-        FOREIGN KEY (LocationId)
-        REFERENCES Location(Id),
-
-    CONSTRAINT FK_JobPosting_Currency
-        FOREIGN KEY (CurrencyId)
-        REFERENCES Currency(Id),
-
-    CONSTRAINT FK_JobPosting_JobPostingStatus
-        FOREIGN KEY (JobPostingStatusId)
-        REFERENCES Status(Id),    
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt           DATETIME2       NULL,
 
     CONSTRAINT FK_JobPosting_Department
         FOREIGN KEY (DepartmentId)
-        REFERENCES Department(Id),
+        REFERENCES dbo.Department(Id),
 
     CONSTRAINT FK_JobPosting_Designation
         FOREIGN KEY (DesignationId)
-        REFERENCES Designation(Id),
+        REFERENCES dbo.Designation(Id),
 
-    CONSTRAINT FK_JobPosting_PostedByEmployee
+    CONSTRAINT FK_JobPosting_Location
+        FOREIGN KEY (LocationId)
+        REFERENCES dbo.OfficeLocation(Id),
+
+    CONSTRAINT FK_JobPosting_LegalEntity
+        FOREIGN KEY (LegalEntityId)
+        REFERENCES dbo.LegalEntity(Id),
+
+    CONSTRAINT FK_JobPosting_PostedBy
         FOREIGN KEY (PostedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+    
+    CONSTRAINT FK_Employee_EmploymentType
+        FOREIGN KEY (EmploymentType, EmploymentTypeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT FK_JobPosting_Status
+        FOREIGN KEY (JobPostingStatus, JobPostingStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- Candidate
--- Purpose : Master profile of every applicant, independent of any specific
---           job application. One candidate can apply to multiple postings.
+-- -------------------------------------------------------
+-- CANDIDATE
+-- Master profile of every applicant, independent of any
+-- specific job application. One candidate can apply to
+-- multiple postings. Stores resume URL, current employment
+-- details, notice period, and referral linkage.
+-- -------------------------------------------------------
 CREATE TABLE hr.Candidate (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    FirstName           NVARCHAR(200)   NOT NULL,
-    MiddleName          NVARCHAR(200)   NOT NULL,
-    LastName            NVARCHAR(200)   NOT NULL,
-    Email               NVARCHAR(255)   NOT NULL,
-    Phone               NVARCHAR(20)    NULL,
-    DateOfBirth         DATE            NULL,
-    Gender              NVARCHAR(20)    NULL,
-    CurrentCompany      NVARCHAR(200)   NULL,
-    CurrentTitle        NVARCHAR(200)   NULL,
-    TotalExpYrs         DECIMAL(4,1)    NULL,
-    NoticePeriodDays    INT             NULL,
-    CurrentSalary       DECIMAL(14,2)   NULL,
-    LinkedInUrl         NVARCHAR(500)   NULL,
-    ResumeUrl           NVARCHAR(MAX)   NOT NULL,
-    Source              NVARCHAR(100)   NULL,       -- LinkedIn | Referral | JobPortal | etc.
-    ReferredByEmployeeId BIGINT         NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    FirstName               NVARCHAR(100)   NOT NULL,
+    MiddleName              NVARCHAR(100)   NULL,
+    LastName                NVARCHAR(100)   NOT NULL,
+    Email                   NVARCHAR(255)   NOT NULL UNIQUE,
+    Phone                   NVARCHAR(30)    NULL,
+    DateOfBirth             DATE            NULL,
+    Gender                  NVARCHAR(20)    NULL,
+    CurrentCompany          NVARCHAR(200)   NULL,
+    CurrentTitle            NVARCHAR(200)   NULL,
+    TotalExpYrs             DECIMAL(4,1)    NULL,
+    NoticePeriodDays        INT             NULL,
+    CurrentSalary           DECIMAL(18,2)   NULL,
+    CurrencyCode            NVARCHAR(10)    NOT NULL DEFAULT 'INR',
+    LinkedInUrl             NVARCHAR(500)   NULL,
+    ResumeUrl               NVARCHAR(1000)  NULL,
+    Source                  NVARCHAR(100)   NULL,
+    ReferredByEmployeeId    BIGINT          NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_Candidate
-        PRIMARY KEY (Id),
-
-    CONSTRAINT UQ_Candidate_Email
-        UNIQUE (Email),
-
-    CONSTRAINT FK_Candidate_ReferredByEmployee
+    CONSTRAINT FK_Candidate_ReferredBy
         FOREIGN KEY (ReferredByEmployeeId)
-        REFERENCES Employee(EmployeeId)
+        REFERENCES dbo.Employee(Id)
 );
 
 
--- Application
--- Purpose : Junction between Candidate and JobPosting. Tracks pipeline
---           status from applied through hired or rejected.
+-- -------------------------------------------------------
+-- APPLICATION
+-- Junction between Candidate and JobPosting. Tracks the
+-- full pipeline status from applied through hired or rejected.
+-- ApplicationStatus references dbo.StatusLookup (APPLICATION_STATUS).
+-- -------------------------------------------------------
 CREATE TABLE hr.Application (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    JobPostingId        BIGINT          NOT NULL,
-    CandidateId         BIGINT          NOT NULL,
-    ApplicationStatusId  BIGINT NOT NULL, -- 'applied', 'screening', 'interview', 'offer', 'negotiation', 'hired', 'rejected', 'withdrawn'
-    CoverLetter         NVARCHAR(MAX)   NULL,
-    ReviewedByEmployeeId BIGINT         NULL,
-    RejectionReason     NVARCHAR(MAX)   NULL,
-    AppliedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-    StatusUpdatedAt     DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_Application
-        PRIMARY KEY (Id),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    JobPostingId            BIGINT          NOT NULL,
+    CandidateId             BIGINT          NOT NULL,
+    ApplicationStatus       NVARCHAR(50)    NOT NULL DEFAULT 'APPLIED',
+    ApplicationStatusGroup    AS CAST('APPLICATION_STATUS' AS NVARCHAR(50)) PERSISTED,
+    CoverLetter             NVARCHAR(MAX)   NULL,
+    ReviewedByEmployeeId    BIGINT          NULL,
+    RejectionReason         NVARCHAR(2000)  NULL,
+    AppliedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    StatusUpdatedAt         DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT UQ_Application_JobCandidate
         UNIQUE (JobPostingId, CandidateId),
 
     CONSTRAINT FK_Application_JobPosting
         FOREIGN KEY (JobPostingId)
-        REFERENCES JobPosting(Id),
+        REFERENCES hr.JobPosting(Id),
 
     CONSTRAINT FK_Application_Candidate
         FOREIGN KEY (CandidateId)
-        REFERENCES Candidate(Id),
+        REFERENCES hr.Candidate(Id),
 
-    CONSTRAINT FK_Application_ApplicationStatus
-        FOREIGN KEY (ApplicationStatusId)
-        REFERENCES Status(Id),     
-
-    CONSTRAINT FK_Application_ReviewedByEmployee
+    CONSTRAINT FK_Application_ReviewedBy
         FOREIGN KEY (ReviewedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_Application_Status
+        FOREIGN KEY (ApplicationStatus, ApplicationStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- ApplicationStatusHistory
--- Purpose : Immutable audit trail of every status transition an application
---           goes through, enabling full funnel analytics.
+-- -------------------------------------------------------
+-- APPLICATION STATUS HISTORY
+-- Immutable audit trail of every status transition an
+-- application goes through. Enables full funnel analytics
+-- and time-in-stage reporting without modifying the
+-- Application record itself.
+-- -------------------------------------------------------
 CREATE TABLE hr.ApplicationStatusHistory (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    ApplicationId               BIGINT          NOT NULL,
-    OldStatus                   NVARCHAR(50)    NULL,
-    NewStatus                   NVARCHAR(50)    NOT NULL,
-    ChangedByEmployeeId         BIGINT          NULL,
-    Remarks                     NVARCHAR(MAX)   NULL,
-    ChangedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId           BIGINT          NOT NULL,
+    FromStatus              NVARCHAR(50)    NULL,
+    ToStatus                NVARCHAR(50)    NOT NULL,
+    ChangedByEmployeeId     BIGINT          NULL,
+    Remarks                 NVARCHAR(2000)  NULL,
+    ChangedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
-    CONSTRAINT PK_ApplicationStatusHistory
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_ApplicationStatusHistory_Application
+    CONSTRAINT FK_AppStatusHistory_Application
         FOREIGN KEY (ApplicationId)
-        REFERENCES Application(Id),
+        REFERENCES hr.Application(Id),
 
-    CONSTRAINT FK_ApplicationStatusHistory_ChangedByEmployee
+    CONSTRAINT FK_AppStatusHistory_ChangedBy
         FOREIGN KEY (ChangedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id)
 );
 
 
--- =============================================================================
--- SECTION 3 : INTERVIEW PROCESS
--- =============================================================================
-
--- InterviewType
--- Purpose : Master lookup of all interview format types.
---           Governs the InterviewType column across Interview and
---           InterviewRoundConfig tables.
-CREATE TABLE hr.InterviewType (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    InterviewTypeCode   NVARCHAR(50)    NOT NULL,   -- Phone | Video | InPerson | Assignment | Panel
-    InterviewTypeName   NVARCHAR(150)   NOT NULL,   -- e.g. "Video Call", "In-Person", "Take-Home Assignment"
-    Description         NVARCHAR(MAX)   NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    DisplayOrder        INT             NOT NULL DEFAULT 0,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_InterviewType
-        PRIMARY KEY (Id),
- 
-    CONSTRAINT UQ_InterviewType_Code
-        UNIQUE (InterviewTypeCode)
-);
-
--- InterviewRound
--- Purpose : Master lookup of all possible interview round definitions.
---           Governs RoundNumber and RoundName across Interview and
---           InterviewRoundConfig tables. Each round has a fixed sequence
---           number and an associated default interview type.
-CREATE TABLE hr.InterviewRound (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    RoundNumber         INT             NOT NULL,
-    RoundCode           NVARCHAR(50)    NOT NULL,   -- HR_SCREEN | TECH_1 | TECH_2 | MANAGER | CULTURE | FINAL
-    RoundName           NVARCHAR(150)   NOT NULL,   -- HR Screening | Technical Round 1 | etc.
-    Description         NVARCHAR(MAX)   NULL,
-    DefaultInterviewTypeId BIGINT       NULL,       -- suggested default type for this round
-    IsMandatory         BIT             NOT NULL DEFAULT 1,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    DisplayOrder        INT             NOT NULL DEFAULT 0,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_InterviewRound
-        PRIMARY KEY (Id),
- 
-    CONSTRAINT UQ_InterviewRound_RoundNumber
-        UNIQUE (RoundNumber),
- 
-    CONSTRAINT UQ_InterviewRound_Code
-        UNIQUE (RoundCode),
- 
-    CONSTRAINT FK_InterviewRound_DefaultInterviewType
-        FOREIGN KEY (DefaultInterviewTypeId)
-        REFERENCES InterviewType(Id)
-);
-
--- =============================================================================
--- UPDATED : InterviewRoundConfig
--- Purpose : Job-posting-level override of the master round definitions.
---           Replaces free-text RoundName / InterviewType with FK references
---           to the master tables above.
--- =============================================================================
- 
+-- -------------------------------------------------------
+-- INTERVIEW ROUND CONFIG
+-- Job-posting-level override of the master round definitions.
+-- Allows a posting to include only specific rounds, change
+-- the default interview type, and set a custom duration.
+-- Unique on (JobPostingId, InterviewRoundId) to prevent
+-- duplicate round assignments per posting.
+-- -------------------------------------------------------
 CREATE TABLE hr.InterviewRoundConfig (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    JobPostingId            BIGINT          NOT NULL,
-    InterviewRoundId        BIGINT          NOT NULL,   -- FK → InterviewRound (carries RoundNumber + RoundName)
-    InterviewTypeId         BIGINT          NOT NULL,   -- FK → InterviewType  (can override the default)
-    DurationMins            INT             NOT NULL DEFAULT 60,
-    IsMandatory             BIT             NOT NULL DEFAULT 1,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_InterviewRoundConfig
-        PRIMARY KEY (Id),
- 
+    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
+    JobPostingId        BIGINT  NOT NULL,
+    InterviewRoundId    BIGINT  NOT NULL,
+    InterviewTypeId     BIGINT  NOT NULL,
+    DurationMins        INT     NOT NULL DEFAULT 60,
+    IsMandatory         BIT     NOT NULL DEFAULT 1,
+    IsActive            BIT     NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+
     CONSTRAINT UQ_InterviewRoundConfig_JobRound
         UNIQUE (JobPostingId, InterviewRoundId),
- 
-    CONSTRAINT FK_InterviewRoundConfig_JobPosting
+
+    CONSTRAINT FK_IRC_JobPosting
         FOREIGN KEY (JobPostingId)
-        REFERENCES JobPosting(Id),
- 
-    CONSTRAINT FK_InterviewRoundConfig_InterviewRound
+        REFERENCES hr.JobPosting(Id),
+
+    CONSTRAINT FK_IRC_InterviewRound
         FOREIGN KEY (InterviewRoundId)
-        REFERENCES InterviewRound(Id),
- 
-    CONSTRAINT FK_InterviewRoundConfig_InterviewType
+        REFERENCES hr.InterviewRound(Id),
+
+    CONSTRAINT FK_IRC_InterviewType
         FOREIGN KEY (InterviewTypeId)
-        REFERENCES InterviewType(Id)
+        REFERENCES hr.InterviewType(Id)
 );
- 
- 
--- =============================================================================
--- UPDATED : Interview
--- Purpose : Replaces free-text RoundNumber / InterviewType columns with
---           FK references to master tables.
--- =============================================================================
- 
+
+
+-- -------------------------------------------------------
+-- INTERVIEW
+-- Represents a single scheduled interview session for an
+-- application, linked to a round configuration.
+-- InterviewStatus references dbo.StatusLookup (INTERVIEW_STATUS).
+-- RescheduledToInterviewId self-references to chain the
+-- rescheduling history without losing the original record.
+-- -------------------------------------------------------
 CREATE TABLE hr.Interview (
-    Id                       BIGINT          NOT NULL IDENTITY(1,1),
-    ApplicationId            BIGINT          NOT NULL,
-    InterviewRoundConfigId   BIGINT          NOT NULL,
-    ScheduledAt              DATETIME        NULL,
-    DurationMins             INT             NOT NULL DEFAULT 60,
-    MeetingLink              NVARCHAR(MAX)   NULL,
-    Venue                    NVARCHAR(MAX)   NULL,
-    InterviewStatusId        BIGINT          NOT NULL,  -- Scheduled | Completed | Cancelled | Rescheduled | NoShow
-    RescheduledToInterviewId BIGINT          NULL,
-    CreatedByEmployeeId      BIGINT          NULL,
-    IsActive                 BIT             NOT NULL DEFAULT 1,
-    CreatedAt                DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt                DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_Interview
-        PRIMARY KEY (Id),
- 
+    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId               BIGINT          NOT NULL,
+    InterviewRoundConfigId      BIGINT          NOT NULL,
+    ScheduledAt                 DATETIME2       NULL,
+    DurationMins                INT             NOT NULL DEFAULT 60,
+    MeetingLink                 NVARCHAR(1000)  NULL,
+    Venue                       NVARCHAR(500)   NULL,
+    InterviewStatus             NVARCHAR(50)    NOT NULL DEFAULT 'SCHEDULED',
+    InterviewStatusGroup          AS CAST('INTERVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
+    RescheduledToInterviewId    BIGINT          NULL,
+    CreatedByEmployeeId         BIGINT          NULL,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                   DATETIME2       NULL,
+
     CONSTRAINT FK_Interview_Application
         FOREIGN KEY (ApplicationId)
-        REFERENCES Application(Id),
- 
-    CONSTRAINT FK_Interview_InterviewRoundConfig
+        REFERENCES hr.Application(Id),
+
+    CONSTRAINT FK_Interview_RoundConfig
         FOREIGN KEY (InterviewRoundConfigId)
-        REFERENCES InterviewRoundConfig(Id),
+        REFERENCES hr.InterviewRoundConfig(Id),
 
-    CONSTRAINT FK_Interview_InterviewStatus
-        FOREIGN KEY (InterviewStatusId)
-        REFERENCES StatusId(Id),        
- 
-    CONSTRAINT FK_Interview_RescheduledToInterview
+    CONSTRAINT FK_Interview_Rescheduled
         FOREIGN KEY (RescheduledToInterviewId)
-        REFERENCES Interview(Id),
- 
-    CONSTRAINT FK_Interview_CreatedByEmployee
+        REFERENCES hr.Interview(Id),
+
+    CONSTRAINT FK_Interview_CreatedBy
         FOREIGN KEY (CreatedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_Interview_Status
+        FOREIGN KEY (InterviewStatus, InterviewStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
--- MASTER : PanelRole
--- Purpose : Governs what capacity each interviewer sits in within a panel.
--- =============================================================================
- 
-CREATE TABLE hr.PanelRole (
-    Id              BIGINT          NOT NULL IDENTITY(1,1),
-    RoleCode        NVARCHAR(50)    NOT NULL,
-    RoleName        NVARCHAR(150)   NOT NULL,
-    Description     NVARCHAR(MAX)   NULL,
-    CanSubmitFeedback BIT           NOT NULL DEFAULT 1,   -- Observers may be 0
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    DisplayOrder    INT             NOT NULL DEFAULT 0,
-    CreatedAt       DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_PanelRole
-        PRIMARY KEY (Id),
- 
-    CONSTRAINT UQ_PanelRole_Code
-        UNIQUE (RoleCode)
-);
- 
--- INSERT INTO PanelRole (RoleCode, RoleName, CanSubmitFeedback, DisplayOrder) VALUES
--- ('PANEL_LEAD',       'Panel Lead',          1, 1),
--- ('INTERVIEWER',      'Interviewer',          1, 2),
--- ('TECHNICAL_EXPERT', 'Technical Expert',     1, 3),
--- ('DOMAIN_EXPERT',    'Domain Expert',        1, 4),
--- ('HR_COORDINATOR',   'HR Coordinator',       1, 5),
--- ('OBSERVER',         'Observer',             0, 6),
--- ('NOTE_TAKER',       'Note Taker',           0, 7);
-
-
--- =============================================================================
--- MASTER : InterviewPurpose
--- Purpose : Governs the evaluation area each interviewer is responsible for.
---           Multiple interviewers in the same panel each own a different purpose.
--- =============================================================================
- 
-CREATE TABLE hr.InterviewPurpose (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    PurposeCode         NVARCHAR(50)    NOT NULL,
-    PurposeName         NVARCHAR(150)   NOT NULL,
-    Description         NVARCHAR(MAX)   NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    DisplayOrder        INT             NOT NULL DEFAULT 0,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_InterviewPurpose
-        PRIMARY KEY (Id),
- 
-    CONSTRAINT UQ_InterviewPurpose_Code
-        UNIQUE (PurposeCode)
-);
- 
--- INSERT INTO InterviewPurpose (PurposeCode, PurposeName, DisplayOrder) VALUES
--- ('TECHNICAL_DEPTH',  'Technical Depth',       1),
--- ('SYSTEM_DESIGN',    'System Design',          2),
--- ('PROBLEM_SOLVING',  'Problem Solving',        3),
--- ('DOMAIN_KNOWLEDGE', 'Domain Knowledge',       4),
--- ('CULTURE_FIT',      'Culture Fit',            5),
--- ('COMMUNICATION',    'Communication Skills',   6),
--- ('LEADERSHIP',       'Leadership & Ownership', 7),
--- ('HR_FITMENT',       'HR Fitment',             8);
-
-
--- =============================================================================
--- InterviewPanel
--- Purpose : Maps MULTIPLE interviewers to a SINGLE Interview session.
---           Each row = one interviewer seat in the panel.
---           Each seat has its own PanelRole (capacity) and InterviewPurpose
---           (evaluation area), allowing a panel like:
---
---   InterviewId 101  (Technical Round 2, Video, 90 mins)
---   ┌───────────────────────────────────────────────────────────────────┐
---   │ Seat 1 │ Ravi Kumar   │ PanelLead       │ Technical Depth        │
---   │ Seat 2 │ Sneha Iyer   │ TechnicalExpert │ System Design          │
---   │ Seat 3 │ Arjun Mehta  │ DomainExpert    │ Domain Knowledge       │
---   │ Seat 4 │ Priya Nair   │ HRCoordinator   │ HR Fitment             │
---   │ Seat 5 │ Kiran Das    │ Observer        │ Culture Fit            │
---   └───────────────────────────────────────────────────────────────────┘
--- =============================================================================
- 
+-- -------------------------------------------------------
+-- INTERVIEW PANEL
+-- Maps multiple interviewers to a single interview session.
+-- Each row represents one panelist seat with an assigned
+-- PanelRole (capacity) and InterviewPurpose (evaluation area).
+-- UQ on (InterviewId, InterviewPurposeId) ensures each
+-- evaluation area is owned by exactly one panelist per session.
+-- -------------------------------------------------------
 CREATE TABLE hr.InterviewPanel (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    InterviewId             BIGINT          NOT NULL,
-    InterviewerEmployeeId   BIGINT          NOT NULL,
-    PanelRoleId             BIGINT          NOT NULL,
-    InterviewPurposeId      BIGINT          NOT NULL,
-    EvaluationTopics        NVARCHAR(MAX)   NULL,
-    IsLead                  BIT             NOT NULL DEFAULT 0,
-    CanSubmitFeedback       BIT             NOT NULL DEFAULT 1,
-    ConfirmedAt             DATETIME        NULL,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_InterviewPanel
-        PRIMARY KEY (Id),
- 
-    CONSTRAINT UQ_InterviewPanel_InterviewInterviewer
+    Id                      BIGINT      PRIMARY KEY IDENTITY(1,1),
+    InterviewId             BIGINT      NOT NULL,
+    InterviewerEmployeeId   BIGINT      NOT NULL,
+    PanelRoleId             BIGINT      NOT NULL,
+    InterviewPurposeId      BIGINT      NOT NULL,
+    EvaluationTopics        NVARCHAR(MAX) NULL,
+    IsLead                  BIT         NOT NULL DEFAULT 0,
+    CanSubmitFeedback       BIT         NOT NULL DEFAULT 1,
+    ConfirmedAt             DATETIME2   NULL,
+    IsActive                BIT         NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
+
+    CONSTRAINT UQ_InterviewPanel_Interviewer
         UNIQUE (InterviewId, InterviewerEmployeeId),
- 
-    CONSTRAINT UQ_InterviewPanel_InterviewPurpose
+
+    CONSTRAINT UQ_InterviewPanel_Purpose
         UNIQUE (InterviewId, InterviewPurposeId),
- 
+
     CONSTRAINT FK_InterviewPanel_Interview
         FOREIGN KEY (InterviewId)
-        REFERENCES Interview(Id),
- 
-    CONSTRAINT FK_InterviewPanel_InterviewerEmployee
+        REFERENCES hr.Interview(Id),
+
+    CONSTRAINT FK_InterviewPanel_Interviewer
         FOREIGN KEY (InterviewerEmployeeId)
-        REFERENCES Employee(Id),
- 
+        REFERENCES dbo.Employee(Id),
+
     CONSTRAINT FK_InterviewPanel_PanelRole
         FOREIGN KEY (PanelRoleId)
-        REFERENCES PanelRole(Id),
- 
-    CONSTRAINT FK_InterviewPanel_InterviewPurpose
+        REFERENCES hr.PanelRole(Id),
+
+    CONSTRAINT FK_InterviewPanel_Purpose
         FOREIGN KEY (InterviewPurposeId)
-        REFERENCES InterviewPurpose(Id)
+        REFERENCES hr.InterviewPurpose(Id)
 );
 
 
--- =============================================================================
--- InterviewFeedback
--- Purpose : One feedback record per InterviewPanel seat (per interviewer per
---           session). Keyed to InterviewPanelId so feedback is automatically
---           scoped to the interviewer's assigned role and purpose.
--- =============================================================================
- 
+-- -------------------------------------------------------
+-- INTERVIEW FEEDBACK
+-- One feedback record per panelist seat (InterviewPanelId).
+-- Captures structured scores across multiple dimensions plus
+-- an overall recommendation.
+-- Keyed to InterviewPanelId so feedback is automatically
+-- scoped to the interviewer's role and evaluation purpose.
+-- RecommendationStatus references dbo.StatusLookup (RECOMMENDATION_STATUS).
+-- -------------------------------------------------------
 CREATE TABLE hr.InterviewFeedback (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    InterviewPanelId        BIGINT          NOT NULL,
-    OverallRating           DECIMAL(3,1)    NULL,           -- 1.0 to 10.0
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    InterviewPanelId        BIGINT          NOT NULL UNIQUE,
+    OverallRating           DECIMAL(3,1)    NULL,
     TechnicalScore          DECIMAL(3,1)    NULL,
     CommunicationScore      DECIMAL(3,1)    NULL,
     CulturalFitScore        DECIMAL(3,1)    NULL,
     PurposeSpecificScore    DECIMAL(3,1)    NULL,
     Strengths               NVARCHAR(MAX)   NULL,
     Concerns                NVARCHAR(MAX)   NULL,
-    RecommendationStatusId  BIGINT          NOT NULL,  -- StrongYes | Yes | Maybe | No | StrongNo
+    RecommendationStatus    NVARCHAR(50)    NOT NULL,
+    RecommendationStatusGroup AS CAST('RECOMMENDATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     AdditionalNotes         NVARCHAR(MAX)   NULL,
-    SubmittedAt             DATETIME        NOT NULL DEFAULT GETDATE(),
- 
-    CONSTRAINT PK_InterviewFeedback
-        PRIMARY KEY (Id),
- 
-    CONSTRAINT UQ_InterviewFeedback_PanelSeat
-        UNIQUE (InterviewPanelId),
+    SubmittedAt             DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
-    CONSTRAINT FK_InterviewPanel_RecommendationStatus
-        FOREIGN KEY (RecommendationStatusId)
-        REFERENCES Status(Id),
- 
-    CONSTRAINT FK_InterviewFeedback_InterviewPanel
+    CONSTRAINT FK_InterviewFeedback_Panel
         FOREIGN KEY (InterviewPanelId)
-        REFERENCES InterviewPanel(Id)
+        REFERENCES hr.InterviewPanel(Id),
+
+    CONSTRAINT FK_InterviewFeedback_Recommendation
+        FOREIGN KEY (RecommendationStatus, RecommendationStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
--- =============================================================================
--- SECTION 4 : OFFER & NEGOTIATION
--- =============================================================================
 
--- PackageNegotiation
--- Purpose : Captures the full salary and benefits negotiation thread between
---           HR and the candidate, with each counter-offer as a new row.
+-- -------------------------------------------------------
+-- PACKAGE NEGOTIATION
+-- Captures the salary and benefits negotiation thread
+-- between HR and the candidate. Each counter-offer is a
+-- new row, preserving the full negotiation history.
+-- NegotiationStatus references dbo.StatusLookup (NEGOTIATION_STATUS).
+-- -------------------------------------------------------
 CREATE TABLE hr.PackageNegotiation (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     ApplicationId           BIGINT          NOT NULL,
     HREmployeeId            BIGINT          NOT NULL,
     RoundNumber             INT             NOT NULL DEFAULT 1,
-    OfferedCTC              DECIMAL(14,2)   NOT NULL,
-    CandidateAsk            DECIMAL(14,2)   NULL,
-    FinalCTC                DECIMAL(14,2)   NULL,
-    CurrencyId              BIGINT          NOT NULL,,
+    OfferedCTC              DECIMAL(18,2)   NOT NULL,
+    CandidateAsk            DECIMAL(18,2)   NULL,
+    FinalCTC                DECIMAL(18,2)   NULL,
+    CurrencyCode            NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     VariablePct             DECIMAL(5,2)    NULL,
-    JoiningBonus            DECIMAL(14,2)   NULL,
+    JoiningBonus            DECIMAL(18,2)   NULL,
     OtherBenefits           NVARCHAR(MAX)   NULL,
-    PackageNegotiationStatusId BIGINT          NOT NULL,  -- InProgress | Accepted | Rejected | Countered | Withdrawn
+    NegotiationStatus       NVARCHAR(50)    NOT NULL DEFAULT 'IN_PROGRESS',
+    NegotiationStatusGroup    AS CAST('NEGOTIATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     Notes                   NVARCHAR(MAX)   NULL,
-    NegotiatedAt            DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_PackageNegotiation
-        PRIMARY KEY (Id),
+    NegotiatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_PackageNegotiation_Application
         FOREIGN KEY (ApplicationId)
-        REFERENCES Application(Id),
-
-    CONSTRAINT FK_PackageNegotiation_PackageNegotiationStatus
-        FOREIGN KEY (PackageNegotiationStatusId)
-        REFERENCES Status(Id),        
+        REFERENCES hr.Application(Id),
 
     CONSTRAINT FK_PackageNegotiation_HREmployee
         FOREIGN KEY (HREmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_PackageNegotiation_Status
+        FOREIGN KEY (NegotiationStatus, NegotiationStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- OfferLetter
--- Purpose : Represents the formal offer document sent to a candidate after
---           negotiation is complete. Tracks acceptance/rejection and expiry.
+-- -------------------------------------------------------
+-- OFFER LETTER
+-- Represents the formal offer document issued to a candidate
+-- after negotiation completes. Tracks issuance, acceptance
+-- or rejection, and expiry.
+-- OfferStatus references dbo.StatusLookup (OFFER_STATUS).
+-- LetterFileUrl points to secure blob/S3 storage.
+-- -------------------------------------------------------
 CREATE TABLE hr.OfferLetter (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    ApplicationId       BIGINT          NOT NULL,
-    PackageNegotiationId BIGINT         NULL,
-    LetterUrl           NVARCHAR(MAX)   NOT NULL,
-    IssuedDate          DATE            NOT NULL DEFAULT CAST(GETDATE() AS DATE),
-    ExpiryDate          DATE            NOT NULL,
-    OfferedPosition     NVARCHAR(200)   NULL,
-    JoiningDate         DATE            NULL,
-    OfferLetterStatusId BIGINT          NOT NULL,
-    AcceptedAt          DATETIME        NULL,
-    RevokedReason       NVARCHAR(MAX)   NULL,
-    IssuedByEmployeeId  BIGINT          NULL,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_OfferLetter
-        PRIMARY KEY (Id),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId           BIGINT          NOT NULL,
+    PackageNegotiationId    BIGINT          NULL,
+    LetterFileUrl           NVARCHAR(1000)  NOT NULL,
+    IssuedDate              DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
+    ExpiryDate              DATE            NOT NULL,
+    OfferedPosition         NVARCHAR(200)   NULL,
+    ProposedJoiningDate     DATE            NULL,
+    OfferStatus             NVARCHAR(50)    NOT NULL DEFAULT 'ISSUED',
+    OfferStatusGroup          AS CAST('OFFER_STATUS' AS NVARCHAR(50)) PERSISTED,
+    AcceptedAt              DATETIME2       NULL,
+    RevokedReason           NVARCHAR(2000)  NULL,
+    IssuedByEmployeeId      BIGINT          NULL,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
     CONSTRAINT FK_OfferLetter_Application
         FOREIGN KEY (ApplicationId)
-        REFERENCES Application(Id),
+        REFERENCES hr.Application(Id),
 
     CONSTRAINT FK_OfferLetter_PackageNegotiation
         FOREIGN KEY (PackageNegotiationId)
-        REFERENCES PackageNegotiation(Id),
+        REFERENCES hr.PackageNegotiation(Id),
 
-    CONSTRAINT FK_OfferLetter_OfferLetterStatus
-        FOREIGN KEY (OfferLetterStatus)
-        REFERENCES Status(Id),    
-
-    CONSTRAINT FK_OfferLetter_IssuedByEmployee
+    CONSTRAINT FK_OfferLetter_IssuedBy
         FOREIGN KEY (IssuedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_OfferLetter_Status
+        FOREIGN KEY (OfferStatus, OfferStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
--- SECTION 5 : ONBOARDING
--- =============================================================================
+-- =============================================================================================================
+-- MODULE B: ONBOARDING
+-- Manages pre- and post-joining task tracking, document verification, and background checks.
+-- =============================================================================================================
 
--- OnboardingChecklist
--- Purpose : Template-level checklists defining standard tasks for a given
---           phase and employment type (reusable across all new joiners).
--- | Id | ChecklistName               | Phase         | EmploymentType |
--- | -- | --------------------------- | ------------- | -------------- |
--- | 1  | Full-Time Day One Checklist | DayOne        | FullTime       |
--- | 2  | Intern Joining Checklist    | PreOnboarding | Intern         |
 
+-- -------------------------------------------------------
+-- ONBOARDING CHECKLIST
+-- Reusable template-level checklist for a given onboarding
+-- phase and employment type (Full-Time, Intern, Contract).
+-- A checklist is instantiated into employee-specific
+-- OnboardingTask records when the employee record is created.
+-- Phase: PRE_ONBOARDING | DAY_ONE | FIRST_WEEK | POST_ONBOARDING
+-- -------------------------------------------------------
 CREATE TABLE hr.OnboardingChecklist (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    ChecklistName           NVARCHAR(200)   NOT NULL,
-    Phase                   NVARCHAR(30)    NOT NULL,   -- PreOnboarding | DayOne | FirstWeek | PostOnboarding
-    EmploymentType          NVARCHAR(50)    NOT NULL DEFAULT 'FullTime',
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_OnboardingChecklist
-        PRIMARY KEY (Id)
+    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    ChecklistName   NVARCHAR(200)   NOT NULL,
+    Phase           NVARCHAR(50)    NOT NULL,
+    EmploymentType  NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt       DATETIME2       NULL
 );
 
 
--- OnboardingChecklistItem
--- Purpose : Individual task definitions within each onboarding checklist template.
--- | Id | OnboardingChecklistId | TaskName                | OwnerRole |
--- | -- | --------------------- | ----------------------- | --------- |
--- | 1  | 1                     | Create official email   | IT        |
--- | 2  | 1                     | Allocate laptop         | IT        |
--- | 3  | 1                     | Conduct HR induction    | HR        |
--- | 4  | 1                     | Submit signed documents | Employee  |
-
+-- -------------------------------------------------------
+-- ONBOARDING CHECKLIST ITEM
+-- Individual task definitions within a checklist template.
+-- OwnerRole identifies the responsible party (HR, IT,
+-- Manager, Employee) for UI assignment and escalation.
+-- IsMandatory distinguishes blocking tasks from optional ones.
+-- -------------------------------------------------------
 CREATE TABLE hr.OnboardingChecklistItem (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    OnboardingChecklistId       BIGINT          NOT NULL,
-    TaskName                    NVARCHAR(250)   NOT NULL,
-    Description                 NVARCHAR(MAX)   NULL,
-    OwnerRole                   NVARCHAR(50)    NULL,   -- HR | Manager | Employee | IT
-    SequenceOrder               INT             NOT NULL DEFAULT 0,
-    IsMandatory                 BIT             NOT NULL DEFAULT 1,
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    OnboardingChecklistId   BIGINT          NOT NULL,
+    TaskName                NVARCHAR(250)   NOT NULL,
+    Description             NVARCHAR(MAX)   NULL,
+    OwnerRole               NVARCHAR(50)    NULL,
+    SequenceOrder           INT             NOT NULL DEFAULT 0,
+    IsMandatory             BIT             NOT NULL DEFAULT 1,
+    IsActive                BIT             NOT NULL DEFAULT 1,
 
-    CONSTRAINT PK_OnboardingChecklistItem
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_OnboardingChecklistItem_OnboardingChecklist
+    CONSTRAINT FK_OnboardingChecklistItem_Checklist
         FOREIGN KEY (OnboardingChecklistId)
-        REFERENCES OnboardingChecklist(Id)
+        REFERENCES hr.OnboardingChecklist(Id)
 );
 
 
--- OnboardingTask
--- Purpose : Employee-specific onboarding task instances generated from a
---           checklist template. Tracks completion per employee per task.
--- | EmployeeId | TaskName        | Status  |
--- | ---------- | --------------- | ------- |
--- | 101        | Allocate laptop | Pending |
-
+-- -------------------------------------------------------
+-- ONBOARDING TASK
+-- Employee-specific task instances generated from a
+-- checklist template when a new joiner record is created.
+-- TaskStatus references dbo.StatusLookup (ONBOARDING_TASK_STATUS).
+-- OnboardingChecklistItemId is nullable to support ad-hoc
+-- tasks added outside the template.
+-- -------------------------------------------------------
 CREATE TABLE hr.OnboardingTask (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
+    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                  BIGINT          NOT NULL,
     OnboardingChecklistItemId   BIGINT          NULL,
     TaskName                    NVARCHAR(250)   NOT NULL,
-    Phase                       NVARCHAR(30)    NOT NULL,
+    Phase                       NVARCHAR(50)    NOT NULL,
     OwnerRole                   NVARCHAR(50)    NULL,
-    OnboardingTaskStatusId      BIGINT          NOT NULL,
+    TaskStatus                  NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    TaskStatusGroup               AS CAST('ONBOARDING_TASK_STATUS' AS NVARCHAR(50)) PERSISTED,
     DueDate                     DATE            NULL,
     CompletedDate               DATE            NULL,
     CompletedByEmployeeId       BIGINT          NULL,
-    Remarks                     NVARCHAR(MAX)   NULL,
-    CreatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_OnboardingTask
-        PRIMARY KEY (Id),
+    Remarks                     NVARCHAR(2000)  NULL,
+    WorkflowInstanceId          BIGINT          NULL,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                   DATETIME2       NULL,
 
     CONSTRAINT FK_OnboardingTask_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
-    CONSTRAINT FK_OnboardingTask_OnboardingChecklistItem
+    CONSTRAINT FK_OnboardingTask_ChecklistItem
         FOREIGN KEY (OnboardingChecklistItemId)
-        REFERENCES OnboardingChecklistItem(Id),
+        REFERENCES hr.OnboardingChecklistItem(Id),
 
-    CONSTRAINT FK_OnboardingTask_OnboardingTaskStatus
-        FOREIGN KEY (OnboardingTaskStatusId)
-        REFERENCES Status(Id),        
-
-    CONSTRAINT FK_OnboardingTask_CompletedByEmployee
+    CONSTRAINT FK_OnboardingTask_CompletedBy
         FOREIGN KEY (CompletedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_OnboardingTask_WorkflowInstance
+        FOREIGN KEY (WorkflowInstanceId)
+        REFERENCES workflow.WorkflowInstance(Id),
+
+    CONSTRAINT FK_OnboardingTask_Status
+        FOREIGN KEY (TaskStatus, TaskStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
--- SECTION 6 : DOCUMENT VERIFICATION
--- =============================================================================
-
--- DocumentType
--- Purpose : Master catalog of accepted document types with rules on which
---           phase they are required in (PreOnboarding, PostOnboarding, or Both).
-CREATE TABLE hr.DocumentType (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    DocumentTypeName    NVARCHAR(150)   NOT NULL,   -- Aadhaar | PAN | Degree Certificate | etc.
-    Category            NVARCHAR(100)   NULL,       -- Identity | Address | Educational | Experience
-    IsMandatory         BIT             NOT NULL DEFAULT 1,
-    Description         NVARCHAR(MAX)   NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-
-    CONSTRAINT PK_DocumentType
-        PRIMARY KEY (Id),
-
-    CONSTRAINT UQ_DocumentType_Name
-        UNIQUE (DocumentTypeName)
-);
-
-
--- DocumentVerification
--- Purpose : Tracks every document submitted by an employee and its verification
---           status across both pre- and post-onboarding phases.
+-- -------------------------------------------------------
+-- DOCUMENT VERIFICATION
+-- Tracks every document submitted by an employee across
+-- pre- and post-onboarding phases, including verification
+-- outcome and reviewer details.
+-- DocVerifyStatus references dbo.StatusLookup (DOC_VERIFY_STATUS).
+-- OnboardingPhase references dbo.StatusLookup (ONBOARDING_PHASE).
+-- FileUrl must point to secure blob/S3 storage.
+-- -------------------------------------------------------
 CREATE TABLE hr.DocumentVerification (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              BIGINT          NOT NULL,
     DocumentTypeId          BIGINT          NOT NULL,
-    OnboardingPhaseStatusId BIGINT          NOT NULL,   -- PreOnboarding | PostOnboarding
-    FileUrl                 NVARCHAR(MAX)   NULL,
+    OnboardingPhase         NVARCHAR(50)    NOT NULL DEFAULT 'PRE_ONBOARDING',
+    OnboardingPhaseGroup      AS CAST('ONBOARDING_PHASE' AS NVARCHAR(50)) PERSISTED,
+    FileUrl                 NVARCHAR(1000)  NULL,
     DocumentNumber          NVARCHAR(100)   NULL,
     IssuedBy                NVARCHAR(200)   NULL,
     IssueDate               DATE            NULL,
     ExpiryDate              DATE            NULL,
-    DocumentVerificationStatusId BIGINT          NOT NULL,
+    DocVerifyStatus         NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    DocVerifyStatusGroup      AS CAST('DOC_VERIFY_STATUS' AS NVARCHAR(50)) PERSISTED,
     SubmittedDate           DATE            NULL,
     VerifiedDate            DATE            NULL,
     VerifiedByEmployeeId    BIGINT          NULL,
-    RejectionReason         NVARCHAR(MAX)   NULL,
-    Remarks                 NVARCHAR(MAX)   NULL,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
+    RejectionReason         NVARCHAR(2000)  NULL,
+    Remarks                 NVARCHAR(2000)  NULL,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_DocumentVerification
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_DocumentVerification_Employee
+    CONSTRAINT FK_DocVerification_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
-    CONSTRAINT FK_DocumentVerification_DocumentType
+    CONSTRAINT FK_DocVerification_DocumentType
         FOREIGN KEY (DocumentTypeId)
-        REFERENCES DocumentType(Id),
+        REFERENCES dbo.DocumentType(Id),
 
-    CONSTRAINT FK_DocumentVerification_OnboardingPhaseStatus
-        FOREIGN KEY (OnboardingPhaseStatusId)
-        REFERENCES Status(Id),          
-
-    CONSTRAINT FK_DocumentVerification_DocumentVerificationStatusId
-        FOREIGN KEY (DocumentVerificationStatusId)
-        REFERENCES Status(Id),        
-
-    CONSTRAINT FK_DocumentVerification_VerifiedByEmployee
+    CONSTRAINT FK_DocVerification_VerifiedBy
         FOREIGN KEY (VerifiedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_DocVerification_Status
+        FOREIGN KEY (DocVerifyStatus, DocVerifyStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT FK_DocVerification_Phase
+        FOREIGN KEY (OnboardingPhase, OnboardingPhaseGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
--- SECTION 7 : BACKGROUND VERIFICATION
--- =============================================================================
-
--- BGVAgency
--- Purpose : Master list of third-party background verification agencies
---           used by the organisation.
+-- -------------------------------------------------------
+-- BGV AGENCY
+-- Master list of third-party background verification
+-- agencies engaged by the organisation. Stored centrally
+-- so agency metadata is maintained in one place.
+-- -------------------------------------------------------
 CREATE TABLE hr.BGVAgency (
-    Id              BIGINT          NOT NULL IDENTITY(1,1),
-    AgencyName      NVARCHAR(200)   NOT NULL,
+    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    AgencyName      NVARCHAR(200)   NOT NULL UNIQUE,
     ContactPerson   NVARCHAR(200)   NULL,
     Email           NVARCHAR(255)   NULL,
-    Phone           NVARCHAR(20)    NULL,
+    Phone           NVARCHAR(30)    NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_BGVAgency
-        PRIMARY KEY (Id)
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
 );
 
 
--- BackgroundVerification
--- Purpose : Tracks each type of background check (criminal, employment history,
---           education, reference) per employee across pre- and post-onboarding.
+-- -------------------------------------------------------
+-- BACKGROUND VERIFICATION
+-- Tracks each type of background check per employee across
+-- pre- and post-onboarding phases.
+-- BGVCheckType references dbo.StatusLookup (BGV_CHECK_TYPE).
+-- BGVStatus references dbo.StatusLookup (BGV_STATUS).
+-- BGVResult references dbo.StatusLookup (BGV_RESULT).
+-- OnboardingPhase references dbo.StatusLookup (ONBOARDING_PHASE).
+-- One employee can have multiple checks (Criminal + Education
+-- + Employment History) each as a separate row.
+-- -------------------------------------------------------
 CREATE TABLE hr.BackgroundVerification (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    EmployeeId                  BIGINT          NOT NULL,
-    BGVAgencyId                 BIGINT          NULL,
-    BGVCheckTypeStatusId        BIGINT          NOT NULL,  -- Criminal | EmploymentHistory | Education | Identity | Credit | Reference | DrugTest | Address
-    OnboardingPhaseStatusId     BIGINT          NOT NULL,   -- PreOnboarding | PostOnboarding
-    ReferenceName               NVARCHAR(200)   NULL,
-    ReferenceContact            NVARCHAR(200)   NULL,
-    InitiatedByEmployeeId       BIGINT          NULL,
-    InitiatedDate               DATE            NOT NULL DEFAULT CAST(GETDATE() AS DATE),
-    ExpectedDate                DATE            NULL,
-    CompletedDate               DATE            NULL,
-    BackgroundVerificationStatusId BIGINT          NOT NULL,   -- Pending | InProgress | Completed | DiscrepancyFound | Failed | Waived
-    BGVResultStatusId           BIGINT          NOT NULL,       -- Clear | Discrepancy | UnableToVerify | Failed
-    Findings                    NVARCHAR(MAX)   NULL,
-    ReportUrl                   NVARCHAR(MAX)   NULL,
-    CreatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              BIGINT          NOT NULL,
+    BGVAgencyId             BIGINT          NULL,
+    BGVCheckType            NVARCHAR(50)    NOT NULL,
+    BGVCheckTypeGroup         AS CAST('BGV_CHECK_TYPE' AS NVARCHAR(50)) PERSISTED,
+    OnboardingPhase         NVARCHAR(50)    NOT NULL DEFAULT 'PRE_ONBOARDING',
+    OnboardingPhaseGroup      AS CAST('ONBOARDING_PHASE' AS NVARCHAR(50)) PERSISTED,
+    ReferenceName           NVARCHAR(200)   NULL,
+    ReferenceContact        NVARCHAR(200)   NULL,
+    InitiatedByEmployeeId   BIGINT          NULL,
+    InitiatedDate           DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
+    ExpectedDate            DATE            NULL,
+    CompletedDate           DATE            NULL,
+    BGVStatus               NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    BGVStatusGroup            AS CAST('BGV_STATUS' AS NVARCHAR(50)) PERSISTED,
+    BGVResult               NVARCHAR(50)    NULL,
+    BGVResultGroup            AS CAST('BGV_RESULT' AS NVARCHAR(50)) PERSISTED,
+    Findings                NVARCHAR(MAX)   NULL,
+    ReportUrl               NVARCHAR(1000)  NULL,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_BackgroundVerification
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_BackgroundVerification_Employee
+    CONSTRAINT FK_BGV_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
-    CONSTRAINT FK_BackgroundVerification_BGVAgency
+    CONSTRAINT FK_BGV_Agency
         FOREIGN KEY (BGVAgencyId)
-        REFERENCES BGVAgency(Id),
+        REFERENCES hr.BGVAgency(Id),
 
-    CONSTRAINT FK_DocumentVerification_BGVCheckTypeStatus
-        FOREIGN KEY (BGVCheckTypeStatusId)
-        REFERENCES Status(Id),         
-
-    CONSTRAINT FK_DocumentVerification_OnboardingPhaseStatus
-        FOREIGN KEY (OnboardingPhaseStatusId)
-        REFERENCES Status(Id),  
-
-    CONSTRAINT FK_DocumentVerification_BGVResultStatus
-        FOREIGN KEY (BGVResultStatusId)
-        REFERENCES Status(Id), 
-
-    CONSTRAINT FK_BackgroundVerification_BackgroundVerificationStatus
-        FOREIGN KEY (BackgroundVerificationStatusId)
-        REFERENCES Status(Id),        
-
-    CONSTRAINT FK_BackgroundVerification_InitiatedByEmployee
+    CONSTRAINT FK_BGV_InitiatedBy
         FOREIGN KEY (InitiatedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_BGV_CheckType
+        FOREIGN KEY (BGVCheckType, BGVCheckTypeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT FK_BGV_Phase
+        FOREIGN KEY (OnboardingPhase, OnboardingPhaseGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT FK_BGV_Status
+        FOREIGN KEY (BGVStatus, BGVStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT FK_BGV_Result
+        FOREIGN KEY (BGVResult, BGVResultGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
--- SECTION 8 : PERFORMANCE MANAGEMENT
--- =============================================================================
+-- =============================================================================================================
+-- MODULE C: POLICY DOCUMENTS
+-- Manages the full lifecycle of company policy documents including versioning and employee acknowledgement.
+-- =============================================================================================================
 
--- PerformanceCycle
--- Purpose : Defines appraisal periods (annual, bi-annual, quarterly) during
---           which goal setting and performance reviews are conducted.
+
+-- -------------------------------------------------------
+-- POLICY CATEGORY
+-- Top-level grouping for policy documents
+-- (e.g. HR Policies, IT Security, Finance, Compliance).
+-- Enables filtered browsing and mandatory-acknowledgement
+-- rules per category.
+-- -------------------------------------------------------
+CREATE TABLE hr.PolicyCategory (
+    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    CategoryCode    NVARCHAR(50)    NOT NULL UNIQUE,
+    CategoryName    NVARCHAR(200)   NOT NULL,
+    Description     NVARCHAR(1000)  NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+);
+
+
+-- -------------------------------------------------------
+-- POLICY DOCUMENT
+-- Master record for each company policy. A policy has one
+-- active version at any time; historical versions are
+-- retained in hr.PolicyVersion.
+-- Scope controls applicability: GLOBAL, COUNTRY, LEGAL_ENTITY,
+-- DEPARTMENT, or LOCATION, resolved via ScopeTypeId +
+-- ScopeReferenceId (mirrors dbo.ScopeType pattern).
+-- AcknowledgementRequired flags policies that mandate
+-- employee sign-off.
+-- -------------------------------------------------------
+CREATE TABLE hr.PolicyDocument (
+    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
+    PolicyCategoryId            BIGINT          NOT NULL,
+    PolicyCode                  NVARCHAR(50)    NOT NULL UNIQUE,
+    PolicyName                  NVARCHAR(300)   NOT NULL,
+    Description                 NVARCHAR(MAX)   NULL,
+    ScopeTypeId                 BIGINT          NULL,
+    ScopeReferenceId            BIGINT          NULL,
+    AcknowledgementRequired     BIT             NOT NULL DEFAULT 1,
+    AcknowledgementDeadlineDays INT             NULL,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
+    CreatedByEmployeeId         BIGINT          NULL,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                   DATETIME2       NULL,
+
+    CONSTRAINT FK_PolicyDocument_Category
+        FOREIGN KEY (PolicyCategoryId)
+        REFERENCES hr.PolicyCategory(Id),
+
+    CONSTRAINT FK_PolicyDocument_ScopeType
+        FOREIGN KEY (ScopeTypeId)
+        REFERENCES dbo.ScopeType(Id),
+
+    CONSTRAINT FK_PolicyDocument_CreatedBy
+        FOREIGN KEY (CreatedByEmployeeId)
+        REFERENCES dbo.Employee(Id)
+);
+
+
+-- -------------------------------------------------------
+-- POLICY VERSION
+-- Stores each published revision of a policy document.
+-- VersionNumber is monotonically increasing per policy.
+-- FileUrl points to the uploaded PDF/document in blob storage.
+-- PolicyStatus references dbo.StatusLookup (POLICY_STATUS):
+--   DRAFT -> ACTIVE -> ARCHIVED | SUPERSEDED
+-- EffectiveDate marks when the version comes into force.
+-- SupersededByVersionId links to the newer version on
+-- supersession for forward-navigation in the UI.
+-- -------------------------------------------------------
+CREATE TABLE hr.PolicyVersion (
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    PolicyDocumentId        BIGINT          NOT NULL,
+    VersionNumber           INT             NOT NULL,
+    VersionLabel            NVARCHAR(50)    NULL,
+    FileUrl                 NVARCHAR(1000)  NOT NULL,
+    OriginalFileName        NVARCHAR(500)   NULL,
+    ChangeNotes             NVARCHAR(MAX)   NULL,
+    PolicyStatus            NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
+    PolicyStatusGroup         AS CAST('POLICY_STATUS' AS NVARCHAR(50)) PERSISTED,
+    EffectiveDate           DATE            NULL,
+    SupersededByVersionId   BIGINT          NULL,
+    PublishedByEmployeeId   BIGINT          NULL,
+    PublishedAt             DATETIME2       NULL,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+
+    CONSTRAINT UQ_PolicyVersion
+        UNIQUE (PolicyDocumentId, VersionNumber),
+
+    CONSTRAINT FK_PolicyVersion_Document
+        FOREIGN KEY (PolicyDocumentId)
+        REFERENCES hr.PolicyDocument(Id),
+
+    CONSTRAINT FK_PolicyVersion_SupersededBy
+        FOREIGN KEY (SupersededByVersionId)
+        REFERENCES hr.PolicyVersion(Id),
+
+    CONSTRAINT FK_PolicyVersion_PublishedBy
+        FOREIGN KEY (PublishedByEmployeeId)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_PolicyVersion_Status
+        FOREIGN KEY (PolicyStatus, PolicyStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
+);
+
+
+-- -------------------------------------------------------
+-- POLICY ACKNOWLEDGEMENT
+-- Records each employee's acknowledgement of a specific
+-- policy version. One row per employee per version.
+-- AckStatus references dbo.StatusLookup (POLICY_ACK_STATUS):
+--   PENDING -> ACKNOWLEDGED | OVERDUE
+-- AcknowledgedAt is populated on employee sign-off.
+-- DeadlineDate is computed at assignment time based on
+-- PolicyDocument.AcknowledgementDeadlineDays.
+-- -------------------------------------------------------
+CREATE TABLE hr.PolicyAcknowledgement (
+    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    PolicyVersionId     BIGINT          NOT NULL,
+    EmployeeId          BIGINT          NOT NULL,
+    AckStatus           NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    AckStatusGroup        AS CAST('POLICY_ACK_STATUS' AS NVARCHAR(50)) PERSISTED,
+    DeadlineDate        DATE            NULL,
+    AcknowledgedAt      DATETIME2       NULL,
+    IPAddress           NVARCHAR(50)    NULL,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+
+    CONSTRAINT UQ_PolicyAcknowledgement
+        UNIQUE (PolicyVersionId, EmployeeId),
+
+    CONSTRAINT FK_PolicyAck_PolicyVersion
+        FOREIGN KEY (PolicyVersionId)
+        REFERENCES hr.PolicyVersion(Id),
+
+    CONSTRAINT FK_PolicyAck_Employee
+        FOREIGN KEY (EmployeeId)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_PolicyAck_Status
+        FOREIGN KEY (AckStatus, AckStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
+);
+
+
+-- =============================================================================================================
+-- MODULE D: SALARY SLIPS
+-- Manages the presentation and delivery layer of monthly payslips.
+--
+-- DESIGN RATIONALE — why no duplicate component table:
+--   All financial source-of-truth data already exists in the payroll schema:
+--     • payroll.PayrollDisbursementTransaction — per-employee monthly net credit
+--       (GrossAmount, TotalDeductions, NetAmountCredited, CurrencyCode, PayrollMonth, PayrollYear)
+--     • payroll.EmployeeSalaryComponent       — component-level breakdown (earnings & deductions)
+--       with FinalAmount = COALESCE(OverrideAmount, ComputedAmount)
+--     • payroll.EmployeeTaxDeduction          — TDS and tax breakdown per month
+--     • payroll.PayrollAttendanceSummary      — working days, present days, leave, overtime
+--
+--   hr.SalarySlipPublication adds ONLY what payroll does not own:
+--     the rendered document artefact (PDF URL), its lifecycle status, and download audit.
+--   All numeric fields on the payslip are read at query time from payroll tables via
+--   DisbursementTransactionId — no duplication of financials.
+-- =============================================================================================================
+
+
+-- -------------------------------------------------------
+-- SALARY SLIP PUBLICATION
+-- Tracks the generated payslip PDF artefact for an employee
+-- for a given payroll disbursement transaction.
+-- All monetary figures (gross, deductions, net, currency,
+-- month, year) are sourced at query time from
+-- payroll.PayrollDisbursementTransaction and
+-- payroll.EmployeeSalaryComponent — nothing is duplicated here.
+--
+-- SlipStatus references dbo.StatusLookup (SALARY_SLIP_STATUS):
+--   DRAFT -> PUBLISHED -> DOWNLOADED | REVISED
+-- FileUrl points to the rendered, password-protected PDF
+-- in blob/S3 storage. IsPasswordProtected signals the
+-- application layer to apply the employee's DOB-based PIN.
+-- FirstDownloadedAt is populated on the first employee
+-- access for audit and SLA reporting.
+-- -------------------------------------------------------
+CREATE TABLE hr.SalarySlipPublication (
+    Id                              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    DisbursementTransactionId       BIGINT          NOT NULL UNIQUE,
+    SlipStatus                      NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
+    SlipStatusGroup                   AS CAST('SALARY_SLIP_STATUS' AS NVARCHAR(50)) PERSISTED,
+    FileUrl                         NVARCHAR(1000)  NULL,
+    IsPasswordProtected             BIT             NOT NULL DEFAULT 1,
+    GeneratedAt                     DATETIME2       NULL,
+    PublishedAt                     DATETIME2       NULL,
+    FirstDownloadedAt               DATETIME2       NULL,
+    Remarks                         NVARCHAR(1000)  NULL,
+    CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                       DATETIME2       NULL,
+
+    CONSTRAINT FK_SalarySlipPub_DisbursementTransaction
+        FOREIGN KEY (DisbursementTransactionId)
+        REFERENCES payroll.PayrollDisbursementTransaction(Id),
+
+    CONSTRAINT FK_SalarySlipPub_Status
+        FOREIGN KEY (SlipStatus, SlipStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
+);
+
+
+-- =============================================================================================================
+-- MODULE E: PERFORMANCE REVIEWS
+-- Manages appraisal cycles, individual goal setting (OKR-style), and formal review records.
+-- =============================================================================================================
+
+
+-- -------------------------------------------------------
+-- PERFORMANCE CYCLE
+-- Defines appraisal periods (Annual, Bi-Annual, Quarterly,
+-- Probation) within which goal setting and reviews occur.
+-- CycleType references dbo.StatusLookup (PERF_CYCLE_TYPE).
+-- CycleStatus references dbo.StatusLookup (PERF_CYCLE_STATUS).
+-- GoalSettingDeadline and ReviewStartDate allow the cycle
+-- to be split into discrete phases.
+-- -------------------------------------------------------
 CREATE TABLE hr.PerformanceCycle (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    CycleName               NVARCHAR(150)   NOT NULL,
-    PerformanceCycleTypeStatusId BIGINT          NOT NULL,  -- Annual | BiAnnual | Quarterly | Probation
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    CycleName               NVARCHAR(150)   NOT NULL UNIQUE,
+    CycleType               NVARCHAR(50)    NOT NULL DEFAULT 'ANNUAL',
+    CycleTypeGroup            AS CAST('PERF_CYCLE_TYPE' AS NVARCHAR(50)) PERSISTED,
     StartDate               DATE            NOT NULL,
     EndDate                 DATE            NOT NULL,
     GoalSettingDeadline     DATE            NULL,
     ReviewStartDate         DATE            NULL,
     ReviewEndDate           DATE            NULL,
-    PerformanceCycleStatusId BIGINT          NOT NULL,  -- Upcoming | GoalSetting | InReview | Completed | Archived
+    CycleStatus             NVARCHAR(50)    NOT NULL DEFAULT 'UPCOMING',
+    CycleStatusGroup          AS CAST('PERF_CYCLE_STATUS' AS NVARCHAR(50)) PERSISTED,
+    LegalEntityId           BIGINT          NULL,
     CreatedByEmployeeId     BIGINT          NULL,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_PerformanceCycle
-        PRIMARY KEY (Id),
+    CONSTRAINT FK_PerfCycle_LegalEntity
+        FOREIGN KEY (LegalEntityId)
+        REFERENCES dbo.LegalEntity(Id),
 
-    CONSTRAINT UQ_PerformanceCycle_Name
-        UNIQUE (CycleName),
-
-    CONSTRAINT FK_PerformanceCycle_PerformanceCycleTypeStatus
-        FOREIGN KEY (PerformanceCycleTypeStatusId)
-        REFERENCES Status(Id), 
-
-    CONSTRAINT FK_PerformanceCycle_Status
-        FOREIGN KEY (PerformanceCycleStatusId)
-        REFERENCES Status(Id),  
-
-    CONSTRAINT FK_PerformanceCycle_CreatedByEmployee
+    CONSTRAINT FK_PerfCycle_CreatedBy
         FOREIGN KEY (CreatedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_PerfCycle_CycleType
+        FOREIGN KEY (CycleType, CycleTypeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT FK_PerfCycle_Status
+        FOREIGN KEY (CycleStatus, CycleStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- Goal
--- Purpose : Individual goals set by an employee for a given performance cycle.
+-- -------------------------------------------------------
+-- GOAL
+-- Individual goals set by an employee for a performance
+-- cycle. Supports OKR-style structure via GoalKeyResult.
+-- GoalStatus references dbo.StatusLookup (GOAL_STATUS).
+-- WeightagePct allows weighted aggregation of ratings
+-- across goals for final score computation.
+-- -------------------------------------------------------
 CREATE TABLE hr.Goal (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              BIGINT          NOT NULL,
     PerformanceCycleId      BIGINT          NOT NULL,
     Title                   NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
-    Category                NVARCHAR(100)   NULL,       -- Business | Learning | Behavioural
-    WeightagePct            DECIMAL(5,2)    NOT NULL DEFAULT 0,
+    Category                NVARCHAR(100)   NULL,
+    WeightagePct            DECIMAL(5,2)    NOT NULL DEFAULT 0
+        CONSTRAINT CK_Goal_Weightage CHECK (WeightagePct BETWEEN 0 AND 100),
     TargetDate              DATE            NULL,
-    GoalStatusId            BIGINT          NOT NULL,  -- Draft | Submitted | Approved | InProgress | Completed | Cancelled
-    ProgressPct             INT             NOT NULL DEFAULT 0,
+    GoalStatus              NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
+    GoalStatusGroup           AS CAST('GOAL_STATUS' AS NVARCHAR(50)) PERSISTED,
+    ProgressPct             INT             NOT NULL DEFAULT 0
+        CONSTRAINT CK_Goal_Progress CHECK (ProgressPct BETWEEN 0 AND 100),
     EmployeeRating          DECIMAL(3,1)    NULL,
     ManagerRating           DECIMAL(3,1)    NULL,
     ApprovedByEmployeeId    BIGINT          NULL,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_Goal
-        PRIMARY KEY (Id),
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
     CONSTRAINT FK_Goal_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
-    CONSTRAINT FK_Goal_PerformanceCycle
+    CONSTRAINT FK_Goal_PerfCycle
         FOREIGN KEY (PerformanceCycleId)
-        REFERENCES PerformanceCycle(Id),
+        REFERENCES hr.PerformanceCycle(Id),
 
-    CONSTRAINT FK_Goal_StatusId
-        FOREIGN KEY (GoalStatusId)
-        REFERENCES Status(Id),        
-
-    CONSTRAINT FK_Goal_ApprovedByEmployee
+    CONSTRAINT FK_Goal_ApprovedBy
         FOREIGN KEY (ApprovedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_Goal_Status
+        FOREIGN KEY (GoalStatus, GoalStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- GoalKeyResult
--- Purpose : Measurable key results or milestones under each goal (OKR support).
+-- -------------------------------------------------------
+-- GOAL KEY RESULT
+-- Measurable outcomes or milestones under a parent goal
+-- to support OKR-style tracking.
+-- KRStatus references dbo.StatusLookup (GOAL_KR_STATUS).
+-- TargetValue and ActualValue are NVARCHAR to support
+-- both numeric and descriptive metrics (e.g. "10 articles"
+-- or "Achieved CSAT > 4.5").
+-- -------------------------------------------------------
 CREATE TABLE hr.GoalKeyResult (
-    Id              BIGINT          NOT NULL IDENTITY(1,1),
+    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
     GoalId          BIGINT          NOT NULL,
     Description     NVARCHAR(MAX)   NOT NULL,
     TargetValue     NVARCHAR(200)   NULL,
     ActualValue     NVARCHAR(200)   NULL,
-    GoalKeyResultStatusId BIGINT          NOT NULL,  -- Pending | OnTrack | AtRisk | Achieved | NotAchieved
+    KRStatus        NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    KRStatusGroup     AS CAST('GOAL_KR_STATUS' AS NVARCHAR(50)) PERSISTED,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt       DATETIME2       NULL,
 
-    CONSTRAINT PK_GoalKeyResult
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_GoalKeyResult_GoalKeyResultStatusId
-        FOREIGN KEY (GoalKeyResultStatusId)
-        REFERENCES Status(Id),        
-
-    CONSTRAINT FK_GoalKeyResult_Goal
+    CONSTRAINT FK_GoalKR_Goal
         FOREIGN KEY (GoalId)
-        REFERENCES Goal(Id)
+        REFERENCES hr.Goal(Id),
+
+    CONSTRAINT FK_GoalKR_Status
+        FOREIGN KEY (KRStatus, KRStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- PerformanceReview
--- Purpose : Formal review record for each employee in a cycle, capturing
---           self-assessment and manager evaluation with final rating.
+-- -------------------------------------------------------
+-- PERFORMANCE REVIEW
+-- Formal review record for each employee in a cycle,
+-- capturing self-assessment, manager evaluation, HRBP
+-- comments, and final rating.
+-- ReviewStatus references dbo.StatusLookup (PERF_REVIEW_STATUS).
+-- PerformanceBand: Exceeds | Meets | Below | Critical
+-- (stored as a free-text band label rather than a FK to
+-- allow flexible band definitions per cycle without schema
+-- changes; enforce via application-layer validation).
+-- -------------------------------------------------------
 CREATE TABLE hr.PerformanceReview (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    PerformanceCycleId      BIGINT          NOT NULL,
-    ReviewerEmployeeId      BIGINT          NOT NULL,
-    SelfRating              DECIMAL(3,1)    NULL,
-    ManagerRating           DECIMAL(3,1)    NULL,
-    FinalRating             DECIMAL(3,1)    NULL,
-    PerformanceBand         NVARCHAR(50)    NULL,       -- Exceeds | Meets | Below | Critical
-    SelfComments            NVARCHAR(MAX)   NULL,
-    ManagerComments         NVARCHAR(MAX)   NULL,
-    HRBPComments            NVARCHAR(MAX)   NULL,
-    PerformanceReviewStatusId   BIGINT          NOT NULL,  -- Pending | SelfSubmitted | ManagerReview | HRBPReview | Completed | Acknowledged
-    SelfSubmittedAt         DATETIME        NULL,
-    ManagerSubmittedAt      DATETIME        NULL,
-    CompletedAt             DATETIME        NULL,
-
-    CONSTRAINT PK_PerformanceReview
-        PRIMARY KEY (Id),
+    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                  BIGINT          NOT NULL,
+    PerformanceCycleId          BIGINT          NOT NULL,
+    ReviewerEmployeeId          BIGINT          NOT NULL,
+    SelfRating                  DECIMAL(3,1)    NULL,
+    ManagerRating               DECIMAL(3,1)    NULL,
+    FinalRating                 DECIMAL(3,1)    NULL,
+    PerformanceBand             NVARCHAR(50)    NULL,
+    SelfComments                NVARCHAR(MAX)   NULL,
+    ManagerComments             NVARCHAR(MAX)   NULL,
+    HRBPComments                NVARCHAR(MAX)   NULL,
+    ReviewStatus                NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    ReviewStatusGroup             AS CAST('PERF_REVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
+    SelfSubmittedAt             DATETIME2       NULL,
+    ManagerSubmittedAt          DATETIME2       NULL,
+    CompletedAt                 DATETIME2       NULL,
+    WorkflowInstanceId          BIGINT          NULL,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                   DATETIME2       NULL,
 
     CONSTRAINT UQ_PerformanceReview_EmployeeCycle
         UNIQUE (EmployeeId, PerformanceCycleId),
 
-    CONSTRAINT FK_PerformanceReview_Employee
+    CONSTRAINT FK_PerfReview_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
-    CONSTRAINT FK_PerformanceReview_PerformanceReviewStatus
-        FOREIGN KEY (PerformanceReviewStatusId)
-        REFERENCES Status(Id),    
-
-    CONSTRAINT FK_PerformanceReview_PerformanceCycle
+    CONSTRAINT FK_PerfReview_PerfCycle
         FOREIGN KEY (PerformanceCycleId)
-        REFERENCES PerformanceCycle(Id),
+        REFERENCES hr.PerformanceCycle(Id),
 
-    CONSTRAINT FK_PerformanceReview_ReviewerEmployee
+    CONSTRAINT FK_PerfReview_Reviewer
         FOREIGN KEY (ReviewerEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_PerfReview_WorkflowInstance
+        FOREIGN KEY (WorkflowInstanceId)
+        REFERENCES workflow.WorkflowInstance(Id),
+
+    CONSTRAINT FK_PerfReview_Status
+        FOREIGN KEY (ReviewStatus, ReviewStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- PerformanceReviewHistory
--- Purpose : Tracks every status change in a review for audit and escalation.
+-- -------------------------------------------------------
+-- PERFORMANCE REVIEW HISTORY
+-- Append-only audit trail of every status change on a
+-- performance review record. Enables escalation tracking
+-- and SLA reporting on review completion times.
+-- -------------------------------------------------------
 CREATE TABLE hr.PerformanceReviewHistory (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    PerformanceReviewId         BIGINT          NOT NULL,
-    OldStatus                   NVARCHAR(30)    NULL,
-    NewStatus                   NVARCHAR(30)    NOT NULL,
-    ChangedByEmployeeId         BIGINT          NULL,
-    Remarks                     NVARCHAR(MAX)   NULL,
-    ChangedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    PerformanceReviewId     BIGINT          NOT NULL,
+    FromStatus              NVARCHAR(50)    NULL,
+    ToStatus                NVARCHAR(50)    NOT NULL,
+    ChangedByEmployeeId     BIGINT          NULL,
+    Remarks                 NVARCHAR(2000)  NULL,
+    ChangedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
-    CONSTRAINT PK_PerformanceReviewHistory
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_PerformanceReviewHistory_PerformanceReview
+    CONSTRAINT FK_PerfReviewHistory_Review
         FOREIGN KEY (PerformanceReviewId)
-        REFERENCES PerformanceReview(Id),
+        REFERENCES hr.PerformanceReview(Id),
 
-    CONSTRAINT FK_PerformanceReviewHistory_ChangedByEmployee
+    CONSTRAINT FK_PerfReviewHistory_ChangedBy
         FOREIGN KEY (ChangedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id)
 );
 
 
--- =============================================================================
--- SECTION 9 : TRAINING
--- =============================================================================
+-- =============================================================================================================
+-- MODULE F: TRAINING RECORDS
+-- Manages training catalogue, batch scheduling, and per-employee enrollment and completion tracking.
+-- =============================================================================================================
 
--- TrainingCategory
--- Purpose : Top-level grouping of all training programs
---           (e.g. Technical, Compliance, Leadership, Soft Skills).
+
+-- -------------------------------------------------------
+-- TRAINING CATEGORY
+-- Top-level grouping of training programs
+-- (e.g. Technical, Compliance, Leadership, Soft Skills).
+-- -------------------------------------------------------
 CREATE TABLE hr.TrainingCategory (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    CategoryName        NVARCHAR(150)   NOT NULL,
-    Description         NVARCHAR(MAX)   NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_TrainingCategory
-        PRIMARY KEY (Id),
-
-    CONSTRAINT UQ_TrainingCategory_Name
-        UNIQUE (CategoryName)
+    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    CategoryName    NVARCHAR(150)   NOT NULL UNIQUE,
+    Description     NVARCHAR(1000)  NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
 );
 
 
--- TrainingProgram
--- Purpose : Individual courses or training modules within a category.
---           Tracks delivery mode, duration, and whether it is mandatory.
+-- -------------------------------------------------------
+-- TRAINING PROGRAM
+-- Defines individual courses within a training category.
+-- TrainingMode references dbo.StatusLookup (TRAINING_MODE).
+-- IsMandatory drives automatic enrollment for applicable
+-- employee groups (controlled via ApplicableTo).
+-- CertificateProvided flags programs that issue completion
+-- certificates stored in hr.EmployeeTrainingRecord.
+-- -------------------------------------------------------
 CREATE TABLE hr.TrainingProgram (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     TrainingCategoryId      BIGINT          NOT NULL,
+    ProgramCode             NVARCHAR(50)    NOT NULL UNIQUE,
     Title                   NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
-    TrainingProgramModeStatusId BIGINT          NOT NULL,  -- Online | Offline | Hybrid | SelfPaced
+    TrainingMode            NVARCHAR(50)    NOT NULL DEFAULT 'ONLINE',
+    TrainingModeGroup         AS CAST('TRAINING_MODE' AS NVARCHAR(50)) PERSISTED,
     DurationHours           DECIMAL(6,2)    NULL,
     Provider                NVARCHAR(200)   NULL,
     IsMandatory             BIT             NOT NULL DEFAULT 0,
-    ApplicableTo            NVARCHAR(100)   NULL,   -- All | NewJoiner | DepartmentName
+    ApplicableTo            NVARCHAR(100)   NULL,
     MaxParticipants         INT             NULL,
     CertificateProvided     BIT             NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_TrainingProgram
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_TrainingProgram_TrainingCategory
+    CONSTRAINT FK_TrainingProgram_Category
         FOREIGN KEY (TrainingCategoryId)
-        REFERENCES TrainingCategory(Id)
+        REFERENCES hr.TrainingCategory(Id),
+
+    CONSTRAINT FK_TrainingProgram_Mode
+        FOREIGN KEY (TrainingMode, TrainingModeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- TrainingBatch
--- Purpose : Scheduled batch/cohort of a training program with dates,
---           venue/link, and facilitator information.
+-- -------------------------------------------------------
+-- TRAINING BATCH
+-- Represents a scheduled cohort of a training program with
+-- defined dates, venue or meeting link, facilitator, and
+-- capacity.
+-- BatchStatus references dbo.StatusLookup (TRAINING_BATCH_STATUS).
+-- -------------------------------------------------------
 CREATE TABLE hr.TrainingBatch (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     TrainingProgramId       BIGINT          NOT NULL,
     BatchName               NVARCHAR(200)   NULL,
     FacilitatorEmployeeId   BIGINT          NULL,
     StartDate               DATE            NOT NULL,
     EndDate                 DATE            NULL,
-    VenueOrLink             NVARCHAR(MAX)   NULL,
+    VenueOrLink             NVARCHAR(1000)  NULL,
     MaxSeats                INT             NULL,
-    TrainingBatchStatusId   BIGINT          NOT NULL,  -- Upcoming | Ongoing | Completed | Cancelled
-    CreatedAt               DATETIME        NOT NULL DEFAULT GETDATE(),
+    BatchStatus             NVARCHAR(50)    NOT NULL DEFAULT 'UPCOMING',
+    BatchStatusGroup          AS CAST('TRAINING_BATCH_STATUS' AS NVARCHAR(50)) PERSISTED,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_TrainingBatch
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_TrainingBatch_TrainingProgram
+    CONSTRAINT FK_TrainingBatch_Program
         FOREIGN KEY (TrainingProgramId)
-        REFERENCES TrainingProgram(Id),
+        REFERENCES hr.TrainingProgram(Id),
 
-    CONSTRAINT FK_TrainingBatch_TrainingBatchStatus
-        FOREIGN KEY (TrainingBatchStatusId)
-        REFERENCES Status(Id),
-
-    CONSTRAINT FK_TrainingBatch_FacilitatorEmployee
+    CONSTRAINT FK_TrainingBatch_Facilitator
         FOREIGN KEY (FacilitatorEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_TrainingBatch_Status
+        FOREIGN KEY (BatchStatus, BatchStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- EmployeeTrainingRecord
--- Purpose : Tracks each employee's enrollment and completion status for
---           every training program/batch they participate in.
+-- -------------------------------------------------------
+-- EMPLOYEE TRAINING RECORD
+-- Tracks each employee's enrollment and completion for
+-- every training program and batch. One row per enrollment.
+-- RecordStatus references dbo.StatusLookup (TRAINING_RECORD_STATUS).
+-- IsPassed is a persisted computed column derived from
+-- Score vs PassingScore to avoid redundant storage.
+-- CertificateUrl points to the issued certificate document
+-- in blob/S3 storage.
+-- -------------------------------------------------------
 CREATE TABLE hr.EmployeeTrainingRecord (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    EmployeeId                  BIGINT          NOT NULL,
-    TrainingProgramId           BIGINT          NOT NULL,
-    TrainingBatchId             BIGINT          NULL,
-    EnrolledDate                DATE            NOT NULL DEFAULT CAST(GETDATE() AS DATE),
-    CompletedDate               DATE            NULL,
-    EmployeeTrainingRecordStatusId   BIGINT          NOT NULL,  -- Enrolled | InProgress | Completed | Failed | Dropped | Absent
-    Score                       DECIMAL(5,2)    NULL,
-    PassingScore                DECIMAL(5,2)    NULL,
-    IsPassed                    AS (CASE WHEN Score IS NOT NULL AND PassingScore IS NOT NULL
-                                         AND Score >= PassingScore THEN 1 ELSE 0 END) PERSISTED,
-    CertificateUrl              NVARCHAR(MAX)   NULL,
-    CertificateIssuedDate       DATE            NULL,
-    Feedback                    NVARCHAR(MAX)   NULL,
-    CreatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
+    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              BIGINT          NOT NULL,
+    TrainingProgramId       BIGINT          NOT NULL,
+    TrainingBatchId         BIGINT          NULL,
+    EnrolledDate            DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
+    CompletedDate           DATE            NULL,
+    RecordStatus            NVARCHAR(50)    NOT NULL DEFAULT 'ENROLLED',
+    RecordStatusGroup         AS CAST('TRAINING_RECORD_STATUS' AS NVARCHAR(50)) PERSISTED,
+    Score                   DECIMAL(5,2)    NULL,
+    PassingScore            DECIMAL(5,2)    NULL,
+    IsPassed                AS (CAST(CASE
+                                    WHEN Score IS NOT NULL
+                                     AND PassingScore IS NOT NULL
+                                     AND Score >= PassingScore THEN 1
+                                    ELSE 0
+                            END AS BIT)) PERSISTED,
+    CertificateUrl          NVARCHAR(1000)  NULL,
+    CertificateIssuedDate   DATE            NULL,
+    Feedback                NVARCHAR(MAX)   NULL,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt               DATETIME2       NULL,
 
-    CONSTRAINT PK_EmployeeTrainingRecord
-        PRIMARY KEY (Id),
-
-    CONSTRAINT FK_EmployeeTrainingRecord_Employee
+    CONSTRAINT FK_EmpTrainingRecord_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
-    CONSTRAINT FK_EmployeeTrainingRecord_TrainingProgram
+    CONSTRAINT FK_EmpTrainingRecord_Program
         FOREIGN KEY (TrainingProgramId)
-        REFERENCES TrainingProgram(Id),
+        REFERENCES hr.TrainingProgram(Id),
 
-    CONSTRAINT FK_EmployeeTrainingRecord_EmployeeTrainingRecordStatus
-        FOREIGN KEY (EmployeeTrainingRecordStatusId)
-        REFERENCES Status(Id),
-
-    CONSTRAINT FK_EmployeeTrainingRecord_TrainingBatch
+    CONSTRAINT FK_EmpTrainingRecord_Batch
         FOREIGN KEY (TrainingBatchId)
-        REFERENCES TrainingBatch(Id)
+        REFERENCES hr.TrainingBatch(Id),
+
+    CONSTRAINT FK_EmpTrainingRecord_Status
+        FOREIGN KEY (RecordStatus, RecordStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
--- SECTION 10 : EXIT MANAGEMENT
--- =============================================================================
+-- =============================================================================================================
+-- MODULE G: EXIT MANAGEMENT
+-- Manages the end-to-end employee exit process from resignation through final settlement.
+-- =============================================================================================================
 
--- ExitReason
--- Purpose : Master lookup of standardised exit reason categories to ensure
---           consistent reporting across voluntary and involuntary departures.
+
+-- -------------------------------------------------------
+-- EXIT REASON
+-- Standardised master list of exit reason categories to
+-- ensure consistent attrition reporting. Category:
+-- VOLUNTARY | INVOLUNTARY distinguishes resignation from
+-- termination for analytics.
+-- -------------------------------------------------------
 CREATE TABLE hr.ExitReason (
-    Id              BIGINT          NOT NULL IDENTITY(1,1),
-    ReasonText      NVARCHAR(200)   NOT NULL,    -- Better Opportunity | Personal | Relocation | etc.
-    Category        NVARCHAR(50)    NOT NULL,    -- Voluntary | Involuntary
-    IsActive        BIT             NOT NULL DEFAULT 1,
-
-    CONSTRAINT PK_ExitReason
-        PRIMARY KEY (Id),
-
-    CONSTRAINT UQ_ExitReason_ReasonText
-        UNIQUE (ReasonText)
+    Id          BIGINT          PRIMARY KEY IDENTITY(1,1),
+    ReasonText  NVARCHAR(200)   NOT NULL UNIQUE,
+    Category    NVARCHAR(20)    NOT NULL
+        CONSTRAINT CK_ExitReason_Category CHECK (Category IN ('VOLUNTARY', 'INVOLUNTARY')),
+    IsActive    BIT             NOT NULL DEFAULT 1,
+    CreatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE()
 );
 
 
--- ExitRecord
--- Purpose : Captures everything about an employee's departure — reason, dates,
---           exit interview outcome, clearance, and final settlement status.
+-- -------------------------------------------------------
+-- EXIT RECORD
+-- Central record for an employee's departure capturing
+-- exit type, notice period, exit interview outcome,
+-- clearance status, and final settlement status.
+-- ExitType references dbo.StatusLookup (EXIT_TYPE).
+-- ExitInterviewStatus references dbo.StatusLookup (EXIT_INTERVIEW_STATUS).
+-- ClearanceStatus references dbo.StatusLookup (CLEARANCE_STATUS).
+-- FinalSettlementStatus references dbo.StatusLookup (FINAL_SETTLEMENT_STATUS).
+-- One record per employee (UQ enforced); updated in place
+-- as the exit progresses through workflow stages.
+-- -------------------------------------------------------
 CREATE TABLE hr.ExitRecord (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    EmployeeId                  BIGINT          NOT NULL,
+    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                  BIGINT          NOT NULL UNIQUE,
     ExitReasonId                BIGINT          NULL,
-    ExitTypeStatusId            BIGINT          NOT NULL,  -- Resignation | Termination | Retirement | ContractEnd | Absconding
-    AdditionalReason            NVARCHAR(30)    NULL,
+    ExitType                    NVARCHAR(50)    NOT NULL DEFAULT 'RESIGNATION',
+    ExitTypeGroup                 AS CAST('EXIT_TYPE' AS NVARCHAR(50)) PERSISTED,
+    AdditionalReason            NVARCHAR(MAX)   NULL,
     ResignationDate             DATE            NULL,
     LastWorkingDate             DATE            NULL,
     NoticePeriodDays            INT             NULL,
     IsNoticeWaived              BIT             NOT NULL DEFAULT 0,
-    ExitInterviewStatusId       BIGINT          NOT NULL,  -- Pending | Scheduled | Completed | Skipped
+    ExitInterviewStatus         NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    ExitInterviewStatusGroup      AS CAST('EXIT_INTERVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
     ExitInterviewDate           DATE            NULL,
     ConductedByEmployeeId       BIGINT          NULL,
     ExitFeedback                NVARCHAR(MAX)   NULL,
     IsRehireEligible            BIT             NOT NULL DEFAULT 1,
-    ClearanceStatusId           BIGINT          NOT NULL,  -- Pending | InProgress | Completed
-    FinalSettlementStatusId     BIGINT          NOT NULL,  -- Pending | Processed | Paid
+    ClearanceStatus             NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    ClearanceStatusGroup          AS CAST('CLEARANCE_STATUS' AS NVARCHAR(50)) PERSISTED,
+    FinalSettlementStatus       NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    FinalSettlementStatusGroup    AS CAST('FINAL_SETTLEMENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     FinalSettlementDate         DATE            NULL,
+    WorkflowInstanceId          BIGINT          NULL,
     CreatedByEmployeeId         BIGINT          NULL,
-    CreatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
-    UpdatedAt                   DATETIME        NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT PK_ExitRecord
-        PRIMARY KEY (Id),
-
-    CONSTRAINT UQ_ExitRecord_Employee
-        UNIQUE (EmployeeId),
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                   DATETIME2       NULL,
 
     CONSTRAINT FK_ExitRecord_Employee
         FOREIGN KEY (EmployeeId)
-        REFERENCES Employee(Id),
+        REFERENCES dbo.Employee(Id),
 
     CONSTRAINT FK_ExitRecord_ExitReason
         FOREIGN KEY (ExitReasonId)
-        REFERENCES ExitReason(Id),
+        REFERENCES hr.ExitReason(Id),
 
-    CONSTRAINT FK_ExitRecord_ExitTypeStatus
-        FOREIGN KEY (ExitTypeStatusId)
-        REFERENCES Status(Id),
+    CONSTRAINT FK_ExitRecord_ConductedBy
+        FOREIGN KEY (ConductedByEmployeeId)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_ExitRecord_WorkflowInstance
+        FOREIGN KEY (WorkflowInstanceId)
+        REFERENCES workflow.WorkflowInstance(Id),
+
+    CONSTRAINT FK_ExitRecord_CreatedBy
+        FOREIGN KEY (CreatedByEmployeeId)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_ExitRecord_ExitType
+        FOREIGN KEY (ExitType, ExitTypeGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
 
     CONSTRAINT FK_ExitRecord_ExitInterviewStatus
-        FOREIGN KEY (ExitInterviewStatusId)
-        REFERENCES Status(Id),
+        FOREIGN KEY (ExitInterviewStatus, ExitInterviewStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
 
-    CONSTRAINT FK_ExitRecord_ClearanceStatusId
-        FOREIGN KEY (ClearanceStatusId)
-        REFERENCES Status(Id),
+    CONSTRAINT FK_ExitRecord_ClearanceStatus
+        FOREIGN KEY (ClearanceStatus, ClearanceStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup),
 
-    CONSTRAINT FK_ExitRecord_FinalSettlementStatusId
-        FOREIGN KEY (FinalSettlementStatusId)
-        REFERENCES Status(Id),
-
-    CONSTRAINT FK_ExitRecord_ConductedByEmployee
-        FOREIGN KEY (ConductedByEmployeeId)
-        REFERENCES Employee(Id),
-
-    CONSTRAINT FK_ExitRecord_CreatedByEmployee
-        FOREIGN KEY (CreatedByEmployeeId)
-        REFERENCES Employee(Id)
+    CONSTRAINT FK_ExitRecord_SettlementStatus
+        FOREIGN KEY (FinalSettlementStatus, FinalSettlementStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- ExitClearanceItem
--- Purpose : Per-employee checklist of clearance tasks (asset return, access
---           revocation, knowledge transfer) tracked against each exit record.
+-- -------------------------------------------------------
+-- EXIT CLEARANCE ITEM
+-- Per-employee checklist of clearance tasks that must be
+-- completed before the exit is fully processed (e.g.
+-- Laptop Returned, ID Card Collected, Access Revoked,
+-- Knowledge Transfer Completed).
+-- ItemStatus references dbo.StatusLookup (CLEARANCE_ITEM_STATUS).
+-- OwnerDepartment identifies which team owns the clearance step.
+-- -------------------------------------------------------
 CREATE TABLE hr.ExitClearanceItem (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    ExitRecordId            BIGINT          NOT NULL,
-    ItemName                NVARCHAR(200)   NOT NULL,   -- Laptop Returned | ID Card Collected | etc.
-    OwnerDepartment         NVARCHAR(100)   NULL,
-    ExitClearanceItemStatusId BIGINT          NOT NULL,  -- Pending | Completed | Waived
-    CompletedByEmployeeId   BIGINT          NULL,
-    CompletedAt             DATETIME        NULL,
-    Remarks                 NVARCHAR(MAX)   NULL,
-
-    CONSTRAINT PK_ExitClearanceItem
-        PRIMARY KEY (Id),
+    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
+    ExitRecordId                BIGINT          NOT NULL,
+    ItemName                    NVARCHAR(200)   NOT NULL,
+    OwnerDepartment             NVARCHAR(100)   NULL,
+    ItemStatus                  NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
+    ItemStatusGroup               AS CAST('CLEARANCE_ITEM_STATUS' AS NVARCHAR(50)) PERSISTED,
+    CompletedByEmployeeId       BIGINT          NULL,
+    CompletedAt                 DATETIME2       NULL,
+    Remarks                     NVARCHAR(2000)  NULL,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    UpdatedAt                   DATETIME2       NULL,
 
     CONSTRAINT FK_ExitClearanceItem_ExitRecord
         FOREIGN KEY (ExitRecordId)
-        REFERENCES ExitRecord(Id),
+        REFERENCES hr.ExitRecord(Id),
 
-    CONSTRAINT FK_ExitClearanceItem_ExitClearanceItemStatus
-        FOREIGN KEY (ExitClearanceItemStatusId)
-        REFERENCES Status(Id),
-
-    CONSTRAINT FK_ExitClearanceItem_CompletedByEmployee
+    CONSTRAINT FK_ExitClearanceItem_CompletedBy
         FOREIGN KEY (CompletedByEmployeeId)
-        REFERENCES Employee(Id)
+        REFERENCES dbo.Employee(Id),
+
+    CONSTRAINT FK_ExitClearanceItem_Status
+        FOREIGN KEY (ItemStatus, ItemStatusGroup)
+        REFERENCES dbo.StatusLookup (StatusCode, StatusGroup)
 );
 
 
--- =============================================================================
+-- =============================================================================================================
 -- INDEXES
--- =============================================================================
+-- =============================================================================================================
 
-CREATE INDEX IX_Application_CandidateId         ON Application(CandidateId);
-CREATE INDEX IX_Application_JobPostingId        ON Application(JobPostingId);
-CREATE INDEX IX_Application_Status              ON Application(Status);
-CREATE INDEX IX_Interview_ApplicationId         ON Interview(ApplicationId);
-CREATE INDEX IX_InterviewFeedback_InterviewId   ON InterviewFeedback(InterviewId);
-CREATE INDEX IX_Employee_DepartmentId           ON Employee(DepartmentId);
-CREATE INDEX IX_Employee_ManagerId              ON Employee(ManagerId);
-CREATE INDEX IX_Employee_EmploymentStatus       ON Employee(EmploymentStatus);
-CREATE INDEX IX_DocVerification_EmployeePhase   ON DocumentVerification(EmployeeId, Phase);
-CREATE INDEX IX_BGV_EmployeePhase               ON BackgroundVerification(EmployeeId, Phase);
-CREATE INDEX IX_Goal_EmployeeCycle              ON Goal(EmployeeId, PerformanceCycleId);
-CREATE INDEX IX_PerformanceReview_EmployeeCycle ON PerformanceReview(EmployeeId, PerformanceCycleId);
-CREATE INDEX IX_EmpTrainingRecord_EmployeeId    ON EmployeeTrainingRecord(EmployeeId);
-CREATE INDEX IX_EmpTrainingRecord_ProgramId     ON EmployeeTrainingRecord(TrainingProgramId);
-CREATE INDEX IX_ExitRecord_EmployeeId           ON ExitRecord(EmployeeId);
-CREATE INDEX IX_AuditLog_TableRecord            ON AuditLog(TableName, RecordId);
- 
-CREATE INDEX IX_InterviewPanel_InterviewId            ON InterviewPanel(InterviewId);
-CREATE INDEX IX_InterviewPanel_InterviewerEmployeeId  ON InterviewPanel(InterviewerEmployeeId);
-CREATE INDEX IX_InterviewPanel_PanelRoleId            ON InterviewPanel(PanelRoleId);
-CREATE INDEX IX_InterviewPanel_InterviewPurposeId     ON InterviewPanel(InterviewPurposeId);
-CREATE INDEX IX_InterviewFeedback_InterviewPanelId    ON InterviewFeedback(InterviewPanelId);
+-- -------------------------------------------------------
+-- MODULE A: RECRUITMENT
+-- -------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_JobPosting_Department
+    ON hr.JobPosting (DepartmentId);
 
--- =============================================================================
--- END OF SCHEMA
--- =============================================================================
+CREATE NONCLUSTERED INDEX IX_JobPosting_Status
+    ON hr.JobPosting (JobPostingStatus);
+
+CREATE NONCLUSTERED INDEX IX_Candidate_Email
+    ON hr.Candidate (Email);
+
+CREATE NONCLUSTERED INDEX IX_Application_JobPosting
+    ON hr.Application (JobPostingId);
+
+CREATE NONCLUSTERED INDEX IX_Application_Candidate
+    ON hr.Application (CandidateId);
+
+CREATE NONCLUSTERED INDEX IX_Application_Status
+    ON hr.Application (ApplicationStatus);
+
+CREATE NONCLUSTERED INDEX IX_AppStatusHistory_Application
+    ON hr.ApplicationStatusHistory (ApplicationId, ChangedAt);
+
+CREATE NONCLUSTERED INDEX IX_Interview_Application
+    ON hr.Interview (ApplicationId);
+
+CREATE NONCLUSTERED INDEX IX_InterviewPanel_Interview
+    ON hr.InterviewPanel (InterviewId);
+
+CREATE NONCLUSTERED INDEX IX_InterviewPanel_Interviewer
+    ON hr.InterviewPanel (InterviewerEmployeeId);
+
+CREATE NONCLUSTERED INDEX IX_InterviewFeedback_Panel
+    ON hr.InterviewFeedback (InterviewPanelId);
+
+CREATE NONCLUSTERED INDEX IX_PackageNegotiation_Application
+    ON hr.PackageNegotiation (ApplicationId);
+
+CREATE NONCLUSTERED INDEX IX_OfferLetter_Application
+    ON hr.OfferLetter (ApplicationId);
+
+-- -------------------------------------------------------
+-- MODULE B: ONBOARDING
+-- -------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_OnboardingTask_Employee
+    ON hr.OnboardingTask (EmployeeId, Phase)
+    INCLUDE (TaskStatus, DueDate);
+
+CREATE NONCLUSTERED INDEX IX_OnboardingTask_Status
+    ON hr.OnboardingTask (TaskStatus)
+    WHERE TaskStatus = 'PENDING';
+
+CREATE NONCLUSTERED INDEX IX_DocVerification_Employee
+    ON hr.DocumentVerification (EmployeeId, OnboardingPhase)
+    INCLUDE (DocVerifyStatus);
+
+CREATE NONCLUSTERED INDEX IX_DocVerification_Status
+    ON hr.DocumentVerification (DocVerifyStatus);
+
+CREATE NONCLUSTERED INDEX IX_BGV_Employee
+    ON hr.BackgroundVerification (EmployeeId, OnboardingPhase)
+    INCLUDE (BGVStatus, BGVResult);
+
+-- -------------------------------------------------------
+-- MODULE C: POLICY DOCUMENTS
+-- -------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_PolicyDocument_Category
+    ON hr.PolicyDocument (PolicyCategoryId);
+
+CREATE NONCLUSTERED INDEX IX_PolicyDocument_Scope
+    ON hr.PolicyDocument (ScopeTypeId, ScopeReferenceId);
+
+CREATE NONCLUSTERED INDEX IX_PolicyVersion_Document
+    ON hr.PolicyVersion (PolicyDocumentId, VersionNumber)
+    INCLUDE (PolicyStatus, EffectiveDate);
+
+CREATE NONCLUSTERED INDEX IX_PolicyVersion_Status
+    ON hr.PolicyVersion (PolicyStatus);
+
+CREATE NONCLUSTERED INDEX IX_PolicyAck_Employee
+    ON hr.PolicyAcknowledgement (EmployeeId, AckStatus)
+    INCLUDE (DeadlineDate);
+
+CREATE NONCLUSTERED INDEX IX_PolicyAck_Pending
+    ON hr.PolicyAcknowledgement (AckStatus)
+    WHERE AckStatus = 'PENDING';
+
+-- -------------------------------------------------------
+-- MODULE D: SALARY SLIPS
+-- -------------------------------------------------------
+-- DisbursementTransactionId is already the PK/UQ — no additional index needed.
+-- Status-based filtering for bulk publish operations:
+CREATE NONCLUSTERED INDEX IX_SalarySlipPub_Status
+    ON hr.SalarySlipPublication (SlipStatus)
+    INCLUDE (DisbursementTransactionId, PublishedAt)
+    WHERE SlipStatus IN ('DRAFT', 'PUBLISHED');
+
+-- -------------------------------------------------------
+-- MODULE E: PERFORMANCE REVIEWS
+-- -------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_PerfCycle_Status
+    ON hr.PerformanceCycle (CycleStatus);
+
+CREATE NONCLUSTERED INDEX IX_Goal_Employee_Cycle
+    ON hr.Goal (EmployeeId, PerformanceCycleId)
+    INCLUDE (GoalStatus, WeightagePct, EmployeeRating, ManagerRating);
+
+CREATE NONCLUSTERED INDEX IX_GoalKR_Goal
+    ON hr.GoalKeyResult (GoalId)
+    INCLUDE (KRStatus);
+
+CREATE NONCLUSTERED INDEX IX_PerfReview_Employee_Cycle
+    ON hr.PerformanceReview (EmployeeId, PerformanceCycleId)
+    INCLUDE (ReviewStatus, FinalRating);
+
+CREATE NONCLUSTERED INDEX IX_PerfReview_Status
+    ON hr.PerformanceReview (ReviewStatus);
+
+CREATE NONCLUSTERED INDEX IX_PerfReviewHistory_Review
+    ON hr.PerformanceReviewHistory (PerformanceReviewId, ChangedAt);
+
+-- -------------------------------------------------------
+-- MODULE F: TRAINING RECORDS
+-- -------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_TrainingProgram_Category
+    ON hr.TrainingProgram (TrainingCategoryId);
+
+CREATE NONCLUSTERED INDEX IX_TrainingBatch_Program
+    ON hr.TrainingBatch (TrainingProgramId, BatchStatus);
+
+CREATE NONCLUSTERED INDEX IX_EmpTrainingRecord_Employee
+    ON hr.EmployeeTrainingRecord (EmployeeId, RecordStatus)
+    INCLUDE (TrainingProgramId, CompletedDate, IsPassed);
+
+CREATE NONCLUSTERED INDEX IX_EmpTrainingRecord_Program
+    ON hr.EmployeeTrainingRecord (TrainingProgramId);
+
+-- -------------------------------------------------------
+-- MODULE G: EXIT MANAGEMENT
+-- -------------------------------------------------------
+CREATE NONCLUSTERED INDEX IX_ExitRecord_Employee
+    ON hr.ExitRecord (EmployeeId)
+    INCLUDE (ExitType, ClearanceStatus, FinalSettlementStatus);
+
+CREATE NONCLUSTERED INDEX IX_ExitRecord_ClearanceStatus
+    ON hr.ExitRecord (ClearanceStatus);
+
+CREATE NONCLUSTERED INDEX IX_ExitClearanceItem_ExitRecord
+    ON hr.ExitClearanceItem (ExitRecordId, ItemStatus);
+
+
+-- =============================================================================================================
+-- VIEWS
+-- =============================================================================================================
+
+-- -------------------------------------------------------
+-- vw_SalarySlipDetail
+-- Assembles the complete payslip for display or PDF
+-- generation by joining hr.SalarySlipPublication with the
+-- payroll schema tables that own all financial data.
+-- This view is the single query path for the payslip UI
+-- and the PDF renderer — no application-layer joins needed.
+-- -------------------------------------------------------
+GO
+CREATE OR ALTER VIEW hr.vw_SalarySlipDetail AS
+SELECT
+    ssp.Id                              AS SlipPublicationId,
+    ssp.SlipStatus,
+    sl.Label                            AS SlipStatusLabel,
+    sl.IsTerminal                       AS IsSlipLocked,
+    ssp.FileUrl,
+    ssp.IsPasswordProtected,
+    ssp.GeneratedAt,
+    ssp.PublishedAt,
+    ssp.FirstDownloadedAt,
+
+    -- Employee identity (from dbo.Employee)
+    e.Id                                AS EmployeeId,
+    e.EmployeeCode,
+    e.FirstName,
+    e.LastName,
+    e.DisplayName,
+    e.Email,
+
+    -- Payroll period & financial totals (from payroll.PayrollDisbursementTransaction)
+    pdt.PayrollMonth,
+    pdt.PayrollYear,
+    pdt.GrossAmount                     AS GrossEarnings,
+    pdt.TotalDeductions,
+    pdt.NetAmountCredited               AS NetPayable,
+    pdt.CurrencyCode,
+    pdt.PaymentMode,
+    pdt.BankTransactionId,
+
+    -- Attendance summary (from payroll.PayrollAttendanceSummary)
+    pas.TotalWorkingDays,
+    pas.PresentDays,
+    pas.LeaveDays,
+    pas.AbsentDays,
+    pas.OvertimeMinutes,
+
+    -- Salary structure reference (from payroll.EmployeeSalary)
+    es.AnnualCTC,
+    es.MonthlyCTC,
+    es.MonthlyGross,
+    es.MonthlyNet
+
+FROM hr.SalarySlipPublication ssp
+
+INNER JOIN payroll.PayrollDisbursementTransaction pdt
+    ON pdt.Id = ssp.DisbursementTransactionId
+
+INNER JOIN dbo.Employee e
+    ON e.Id = pdt.EmployeeId
+
+INNER JOIN dbo.StatusLookup sl
+    ON  sl.StatusCode  = ssp.SlipStatus
+    AND sl.StatusGroup = 'SALARY_SLIP_STATUS'
+
+LEFT JOIN payroll.PayrollAttendanceSummary pas
+    ON  pas.EmployeeId    = pdt.EmployeeId
+    AND pas.PayrollMonth  = pdt.PayrollMonth
+    AND pas.PayrollYear   = pdt.PayrollYear
+
+LEFT JOIN payroll.EmployeeSalary es
+    ON  es.EmployeeId = pdt.EmployeeId
+    AND es.IsActive   = 1;
+GO
+-- Note: Component-level line items (earnings/deductions breakdown) are queried
+-- separately via payroll.EmployeeSalaryComponent filtered on
+-- (EmployeeSalaryId, PayrollMonth, PayrollYear) and joined to
+-- payroll.SalaryStructureComponent for ComponentCode, ComponentName, and IsEarning/IsDeduction.
+
+
+-- =============================================================================================================
+-- END OF SCHEMA: hr
+-- =============================================================================================================
