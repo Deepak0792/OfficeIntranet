@@ -472,55 +472,5 @@ CREATE INDEX IX_SoftwareInstallation_Employee ON helpdesk.SoftwareInstallation (
 
 GO
 
-
--- =============================================================================================================
--- SEED DATA - Ticket Categories
--- =============================================================================================================
-
-INSERT INTO helpdesk.TicketCategory (CategoryCode, CategoryName, Description)
-VALUES
-('HARDWARE', 'Hardware', 'Hardware related issues'),
-('SOFTWARE', 'Software', 'Software and application issues'),
-('NETWORK', 'Network', 'Network connectivity issues'),
-('ACCESS', 'Access & Permissions', 'User access and permission issues'),
-('SECURITY', 'Security', 'Security related issues'),
-('EMAIL', 'Email', 'Email configuration and issues'),
-('VPN', 'VPN & Remote Access', 'VPN connectivity'),
-('GENERAL', 'General Support', 'General IT support');
-
-GO
-
-
--- =============================================================================================================
--- SEED DATA - Support Groups
--- =============================================================================================================
-
-INSERT INTO helpdesk.SupportGroup (SupportGroupCode, SupportGroupName, Description)
-VALUES
-('IT_INFRA', 'IT Infrastructure', 'Infrastructure and network team'),
-('APP_SUPPORT', 'Application Support', 'Application and software team'),
-('SEC_OPS', 'Security Operations', 'Security team'),
-('DESKTOP', 'Desktop Support', 'End-user support team');
-
-GO
-
-
--- =============================================================================================================
--- SEED DATA - Asset Categories
--- =============================================================================================================
-
-INSERT INTO helpdesk.AssetCategory (CategoryCode, CategoryName, IsTrackable, IsConsumable)
-VALUES
-('LAPTOP', 'Laptop', 1, 0),
-('DESKTOP', 'Desktop', 1, 0),
-('MONITOR', 'Monitor', 1, 0),
-('MOBILE', 'Mobile Device', 1, 0),
-('PRINTER', 'Printer', 1, 0),
-('SERVER', 'Server', 1, 0),
-('NETWORK_DEVICE', 'Network Device', 1, 0),
-('CONSUMABLE', 'Consumable', 0, 1);
-
-GO
-
 PRINT 'Helpdesk schema created successfully';
 GO

@@ -248,8 +248,6 @@ CREATE TABLE attendance.CompOffBalance (
 );
 GO
 
-
-
 -- =============================================================================================================
 -- ATTENDANCE REGULARIZATION
 -- =============================================================================================================
@@ -691,36 +689,6 @@ CREATE INDEX IX_Holiday_Date                      ON attendance.Holiday (Holiday
 CREATE INDEX IX_Holiday_Calendar                 ON attendance.Holiday (HolidayCalendarId);
 
 CREATE INDEX IX_HolidayAssignment_Scope         ON attendance.HolidayCalendarAssignment (ScopeTypeId, ScopeReferenceId);
-
-GO
-
--- =============================================================================================================
--- SEED DATA - Attendance Status
--- =============================================================================================================
-
-INSERT INTO attendance.AttendanceStatus (StatusCode, StatusName, IsPresent, IsAbsent, IsPaid, CountsAsWorkingDay, DisplayOrder)
-VALUES
-('PRESENT', 'Present', 1, 0, 1, 1, 1),
-('ABSENT', 'Absent', 0, 1, 0, 0, 2),
-('ON_LEAVE', 'On Leave', 0, 0, 1, 1, 3),
-('WORK_FROM_HOME', 'Work From Home', 1, 0, 1, 1, 4),
-('LATE', 'Late', 1, 0, 1, 1, 5);
-
-GO
-
-
--- =============================================================================================================
--- SEED DATA - Holiday Types
--- =============================================================================================================
-
-INSERT INTO attendance.HolidayType (HolidayTypeCode, HolidayTypeName, IsOptional)
-VALUES
-('NATIONAL', 'National Holiday', 0),
-('REGIONAL', 'Regional Holiday', 0),
-('OPTIONAL', 'Optional Holiday', 1);
-
-GO
-
 
 PRINT 'Attendance schema created successfully';
 GO

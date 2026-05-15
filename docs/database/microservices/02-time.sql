@@ -2,7 +2,7 @@
 -- TIME SCHEMA - Time Zones, Locations & Infrastructure
 -- SQL Server Database Schema
 -- Schema: time
--- Purpose: Time zones, countries, regions, office locations, legal entities, departments
+-- Purpose: Time zones, countries, regions, office locations, legal entities, departments, scope tyepe, geo fence, biometric device
 -- Dependencies: shared (StatusLookup)
 -- =============================================================================================================
 
@@ -259,24 +259,6 @@ CREATE INDEX IX_BiometricDevice_Office     ON time.BiometricDevice (OfficeId);
 CREATE INDEX IX_GeoFence_Office             ON time.GeoFence (OfficeId);
 
 GO
-
-
--- =============================================================================================================
--- SEED DATA - Scope Types
--- =============================================================================================================
-
-INSERT INTO time.ScopeType (ScopeCode, ScopeName, HierarchyLevel)
-VALUES
-('GLOBAL', 'Global', 1),
-('COUNTRY', 'Country', 2),
-('LEGAL_ENTITY', 'Legal Entity', 3),
-('OFFICE', 'Office', 4),
-('DEPARTMENT', 'Department', 5),
-('TEAM', 'Team', 6),
-('EMPLOYEE', 'Employee', 7);
-
-GO
-
 
 PRINT 'Time schema created successfully';
 GO

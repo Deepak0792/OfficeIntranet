@@ -1,17 +1,18 @@
 -- =============================================================================================================
--- ENTERPRISE DYNAMIC APPROVAL WORKFLOW ENGINE
--- REAL SEED DATA — HEALTHCARE ORGANIZATION (MediCore Health Systems)
+-- WORKFLOW SCHEMA - Seed Data
+-- Healthcare Organization (MediCore Health Systems)
+-- Dependencies: shared, time, employee
 -- =============================================================================================================
--- FIX: All foreign key references (WorkflowStepTypeId, WorkflowApproverTypeId, WorkflowStatusId,
---      WorkflowActionTypeId, WorkflowModuleId, WorkflowDefinitionId, WorkflowStepId, WorkflowInstanceId)
---      are resolved dynamically via subqueries on their Code/unique columns.
---      No hardcoded IDENTITY integers are used anywhere in this script.
+-- FIX: All foreign key references resolved dynamically via subqueries on Code columns.
+-- No hardcoded IDENTITY integers used anywhere.
 -- =============================================================================================================
 
 SET NOCOUNT ON;
-GO
-
 BEGIN TRANSACTION;
+
+-- =============================================================================================================
+-- SEED DATA - Workflow Modules
+-- =============================================================================================================
 
 -- =============================================================================================================
 -- SECTION 1: WORKFLOW MODULES
@@ -36,10 +37,8 @@ WHERE NOT EXISTS (
 GO
 
 
-
 -- =============================================================================================================
 -- SECTION 2: WORKFLOW DEFINITIONS
--- WorkflowModuleId resolved via ModuleCode subquery
 -- =============================================================================================================
 
 INSERT INTO workflow.WorkflowDefinition (WorkflowModuleId, WorkflowCode, WorkflowName, VersionNo, Description)
@@ -47,119 +46,77 @@ SELECT
     (SELECT Id FROM workflow.WorkflowModule WHERE ModuleCode = v.ModuleCode),
     v.WorkflowCode, v.WorkflowName, v.VersionNo, v.Description
 FROM (VALUES
-
     ('LEAVE',             'WF-LEAVE-STD-V1',      'Standard Leave Approval',                1,
-     'Three-level approval for all standard leave types (Casual, Sick, Earned, Maternity/Paternity). Applies to all clinical and non-clinical staff at MediCore Health Systems.'),
-
+     'Three-level approval for all standard leave types.'),
     ('LEAVE',             'WF-LEAVE-EMRG-V1',     'Emergency Leave Fast-Track Approval',    1,
-     'Single-step fast-track approval for emergency leave requests. Escalates automatically to Department Head if not actioned within 2 hours.'),
-
-    ('ATTENDANCE_REG',    'WF-ATTREG-STD-V1',     'Attendance Regularization Approval',     1,
-     'Two-level approval for employee-submitted attendance correction requests (missed punches, biometric failures, remote work entries).'),
-
-    ('SHIFT_SWAP',        'WF-SHIFTSWAP-V1',       'Shift Swap Approval',                    1,
-     'Two-level approval for shift swap requests between two employees. Ward In-Charge confirms operational feasibility; Scheduling Coordinator confirms roster integrity.'),
-
-    ('OVERTIME',          'WF-OT-V1',              'Overtime Authorization',                 1,
-     'Two-level approval for overtime worked beyond the standard shift. Required for payroll OT credit at MediCore.'),
-
-    ('COMPOFF',           'WF-COMPOFF-V1',         'Comp-Off Redemption Approval',           1,
-     'Single-step approval by Reporting Manager for availing earned compensatory off days.'),
-
-    ('ONCALL',            'WF-ONCALL-V1',          'On-Call Duty Approval',                  1,
-     'Two-level approval for planned on-call duty assignments outside rostered hours. Required for ICU, Emergency, Surgery, and Radiology departments.'),
-
+     'Single-step fast-track approval for emergency leave requests.'),
+    ('ATTENDANCE_REG',    'WF-ATTREG-STD-V1',     'Attendance Regularization Approval',   1,
+     'Two-level approval for attendance correction requests.'),
+    ('SHIFT_SWAP',        'WF-SHIFTSWAP-V1',       'Shift Swap Approval',                   1,
+     'Two-level approval for shift swap requests.'),
+    ('OVERTIME',          'WF-OT-V1',              'Overtime Authorization',               1,
+     'Two-level approval for overtime worked.'),
+    ('COMPOFF',           'WF-COMPOFF-V1',         'Comp-Off Redemption Approval',         1,
+     'Single-step approval by Reporting Manager.'),
+    ('ONCALL',            'WF-ONCALL-V1',          'On-Call Duty Approval',                 1,
+     'Two-level approval for on-call duty assignments.'),
     ('TRAINING_LEAVE',    'WF-TRAINLEAVE-V1',      'Training & Conference Leave Approval',   1,
-     'Three-level approval for training programs, CME conferences, and external workshops. Finance approval is mandatory when the organization bears travel or registration costs.'),
-
-    ('DOC_VERIFICATION',  'WF-DOCVERIFY-V1',       'Employee Document Verification',         1,
-     'Single-step HR Manager verification workflow triggered on employee document upload. System auto-notifies employee upon verification completion.'),
-
+     'Three-level approval for training programs.'),
+    ('DOC_VERIFICATION',  'WF-DOCVERIFY-V1',       'Employee Document Verification',        1,
+     'Single-step HR Manager verification workflow.'),
     ('PAYROLL_CORRECTION','WF-PAYROLLCORR-V1',     'Payroll Attendance Correction Approval', 1,
-     'Two-level approval for corrections to finalized monthly attendance summaries that impact payroll calculations. HR initiates; Finance Manager authorizes.')
-
+     'Two-level approval for payroll attendance corrections.')
 ) AS v(ModuleCode, WorkflowCode, WorkflowName, VersionNo, Description)
 WHERE NOT EXISTS (
     SELECT 1 FROM workflow.WorkflowDefinition wd WHERE wd.WorkflowCode = v.WorkflowCode
 );
 GO
 
--- =============================================================================================================
--- SEED DATA: WorkflowStepType
--- Healthcare Organization (MediCore Health Systems)
--- =============================================================================================================
-
-INSERT INTO workflow.WorkflowStepType (StepTypeCode, StepTypeName)
-SELECT v.StepTypeCode, v.StepTypeName
-FROM (VALUES
-    ('APPROVAL',      'Approval'),
-    ('REVIEW',        'Review'),
-    ('NOTIFICATION',  'Notification'),
-    ('AUTO_APPROVAL', 'Auto Approval')
-) AS v(StepTypeCode, StepTypeName)
-WHERE NOT EXISTS (
-    SELECT 1 FROM workflow.WorkflowStepType wst WHERE wst.StepTypeCode = v.StepTypeCode
-);
-
-GO
 
 -- =============================================================================================================
 -- SECTION 3: WORKFLOW STEPS
--- WorkflowDefinitionId resolved via WorkflowCode subquery
--- WorkflowStepTypeId resolved via StepTypeCode subquery
 -- =============================================================================================================
 
 INSERT INTO workflow.WorkflowStep
-    (WorkflowDefinitionId, StepNo, StepName, WorkflowStepTypeId, IsFinalStep, AllowDelegation, EscalationAfterHours)
+    (WorkflowDefinitionId, StepNo, StepName, WorkflowStepType, IsFinalStep, AllowDelegation, EscalationAfterHours)
 SELECT
     (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode  = v.WorkflowCode),
     v.StepNo,
     v.StepName,
-    (SELECT Id FROM workflow.WorkflowStepType   WHERE StepTypeCode  = v.StepTypeCode),
+    v.StepTypeCode,
     v.IsFinalStep,
     v.AllowDelegation,
     v.EscalationAfterHours
 FROM (VALUES
-
     -- WF-LEAVE-STD-V1
-    ('WF-LEAVE-STD-V1',    1, 'Ward In-Charge / Reporting Manager Approval', 'APPROVAL',     0, 1, 24),
-    ('WF-LEAVE-STD-V1',    2, 'Department Head Approval',                    'APPROVAL',     0, 1, 48),
-    ('WF-LEAVE-STD-V1',    3, 'HR Manager Final Approval',                   'APPROVAL',     1, 0, 72),
-
+    ('WF-LEAVE-STD-V1',    1, 'Reporting Manager Approval', 'APPROVAL',     0, 1, 24),
+    ('WF-LEAVE-STD-V1',    2, 'Department Head Approval',  'APPROVAL',     0, 1, 48),
+    ('WF-LEAVE-STD-V1',    3, 'HR Manager Final Approval', 'APPROVAL',     1, 0, 72),
     -- WF-LEAVE-EMRG-V1
-    ('WF-LEAVE-EMRG-V1',   1, 'Reporting Manager Emergency Approval',        'APPROVAL',     1, 1,  2),
-
+    ('WF-LEAVE-EMRG-V1',   1, 'Reporting Manager Emergency Approval', 'APPROVAL', 1, 1, 2),
     -- WF-ATTREG-STD-V1
-    ('WF-ATTREG-STD-V1',   1, 'Reporting Manager Review',                    'REVIEW',       0, 1, 24),
-    ('WF-ATTREG-STD-V1',   2, 'HR Manager Approval',                         'APPROVAL',     1, 0, 48),
-
+    ('WF-ATTREG-STD-V1',   1, 'Reporting Manager Review', 'REVIEW',       0, 1, 24),
+    ('WF-ATTREG-STD-V1',   2, 'HR Manager Approval',      'APPROVAL',     1, 0, 48),
     -- WF-SHIFTSWAP-V1
-    ('WF-SHIFTSWAP-V1',    1, 'Ward In-Charge Operational Confirmation',     'APPROVAL',     0, 1, 12),
-    ('WF-SHIFTSWAP-V1',    2, 'Scheduling Coordinator Roster Sign-Off',      'APPROVAL',     1, 0, 24),
-
+    ('WF-SHIFTSWAP-V1',    1, 'Ward In-Charge Approval',   'APPROVAL',     0, 1, 12),
+    ('WF-SHIFTSWAP-V1',    2, 'Scheduling Coordinator',   'APPROVAL',     1, 0, 24),
     -- WF-OT-V1
-    ('WF-OT-V1',           1, 'Shift Supervisor Verification',               'REVIEW',       0, 1, 24),
-    ('WF-OT-V1',           2, 'Department Head Authorization',               'APPROVAL',     1, 0, 48),
-
+    ('WF-OT-V1',           1, 'Shift Supervisor Review',  'REVIEW',       0, 1, 24),
+    ('WF-OT-V1',           2, 'Department Head Approval',  'APPROVAL',     1, 0, 48),
     -- WF-COMPOFF-V1
-    ('WF-COMPOFF-V1',      1, 'Reporting Manager Comp-Off Approval',         'APPROVAL',     1, 1, 24),
-
+    ('WF-COMPOFF-V1',      1, 'Reporting Manager Approval', 'APPROVAL',    1, 1, 24),
     -- WF-ONCALL-V1
-    ('WF-ONCALL-V1',       1, 'Department Head Confirmation',                'APPROVAL',     0, 1, 12),
-    ('WF-ONCALL-V1',       2, 'Chief Medical Officer Authorization',         'APPROVAL',     1, 0, 24),
-
+    ('WF-ONCALL-V1',       1, 'Department Head Confirmation', 'APPROVAL',    0, 1, 12),
+    ('WF-ONCALL-V1',       2, 'Chief Medical Officer Authorization', 'APPROVAL', 1, 0, 24),
     -- WF-TRAINLEAVE-V1
-    ('WF-TRAINLEAVE-V1',   1, 'Department Head Approval',                    'APPROVAL',     0, 1, 48),
-    ('WF-TRAINLEAVE-V1',   2, 'HR Manager Review',                           'REVIEW',       0, 1, 48),
-    ('WF-TRAINLEAVE-V1',   3, 'Finance Manager Cost Approval',               'APPROVAL',     1, 0, 72),
-
+    ('WF-TRAINLEAVE-V1',   1, 'Department Head Approval',    'APPROVAL',     0, 1, 48),
+    ('WF-TRAINLEAVE-V1',   2, 'HR Manager Review',           'REVIEW',      0, 1, 48),
+    ('WF-TRAINLEAVE-V1',   3, 'Finance Manager Cost Approval', 'APPROVAL',    1, 0, 72),
     -- WF-DOCVERIFY-V1
-    ('WF-DOCVERIFY-V1',    1, 'HR Manager Document Verification',            'APPROVAL',     1, 0, 72),
-
+    ('WF-DOCVERIFY-V1',    1, 'HR Manager Document Verification', 'APPROVAL', 1, 0, 72),
     -- WF-PAYROLLCORR-V1
-    ('WF-PAYROLLCORR-V1',  1, 'HR Manager Initiation & Review',              'REVIEW',       0, 0, 24),
-    ('WF-PAYROLLCORR-V1',  2, 'Finance Manager Authorization',               'APPROVAL',     1, 0, 48)
-
+    ('WF-PAYROLLCORR-V1',  1, 'HR Manager Review',           'REVIEW',      0, 0, 24),
+    ('WF-PAYROLLCORR-V1',  2, 'Finance Manager Authorization', 'APPROVAL',    1, 0, 48)
 ) AS v(WorkflowCode, StepNo, StepName, StepTypeCode, IsFinalStep, AllowDelegation, EscalationAfterHours)
 WHERE NOT EXISTS (
     SELECT 1
@@ -168,100 +125,46 @@ WHERE NOT EXISTS (
     WHERE  wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
 );
 GO
-
-
--- =============================================================================================================
--- SEED DATA: WorkflowApproverType
--- Healthcare Organization (MediCore Health Systems)
--- =============================================================================================================
-
-INSERT INTO workflow.WorkflowApproverType (ApproverTypeCode, ApproverTypeName)
-SELECT v.ApproverTypeCode, v.ApproverTypeName
-FROM (VALUES
-    ('REPORTING_MANAGER', 'Reporting Manager'),
-    ('DEPARTMENT_HEAD',   'Department Head'),
-    ('HR_MANAGER',        'HR Manager'),
-    ('ROLE',              'Role Based'),
-    ('USER',              'Specific User')
-) AS v(ApproverTypeCode, ApproverTypeName)
-WHERE NOT EXISTS (
-    SELECT 1 FROM workflow.WorkflowApproverType wat WHERE wat.ApproverTypeCode = v.ApproverTypeCode
-);
-
 -- =============================================================================================================
 -- SECTION 4: WORKFLOW STEP APPROVERS
--- WorkflowStepId resolved via (WorkflowCode + StepNo) subquery
--- WorkflowApproverTypeId resolved via ApproverTypeCode subquery
--- ApproverReferenceId: NULL for dynamic resolvers; explicit integer for ROLE/USER types
---   RoleId 3 = Ward In-Charge | RoleId 4 = Shift Supervisor
---   RoleId 6 = Finance Manager | RoleId 7 = Scheduling Coordinator
---   EmployeeId 2 = Chief Medical Officer
 -- =============================================================================================================
 
 INSERT INTO workflow.WorkflowStepApprover
-    (WorkflowStepId, WorkflowApproverTypeId, ApproverReferenceId, PriorityOrder, IsMandatory)
+    (WorkflowStepId, WorkflowApproverType, ApproverReferenceId, PriorityOrder, IsMandatory)
 SELECT
-    (
-        SELECT ws.Id FROM workflow.WorkflowStep ws
-        INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
-        WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
-    ),
-    (SELECT Id FROM workflow.WorkflowApproverType WHERE ApproverTypeCode = v.ApproverTypeCode),
+    (SELECT ws.Id FROM workflow.WorkflowStep ws
+     INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
+     WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo),
+    v.ApproverTypeCode,
     v.ApproverReferenceId,
     v.PriorityOrder,
     v.IsMandatory
 FROM (VALUES
-
-    -- WF-LEAVE-STD-V1
     ('WF-LEAVE-STD-V1',    1, 'REPORTING_MANAGER', NULL, 1, 1),
     ('WF-LEAVE-STD-V1',    2, 'DEPARTMENT_HEAD',   NULL, 1, 1),
     ('WF-LEAVE-STD-V1',    3, 'HR_MANAGER',        NULL, 1, 1),
-
-    -- WF-LEAVE-EMRG-V1
     ('WF-LEAVE-EMRG-V1',   1, 'REPORTING_MANAGER', NULL, 1, 1),
-
-    -- WF-ATTREG-STD-V1
     ('WF-ATTREG-STD-V1',   1, 'REPORTING_MANAGER', NULL, 1, 1),
     ('WF-ATTREG-STD-V1',   2, 'HR_MANAGER',        NULL, 1, 1),
-
-    -- WF-SHIFTSWAP-V1 — Role-based
     ('WF-SHIFTSWAP-V1',    1, 'ROLE',              3,    1, 1),  -- Ward In-Charge
     ('WF-SHIFTSWAP-V1',    2, 'ROLE',              7,    1, 1),  -- Scheduling Coordinator
-
-    -- WF-OT-V1
     ('WF-OT-V1',           1, 'ROLE',              4,    1, 1),  -- Shift Supervisor
     ('WF-OT-V1',           2, 'DEPARTMENT_HEAD',   NULL, 1, 1),
-
-    -- WF-COMPOFF-V1
     ('WF-COMPOFF-V1',      1, 'REPORTING_MANAGER', NULL, 1, 1),
-
-    -- WF-ONCALL-V1
     ('WF-ONCALL-V1',       1, 'DEPARTMENT_HEAD',   NULL, 1, 1),
     ('WF-ONCALL-V1',       2, 'USER',              2,    1, 1),  -- CMO EmployeeId=2
-
-    -- WF-TRAINLEAVE-V1
     ('WF-TRAINLEAVE-V1',   1, 'DEPARTMENT_HEAD',   NULL, 1, 1),
     ('WF-TRAINLEAVE-V1',   2, 'HR_MANAGER',        NULL, 1, 1),
     ('WF-TRAINLEAVE-V1',   3, 'ROLE',              6,    1, 1),  -- Finance Manager
-
-    -- WF-DOCVERIFY-V1
     ('WF-DOCVERIFY-V1',    1, 'HR_MANAGER',        NULL, 1, 1),
-
-    -- WF-PAYROLLCORR-V1
     ('WF-PAYROLLCORR-V1',  1, 'HR_MANAGER',        NULL, 1, 1),
     ('WF-PAYROLLCORR-V1',  2, 'ROLE',              6,    1, 1)   -- Finance Manager
-
 ) AS v(WorkflowCode, StepNo, ApproverTypeCode, ApproverReferenceId, PriorityOrder, IsMandatory);
 GO
 
-
-
 -- =============================================================================================================
 -- SECTION 5: WORKFLOW ASSIGNMENTS
--- WorkflowDefinitionId resolved via WorkflowCode subquery
--- ScopeTypeId resolved via ScopeCode subquery against HRMS ScopeType table
 -- =============================================================================================================
-
 
 INSERT INTO workflow.WorkflowAssignment
     (WorkflowDefinitionId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, EffectiveTo, PriorityOrder)
@@ -270,99 +173,54 @@ SELECT
     v.ScopeTypeId,
     CASE v.ScopeTypeId
         WHEN 1 THEN 1  -- GLOBAL
-        WHEN 4 THEN 1  -- LEGAL_ENTITY (MediCore Health Pvt Ltd)
-        WHEN 5 THEN (SELECT Id FROM OfficeLocation WHERE LocationCode   = v.ScopeRefCode)
-        WHEN 6 THEN (SELECT Id FROM Department     WHERE DepartmentCode = v.ScopeRefCode)
+        WHEN 4 THEN 1  -- LEGAL_ENTITY
+        WHEN 5 THEN (SELECT Id FROM time.OfficeLocation WHERE LocationCode   = v.ScopeRefCode)
+        WHEN 6 THEN (SELECT Id FROM time.Department     WHERE DepartmentCode = v.ScopeRefCode)
     END,
     v.EffectiveFrom,
     v.EffectiveTo,
     v.PriorityOrder
 FROM (VALUES
-
-
---  WorkflowCode            ScopeTypeId  ScopeRefCode    EffectiveFrom   EffectiveTo  Priority
-
-    -- Standard Leave: all staff globally
-    ('WF-LEAVE-STD-V1',     1,           NULL,           '2024-01-01',   NULL,        10),
-
-    -- Emergency Leave: global, higher priority to override standard leave workflow
-    ('WF-LEAVE-EMRG-V1',    1,           NULL,           '2024-01-01',   NULL,         5),
-
-    -- Attendance Regularization: all staff globally
-    ('WF-ATTREG-STD-V1',    1,           NULL,           '2024-01-01',   NULL,        10),
-
-    -- Shift Swap: Hospital HQ office and Clinic office
-    ('WF-SHIFTSWAP-V1',     5,           'LOC-HYD-01',       '2024-01-01',   NULL,        10),
-    ('WF-SHIFTSWAP-V1',     5,           'LOC-CHN-01',   '2024-01-01',   NULL,        10),
-
-    -- Overtime Authorization: ICU, Emergency & Trauma, Surgery
-    ('WF-OT-V1',            6,           'ICU',          '2024-01-01',   NULL,        10),
-    ('WF-OT-V1',            6,           'EMERGENCY',    '2024-01-01',   NULL,        10),
-    ('WF-OT-V1',            6,           'SURGERY',      '2024-01-01',   NULL,        10),
-
-    -- Comp-Off Redemption: all staff globally
-    ('WF-COMPOFF-V1',       1,           NULL,           '2024-01-01',   NULL,        10),
-
-    -- On-Call Duty: ICU, Emergency & Trauma, Surgery, Radiology
-    ('WF-ONCALL-V1',        6,           'ICU',          '2024-01-01',   NULL,        10),
-    ('WF-ONCALL-V1',        6,           'EMERGENCY',    '2024-01-01',   NULL,        10),
-    ('WF-ONCALL-V1',        6,           'SURGERY',      '2024-01-01',   NULL,        10),
-    ('WF-ONCALL-V1',        6,           'RADIOLOGY',    '2024-01-01',   NULL,        10),
-
-    -- Training & Conference Leave: all staff globally
-    ('WF-TRAINLEAVE-V1',    1,           NULL,           '2024-01-01',   NULL,        10),
-
-    -- Document Verification: all staff globally
-    ('WF-DOCVERIFY-V1',     1,           NULL,           '2024-01-01',   NULL,        10),
-
-    -- Payroll Attendance Correction: Legal Entity level (MediCore Health Pvt Ltd)
-    ('WF-PAYROLLCORR-V1',   4,           NULL,           '2024-01-01',   NULL,        10)
-
+    ('WF-LEAVE-STD-V1',     1, NULL,           '2024-01-01', NULL, 10),
+    ('WF-LEAVE-EMRG-V1',    1, NULL,           '2024-01-01', NULL,  5),
+    ('WF-ATTREG-STD-V1',    1, NULL,           '2024-01-01', NULL, 10),
+    ('WF-SHIFTSWAP-V1',     5, 'LOC-HYD-01',  '2024-01-01', NULL, 10),
+    ('WF-SHIFTSWAP-V1',     5, 'LOC-CHN-01',  '2024-01-01', NULL, 10),
+    ('WF-OT-V1',            6, 'ICU',         '2024-01-01', NULL, 10),
+    ('WF-OT-V1',            6, 'EMERGENCY',    '2024-01-01', NULL, 10),
+    ('WF-OT-V1',            6, 'SURGERY',      '2024-01-01', NULL, 10),
+    ('WF-COMPOFF-V1',       1, NULL,           '2024-01-01', NULL, 10),
+    ('WF-ONCALL-V1',        6, 'ICU',         '2024-01-01', NULL, 10),
+    ('WF-ONCALL-V1',        6, 'EMERGENCY',   '2024-01-01', NULL, 10),
+    ('WF-ONCALL-V1',        6, 'SURGERY',      '2024-01-01', NULL, 10),
+    ('WF-ONCALL-V1',        6, 'RADIOLOGY',    '2024-01-01', NULL, 10),
+    ('WF-TRAINLEAVE-V1',    1, NULL,           '2024-01-01', NULL, 10),
+    ('WF-DOCVERIFY-V1',     1, NULL,           '2024-01-01', NULL, 10),
+    ('WF-PAYROLLCORR-V1',   4, NULL,           '2024-01-01', NULL, 10)
 ) AS v(WorkflowCode, ScopeTypeId, ScopeRefCode, EffectiveFrom, EffectiveTo, PriorityOrder)
 WHERE NOT EXISTS (
     SELECT 1
     FROM   workflow.WorkflowAssignment  wa
     INNER JOIN workflow.WorkflowDefinition wd ON wd.Id = wa.WorkflowDefinitionId
     WHERE  wd.WorkflowCode   = v.WorkflowCode
-      AND  wa.ScopeTypeId    = v.ScopeTypeId
+      AND  wa.ScopeTypeId     = v.ScopeTypeId
       AND  wa.ScopeReferenceId = CASE v.ScopeTypeId
                                      WHEN 1 THEN 1
                                      WHEN 4 THEN 1
-                                     WHEN 5 THEN (SELECT Id FROM OfficeLocation WHERE LocationCode   = v.ScopeRefCode)
-                                     WHEN 6 THEN (SELECT Id FROM Department     WHERE DepartmentCode = v.ScopeRefCode)
+                                     WHEN 5 THEN (SELECT Id FROM time.OfficeLocation WHERE LocationCode   = v.ScopeRefCode)
+                                     WHEN 6 THEN (SELECT Id FROM time.Department     WHERE DepartmentCode = v.ScopeRefCode)
                                  END
 );
-
 GO
 
 
 -- =============================================================================================================
--- SEED DATA: WorkflowStatus
--- Healthcare Organization (MediCore Health Systems)
--- =============================================================================================================
-
-INSERT INTO workflow.WorkflowStatus (StatusCode, StatusName, IsFinalStatus)
-SELECT v.StatusCode, v.StatusName, v.IsFinalStatus
-FROM (VALUES
-    ('PENDING',     'Pending',     0),
-    ('IN_PROGRESS', 'In Progress', 0),
-    ('APPROVED',    'Approved',    1),
-    ('REJECTED',    'Rejected',    1),
-    ('CANCELLED',   'Cancelled',   1)
-) AS v(StatusCode, StatusName, IsFinalStatus)
-WHERE NOT EXISTS (
-    SELECT 1 FROM workflow.WorkflowStatus ws WHERE ws.StatusCode = v.StatusCode
-);
-
--- =============================================================================================================
 -- SECTION 6: WORKFLOW INSTANCES
--- All FKs resolved dynamically via code-based subqueries
--- CurrentWorkflowStepId: resolved by (WorkflowCode + StepNo); NULL for completed instances
 -- =============================================================================================================
 
 INSERT INTO workflow.WorkflowInstance
     (WorkflowDefinitionId, WorkflowModuleId, ReferenceTransactionId,
-     CurrentWorkflowStepId, WorkflowStatusId, InitiatedBy, InitiatedAt, CompletedAt)
+     CurrentWorkflowStepId, WorkflowStatus, InitiatedBy, InitiatedAt, CompletedAt)
 SELECT
     (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
     (SELECT Id FROM workflow.WorkflowModule     WHERE ModuleCode   = v.ModuleCode),
@@ -374,7 +232,7 @@ SELECT
              WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.CurrentStepNo
          )
     END,
-    (SELECT Id FROM workflow.WorkflowStatus WHERE StatusCode = v.StatusCode),
+    v.StatusCode,
     v.InitiatedBy,
     v.InitiatedAt,
     v.CompletedAt
@@ -400,37 +258,14 @@ FROM (VALUES
 ) AS v(WorkflowCode, ModuleCode, ReferenceTransactionId, CurrentStepNo, StatusCode, InitiatedBy, InitiatedAt, CompletedAt);
 GO
 
--- =============================================================================================================
--- SEED DATA: WorkflowActionType
--- Healthcare Organization (MediCore Health Systems)
--- =============================================================================================================
-
-INSERT INTO workflow.WorkflowActionType (ActionCode, ActionName)
-SELECT v.ActionCode, v.ActionName
-FROM (VALUES
-    ('SUBMIT',   'Submit'),
-    ('APPROVE',  'Approve'),
-    ('REJECT',   'Reject'),
-    ('RETURN',   'Return'),
-    ('ESCALATE', 'Escalate'),
-    ('CANCEL',   'Cancel')
-) AS v(ActionCode, ActionName)
-WHERE NOT EXISTS (
-    SELECT 1 FROM workflow.WorkflowActionType wat WHERE wat.ActionCode = v.ActionCode
-);
-
 
 -- =============================================================================================================
 -- SECTION 7: WORKFLOW ACTION HISTORY
--- WorkflowInstanceId resolved by (WorkflowCode + ModuleCode + ReferenceTransactionId)
--- WorkflowStepId resolved by (WorkflowCode + StepNo); NULL for instance-level actions
--- WorkflowActionTypeId resolved via ActionCode
--- FromWorkflowStatusId / ToWorkflowStatusId resolved via StatusCode; NULL = no prior state
 -- =============================================================================================================
 
 INSERT INTO workflow.WorkflowActionHistory
-    (WorkflowInstanceId, WorkflowStepId, WorkflowActionTypeId,
-     ActionBy, ActionAt, Remarks, FromWorkflowStatusId, ToWorkflowStatusId)
+    (WorkflowInstanceId, WorkflowStepId, WorkflowActionType,
+     ActionBy, ActionAt, Remarks, FromWorkflowStatus, ToWorkflowStatus)
 SELECT
     (
         SELECT wi.Id FROM workflow.WorkflowInstance wi
@@ -447,13 +282,13 @@ SELECT
              WHERE wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
          )
     END,
-    (SELECT Id FROM workflow.WorkflowActionType  WHERE ActionCode  = v.ActionCode),
+    v.ActionCode,
     v.ActionBy,
     v.ActionAt,
     v.Remarks,
     CASE WHEN v.FromStatusCode IS NULL THEN NULL
-         ELSE (SELECT Id FROM workflow.WorkflowStatus WHERE StatusCode = v.FromStatusCode) END,
-    (SELECT Id FROM workflow.WorkflowStatus WHERE StatusCode = v.ToStatusCode)
+         ELSE v.FromStatusCode END,
+    v.ToStatusCode
 FROM (VALUES
 
 --  WorkflowCode            ModuleCode              RefTxId  StepNo  ActionCode  By   ActionAt                        Remarks                                                                                                                 FromStatus      ToStatus
@@ -526,5 +361,7 @@ FROM (VALUES
 ) AS v(WorkflowCode, ModuleCode, ReferenceTransactionId, StepNo, ActionCode, ActionBy, ActionAt, Remarks, FromStatusCode, ToStatusCode);
 GO
 
+
 COMMIT TRANSACTION;
-PRINT 'Transaction committed successfully.';
+PRINT 'Workflow schema seed data inserted successfully.';
+GO

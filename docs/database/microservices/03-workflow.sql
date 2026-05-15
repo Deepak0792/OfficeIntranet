@@ -164,8 +164,8 @@ CREATE TABLE workflow.WorkflowActionHistory (
     ActionBy                    BIGINT          NOT NULL,
     ActionAt                    DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     Remarks                     NVARCHAR(2000)  NULL,
-    FromWorkflowStatus          NVARCHAR(50 )   NOT NULL,
-    ToWorkflowStatus            NVARCHAR(50 )   NOT NULL,
+    FromWorkflowStatus          NVARCHAR(50 )   NULL,
+    ToWorkflowStatus            NVARCHAR(50 )   NULL,
     WorkflowStatusGroup         AS CAST('WORKFLOW_STATUS' AS NVARCHAR(50)) PERSISTED,
 
     CONSTRAINT FK_WorkflowActionHistory_Instance
@@ -215,23 +215,6 @@ CREATE INDEX IX_WorkflowStep_Definition_StepNo
 
 CREATE INDEX IX_WorkflowStepApprover_Step
     ON workflow.WorkflowStepApprover (WorkflowStepId);
-
-GO
-
--- =============================================================================================================
--- SEED DATA - Workflow Modules
--- =============================================================================================================
-
-INSERT INTO workflow.WorkflowModule (ModuleCode, ModuleName, EntityName)
-VALUES
-('LEAVE', 'Leave Management', 'LeaveRequest'),
-('ATTENDANCE_REGULARIZATION', 'Attendance Regularization', 'AttendanceRegularization'),
-('SHIFT_SWAP', 'Shift Swap', 'ShiftSwapRequest'),
-('COMP_OFF', 'Comp-Off Redemption', 'CompOffBalance'),
-('DOCUMENT_VERIFICATION', 'Document Verification', 'EmployeeDocument'),
-('ONBOARDING', 'Onboarding', 'OnboardingTask'),
-('PERFORMANCE_REVIEW', 'Performance Review', 'PerformanceReview'),
-('EXIT_CLEARANCE', 'Exit Clearance', 'ExitRecord');
 
 GO
 

@@ -959,12 +959,19 @@ GO
 -- =============================================================================================================
 -- MODULE F: EXIT MANAGEMENT
 -- =============================================================================================================
+CREATE TABLE hr.ExitReason (
+    Id          INT          PRIMARY KEY IDENTITY(1,1),
+    ReasonText  NVARCHAR(200)   NOT NULL UNIQUE,
+    Category    NVARCHAR(20)    NOT NULL
+        CONSTRAINT CK_ExitReason_Category CHECK (Category IN ('VOLUNTARY', 'INVOLUNTARY')),
+    IsActive    BIT             NOT NULL DEFAULT 1,
+    CreatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+);
 
 CREATE TABLE hr.ExitRecord (
     Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                  BIGINT          NOT NULL UNIQUE,
-    ExitReason                  NVARCHAR(50)          NULL,
-    ExitReasonGroup             AS CAST('EXIT_REASON' AS NVARCHAR(50)) PERSISTED,
+    ExitReasonId                INT         NULL,
     ExitType                    NVARCHAR(50)    NOT NULL DEFAULT 'RESIGNATION',
     ExitTypeGroup               AS CAST('EXIT_TYPE' AS NVARCHAR(50)) PERSISTED,
     AdditionalReason            NVARCHAR(MAX)   NULL,
@@ -993,8 +1000,8 @@ CREATE TABLE hr.ExitRecord (
         REFERENCES employee.Employee(Id),
 
     CONSTRAINT FK_ExitRecord_ExitReason
-        FOREIGN KEY (ExitReason, ExitReasonGroup)
-        REFERENCES shared.StatusLookup (StatusCode, StatusGroup),
+        FOREIGN KEY (ExitReasonId)
+        REFERENCES hr.ExitReason(Id),
 
     CONSTRAINT FK_ExitRecord_ConductedBy
         FOREIGN KEY (ConductedByEmployeeId)
@@ -1054,13 +1061,6 @@ CREATE TABLE hr.ExitClearanceItem (
 );
 GO
 
-
--- =============================================================================================================
--- MODULE G: INFRASTRUCTURE (Moved from time schema)
--- =============================================================================================================
-
-
-
 -- =============================================================================================================
 -- INDEXES - hr Schema
 -- =============================================================================================================
@@ -1115,40 +1115,6 @@ CREATE INDEX IX_EmpTrainingRecord_Program   ON hr.EmployeeTrainingRecord (Traini
 CREATE INDEX IX_ExitRecord_Employee         ON hr.ExitRecord (EmployeeId);
 CREATE INDEX IX_ExitRecord_ClearanceStatus  ON hr.ExitRecord (ClearanceStatus);
 CREATE INDEX IX_ExitClearanceItem_ExitRecord ON hr.ExitClearanceItem (ExitRecordId, ItemStatus);
-
-GO
-
-
-
-
-
--- =============================================================================================================
--- SEED DATA - Interview Rounds
--- =============================================================================================================
-
-INSERT INTO hr.InterviewRound (RoundNumber, RoundCode, RoundName, Description, IsMandatory, DisplayOrder)
-VALUES
-(1, 'HR_SCREEN', 'HR Screen', 'Initial HR round to assess fitment', 1, 1),
-(2, 'TECHNICAL_1', 'Technical Round 1', 'First technical interview', 1, 2),
-(3, 'TECHNICAL_2', 'Technical Round 2', 'Second technical interview', 0, 3),
-(4, 'MANAGER', 'Manager Round', 'Hiring manager interview', 1, 4),
-(5, 'CULTURE_FIT', 'Culture Fit', 'Culture and价值观 alignment', 0, 5),
-(6, 'FINAL', 'Final Round', 'Final leadership round', 0, 6);
-
-GO
-
-
--- =============================================================================================================
--- SEED DATA - Panel Roles
--- =============================================================================================================
-
-INSERT INTO hr.PanelRole (RoleCode, RoleName, Description, CanSubmitFeedback, DisplayOrder)
-VALUES
-('PANEL_LEAD', 'Panel Lead', 'Lead interviewer who coordinates', 1, 1),
-('INTERVIEWER', 'Interviewer', 'Technical or functional interviewer', 1, 2),
-('OBSERVER', 'Observer', 'Observer who does not submit feedback', 0, 3);
-
-GO
 
 PRINT 'HR schema created successfully';
 GO

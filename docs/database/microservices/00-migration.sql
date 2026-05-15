@@ -83,6 +83,13 @@ GO
 GO
 
 -- =============================================================================================================
+-- STEP 8: Create Auth Schema
+-- =============================================================================================================
+PRINT 'Step 8: Creating Auth Schema...';
+GO
+:r 09-auth.sql
+GO
+-- =============================================================================================================
 -- VERIFICATION
 -- =============================================================================================================
 PRINT '';
@@ -94,7 +101,7 @@ SELECT
     schema_name AS SchemaName,
     COUNT(*) AS TableCount
 FROM information_schema.tables
-WHERE table_schema IN ('shared', 'time', 'employee', 'workflow', 'attendance', 'hr', 'payroll', 'helpdesk')
+WHERE table_schema IN ('shared', 'time', 'employee', 'workflow', 'attendance', 'hr', 'payroll', 'helpdesk', 'auth')
   AND table_type = 'BASE TABLE'
 GROUP BY schema_name
 ORDER BY schema_name;

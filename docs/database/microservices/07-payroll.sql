@@ -693,38 +693,5 @@ CREATE INDEX IX_SalarySlipPub_Status         ON payroll.SalarySlipPublication (S
 
 GO
 
-
--- =============================================================================================================
--- SEED DATA - Tax Proof Categories (India)
--- =============================================================================================================
-
-INSERT INTO payroll.TaxProofCategory (CategoryCode, CategoryName, Section, StatutoryMaxLimit, IsApplicableOldRegime, IsApplicableNewRegime, RequiresDocument, DisplayOrder)
-VALUES
-('STANDARD_DEDUCTION', 'Standard Deduction', 'Section 16', 50000, 1, 1, 0, 1),
-('HOUSE_RENT_ALLOWANCE', 'House Rent Allowance', 'Section 10(13A)', NULL, 1, 0, 1, 2),
-('LEAVE_TRAVEL_CONCESSION', 'Leave Travel Concession', 'Section 10(5)', NULL, 1, 0, 1, 3),
-('SECTION_80C', 'Section 80C - Investment', 'Section 80C', 150000, 1, 1, 1, 4),
-('SECTION_80CCC', 'Section 80CCC - Pension', 'Section 80CCC', 150000, 1, 1, 1, 5),
-('SECTION_80CCD', 'Section 80CCD - NPS', 'Section 80CCD', 50000, 1, 1, 1, 6),
-('SECTION_80D', 'Section 80D - Medical', 'Section 80D', 25000, 1, 1, 1, 7),
-('SECTION_80E', 'Section 80E - Education Loan', 'Section 80E', NULL, 1, 1, 1, 8),
-('SECTION_80G', 'Section 80G - Donation', 'Section 80G', NULL, 1, 1, 1, 9),
-('SECTION_80TTA', 'Section 80TTA - Interest', 'Section 80TTA', 10000, 1, 0, 1, 10);
-
-GO
-
-
--- =============================================================================================================
--- SEED DATA - Tax Regimes
--- =============================================================================================================
-
-INSERT INTO payroll.TaxRegime (RegimeCode, RegimeName, CountryCode, FiscalYearStart, Description)
-VALUES
-('IND_OLD', 'India - Old Regime', 'IN', '04', 'Old tax regime with exemptions'),
-('IND_NEW', 'India - New Regime', 'IN', '04', 'New tax regime without exemptions');
-
-GO
-
-
 PRINT 'Payroll schema created successfully';
 GO
