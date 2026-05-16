@@ -21,6 +21,7 @@ PRINT 'Starting Base Schema deployment...';
  *  11. 10-event.sql      - Event sourcing
  *  12. 11-survey.sql     - Survey management
  *  13. 12-audit.sql      - Audit logging
+ *  14. 13-expense.sql    - Expense logging
  * 
  * Note: These scripts are executed as-is from the original migration files.
  * No restructuring is applied at this level.
