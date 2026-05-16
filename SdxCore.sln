@@ -33,6 +33,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.Identity.Tests", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.PasswordHasher.Tests", "tests\PasswordHasher.Tests\SdxCore.PasswordHasher.Tests.csproj", "{0918197F-8C2F-4F33-939E-139DA879C148}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{B8E4D7F2-3C1A-4E9B-8F2D-6A5C7E9F1B3D}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "SdxCore.Database", "src\Database\SdxCore.Database.sqlproj", "{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +83,12 @@ Global
 		{0918197F-8C2F-4F33-939E-139DA879C148}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0918197F-8C2F-4F33-939E-139DA879C148}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0918197F-8C2F-4F33-939E-139DA879C148}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -95,5 +105,6 @@ Global
 		{7128A260-82EE-419C-B725-AECAC645AE94} = {0A832D69-5E1E-4611-A5F3-9A8E4AA38B2F}
 		{D5B9E8E0-8D9D-4B43-AB65-DE0596AC97B0} = {F7DC2D7A-5C29-4BB1-A490-821269025B26}
 		{0918197F-8C2F-4F33-939E-139DA879C148} = {F7DC2D7A-5C29-4BB1-A490-821269025B26}
+		{8B3E4F2A-9C7D-4E1B-A5F3-2D8C9E6F1A4B} = {B8E4D7F2-3C1A-4E9B-8F2D-6A5C7E9F1B3D}
 	EndGlobalSection
 EndGlobal

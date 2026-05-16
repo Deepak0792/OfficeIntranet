@@ -453,3 +453,5 @@ secrets.json
 
 # Kiro
 .kiro/cache/
+SdxCore.Database.Full.sql
+SdxCore.Database.Delta.sql

@@ -1,0 +1,12 @@
+:r 01-shared.sql
+:r 02-time.sql
+:r 03-workflow.sql
+:r 04-employee.sql
+:r 05-attendance.sql
+:r 06-hr.sql
+:r 07-payroll.sql
+:r 08-helpdesk.sql
+:r 09-auth.sql
+:r 10-event.sql
+:r 11-survey.sql
+:r 12-audit.sql

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>SdxCore.Database</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{8b3e4f2a-9c7d-4e1b-a5f3-2d8c9e6f1a4b}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>SdxCore.Database</RootNamespace>
+    <AssemblyName>SdxCore.Database</AssemblyName>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <DefaultSchema>dbo</DefaultSchema>
+    <GenerateCreateScript>True</GenerateCreateScript>
+    <IncludeSchemaNameInFileName>True</IncludeSchemaNameInFileName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="Base" />
+    <Folder Include="Base\data" />
+    <Folder Include="Base\data\attendance" />
+    <Folder Include="Base\data\auth" />
+    <Folder Include="Base\data\employee" />
+    <Folder Include="Base\data\helpdesk" />
+    <Folder Include="Base\data\hr" />
+    <Folder Include="Base\data\payroll" />
+    <Folder Include="Base\data\shared" />
+    <Folder Include="Base\data\time" />
+    <Folder Include="Base\data\workflow" />
+    <Folder Include="Base\schema" />
+    <Folder Include="Phase1" />
+    <Folder Include="Phase1\Sprint01" />
+    <Folder Include="Phase1\Sprint01\attendance" />
+    <Folder Include="Phase1\Sprint01\attendance\Functions" />
+    <Folder Include="Phase1\Sprint01\attendance\Indexes" />
+    <Folder Include="Phase1\Sprint01\attendance\Procedures" />
+    <Folder Include="Phase1\Sprint01\attendance\SeedData" />
+    <Folder Include="Phase1\Sprint01\attendance\Tables" />
+    <Folder Include="Phase1\Sprint01\attendance\Views" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="Base\_include.sql" />
+    <Build Include="Base\data\attendance\seed-data.sql" />
+    <Build Include="Base\data\auth\seed-data.sql" />
+    <Build Include="Base\data\employee\seed-data.sql" />
+    <Build Include="Base\data\helpdesk\seed-data.sql" />
+    <Build Include="Base\data\hr\seed-data.sql" />
+    <Build Include="Base\data\payroll\seed-data.sql" />
+    <Build Include="Base\data\shared\seed-data.sql" />
+    <Build Include="Base\data\time\seed-data.sql" />
+    <Build Include="Base\data\workflow\seed-data.sql" />
+    <Build Include="Base\data\_include.sql" />
+    <Build Include="Base\schema\_include.sql" />
+    <Build Include="Base\schema\00-migration.sql" />
+    <Build Include="Base\schema\01-shared.sql" />
+    <Build Include="Base\schema\02-time.sql" />
+    <Build Include="Base\schema\03-workflow.sql" />
+    <Build Include="Base\schema\04-employee.sql" />
+    <Build Include="Base\schema\05-attendance.sql" />
+    <Build Include="Base\schema\06-hr.sql" />
+    <Build Include="Base\schema\07-payroll.sql" />
+    <Build Include="Base\schema\08-helpdesk.sql" />
+    <Build Include="Base\schema\09-auth.sql" />
+    <Build Include="Base\schema\10-event.sql" />
+    <Build Include="Base\schema\11-survey.sql" />
+    <Build Include="Base\schema\12-audit.sql" />
+    <Build Include="Phase1\Sprint01\attendance\_include.sql" />
+    <Build Include="Phase1\Sprint01\_include.sql" />
+    <Build Include="Phase1\_include.sql" />
+    <Build Include="Phase1\Sprint01\attendance\Functions\_include.sql" />
+    <Build Include="Phase1\Sprint01\attendance\Indexes\_include.sql" />
+    <Build Include="Phase1\Sprint01\attendance\Procedures\_include.sql" />
+    <Build Include="Phase1\Sprint01\attendance\SeedData\_include.sql" />
+    <Build Include="Phase1\Sprint01\attendance\Tables\_include.sql" />
+    <Build Include="Phase1\Sprint01\attendance\Views\_include.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PreDeploy Include="_include.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SdxCore.Database.publish.xml" />
+    <None Include="SdxCore.Database.publish.Local.xml" />
+    <None Include="SdxCore.Database.publish.Dev.xml" />
+    <None Include="SdxCore.Database.publish.Staging.xml" />
+    <None Include="SdxCore.Database.publish.Production.xml" />
+    <None Include="Base\schema\design.md" />
+    <None Include="Base\schema\README.md" />
+  </ItemGroup>
+</Project>
