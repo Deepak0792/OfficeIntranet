@@ -1,14 +1,14 @@
 -- =============================================================================================================
 -- SURVEYS & FEEDBACK SCHEMA - Surveys, Polls, and Anonymous Feedback
 -- SQL Server Database Schema
--- Schema: surveys
+-- Schema: survey
 -- Purpose: Collect employee satisfaction feedback, polls, anonymous suggestions
 -- Dependencies: shared (StatusLookup), time (Department), employee (Employee)
 -- =============================================================================================================
 
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'surveys')
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'survey')
 BEGIN
-    EXEC('CREATE SCHEMA surveys');
+    EXEC('CREATE SCHEMA survey');
 END
 GO
 
@@ -112,7 +112,7 @@ GO
 -- =============================================================================================================
 -- SURVEY - Main survey entity
 -- =============================================================================================================
-CREATE TABLE surveys.Survey (
+CREATE TABLE survey.Survey (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     SurveyCode              NVARCHAR(50)    NOT NULL UNIQUE,
     Title                   NVARCHAR(300)   NOT NULL,
@@ -156,7 +156,7 @@ GO
 -- =============================================================================================================
 -- SURVEY TARGET - Departments/employees targeted for survey
 -- =============================================================================================================
-CREATE TABLE surveys.SurveyTarget (
+CREATE TABLE survey.SurveyTarget (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     SurveyId            BIGINT          NOT NULL,
     TargetType          NVARCHAR(50)   NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE surveys.SurveyTarget (
 
     CONSTRAINT FK_SurveyTarget_Survey
         FOREIGN KEY (SurveyId)
-        REFERENCES surveys.Survey(Id),
+        REFERENCES survey.Survey(Id),
 
     CONSTRAINT FK_SurveyTarget_Type
         FOREIGN KEY (TargetType, TargetTypeGroup)
@@ -198,7 +198,7 @@ GO
 -- =============================================================================================================
 -- SURVEY QUESTION - Questions in a survey
 -- =============================================================================================================
-CREATE TABLE surveys.SurveyQuestion (
+CREATE TABLE survey.SurveyQuestion (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     SurveyId            BIGINT          NOT NULL,
     QuestionText        NVARCHAR(1000) NOT NULL,
@@ -216,7 +216,7 @@ CREATE TABLE surveys.SurveyQuestion (
 
     CONSTRAINT FK_SurveyQuestion_Survey
         FOREIGN KEY (SurveyId)
-        REFERENCES surveys.Survey(Id),
+        REFERENCES survey.Survey(Id),
 
     CONSTRAINT FK_SurveyQuestion_Type
         FOREIGN KEY (QuestionType, QuestionTypeGroup)
@@ -228,7 +228,7 @@ GO
 -- =============================================================================================================
 -- SURVEY RESPONSE - Employee responses to survey
 -- =============================================================================================================
-CREATE TABLE surveys.SurveyResponse (
+CREATE TABLE survey.SurveyResponse (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     SurveyId            BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -244,7 +244,7 @@ CREATE TABLE surveys.SurveyResponse (
 
     CONSTRAINT FK_SurveyResponse_Survey
         FOREIGN KEY (SurveyId)
-        REFERENCES surveys.Survey(Id),
+        REFERENCES survey.Survey(Id),
 
     CONSTRAINT FK_SurveyResponse_Employee
         FOREIGN KEY (EmployeeId)
@@ -258,7 +258,7 @@ GO
 -- =============================================================================================================
 -- SURVEY RESPONSE ANSWER - Individual answers to survey questions
 -- =============================================================================================================
-CREATE TABLE surveys.SurveyResponseAnswer (
+CREATE TABLE survey.SurveyResponseAnswer (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     ResponseId          BIGINT          NOT NULL,
     QuestionId          BIGINT          NOT NULL,
@@ -269,11 +269,11 @@ CREATE TABLE surveys.SurveyResponseAnswer (
 
     CONSTRAINT FK_SurveyResponseAnswer_Response
         FOREIGN KEY (ResponseId)
-        REFERENCES surveys.SurveyResponse(Id),
+        REFERENCES survey.SurveyResponse(Id),
 
     CONSTRAINT FK_SurveyResponseAnswer_Question
         FOREIGN KEY (QuestionId)
-        REFERENCES surveys.SurveyQuestion(Id)
+        REFERENCES survey.SurveyQuestion(Id)
 );
 GO
 
@@ -281,7 +281,7 @@ GO
 -- =============================================================================================================
 -- SURVEY NOTIFICATION - Survey notifications to employees
 -- =============================================================================================================
-CREATE TABLE surveys.SurveyNotification (
+CREATE TABLE survey.SurveyNotification (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     SurveyId            BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -299,7 +299,7 @@ CREATE TABLE surveys.SurveyNotification (
 
     CONSTRAINT FK_SurveyNotification_Survey
         FOREIGN KEY (SurveyId)
-        REFERENCES surveys.Survey(Id),
+        REFERENCES survey.Survey(Id),
 
     CONSTRAINT FK_SurveyNotification_Employee
         FOREIGN KEY (EmployeeId)
@@ -319,7 +319,7 @@ GO
 -- =============================================================================================================
 -- SURVEY ANALYTICS - Pre-computed survey analytics
 -- =============================================================================================================
-CREATE TABLE surveys.SurveyAnalytics (
+CREATE TABLE survey.SurveyAnalytics (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     SurveyId            BIGINT          NOT NULL,
     TotalQuestions      INT             NOT NULL DEFAULT 0,
@@ -333,7 +333,7 @@ CREATE TABLE surveys.SurveyAnalytics (
 
     CONSTRAINT FK_SurveyAnalytics_Survey
         FOREIGN KEY (SurveyId)
-        REFERENCES surveys.Survey(Id),
+        REFERENCES survey.Survey(Id),
 
     CONSTRAINT UQ_SurveyAnalytics UNIQUE (SurveyId)
 );
@@ -349,7 +349,7 @@ GO
 -- =============================================================================================================
 -- POLL - Main poll entity
 -- =============================================================================================================
-CREATE TABLE surveys.Poll (
+CREATE TABLE survey.Poll (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     PollCode                NVARCHAR(50)    NOT NULL UNIQUE,
     Question                NVARCHAR(500)   NOT NULL,
@@ -388,7 +388,7 @@ GO
 -- =============================================================================================================
 -- POLL OPTION - Options for a poll
 -- =============================================================================================================
-CREATE TABLE surveys.PollOption (
+CREATE TABLE survey.PollOption (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     PollId              BIGINT          NOT NULL,
     OptionText          NVARCHAR(300)   NOT NULL,
@@ -400,7 +400,7 @@ CREATE TABLE surveys.PollOption (
 
     CONSTRAINT FK_PollOption_Poll
         FOREIGN KEY (PollId)
-        REFERENCES surveys.Poll(Id)
+        REFERENCES survey.Poll(Id)
 );
 GO
 
@@ -408,7 +408,7 @@ GO
 -- =============================================================================================================
 -- POLL VOTE - Employee votes on poll
 -- =============================================================================================================
-CREATE TABLE surveys.PollVote (
+CREATE TABLE survey.PollVote (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     PollId              BIGINT          NOT NULL,
     OptionId            BIGINT          NOT NULL,
@@ -419,11 +419,11 @@ CREATE TABLE surveys.PollVote (
 
     CONSTRAINT FK_PollVote_Poll
         FOREIGN KEY (PollId)
-        REFERENCES surveys.Poll(Id),
+        REFERENCES survey.Poll(Id),
 
     CONSTRAINT FK_PollVote_Option
         FOREIGN KEY (OptionId)
-        REFERENCES surveys.PollOption(Id),
+        REFERENCES survey.PollOption(Id),
 
     CONSTRAINT FK_PollVote_Employee
         FOREIGN KEY (EmployeeId)
@@ -437,7 +437,7 @@ GO
 -- =============================================================================================================
 -- POLL TARGET - Departments/employees targeted for poll
 -- =============================================================================================================
-CREATE TABLE surveys.PollTarget (
+CREATE TABLE survey.PollTarget (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     PollId              BIGINT          NOT NULL,
     TargetType          NVARCHAR(50)   NOT NULL,
@@ -455,7 +455,7 @@ CREATE TABLE surveys.PollTarget (
 
     CONSTRAINT FK_PollTarget_Poll
         FOREIGN KEY (PollId)
-        REFERENCES surveys.Poll(Id),
+        REFERENCES survey.Poll(Id),
 
     CONSTRAINT FK_PollTarget_Type
         FOREIGN KEY (TargetType, TargetTypeGroup)
@@ -485,7 +485,7 @@ GO
 -- =============================================================================================================
 -- ANONYMOUS FEEDBACK - Employee anonymous feedback
 -- =============================================================================================================
-CREATE TABLE surveys.AnonymousFeedback (
+CREATE TABLE survey.AnonymousFeedback (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     FeedbackReference   NVARCHAR(20)   NOT NULL UNIQUE,
     FeedbackCategory    NVARCHAR(50)   NOT NULL,
@@ -529,7 +529,7 @@ GO
 -- =============================================================================================================
 -- FEEDBACK ACTION - Actions taken on feedback
 -- =============================================================================================================
-CREATE TABLE surveys.FeedbackAction (
+CREATE TABLE survey.FeedbackAction (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     FeedbackId          BIGINT          NOT NULL,
     ActionType          NVARCHAR(50)   NOT NULL,
@@ -542,7 +542,7 @@ CREATE TABLE surveys.FeedbackAction (
 
     CONSTRAINT FK_FeedbackAction_Feedback
         FOREIGN KEY (FeedbackId)
-        REFERENCES surveys.AnonymousFeedback(Id),
+        REFERENCES survey.AnonymousFeedback(Id),
 
     CONSTRAINT FK_FeedbackAction_ActionBy
         FOREIGN KEY (ActionById)
@@ -556,7 +556,7 @@ GO
 -- =============================================================================================================
 -- FEEDBACK ESCALATION - Escalation tracking for feedback
 -- =============================================================================================================
-CREATE TABLE surveys.FeedbackEscalation (
+CREATE TABLE survey.FeedbackEscalation (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     FeedbackId          BIGINT          NOT NULL,
     EscalatedById       BIGINT          NOT NULL,
@@ -570,7 +570,7 @@ CREATE TABLE surveys.FeedbackEscalation (
 
     CONSTRAINT FK_FeedbackEscalation_Feedback
         FOREIGN KEY (FeedbackId)
-        REFERENCES surveys.AnonymousFeedback(Id),
+        REFERENCES survey.AnonymousFeedback(Id),
 
     CONSTRAINT FK_FeedbackEscalation_EscalatedBy
         FOREIGN KEY (EscalatedById)
@@ -588,71 +588,71 @@ GO
 -- =============================================================================================================
 
 -- Survey indexes
-CREATE INDEX IX_Survey_CreatedBy ON surveys.Survey(CreatedById);
-CREATE INDEX IX_Survey_Status ON surveys.Survey(StatusCode);
-CREATE INDEX IX_Survey_Dates ON surveys.Survey(StartDate, EndDate);
-CREATE INDEX IX_Survey_Active ON surveys.Survey(IsActive);
+CREATE INDEX IX_Survey_CreatedBy ON survey.Survey(CreatedById);
+CREATE INDEX IX_Survey_Status ON survey.Survey(StatusCode);
+CREATE INDEX IX_Survey_Dates ON survey.Survey(StartDate, EndDate);
+CREATE INDEX IX_Survey_Active ON survey.Survey(IsActive);
 
 -- SurveyTarget indexes
-CREATE INDEX IX_SurveyTarget_Survey ON surveys.SurveyTarget(SurveyId);
-CREATE INDEX IX_SurveyTarget_Type ON surveys.SurveyTarget(TargetType, TargetTypeGroup);
-CREATE INDEX IX_SurveyTarget_Department ON surveys.SurveyTarget(DepartmentId);
-CREATE INDEX IX_SurveyTarget_Location ON surveys.SurveyTarget(LocationId);
-CREATE INDEX IX_SurveyTarget_Employee ON surveys.SurveyTarget(EmployeeId);
+CREATE INDEX IX_SurveyTarget_Survey ON survey.SurveyTarget(SurveyId);
+CREATE INDEX IX_SurveyTarget_Type ON survey.SurveyTarget(TargetType, TargetTypeGroup);
+CREATE INDEX IX_SurveyTarget_Department ON survey.SurveyTarget(DepartmentId);
+CREATE INDEX IX_SurveyTarget_Location ON survey.SurveyTarget(LocationId);
+CREATE INDEX IX_SurveyTarget_Employee ON survey.SurveyTarget(EmployeeId);
 
 -- SurveyQuestion indexes
-CREATE INDEX IX_SurveyQuestion_Survey ON surveys.SurveyQuestion(SurveyId);
-CREATE INDEX IX_SurveyQuestion_Order ON surveys.SurveyQuestion(SurveyId, DisplayOrder);
+CREATE INDEX IX_SurveyQuestion_Survey ON survey.SurveyQuestion(SurveyId);
+CREATE INDEX IX_SurveyQuestion_Order ON survey.SurveyQuestion(SurveyId, DisplayOrder);
 
 -- SurveyResponse indexes
-CREATE INDEX IX_SurveyResponse_Survey ON surveys.SurveyResponse(SurveyId);
-CREATE INDEX IX_SurveyResponse_Employee ON surveys.SurveyResponse(EmployeeId);
-CREATE INDEX IX_SurveyResponse_Submitted ON surveys.SurveyResponse(SubmittedAt);
+CREATE INDEX IX_SurveyResponse_Survey ON survey.SurveyResponse(SurveyId);
+CREATE INDEX IX_SurveyResponse_Employee ON survey.SurveyResponse(EmployeeId);
+CREATE INDEX IX_SurveyResponse_Submitted ON survey.SurveyResponse(SubmittedAt);
 
 -- SurveyResponseAnswer indexes
-CREATE INDEX IX_SurveyResponseAnswer_Response ON surveys.SurveyResponseAnswer(ResponseId);
-CREATE INDEX IX_SurveyResponseAnswer_Question ON surveys.SurveyResponseAnswer(QuestionId);
+CREATE INDEX IX_SurveyResponseAnswer_Response ON survey.SurveyResponseAnswer(ResponseId);
+CREATE INDEX IX_SurveyResponseAnswer_Question ON survey.SurveyResponseAnswer(QuestionId);
 
 -- SurveyNotification indexes
-CREATE INDEX IX_SurveyNotification_Survey ON surveys.SurveyNotification(SurveyId);
-CREATE INDEX IX_SurveyNotification_Employee ON surveys.SurveyNotification(EmployeeId);
+CREATE INDEX IX_SurveyNotification_Survey ON survey.SurveyNotification(SurveyId);
+CREATE INDEX IX_SurveyNotification_Employee ON survey.SurveyNotification(EmployeeId);
 
 -- Poll indexes
-CREATE INDEX IX_Poll_CreatedBy ON surveys.Poll(CreatedById);
-CREATE INDEX IX_Poll_Status ON surveys.Poll(StatusCode);
-CREATE INDEX IX_Poll_Expiry ON surveys.Poll(ExpiryDate);
-CREATE INDEX IX_Poll_Category ON surveys.Poll(Category);
+CREATE INDEX IX_Poll_CreatedBy ON survey.Poll(CreatedById);
+CREATE INDEX IX_Poll_Status ON survey.Poll(StatusCode);
+CREATE INDEX IX_Poll_Expiry ON survey.Poll(ExpiryDate);
+CREATE INDEX IX_Poll_Category ON survey.Poll(Category);
 
 -- PollTarget indexes
-CREATE INDEX IX_PollTarget_Poll ON surveys.PollTarget(PollId);
-CREATE INDEX IX_PollTarget_Type ON surveys.PollTarget(TargetType, TargetTypeGroup);
-CREATE INDEX IX_PollTarget_Department ON surveys.PollTarget(DepartmentId);
-CREATE INDEX IX_PollTarget_Location ON surveys.PollTarget(LocationId);
-CREATE INDEX IX_PollTarget_Employee ON surveys.PollTarget(EmployeeId);
+CREATE INDEX IX_PollTarget_Poll ON survey.PollTarget(PollId);
+CREATE INDEX IX_PollTarget_Type ON survey.PollTarget(TargetType, TargetTypeGroup);
+CREATE INDEX IX_PollTarget_Department ON survey.PollTarget(DepartmentId);
+CREATE INDEX IX_PollTarget_Location ON survey.PollTarget(LocationId);
+CREATE INDEX IX_PollTarget_Employee ON survey.PollTarget(EmployeeId);
 
 -- PollOption indexes
-CREATE INDEX IX_PollOption_Poll ON surveys.PollOption(PollId);
+CREATE INDEX IX_PollOption_Poll ON survey.PollOption(PollId);
 
 -- PollVote indexes
-CREATE INDEX IX_PollVote_Poll ON surveys.PollVote(PollId);
-CREATE INDEX IX_PollVote_Employee ON surveys.PollVote(EmployeeId);
-CREATE INDEX IX_PollVote_Option ON surveys.PollVote(OptionId);
+CREATE INDEX IX_PollVote_Poll ON survey.PollVote(PollId);
+CREATE INDEX IX_PollVote_Employee ON survey.PollVote(EmployeeId);
+CREATE INDEX IX_PollVote_Option ON survey.PollVote(OptionId);
 
 -- AnonymousFeedback indexes
-CREATE INDEX IX_AnonymousFeedback_Category ON surveys.AnonymousFeedback(FeedbackCategory);
-CREATE INDEX INDEX IX_AnonymousFeedback_Status ON surveys.AnonymousFeedback(StatusCode);
-CREATE INDEX IX_AnonymousFeedback_Reference ON surveys.AnonymousFeedback(FeedbackReference);
-CREATE INDEX IX_AnonymousFeedback_Submitted ON surveys.AnonymousFeedback(SubmittedAt);
-CREATE INDEX IX_AnonymousFeedback_Assigned ON surveys.AnonymousFeedback(AssignedToId);
+CREATE INDEX IX_AnonymousFeedback_Category ON survey.AnonymousFeedback(FeedbackCategory);
+CREATE INDEX IX_AnonymousFeedback_Status ON survey.AnonymousFeedback(StatusCode);
+CREATE INDEX IX_AnonymousFeedback_Reference ON survey.AnonymousFeedback(FeedbackReference);
+CREATE INDEX IX_AnonymousFeedback_Submitted ON survey.AnonymousFeedback(SubmittedAt);
+CREATE INDEX IX_AnonymousFeedback_Assigned ON survey.AnonymousFeedback(AssignedToId);
 
 -- FeedbackAction indexes
-CREATE INDEX IX_FeedbackAction_Feedback ON surveys.FeedbackAction(FeedbackId);
-CREATE INDEX IX_FeedbackAction_ActionBy ON surveys.FeedbackAction(ActionById);
-CREATE INDEX IX_FeedbackAction_Created ON surveys.FeedbackAction(CreatedAt);
+CREATE INDEX IX_FeedbackAction_Feedback ON survey.FeedbackAction(FeedbackId);
+CREATE INDEX IX_FeedbackAction_ActionBy ON survey.FeedbackAction(ActionById);
+CREATE INDEX IX_FeedbackAction_Created ON survey.FeedbackAction(CreatedAt);
 
 -- FeedbackEscalation indexes
-CREATE INDEX IX_FeedbackEscalation_Feedback ON surveys.FeedbackEscalation(FeedbackId);
-CREATE INDEX IX_FeedbackEscalation_EscalatedTo ON surveys.FeedbackEscalation(EscalatedToId);
+CREATE INDEX IX_FeedbackEscalation_Feedback ON survey.FeedbackEscalation(FeedbackId);
+CREATE INDEX IX_FeedbackEscalation_EscalatedTo ON survey.FeedbackEscalation(EscalatedToId);
 GO
 
 

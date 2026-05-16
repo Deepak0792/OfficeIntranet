@@ -83,12 +83,37 @@ GO
 GO
 
 -- =============================================================================================================
--- STEP 8: Create Auth Schema
+-- STEP 9: Create Auth Schema
 -- =============================================================================================================
-PRINT 'Step 8: Creating Auth Schema...';
+PRINT 'Step 9: Creating Auth Schema...';
 GO
 :r 09-auth.sql
 GO
+
+-- =============================================================================================================
+-- STEP 10: Create Event Schema
+-- =============================================================================================================
+PRINT 'Step 10: Creating Event Schema...';
+GO
+:r 10-event.sql
+GO
+
+-- =============================================================================================================
+-- STEP 11: Create Survey Schema
+-- =============================================================================================================
+PRINT 'Step 11: Creating Survey Schema...';
+GO
+:r 11-survey.sql
+GO
+
+-- =============================================================================================================
+-- STEP 12: Create Audit Schema
+-- =============================================================================================================
+PRINT 'Step 12: Creating Audit Schema...';
+GO
+:r 12-audit.sql
+GO
+
 -- =============================================================================================================
 -- VERIFICATION
 -- =============================================================================================================
@@ -101,7 +126,7 @@ SELECT
     schema_name AS SchemaName,
     COUNT(*) AS TableCount
 FROM information_schema.tables
-WHERE table_schema IN ('shared', 'time', 'employee', 'workflow', 'attendance', 'hr', 'payroll', 'helpdesk', 'auth')
+WHERE table_schema IN ('shared', 'time', 'employee', 'workflow', 'attendance', 'hr', 'payroll', 'helpdesk', 'auth', 'event', 'survey', 'audit')
   AND table_type = 'BASE TABLE'
 GROUP BY schema_name
 ORDER BY schema_name;

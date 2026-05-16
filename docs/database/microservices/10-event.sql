@@ -1,14 +1,14 @@
 -- =============================================================================================================
 -- EVENTS SCHEMA - Company Events Management
 -- SQL Server Database Schema
--- Schema: events
--- Purpose: Manage company-wide events, RSVPs, attendance tracking, and feedback collection
+-- Schema: event
+-- Purpose: Manage company-wide event, RSVPs, attendance tracking, and feedback collection
 -- Dependencies: shared (StatusLookup), time (Department, OfficeLocation), employee (Employee)
 -- =============================================================================================================
 
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'events')
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'event')
 BEGIN
-    EXEC('CREATE SCHEMA events');
+    EXEC('CREATE SCHEMA event');
 END
 GO
 
@@ -105,7 +105,7 @@ GO
 -- =============================================================================================================
 -- EVENT CATEGORY - Categories for events
 -- =============================================================================================================
-CREATE TABLE events.EventCategory (
+CREATE TABLE event.EventCategory (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode        NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
@@ -120,7 +120,7 @@ GO
 -- =============================================================================================================
 -- EVENT - Main event entity
 -- =============================================================================================================
-CREATE TABLE events.Event (
+CREATE TABLE event.Event (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventCode               NVARCHAR(50)    NOT NULL UNIQUE,
     EventTitle              NVARCHAR(300)   NOT NULL,
@@ -155,7 +155,7 @@ CREATE TABLE events.Event (
 
     CONSTRAINT FK_Event_Category
         FOREIGN KEY (CategoryId)
-        REFERENCES events.EventCategory(Id),
+        REFERENCES event.EventCategory(Id),
 
     CONSTRAINT FK_Event_CategoryStatus
         FOREIGN KEY (CategoryStatus, CategoryStatusGroup)
@@ -179,7 +179,7 @@ GO
 -- =============================================================================================================
 -- EVENT BANNER - Event images and attachments
 -- =============================================================================================================
-CREATE TABLE events.EventBanner (
+CREATE TABLE event.EventBanner (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     FileName            NVARCHAR(255)   NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE events.EventBanner (
 
     CONSTRAINT FK_EventBanner_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventBanner_UploadedBy
         FOREIGN KEY (UploadedById)
@@ -206,7 +206,7 @@ GO
 -- =============================================================================================================
 -- EVENT ATTACHMENT - Additional event documents
 -- =============================================================================================================
-CREATE TABLE events.EventAttachment (
+CREATE TABLE event.EventAttachment (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     FileName            NVARCHAR(255)   NOT NULL,
@@ -219,7 +219,7 @@ CREATE TABLE events.EventAttachment (
 
     CONSTRAINT FK_EventAttachment_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventAttachment_UploadedBy
         FOREIGN KEY (UploadedById)
@@ -231,7 +231,7 @@ GO
 -- =============================================================================================================
 -- EVENT DEPARTMENT - Departments invited to event
 -- =============================================================================================================
-CREATE TABLE events.EventDepartment (
+CREATE TABLE event.EventDepartment (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     DepartmentId        BIGINT          NOT NULL,
@@ -240,7 +240,7 @@ CREATE TABLE events.EventDepartment (
 
     CONSTRAINT FK_EventDepartment_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventDepartment_Department
         FOREIGN KEY (DepartmentId)
@@ -254,7 +254,7 @@ GO
 -- =============================================================================================================
 -- EVENT INVITEE - Specific employees invited to event
 -- =============================================================================================================
-CREATE TABLE events.EventInvitee (
+CREATE TABLE event.EventInvitee (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -263,7 +263,7 @@ CREATE TABLE events.EventInvitee (
 
     CONSTRAINT FK_EventInvitee_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventInvitee_Employee
         FOREIGN KEY (EmployeeId)
@@ -277,7 +277,7 @@ GO
 -- =============================================================================================================
 -- EVENT RSVP - Employee response to event invitation
 -- =============================================================================================================
-CREATE TABLE events.EventRSVP (
+CREATE TABLE event.EventRSVP (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -290,7 +290,7 @@ CREATE TABLE events.EventRSVP (
 
     CONSTRAINT FK_EventRSVP_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventRSVP_Employee
         FOREIGN KEY (EmployeeId)
@@ -308,7 +308,7 @@ GO
 -- =============================================================================================================
 -- EVENT WAITLIST - Employees waiting for event capacity
 -- =============================================================================================================
-CREATE TABLE events.EventWaitlist (
+CREATE TABLE event.EventWaitlist (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -322,7 +322,7 @@ CREATE TABLE events.EventWaitlist (
 
     CONSTRAINT FK_EventWaitlist_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventWaitlist_Employee
         FOREIGN KEY (EmployeeId)
@@ -336,7 +336,7 @@ GO
 -- =============================================================================================================
 -- EVENT ATTENDANCE - QR code based attendance tracking
 -- =============================================================================================================
-CREATE TABLE events.EventAttendance (
+CREATE TABLE event.EventAttendance (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -353,7 +353,7 @@ CREATE TABLE events.EventAttendance (
 
     CONSTRAINT FK_EventAttendance_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventAttendance_Employee
         FOREIGN KEY (EmployeeId)
@@ -371,7 +371,7 @@ GO
 -- =============================================================================================================
 -- EVENT NOTIFICATION - Notification history for events
 -- =============================================================================================================
-CREATE TABLE events.EventNotification (
+CREATE TABLE event.EventNotification (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     NotificationType    NVARCHAR(50)   NOT NULL,
@@ -390,7 +390,7 @@ CREATE TABLE events.EventNotification (
 
     CONSTRAINT FK_EventNotification_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventNotification_Recipient
         FOREIGN KEY (RecipientId)
@@ -410,7 +410,7 @@ GO
 -- =============================================================================================================
 -- EVENT FEEDBACK QUESTION - Questions for event feedback
 -- =============================================================================================================
-CREATE TABLE events.EventFeedbackQuestion (
+CREATE TABLE event.EventFeedbackQuestion (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     QuestionText        NVARCHAR(500)  NOT NULL,
@@ -422,7 +422,7 @@ CREATE TABLE events.EventFeedbackQuestion (
 
     CONSTRAINT FK_EventFeedbackQuestion_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id)
+        REFERENCES event.Event(Id)
 );
 GO
 
@@ -430,7 +430,7 @@ GO
 -- =============================================================================================================
 -- EVENT FEEDBACK - Employee feedback for an event
 -- =============================================================================================================
-CREATE TABLE events.EventFeedback (
+CREATE TABLE event.EventFeedback (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EventId             BIGINT          NOT NULL,
     EmployeeId          BIGINT          NOT NULL,
@@ -441,7 +441,7 @@ CREATE TABLE events.EventFeedback (
 
     CONSTRAINT FK_EventFeedback_Event
         FOREIGN KEY (EventId)
-        REFERENCES events.Event(Id),
+        REFERENCES event.Event(Id),
 
     CONSTRAINT FK_EventFeedback_Employee
         FOREIGN KEY (EmployeeId)
@@ -455,7 +455,7 @@ GO
 -- =============================================================================================================
 -- EVENT FEEDBACK ANSWER - Individual answers to feedback questions
 -- =============================================================================================================
-CREATE TABLE events.EventFeedbackAnswer (
+CREATE TABLE event.EventFeedbackAnswer (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     FeedbackId          BIGINT          NOT NULL,
     QuestionId          BIGINT          NOT NULL,
@@ -465,11 +465,11 @@ CREATE TABLE events.EventFeedbackAnswer (
 
     CONSTRAINT FK_EventFeedbackAnswer_Feedback
         FOREIGN KEY (FeedbackId)
-        REFERENCES events.EventFeedback(Id),
+        REFERENCES event.EventFeedback(Id),
 
     CONSTRAINT FK_EventFeedbackAnswer_Question
         FOREIGN KEY (QuestionId)
-        REFERENCES events.EventFeedbackQuestion(Id)
+        REFERENCES event.EventFeedbackQuestion(Id)
 );
 GO
 
@@ -479,55 +479,55 @@ GO
 -- =============================================================================================================
 
 -- Event indexes
-CREATE INDEX IX_Event_Category ON events.Event(CategoryId);
-CREATE INDEX IX_Event_Organizer ON events.Event(OrganizerId);
-CREATE INDEX IX_Event_Status ON events.Event(StatusCode);
-CREATE INDEX IX_Event_Date ON events.Event(EventDate);
-CREATE INDEX IX_Event_OfficeLocation ON events.Event(OfficeLocationId);
+CREATE INDEX IX_Event_Category ON event.Event(CategoryId);
+CREATE INDEX IX_Event_Organizer ON event.Event(OrganizerId);
+CREATE INDEX IX_Event_Status ON event.Event(StatusCode);
+CREATE INDEX IX_Event_Date ON event.Event(EventDate);
+CREATE INDEX IX_Event_OfficeLocation ON event.Event(OfficeLocationId);
 
 -- EventBanner indexes
-CREATE INDEX IX_EventBanner_Event ON events.EventBanner(EventId);
+CREATE INDEX IX_EventBanner_Event ON event.EventBanner(EventId);
 
 -- EventAttachment indexes
-CREATE INDEX IX_EventAttachment_Event ON events.EventAttachment(EventId);
+CREATE INDEX IX_EventAttachment_Event ON event.EventAttachment(EventId);
 
 -- EventDepartment indexes
-CREATE INDEX IX_EventDepartment_Event ON events.EventDepartment(EventId);
-CREATE INDEX IX_EventDepartment_Department ON events.EventDepartment(DepartmentId);
+CREATE INDEX IX_EventDepartment_Event ON event.EventDepartment(EventId);
+CREATE INDEX IX_EventDepartment_Department ON event.EventDepartment(DepartmentId);
 
 -- EventInvitee indexes
-CREATE INDEX IX_EventInvitee_Event ON events.EventInvitee(EventId);
-CREATE INDEX IX_EventInvitee_Employee ON events.EventInvitee(EmployeeId);
+CREATE INDEX IX_EventInvitee_Event ON event.EventInvitee(EventId);
+CREATE INDEX IX_EventInvitee_Employee ON event.EventInvitee(EmployeeId);
 
 -- EventRSVP indexes
-CREATE INDEX IX_EventRSVP_Event ON events.EventRSVP(EventId);
-CREATE INDEX IX_EventRSVP_Employee ON events.EventRSVP(EmployeeId);
-CREATE INDEX IX_EventRSVP_Status ON events.EventRSVP(ResponseStatus);
+CREATE INDEX IX_EventRSVP_Event ON event.EventRSVP(EventId);
+CREATE INDEX IX_EventRSVP_Employee ON event.EventRSVP(EmployeeId);
+CREATE INDEX IX_EventRSVP_Status ON event.EventRSVP(ResponseStatus);
 
 -- EventWaitlist indexes
-CREATE INDEX IX_EventWaitlist_Event ON events.EventWaitlist(EventId);
-CREATE INDEX IX_EventWaitlist_Employee ON events.EventWaitlist(EmployeeId);
+CREATE INDEX IX_EventWaitlist_Event ON event.EventWaitlist(EventId);
+CREATE INDEX IX_EventWaitlist_Employee ON event.EventWaitlist(EmployeeId);
 
 -- EventAttendance indexes
-CREATE INDEX IX_EventAttendance_Event ON events.EventAttendance(EventId);
-CREATE INDEX IX_EventAttendance_Employee ON events.EventAttendance(EmployeeId);
-CREATE INDEX IX_EventAttendance_Status ON events.EventAttendance(AttendanceStatus);
+CREATE INDEX IX_EventAttendance_Event ON event.EventAttendance(EventId);
+CREATE INDEX IX_EventAttendance_Employee ON event.EventAttendance(EmployeeId);
+CREATE INDEX IX_EventAttendance_Status ON event.EventAttendance(AttendanceStatus);
 
 -- EventNotification indexes
-CREATE INDEX IX_EventNotification_Event ON events.EventNotification(EventId);
-CREATE INDEX IX_EventNotification_Recipient ON events.EventNotification(RecipientId);
-CREATE INDEX IX_EventNotification_Status ON events.EventNotification(StatusCode);
+CREATE INDEX IX_EventNotification_Event ON event.EventNotification(EventId);
+CREATE INDEX IX_EventNotification_Recipient ON event.EventNotification(RecipientId);
+CREATE INDEX IX_EventNotification_Status ON event.EventNotification(StatusCode);
 
 -- EventFeedbackQuestion indexes
-CREATE INDEX IX_EventFeedbackQuestion_Event ON events.EventFeedbackQuestion(EventId);
+CREATE INDEX IX_EventFeedbackQuestion_Event ON event.EventFeedbackQuestion(EventId);
 
 -- EventFeedback indexes
-CREATE INDEX IX_EventFeedback_Event ON events.EventFeedback(EventId);
-CREATE INDEX IX_EventFeedback_Employee ON events.EventFeedback(EmployeeId);
+CREATE INDEX IX_EventFeedback_Event ON event.EventFeedback(EventId);
+CREATE INDEX IX_EventFeedback_Employee ON event.EventFeedback(EmployeeId);
 
 -- EventFeedbackAnswer indexes
-CREATE INDEX IX_EventFeedbackAnswer_Feedback ON events.EventFeedbackAnswer(FeedbackId);
-CREATE INDEX IX_EventFeedbackAnswer_Question ON events.EventFeedbackAnswer(QuestionId);
+CREATE INDEX IX_EventFeedbackAnswer_Feedback ON event.EventFeedbackAnswer(FeedbackId);
+CREATE INDEX IX_EventFeedbackAnswer_Question ON event.EventFeedbackAnswer(QuestionId);
 GO
 
 
@@ -575,7 +575,7 @@ GO
 -- =============================================================================================================
 -- CELEBRATION SCHEDULE - Daily schedule for birthdays and anniversaries
 -- =============================================================================================================
-CREATE TABLE events.CelebrationSchedule (
+CREATE TABLE event.CelebrationSchedule (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              BIGINT          NOT NULL,
     CelebrationType         NVARCHAR(50)   NOT NULL,
@@ -602,7 +602,7 @@ GO
 -- =============================================================================================================
 -- GREETING CARD - Generated greeting cards for celebrations
 -- =============================================================================================================
-CREATE TABLE events.GreetingCard (
+CREATE TABLE event.GreetingCard (
     Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
     CelebrationScheduleId   BIGINT          NOT NULL,
     EmployeeId              BIGINT          NOT NULL,
@@ -623,7 +623,7 @@ CREATE TABLE events.GreetingCard (
 
     CONSTRAINT FK_GreetingCard_Schedule
         FOREIGN KEY (CelebrationScheduleId)
-        REFERENCES events.CelebrationSchedule(Id),
+        REFERENCES event.CelebrationSchedule(Id),
 
     CONSTRAINT FK_GreetingCard_Employee
         FOREIGN KEY (EmployeeId)
@@ -637,7 +637,7 @@ CREATE TABLE events.GreetingCard (
         FOREIGN KEY (StatusCode, StatusCodeGroup)
         REFERENCES shared.StatusLookup(StatusCode, StatusGroup),
 
-    CONSTRAINT UQ_GreetingCard UNIQUE (ScheduleId, EmployeeId)
+    CONSTRAINT UQ_GreetingCard UNIQUE (CelebrationScheduleId, EmployeeId)
 );
 GO
 
@@ -645,7 +645,7 @@ GO
 -- =============================================================================================================
 -- GREETING CARD NOTIFICATION - Track notifications sent for greetings
 -- =============================================================================================================
-CREATE TABLE events.GreetingNotification (
+CREATE TABLE event.GreetingNotification (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     GreetingCardId      BIGINT          NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
@@ -663,7 +663,7 @@ CREATE TABLE events.GreetingNotification (
 
     CONSTRAINT FK_GreetingNotification_GreetingCard
         FOREIGN KEY (GreetingCardId)
-        REFERENCES events.GreetingCard(Id),
+        REFERENCES event.GreetingCard(Id),
 
     CONSTRAINT FK_GreetingNotification_Recipient
         FOREIGN KEY (RecipientId)
@@ -683,7 +683,7 @@ GO
 -- =============================================================================================================
 -- CELEBRATION WISH - Employee wishes on greeting cards
 -- =============================================================================================================
-CREATE TABLE events.CelebrationWish (
+CREATE TABLE event.CelebrationWish (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     GreetingCardId      BIGINT          NOT NULL,
     WisherId            BIGINT          NOT NULL,
@@ -698,7 +698,7 @@ CREATE TABLE events.CelebrationWish (
 
     CONSTRAINT FK_CelebrationWish_GreetingCard
         FOREIGN KEY (GreetingCardId)
-        REFERENCES events.GreetingCard(Id),
+        REFERENCES event.GreetingCard(Id),
 
     CONSTRAINT FK_CelebrationWish_Wisher
         FOREIGN KEY (WisherId)
@@ -710,7 +710,7 @@ GO
 -- =============================================================================================================
 -- CELEBRATION REACTION - Reactions to celebration wishes
 -- =============================================================================================================
-CREATE TABLE events.CelebrationReaction (
+CREATE TABLE event.CelebrationReaction (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     WishId              BIGINT          NOT NULL,
     ReactorId           BIGINT          NOT NULL,
@@ -720,7 +720,7 @@ CREATE TABLE events.CelebrationReaction (
 
     CONSTRAINT FK_CelebrationReaction_Wish
         FOREIGN KEY (WishId)
-        REFERENCES events.CelebrationWish(Id),
+        REFERENCES event.CelebrationWish(Id),
 
     CONSTRAINT FK_CelebrationReaction_Reactor
         FOREIGN KEY (ReactorId)
@@ -738,7 +738,7 @@ GO
 -- =============================================================================================================
 -- CELEBRATION COMMENT - Comments on celebration wishes
 -- =============================================================================================================
-CREATE TABLE events.CelebrationComment (
+CREATE TABLE event.CelebrationComment (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     WishId              BIGINT          NOT NULL,
     CommenterId         BIGINT          NOT NULL,
@@ -752,7 +752,7 @@ CREATE TABLE events.CelebrationComment (
 
     CONSTRAINT FK_CelebrationComment_Wish
         FOREIGN KEY (WishId)
-        REFERENCES events.CelebrationWish(Id),
+        REFERENCES event.CelebrationWish(Id),
 
     CONSTRAINT FK_CelebrationComment_Commenter
         FOREIGN KEY (CommenterId)
@@ -760,7 +760,7 @@ CREATE TABLE events.CelebrationComment (
 
     CONSTRAINT FK_CelebrationComment_Parent
         FOREIGN KEY (ParentCommentId)
-        REFERENCES events.CelebrationComment(Id)
+        REFERENCES event.CelebrationComment(Id)
 );
 GO
 
@@ -768,7 +768,7 @@ GO
 -- =============================================================================================================
 -- BIRTHDAY WALL POST - Featured birthday/anniversary posts on dashboard
 -- =============================================================================================================
-CREATE TABLE events.BirthdayWallPost (
+CREATE TABLE event.BirthdayWallPost (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     GreetingCardId      BIGINT          NOT NULL,
     PostedById          BIGINT          NOT NULL,
@@ -782,7 +782,7 @@ CREATE TABLE events.BirthdayWallPost (
 
     CONSTRAINT FK_BirthdayWallPost_GreetingCard
         FOREIGN KEY (GreetingCardId)
-        REFERENCES events.GreetingCard(Id),
+        REFERENCES event.GreetingCard(Id),
 
     CONSTRAINT FK_BirthdayWallPost_PostedBy
         FOREIGN KEY (PostedById)
@@ -794,7 +794,7 @@ GO
 -- =============================================================================================================
 -- MILESTONE BADGE - Awarded for work anniversary milestones
 -- =============================================================================================================
-CREATE TABLE events.MilestoneBadge (
+CREATE TABLE event.MilestoneBadge (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     BadgeCode           NVARCHAR(50)    NOT NULL UNIQUE,
     BadgeName           NVARCHAR(100)   NOT NULL,
@@ -811,7 +811,7 @@ GO
 -- =============================================================================================================
 -- EMPLOYEE BADGE - Badges earned by employees for milestones
 -- =============================================================================================================
-CREATE TABLE events.EmployeeBadge (
+CREATE TABLE event.EmployeeBadge (
     Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId          BIGINT          NOT NULL,
     BadgeId             BIGINT          NOT NULL,
@@ -825,11 +825,11 @@ CREATE TABLE events.EmployeeBadge (
 
     CONSTRAINT FK_EmployeeBadge_Badge
         FOREIGN KEY (BadgeId)
-        REFERENCES events.MilestoneBadge(Id),
+        REFERENCES event.MilestoneBadge(Id),
 
     CONSTRAINT FK_EmployeeBadge_GreetingCard
         FOREIGN KEY (GreetingCardId)
-        REFERENCES events.GreetingCard(Id),
+        REFERENCES event.GreetingCard(Id),
 
     CONSTRAINT UQ_EmployeeBadge UNIQUE (EmployeeId, BadgeId)
 );
@@ -841,49 +841,49 @@ GO
 -- =============================================================================================================
 
 -- CelebrationSchedule indexes
-CREATE INDEX IX_CelebrationSchedule_Employee ON events.CelebrationSchedule(EmployeeId);
-CREATE INDEX IX_CelebrationSchedule_Type ON events.CelebrationSchedule(CelebrationType);
-CREATE INDEX IX_CelebrationSchedule_Date ON events.CelebrationSchedule(CelebrationDate);
+CREATE INDEX IX_CelebrationSchedule_Employee ON event.CelebrationSchedule(EmployeeId);
+CREATE INDEX IX_CelebrationSchedule_Type ON event.CelebrationSchedule(CelebrationType);
+CREATE INDEX IX_CelebrationSchedule_Date ON event.CelebrationSchedule(CelebrationDate);
 
 -- GreetingCard indexes
-CREATE INDEX IX_GreetingCard_Schedule ON events.GreetingCard(ScheduleId);
-CREATE INDEX IX_GreetingCard_Employee ON events.GreetingCard(EmployeeId);
-CREATE INDEX IX_GreetingCard_Status ON events.GreetingCard(StatusCode);
+CREATE INDEX IX_GreetingCard_Schedule ON event.GreetingCard(CelebrationScheduleId);
+CREATE INDEX IX_GreetingCard_Employee ON event.GreetingCard(EmployeeId);
+CREATE INDEX IX_GreetingCard_Status ON event.GreetingCard(StatusCode);
 
 -- GreetingNotification indexes
-CREATE INDEX IX_GreetingNotification_GreetingCard ON events.GreetingNotification(GreetingCardId);
-CREATE INDEX IX_GreetingNotification_Recipient ON events.GreetingNotification(RecipientId);
+CREATE INDEX IX_GreetingNotification_GreetingCard ON event.GreetingNotification(GreetingCardId);
+CREATE INDEX IX_GreetingNotification_Recipient ON event.GreetingNotification(RecipientId);
 
 -- CelebrationWish indexes
-CREATE INDEX IX_CelebrationWish_GreetingCard ON events.CelebrationWish(GreetingCardId);
-CREATE INDEX IX_CelebrationWish_Wisher ON events.CelebrationWish(WisherId);
-CREATE INDEX IX_CelebrationWish_Created ON events.CelebrationWish(CreatedAt);
+CREATE INDEX IX_CelebrationWish_GreetingCard ON event.CelebrationWish(GreetingCardId);
+CREATE INDEX IX_CelebrationWish_Wisher ON event.CelebrationWish(WisherId);
+CREATE INDEX IX_CelebrationWish_Created ON event.CelebrationWish(CreatedAt);
 
 -- CelebrationReaction indexes
-CREATE INDEX IX_CelebrationReaction_Wish ON events.CelebrationReaction(WishId);
-CREATE INDEX IX_CelebrationReaction_Reactor ON events.CelebrationReaction(ReactorId);
+CREATE INDEX IX_CelebrationReaction_Wish ON event.CelebrationReaction(WishId);
+CREATE INDEX IX_CelebrationReaction_Reactor ON event.CelebrationReaction(ReactorId);
 
 -- CelebrationComment indexes
-CREATE INDEX IX_CelebrationComment_Wish ON events.CelebrationComment(WishId);
-CREATE INDEX IX_CelebrationComment_Commenter ON events.CelebrationComment(CommenterId);
-CREATE INDEX IX_CelebrationComment_Parent ON events.CelebrationComment(ParentCommentId);
+CREATE INDEX IX_CelebrationComment_Wish ON event.CelebrationComment(WishId);
+CREATE INDEX IX_CelebrationComment_Commenter ON event.CelebrationComment(CommenterId);
+CREATE INDEX IX_CelebrationComment_Parent ON event.CelebrationComment(ParentCommentId);
 
 -- BirthdayWallPost indexes
-CREATE INDEX IX_BirthdayWallPost_GreetingCard ON events.BirthdayWallPost(GreetingCardId);
-CREATE INDEX IX_BirthdayWallPost_Featured ON events.BirthdayWallPost(IsFeatured, DisplayStartDate, DisplayEndDate);
+CREATE INDEX IX_BirthdayWallPost_GreetingCard ON event.BirthdayWallPost(GreetingCardId);
+CREATE INDEX IX_BirthdayWallPost_Featured ON event.BirthdayWallPost(IsFeatured, DisplayStartDate, DisplayEndDate);
 
 -- EmployeeBadge indexes
-CREATE INDEX IX_EmployeeBadge_Employee ON events.EmployeeBadge(EmployeeId);
-CREATE INDEX IX_EmployeeBadge_Badge ON events.EmployeeBadge(BadgeId);
+CREATE INDEX IX_EmployeeBadge_Employee ON event.EmployeeBadge(EmployeeId);
+CREATE INDEX IX_EmployeeBadge_Badge ON event.EmployeeBadge(BadgeId);
 GO
 
 
 -- =============================================================================================================
 -- SEED DEFAULT MILESTONE BADGES
 -- =============================================================================================================
-IF NOT EXISTS (SELECT 1 FROM events.MilestoneBadge WHERE BadgeCode = 'ONE_YEAR')
+IF NOT EXISTS (SELECT 1 FROM event.MilestoneBadge WHERE BadgeCode = 'ONE_YEAR')
 BEGIN
-    INSERT INTO events.MilestoneBadge (BadgeCode, BadgeName, Description, YearsRequired, IconUrl, BadgeColor)
+    INSERT INTO event.MilestoneBadge (BadgeCode, BadgeName, Description, YearsRequired, IconUrl, BadgeColor)
     VALUES
     ('ONE_YEAR', 'First Year', 'Completed 1 year at company', 1, NULL, '#CD7F32'),
     ('THREE_YEARS', 'Three Year Club', 'Completed 3 years at company', 3, NULL, '#C0C0C0'),
