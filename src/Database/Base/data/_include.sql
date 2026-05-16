@@ -10,6 +10,7 @@ PRINT 'Starting Base Schema Seed Data deployment...';
 :r .\payroll\seed-data.sql
 :r .\helpdesk\seed-data.sql
 :r .\auth\seed-data.sql
+:r .\expense\seed-data.sql
 
 PRINT 'Base Schema Seed Data deployment completed successfully';
 GO

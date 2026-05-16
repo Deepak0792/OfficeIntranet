@@ -511,5 +511,176 @@ INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, Di
 ('DECLINED',         'DELEGATED_ACCESS_STATUS', 'Declined',       'Declined by the delegatee',                  5, 1);
 
 
+
+
+-- STATUS SEEDS
+-- EXPENSE CLAIM STATUS
+-- Flow: DRAFT → SUBMITTED → MANAGER_APPROVED → FINANCE_APPROVED → PAID → CLOSED
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'DRAFT' AND StatusGroup = 'EXPENSE_CLAIM_STATUS')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('DRAFT',            'EXPENSE_CLAIM_STATUS', 'Draft',            'Employee is building the claim. Not yet submitted.',              1, 0),
+    ('SUBMITTED',        'EXPENSE_CLAIM_STATUS', 'Submitted',        'Submitted to workflow. Pending manager review.',                  2, 0),
+    ('MANAGER_APPROVED', 'EXPENSE_CLAIM_STATUS', 'Manager Approved', 'Approved by direct manager. Pending finance review.',            3, 0),
+    ('FINANCE_APPROVED', 'EXPENSE_CLAIM_STATUS', 'Finance Approved', 'Approved by finance team. Eligible for reimbursement.',          4, 0),
+    ('REJECTED',         'EXPENSE_CLAIM_STATUS', 'Rejected',         'Rejected by approver. Employee can edit and resubmit.',          5, 1),
+    ('PAID',             'EXPENSE_CLAIM_STATUS', 'Paid',             'Reimbursement disbursed to employee bank account.',              6, 1),
+    ('CLOSED',           'EXPENSE_CLAIM_STATUS', 'Closed',           'Claim finalized. No further actions possible.',                  7, 1);
+END
+GO
+
+-- TRAVEL REQUEST STATUS
+-- Flow: DRAFT → SUBMITTED → APPROVED → COMPLETED
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'DRAFT' AND StatusGroup = 'TRAVEL_REQUEST_STATUS')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('DRAFT',     'TRAVEL_REQUEST_STATUS', 'Draft',     'Employee planning trip details.',                         1, 0),
+    ('SUBMITTED', 'TRAVEL_REQUEST_STATUS', 'Submitted', 'Submitted for approval.',                                 2, 0),
+    ('APPROVED',  'TRAVEL_REQUEST_STATUS', 'Approved',  'Approved. Employee can proceed with booking.',            3, 0),
+    ('REJECTED',  'TRAVEL_REQUEST_STATUS', 'Rejected',  'Denied. Can be edited and resubmitted.',                 4, 1),
+    ('COMPLETED', 'TRAVEL_REQUEST_STATUS', 'Completed', 'Travel completed. Expense claims can now be filed.',      5, 1),
+    ('CANCELLED', 'TRAVEL_REQUEST_STATUS', 'Cancelled', 'Cancelled by employee before travel.',                    6, 1);
+END
+GO
+
+-- ADVANCE REQUEST STATUS
+-- Flow: DRAFT → SUBMITTED → APPROVED → PAID → ADJUSTED
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'DRAFT' AND StatusGroup = 'ADVANCE_REQUEST_STATUS')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('DRAFT',     'ADVANCE_REQUEST_STATUS', 'Draft',     'Draft being prepared by employee.',            1, 0),
+    ('SUBMITTED', 'ADVANCE_REQUEST_STATUS', 'Submitted', 'Submitted for manager approval.',              2, 0),
+    ('APPROVED',  'ADVANCE_REQUEST_STATUS', 'Approved',  'Approved. Ready for disbursement.',            3, 0),
+    ('REJECTED',  'ADVANCE_REQUEST_STATUS', 'Rejected',  'Denied by approver.',                         4, 1),
+    ('PAID',      'ADVANCE_REQUEST_STATUS', 'Paid',      'Amount disbursed to employee account.',       5, 0),
+    ('ADJUSTED',  'ADVANCE_REQUEST_STATUS', 'Adjusted',  'Settled against a submitted expense claim.',  6, 1),
+    ('CANCELLED', 'ADVANCE_REQUEST_STATUS', 'Cancelled', 'Cancelled by employee before payment.',       7, 1);
+END
+GO
+
+-- ASSET REIMBURSEMENT STATUS
+-- Flow: DRAFT → SUBMITTED → IT_VALIDATED → MANAGER_APPROVED → FINANCE_APPROVED → PAID
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'DRAFT' AND StatusGroup = 'ASSET_REIMBURSEMENT_STATUS')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('DRAFT',            'ASSET_REIMBURSEMENT_STATUS', 'Draft',            'Request being prepared.',                                   1, 0),
+    ('SUBMITTED',        'ASSET_REIMBURSEMENT_STATUS', 'Submitted',        'Submitted. Awaiting IT validation.',                        2, 0),
+    ('IT_VALIDATED',     'ASSET_REIMBURSEMENT_STATUS', 'IT Validated',     'IT confirmed eligibility. Pending manager approval.',       3, 0),
+    ('MANAGER_APPROVED', 'ASSET_REIMBURSEMENT_STATUS', 'Manager Approved', 'Manager approved. Pending finance review.',                 4, 0),
+    ('FINANCE_APPROVED', 'ASSET_REIMBURSEMENT_STATUS', 'Finance Approved', 'Finance approved. Ready for payment.',                     5, 0),
+    ('REJECTED',         'ASSET_REIMBURSEMENT_STATUS', 'Rejected',         'Rejected at any stage.',                                   6, 1),
+    ('PAID',             'ASSET_REIMBURSEMENT_STATUS', 'Paid',             'Reimbursement transferred to employee.',                   7, 1);
+END
+GO
+
+-- POLICY VALIDATION STATUS
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'PENDING' AND StatusGroup = 'POLICY_VALIDATION_STATUS')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('PENDING', 'POLICY_VALIDATION_STATUS', 'Pending', 'Validation not yet run. Triggered on submission.',           1, 0),
+    ('PASS',    'POLICY_VALIDATION_STATUS', 'Pass',    'Complies with all policy rules.',                            2, 0),
+    ('FAIL',    'POLICY_VALIDATION_STATUS', 'Fail',    'Violates policy. Requires approver override or claim edit.', 3, 1);
+END
+GO
+
+-- REIMBURSEMENT PAYMENT STATUS (finance-side)
+-- Flow: PENDING → PROCESSING → PAID
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'PENDING' AND StatusGroup = 'REIMBURSEMENT_STATUS')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('PENDING',    'REIMBURSEMENT_STATUS', 'Pending',    'Awaiting payment processing.',                            1, 0),
+    ('PROCESSING', 'REIMBURSEMENT_STATUS', 'Processing', 'Payment being processed through bank/finance system.',   2, 0),
+    ('PAID',       'REIMBURSEMENT_STATUS', 'Paid',       'Successfully disbursed to employee bank account.',       3, 1),
+    ('FAILED',     'REIMBURSEMENT_STATUS', 'Failed',     'Payment failed. Can be retried or manually processed.',  4, 1),
+    ('CANCELLED',  'REIMBURSEMENT_STATUS', 'Cancelled',  'Cancelled by finance. Claim may need reprocessing.',     5, 1);
+END
+GO
+
+-- EXPENSE APPROVAL REFERENCE TYPES
+-- Tells ExpenseApproval which entity table ReferenceId points to.
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'EXPENSE_CLAIM' AND StatusGroup = 'EXPENSE_APPROVAL_REFERENCE')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('EXPENSE_CLAIM',       'EXPENSE_APPROVAL_REFERENCE', 'Expense Claim',       'References expense.ExpenseClaim.',         1, 0),
+    ('TRAVEL_REQUEST',      'EXPENSE_APPROVAL_REFERENCE', 'Travel Request',      'References expense.TravelRequest.',        2, 0),
+    ('ASSET_REIMBURSEMENT', 'EXPENSE_APPROVAL_REFERENCE', 'Asset Reimbursement', 'References expense.AssetReimbursement.',   3, 0),
+    ('ADVANCE_REQUEST',     'EXPENSE_APPROVAL_REFERENCE', 'Advance Request',     'References expense.ExpenseAdvance.',       4, 0);
+END
+GO
+
+-- EXPENSE POLICY GROUPS
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'TRAVEL' AND StatusGroup = 'EXPENSE_POLICY_GROUP')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('TRAVEL',  'EXPENSE_POLICY_GROUP', 'Travel',  'Travel expenses: flights, trains, cabs, fuel.',       1, 0),
+    ('ASSET',   'EXPENSE_POLICY_GROUP', 'Asset',   'Asset purchases: laptops, monitors, peripherals.',    2, 0),
+    ('WFH',     'EXPENSE_POLICY_GROUP', 'WFH',     'Work from home: internet, phone, electricity.',       3, 0),
+    ('MEDICAL', 'EXPENSE_POLICY_GROUP', 'Medical', 'Medical reimbursement limits.',                       4, 0),
+    ('ADVANCE', 'EXPENSE_POLICY_GROUP', 'Advance', 'Advance request limits and recovery rules.',          5, 0),
+    ('GENERAL', 'EXPENSE_POLICY_GROUP', 'General', 'General office and miscellaneous expenses.',          6, 0);
+END
+GO
+
+-- REIMBURSEMENT TYPES
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'CLAIM' AND StatusGroup = 'REIMBURSEMENT_TYPE')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('CLAIM',   'REIMBURSEMENT_TYPE', 'Claim',   'Reimbursement for an approved expense claim.',      1, 0),
+    ('ADVANCE', 'REIMBURSEMENT_TYPE', 'Advance', 'Settlement of an advance against a filed claim.',   2, 0),
+    ('ASSET',   'REIMBURSEMENT_TYPE', 'Asset',   'Reimbursement for an approved asset purchase.',     3, 0);
+END
+GO
+
+-- AUDIT EVENT TYPES
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'CLAIM_CREATED' AND StatusGroup = 'AUDIT_EVENT_TYPE')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('CLAIM_CREATED',     'AUDIT_EVENT_TYPE', 'Claim Created',     'New expense claim created by employee.',           1, 0),
+    ('CLAIM_SUBMITTED',   'AUDIT_EVENT_TYPE', 'Claim Submitted',   'Claim submitted to approval workflow.',            2, 0),
+    ('CLAIM_APPROVED',    'AUDIT_EVENT_TYPE', 'Claim Approved',    'Claim approved at a workflow stage.',              3, 0),
+    ('CLAIM_REJECTED',    'AUDIT_EVENT_TYPE', 'Claim Rejected',    'Claim rejected by an approver.',                  4, 0),
+    ('PAYMENT_PROCESSED', 'AUDIT_EVENT_TYPE', 'Payment Processed', 'Reimbursement payment initiated or completed.',    5, 0),
+    ('POLICY_VALIDATED',  'AUDIT_EVENT_TYPE', 'Policy Validated',  'Automated policy validation executed on claim.',   6, 0);
+END
+GO
+
+-- ASSET TYPES
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'LAPTOP' AND StatusGroup = 'ASSET_TYPE')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('LAPTOP',     'ASSET_TYPE', 'Laptop',       'Personal laptop (requires IT validation).',       1, 0),
+    ('MONITOR',    'ASSET_TYPE', 'Monitor',      'External monitor for home office.',                2, 0),
+    ('KEYBOARD',   'ASSET_TYPE', 'Keyboard',     'Keyboard and input devices.',                     3, 0),
+    ('MOUSE',      'ASSET_TYPE', 'Mouse',        'Mouse and pointing devices.',                      4, 0),
+    ('HEADPHONES', 'ASSET_TYPE', 'Headphones',   'Headphones for calls and meetings.',              5, 0),
+    ('CHAIR',      'ASSET_TYPE', 'Office Chair', 'Ergonomic office chair for WFH.',                 6, 0);
+END
+GO
+
+-- TRAVEL TYPES  (primary transport mode only — HOTEL and MEAL excluded;
+-- accommodation and meals are ExpenseClaimItem subcategories, not transport modes)
+IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'FLIGHT' AND StatusGroup = 'TRAVEL_TYPE')
+BEGIN
+    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
+    VALUES
+    ('FLIGHT', 'TRAVEL_TYPE', 'Flight', 'Domestic or international air travel.',               1, 0),
+    ('TRAIN',  'TRAVEL_TYPE', 'Train',  'Train travel (class per policy).',                    2, 0),
+    ('CAB',    'TRAVEL_TYPE', 'Cab',    'Taxi, cab, or ride-share.',                          3, 0),
+    ('FUEL',   'TRAVEL_TYPE', 'Fuel',   'Personal vehicle — fuel or mileage reimbursement.', 4, 0);
+END
+GO
+
+
 PRINT 'Shared schema StatusLookup seed data inserted successfully.';
 GO

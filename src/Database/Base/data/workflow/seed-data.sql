@@ -25,7 +25,12 @@ WHERE NOT EXISTS (
     SELECT 1 FROM workflow.WorkflowModule wm WHERE wm.ModuleCode = v.ModuleCode
 );
 GO
-
+-- SEED LOOKUP VALUES FOR EXPENSE MODULE
+IF NOT EXISTS (SELECT 1 FROM workflow.WorkflowModule WHERE ModuleCode = 'EXPENSE_REIMBURSEMENT')
+BEGIN
+    INSERT INTO workflow.WorkflowModule (ModuleCode, ModuleName, EntityName, IsActive, CreatedAt)
+    VALUES ('EXPENSE_REIMBURSEMENT', 'Expense & Reimbursement', 'ExpenseClaim', 1, GETUTCDATE());
+END
 
 -- SECTION 2: WORKFLOW DEFINITIONS
 
