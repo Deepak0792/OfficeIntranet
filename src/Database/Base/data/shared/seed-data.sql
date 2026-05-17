@@ -405,36 +405,69 @@ VALUES
 ('SOFT_SKILLS', 'TRAINING_CATEGORY', 'Communication and interpersonal skills', 'Communication and interpersonal skills', 1, 0),
 ('DOMAIN',      'TRAINING_CATEGORY', 'Industry and domain-specific knowledge', 'Industry and domain-specific knowledge', 1, 0);
 
--- Workflow Status Groups (seeded for workflow schema)
+
+-- ============================================================
+-- SEED DATA: shared.StatusLookup entries required by workflow
+-- Run after shared.StatusLookup table exists.
+-- Columns: StatusCode, StatusGroup, Label  (per schema definition)
+-- ============================================================
+
+-- WORKFLOW_STEP_TYPE
+-- IsTerminal = 0 for all step types (steps are not terminal states)
 INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
 VALUES
 ('APPROVAL', 'WORKFLOW_STEP_TYPE', 'Approval', 'Approval', 1, 0),
 ('REVIEW', 'WORKFLOW_STEP_TYPE', 'Review', 'Approval', 2, 0),
 ('NOTIFICATION', 'WORKFLOW_STEP_TYPE', 'Notification', 'Notification', 3, 0),
-('AUTO_APPROVAL', 'WORKFLOW_STEP_TYPE', 'Auto Approval', 'Auto Approval', 4, 0),
+('AUTO_APPROVAL', 'WORKFLOW_STEP_TYPE', 'Auto Approval', 'Auto Approval', 4, 0);
 
-('REPORTING_MANAGER', 'WORKFLOW_APPROVER_TYPE', 'Reporting Manager', 'Reporting Manager', 1, 0),
-('DEPARTMENT_HEAD', 'WORKFLOW_APPROVER_TYPE', 'Department Head', 'Department Head', 2, 0),
-('HR_MANAGER', 'WORKFLOW_APPROVER_TYPE', 'HR Manager', 'HR Manager', 3, 0),
-('ROLE', 'WORKFLOW_APPROVER_TYPE', 'Role-Based Approver', 'Role-Based Approver', 4, 0),
-('USER', 'WORKFLOW_APPROVER_TYPE', 'Specific User', 'Specific User', 5, 0),
+-- WORKFLOW_APPROVER_TYPE
+INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTerminal) VALUES
+('EMPLOYEE',            'WORKFLOW_APPROVER_TYPE', 'Fixed Employee',       1, 0),
+('ROLE',                'WORKFLOW_APPROVER_TYPE', 'By Role',              2, 0),
+('DESIGNATION',         'WORKFLOW_APPROVER_TYPE', 'By Designation',       3, 0),
+('REPORTING_MANAGER',   'WORKFLOW_APPROVER_TYPE', 'Reporting Manager',    4, 0),
+('SKIP_MANAGER',        'WORKFLOW_APPROVER_TYPE', 'Skip Level Manager',   5, 0);
 
-('PENDING', 'WORKFLOW_STATUS', 'Pending', 'Pending', 1, 0),
-('IN_PROGRESS', 'WORKFLOW_STATUS', 'In Progress', 'In Progress', 2, 0),
-('APPROVED', 'WORKFLOW_STATUS', 'Approved' , 'Approved', 3, 0),
-('REJECTED', 'WORKFLOW_STATUS', 'Rejected' , 'Rejected', 4, 0),
-('CANCELLED', 'WORKFLOW_STATUS', 'Cancelled', 'Cancelled', 5, 0),
 
-('SUBMIT', 'WORKFLOW_ACTION_TYPE', 'Submit', 'Submit', 1, 0),
-('APPROVE', 'WORKFLOW_ACTION_TYPE', 'Approve', 'Approve', 2, 0),
-('REJECT', 'WORKFLOW_ACTION_TYPE', 'Reject', 'Reject', 3, 0),
-('RETURN', 'WORKFLOW_ACTION_TYPE', 'Return for Correction', 'Return for Correction', 4, 0),
-('ESCALATE', 'WORKFLOW_ACTION_TYPE', 'Escalate', 'Escalate', 5, 0),
-('CANCEL', 'WORKFLOW_ACTION_TYPE', 'Cancel', 'Cancel', 6, 0);
+-- WORKFLOW_STATUS
+-- Terminal states: APPROVED, REJECTED, CANCELLED, WITHDRAWN
+INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTerminal) VALUES
+('DRAFT',       'WORKFLOW_STATUS', 'Draft',            1, 0),
+('PENDING',     'WORKFLOW_STATUS', 'Pending Approval', 2, 0),
+('IN_PROGRESS', 'WORKFLOW_STATUS', 'In Progress',      3, 0),
+('APPROVED',    'WORKFLOW_STATUS', 'Approved',         4, 1),
+('REJECTED',    'WORKFLOW_STATUS', 'Rejected',         5, 1),
+('CANCELLED',   'WORKFLOW_STATUS', 'Cancelled',        6, 1),
+('WITHDRAWN',   'WORKFLOW_STATUS', 'Withdrawn',        7, 1);
 
+-- WORKFLOW_ACTION_TYPE
+INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTerminal) VALUES
+('SUBMIT',   'WORKFLOW_ACTION_TYPE', 'Submitted', 1, 0),
+('APPROVE',  'WORKFLOW_ACTION_TYPE', 'Approved',  2, 0),
+('REJECT',   'WORKFLOW_ACTION_TYPE', 'Rejected',  3, 0),
+('DELEGATE', 'WORKFLOW_ACTION_TYPE', 'Delegated', 4, 0),
+('ESCALATE', 'WORKFLOW_ACTION_TYPE', 'Escalated', 5, 0),
+('CANCEL',   'WORKFLOW_ACTION_TYPE', 'Cancelled', 6, 0),
+('WITHDRAW', 'WORKFLOW_ACTION_TYPE', 'Withdrawn', 7, 0),
+('REASSIGN', 'WORKFLOW_ACTION_TYPE', 'Reassigned',8, 0),
+('RETURN', 'WORKFLOW_ACTION_TYPE', 'Return for Correction', 9, 0);
+
+-- WORKFLOW_TASK_STATUS
+-- Terminal states: COMPLETED, DELEGATED, CANCELLED
+INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, IsTerminal) VALUES
+('PENDING',   'WORKFLOW_TASK_STATUS', 'Pending',   1, 0),
+('COMPLETED', 'WORKFLOW_TASK_STATUS', 'Completed', 2, 1),
+('DELEGATED', 'WORKFLOW_TASK_STATUS', 'Delegated', 3, 1),
+('CANCELLED', 'WORKFLOW_TASK_STATUS', 'Cancelled', 4, 1),
+('ESCALATED', 'WORKFLOW_TASK_STATUS', 'Escalated', 5, 0);
+
+
+-- ============================================================
 -- PRE-REQUISITE  -  Seed shared.StatusLookup with auth-specific codes
 -- Run this block FIRST so that FK constraints on computed columns are satisfied.
 -- Auth Effect
+-- ============================================================
 INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal) VALUES
 ('ALLOW',            'AUTH_EFFECT',           'Allow',            'Permit the action',                          1, 0),
 ('DENY',             'AUTH_EFFECT',           'Deny',             'Deny the action (always wins)',              2, 0);
