@@ -714,6 +714,220 @@ BEGIN
 END
 GO
 
+-- ============================================================
+-- LOOKUP DEFINITIONS : FEEDBACK_STATUS
+-- ============================================================
+INSERT INTO shared.LookupDefinition
+(
+    LookupCode,
+    LookupName,
+    LookupSourceType,
+    SqlStatement,
+    ValueField,
+    TextField,
+    IsSystem
+)
+VALUES
+(
+    'FEEDBACK_STATUS',
+    'Feedback Status',
+    'STATIC_SQL',
+    '
+    SELECT
+		StatusCode AS Id,
+		''string'' AS IdType,
+		Label AS Name, 
+		DisplayOrder
+    FROM shared.StatusLookup
+    WHERE StatusGroup = ''FEEDBACK_STATUS''
+    ORDER BY DisplayOrder
+    ',
+    'Id',
+    'Name',
+    1
+);
+
+-- ============================================================
+-- LOOKUP DEFINITIONS : COUNTRY / STATE / CITY
+-- ============================================================
+
+-- COUNTRY LOOKUP
+IF NOT EXISTS (
+    SELECT 1
+    FROM shared.LookupDefinition
+    WHERE LookupCode = 'COUNTRY'
+)
+BEGIN
+
+    INSERT INTO shared.LookupDefinition
+    (
+        LookupCode,
+        LookupName,
+        LookupSourceType,
+        SourceObjectName,
+        SqlStatement,
+        ValueField,
+        TextField,
+        SupportsParentFilter,
+        IsSystem,
+        IsActive
+    )
+    VALUES
+    (
+        'COUNTRY',
+        'Country Lookup',
+        'STATIC_SQL',
+        'time.Country',
+
+        '
+        SELECT
+            CAST(Id AS NVARCHAR(100)) AS Id,
+			''int'' AS IdType,
+            CountryName AS Name,
+            0 AS DisplayOrder
+        FROM time.Country
+        ORDER BY CountryName
+        ',
+        'Id',
+        'Name',
+        0,
+        1,
+        1
+    );
+
+END
+GO
+
+
+-- ============================================================
+-- STATE LOOKUP
+-- Parent = COUNTRY
+-- ============================================================
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM shared.LookupDefinition
+    WHERE LookupCode = 'STATE'
+)
+BEGIN
+
+    INSERT INTO shared.LookupDefinition
+    (
+        LookupCode,
+        LookupName,
+        LookupSourceType,
+        SourceObjectName,
+        ParentLookupDefinitionId,
+        SqlStatement,
+        ValueField,
+        TextField,
+        ParentValueField,
+        SupportsParentFilter,
+        IsSystem,
+        IsActive
+    )
+    VALUES
+    (
+        'STATE',
+        'State Lookup',
+        'STATIC_SQL',
+        'time.Region',
+
+        (
+            SELECT LookupDefinitionId
+            FROM shared.LookupDefinition
+            WHERE LookupCode = 'COUNTRY'
+        ),
+
+        '
+        SELECT
+            CAST(r.Id AS NVARCHAR(100)) AS Id,
+			''int'' AS IdType,
+            r.RegionName AS Name,
+            0 AS DisplayOrder
+        FROM time.Region r
+        WHERE r.RegionType = ''State''
+          AND (
+                @ParentId IS NULL
+                OR r.CountryId = CAST(@ParentId AS BIGINT)
+              )
+        ORDER BY r.RegionName
+        ',
+        'Id',
+        'Name',
+        'ParentId',
+        1,
+        1,
+        1
+    );
+
+END
+GO
+
+
+-- ============================================================
+-- CITY LOOKUP
+-- Parent = STATE
+-- ============================================================
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM shared.LookupDefinition
+    WHERE LookupCode = 'CITY'
+)
+BEGIN
+
+    INSERT INTO shared.LookupDefinition
+    (
+        LookupCode,
+        LookupName,
+        LookupSourceType,
+        SourceObjectName,
+        ParentLookupDefinitionId,
+        SqlStatement,
+        ValueField,
+        TextField,
+        ParentValueField,
+        SupportsParentFilter,
+        IsSystem,
+        IsActive
+    )
+    VALUES
+    (
+        'CITY',
+        'City Lookup',
+        'STATIC_SQL',
+        'time.Region',
+
+        (
+            SELECT LookupDefinitionId
+            FROM shared.LookupDefinition
+            WHERE LookupCode = 'STATE'
+        ),
+
+        '
+        SELECT
+            CAST(r.Id AS NVARCHAR(100)) AS Id,
+			''int'' AS IdType,
+            r.RegionName AS Name,
+            0 AS DisplayOrder
+        FROM time.Region r
+        WHERE r.RegionType = ''City''
+          AND (
+                @ParentId IS NULL
+                OR r.ParentRegionId = CAST(@ParentId AS BIGINT)
+              )
+        ORDER BY r.RegionName
+        ',
+        'Id',
+        'Name',
+        'ParentId',
+        1,
+        1,
+        1
+    );
+END
+GO
 
 PRINT 'Shared schema StatusLookup seed data inserted successfully.';
 GO
