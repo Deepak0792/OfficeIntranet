@@ -451,7 +451,7 @@ INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, DisplayOrder, I
 ('CANCEL',   'WORKFLOW_ACTION_TYPE', 'Cancelled', 6, 0),
 ('WITHDRAW', 'WORKFLOW_ACTION_TYPE', 'Withdrawn', 7, 0),
 ('REASSIGN', 'WORKFLOW_ACTION_TYPE', 'Reassigned',8, 0),
-('RETURN', 'WORKFLOW_ACTION_TYPE', 'Return for Correction', 9, 0);
+('RETURN', 'WORKFLOW_ACTION_TYPE', 'Return for Clarification', 9, 0);
 
 -- WORKFLOW_TASK_STATUS
 -- Terminal states: COMPLETED, DELEGATED, CANCELLED
