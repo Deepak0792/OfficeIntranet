@@ -63,6 +63,7 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address=http://identity-api:80
       - ReverseProxy__Clusters__shared-cluster__Destinations__shared-api__Address=http://shared-api:80
+      - ReverseProxy__Clusters__time-cluster__Destinations__time-api__Address=http://time-api:80
       - Authentication__IdentityServiceUrl=http://identity-api:80
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
@@ -91,6 +92,30 @@ services:
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5002:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  time-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Time/SdxCore.Time.API/Dockerfile
+    container_name: sdxcore-time-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+    ports:
+      - "5003:80"
     depends_on:
       sql-server:
         condition: service_healthy
