@@ -20,11 +20,10 @@ public class LegalEntityService : ILegalEntityService
         _repository = repository;
     }
     
-        public async Task<PagedResponse<IEnumerable<LegalEntityDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<LegalEntityDto>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => SimpleMapper.Map<LegalEntity, LegalEntityDto>(e));
-        return new PagedResponse<IEnumerable<LegalEntityDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var entities = await _repository.GetAllAsync(cancellationToken);
+        return entities.Select(e => SimpleMapper.Map<LegalEntity, LegalEntityDto>(e));
     }
 
     public async Task<LegalEntityDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
@@ -69,4 +68,5 @@ public class LegalEntityService : ILegalEntityService
         return true;
     }
 }
+
 

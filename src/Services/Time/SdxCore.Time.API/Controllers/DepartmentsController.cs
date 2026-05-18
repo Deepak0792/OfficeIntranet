@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
@@ -27,15 +27,15 @@ public class DepartmentsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResponse<IEnumerable<DepartmentDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DepartmentDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         try
         {
-            var response = await _departmentService.GetAllAsync(filter, cancellationToken);
-            return Ok(response);
+            var result = await _departmentService.GetAllAsync(cancellationToken);
+            return Ok(new ApiResponse<IEnumerable<DepartmentDto>>(result, "Successfully fetched Departments."));
         }
         catch (Exception ex)
         {
@@ -149,4 +149,5 @@ public class DepartmentsController : ControllerBase
         }
     }
 }
+
 

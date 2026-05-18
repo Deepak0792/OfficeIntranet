@@ -20,11 +20,10 @@ public class DepartmentService : IDepartmentService
         _repository = repository;
     }
     
-        public async Task<PagedResponse<IEnumerable<DepartmentDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<DepartmentDto>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => SimpleMapper.Map<Department, DepartmentDto>(e));
-        return new PagedResponse<IEnumerable<DepartmentDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var entities = await _repository.GetAllAsync(cancellationToken);
+        return entities.Select(e => SimpleMapper.Map<Department, DepartmentDto>(e));
     }
 
     public async Task<DepartmentDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
@@ -76,4 +75,5 @@ public class DepartmentService : IDepartmentService
         return true;
     }
 }
+
 

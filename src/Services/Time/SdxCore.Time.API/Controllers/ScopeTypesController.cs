@@ -27,15 +27,15 @@ public class ScopeTypesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResponse<IEnumerable<ScopeTypeDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<ScopeTypeDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter, CancellationToken cancellationToken)
+            public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         try
         {
-            var response = await _service.GetAllAsync(filter, cancellationToken);
-            return Ok(response);
+            var result = await _service.GetAllAsync(cancellationToken);
+            return Ok(new ApiResponse<IEnumerable<ScopeTypeDto>>(result, "Successfully fetched ScopeTypes."));
         }
         catch (Exception ex)
         {
@@ -149,4 +149,5 @@ public class ScopeTypesController : ControllerBase
         }
     }
 }
+
 

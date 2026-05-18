@@ -8,10 +8,11 @@ namespace SdxCore.Time.Application.Services;
 
 public interface ILegalEntityService
 {
-    Task<PagedResponse<IEnumerable<LegalEntityDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default);
+    Task<IEnumerable<LegalEntityDto>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<LegalEntityDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<LegalEntityDto> CreateAsync(CreateLegalEntityDto dto, CancellationToken cancellationToken = default);
     Task<bool> UpdateAsync(long id, UpdateLegalEntityDto dto, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
 }
+
 

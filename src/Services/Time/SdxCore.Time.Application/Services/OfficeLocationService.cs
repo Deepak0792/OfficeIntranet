@@ -20,11 +20,10 @@ public class OfficeLocationService : IOfficeLocationService
         _repository = repository;
     }
     
-        public async Task<PagedResponse<IEnumerable<OfficeLocationDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<OfficeLocationDto>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => SimpleMapper.Map<OfficeLocation, OfficeLocationDto>(e));
-        return new PagedResponse<IEnumerable<OfficeLocationDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var entities = await _repository.GetAllAsync(cancellationToken);
+        return entities.Select(e => SimpleMapper.Map<OfficeLocation, OfficeLocationDto>(e));
     }
 
     public async Task<OfficeLocationDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
@@ -69,4 +68,5 @@ public class OfficeLocationService : IOfficeLocationService
         return true;
     }
 }
+
 

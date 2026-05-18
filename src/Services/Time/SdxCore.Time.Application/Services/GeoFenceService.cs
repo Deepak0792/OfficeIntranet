@@ -20,11 +20,10 @@ public class GeoFenceService : IGeoFenceService
         _repository = repository;
     }
     
-        public async Task<PagedResponse<IEnumerable<GeoFenceDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<GeoFenceDto>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => SimpleMapper.Map<GeoFence, GeoFenceDto>(e));
-        return new PagedResponse<IEnumerable<GeoFenceDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var entities = await _repository.GetAllAsync(cancellationToken);
+        return entities.Select(e => SimpleMapper.Map<GeoFence, GeoFenceDto>(e));
     }
 
     public async Task<GeoFenceDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
@@ -69,4 +68,5 @@ public class GeoFenceService : IGeoFenceService
         return true;
     }
 }
+
 

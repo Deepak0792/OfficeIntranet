@@ -20,11 +20,10 @@ public class DesignationService : IDesignationService
         _repository = repository;
     }
     
-        public async Task<PagedResponse<IEnumerable<DesignationDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<DesignationDto>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => SimpleMapper.Map<Designation, DesignationDto>(e));
-        return new PagedResponse<IEnumerable<DesignationDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var entities = await _repository.GetAllAsync(cancellationToken);
+        return entities.Select(e => SimpleMapper.Map<Designation, DesignationDto>(e));
     }
 
     public async Task<DesignationDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
@@ -69,4 +68,5 @@ public class DesignationService : IDesignationService
         return true;
     }
 }
+
 

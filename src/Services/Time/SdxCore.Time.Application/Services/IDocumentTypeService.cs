@@ -8,10 +8,11 @@ namespace SdxCore.Time.Application.Services;
 
 public interface IDocumentTypeService
 {
-    Task<PagedResponse<IEnumerable<DocumentTypeDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DocumentTypeDto>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<DocumentTypeDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
     Task<DocumentTypeDto> CreateAsync(CreateDocumentTypeDto dto, CancellationToken cancellationToken = default);
     Task<bool> UpdateAsync(long id, UpdateDocumentTypeDto dto, CancellationToken cancellationToken = default);
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
 }
+
 

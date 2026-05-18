@@ -20,11 +20,10 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         _repository = repository;
     }
     
-        public async Task<PagedResponse<IEnumerable<TimeZoneMasterDto>>> GetAllAsync(PaginationFilter filter, CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<TimeZoneMasterDto>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => SimpleMapper.Map<TimeZoneMaster, TimeZoneMasterDto>(e));
-        return new PagedResponse<IEnumerable<TimeZoneMasterDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var entities = await _repository.GetAllAsync(cancellationToken);
+        return entities.Select(e => SimpleMapper.Map<TimeZoneMaster, TimeZoneMasterDto>(e));
     }
 
     public async Task<TimeZoneMasterDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
@@ -69,4 +68,5 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         return true;
     }
 }
+
 
