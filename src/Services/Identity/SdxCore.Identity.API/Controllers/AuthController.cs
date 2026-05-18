@@ -41,7 +41,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Authentication result with token on success, error details on failure.</returns>
     [HttpPost("token")]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Token([FromBody] LoginRequest request, CancellationToken ct)
@@ -67,14 +67,14 @@ public sealed class AuthController : ControllerBase
             if (result.IsSuccess && result.Token is not null)
             {
                 _logger.LogInformation("Authentication successful for user");
-                return Ok(new LoginResponse
+                return Ok(new ApiResponse<LoginResponse>(new LoginResponse
                 {
                     AccessToken = result.Token.AccessToken,
                     TokenType = result.Token.TokenType,
                     ExpiresAt = result.Token.ExpiresAt,
                     RefreshToken = result.Token.RefreshToken,
                     RefreshTokenExpiresAt = result.Token.RefreshTokenExpiresAt
-                });
+                }, "Authentication successful"));
             }
 
             // Authentication failed
@@ -133,7 +133,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>New JWT access token and rotated refresh token.</returns>
     [HttpPost("refresh-token")]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
@@ -158,14 +158,14 @@ public sealed class AuthController : ControllerBase
 
             _logger.LogInformation("Refresh token successful");
 
-            return Ok(new LoginResponse
+            return Ok(new ApiResponse<LoginResponse>(new LoginResponse
             {
                 AccessToken = result.Token!.AccessToken,
                 TokenType = result.Token.TokenType,
                 ExpiresAt = result.Token.ExpiresAt,
                 RefreshToken = result.Token.RefreshToken,
                 RefreshTokenExpiresAt = result.Token.RefreshTokenExpiresAt
-            });
+            }, "Refresh token successful"));
         }
         catch (RecordNotFoundException ex)
         {
@@ -206,7 +206,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Success or error response.</returns>
     [HttpPost("revoke-token")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenRequest request, CancellationToken ct)
@@ -217,10 +217,7 @@ public sealed class AuthController : ControllerBase
 
             _logger.LogInformation("Token and refresh token revoked successfully");
 
-            return Ok(new
-            {
-                Message = "Token revoked successfully"
-            });
+            return Ok(new ApiResponse<bool>(true, "Token revoked successfully"));
         }
         catch (ArgumentNullException ex)
         {
@@ -251,7 +248,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Token validation result with user information if valid.</returns>
     [HttpPost("validate-token")]
-    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TokenValidationResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
@@ -314,7 +311,7 @@ public sealed class AuthController : ControllerBase
             var tokenClaims = ExtractTokenClaims(token);
 
             _logger.LogInformation("Token validation successful for user: {UserId}", tokenClaims.UserId);
-            return Ok(new TokenValidationResponse
+            return Ok(new ApiResponse<TokenValidationResponse>(new TokenValidationResponse
             {
                 IsValid = true,
                 UserId = tokenClaims.UserId,
@@ -324,7 +321,7 @@ public sealed class AuthController : ControllerBase
                 Provider = tokenClaims.Provider,
                 ExpiresAt = tokenClaims.ExpiresAt,
                 ValidatedAt = DateTimeOffset.UtcNow
-            });
+            }, "Token is valid"));
         }
         catch (Exception ex)
         {
@@ -344,14 +341,14 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     /// <returns>Success message if token is valid, including user context from Gateway.</returns>
     [HttpGet("test-protected")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public IActionResult TestProtected()
     {
         // Check if X-User-Id header was added by the Gateway
         var userIdFromGateway = Request.Headers["X-User-Id"].FirstOrDefault();
 
-        return Ok(new
+        return Ok(new ApiResponse<object>(new
         {
             Message = "Token is valid",
             Timestamp = DateTimeOffset.UtcNow,
@@ -359,7 +356,7 @@ public sealed class AuthController : ControllerBase
             Note = userIdFromGateway != null
                 ? "X-User-Id header was provided by Gateway"
                 : "X-User-Id header not present (direct call to Identity service)"
-        });
+        }, "Test protected endpoint successful"));
     }
 
     /// <summary>
@@ -381,7 +378,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Created user information.</returns>
     [HttpPost("create-user")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request, CancellationToken ct)
@@ -405,13 +402,13 @@ public sealed class AuthController : ControllerBase
 
             _logger.LogInformation("Created test user: {UserId}, Username: {Username}", user.Id, user.Username);
 
-            return Created($"/api/auth/users/{user.Id}", new
+            return Created($"/api/auth/users/{user.Id}", new ApiResponse<object>(new
             {
                 Id = user.Id,
                 Username = user.Username,
                 Email = user.Email,
                 CreatedAt = user.CreatedAt
-            });
+            }, "User created successfully"));
         }
         catch (ProviderNotFoundException ex)
         {
@@ -451,7 +448,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Created user information.</returns>
     [HttpPost("change-password")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdatePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
@@ -475,7 +472,7 @@ public sealed class AuthController : ControllerBase
 
             if (!status)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
                 {
                     ErrorCode = "CHANGE_PASSWORD_ERROR",
                     ErrorMessage = "Failed to change the password"
@@ -483,10 +480,7 @@ public sealed class AuthController : ControllerBase
             }
             _logger.LogInformation("Password Changed for: {UserId}, Username: {Username}", 2, 2);
 
-            return Ok(new
-            {
-                Message = "Password changed successfully"
-            });
+            return Ok(new ApiResponse<bool>(true, "Password changed successfully"));
         }
         catch (ProviderNotFoundException ex)
         {
@@ -526,7 +520,7 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Created user information.</returns>
     [HttpPost("deactivate-user")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeactivatePassword([FromBody] string userId, CancellationToken ct)
@@ -550,7 +544,7 @@ public sealed class AuthController : ControllerBase
 
             if (!status)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new
+                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
                 {
                     ErrorCode = "DEACTIVATE_USER_ERROR",
                     ErrorMessage = "Failed to deactivate user"
@@ -558,10 +552,7 @@ public sealed class AuthController : ControllerBase
             }
             _logger.LogInformation($"User deactivate successfully {userId}");
 
-            return Ok(new
-            {
-                Message = "User deactivate successfully"
-            });
+            return Ok(new ApiResponse<bool>(true, "User deactivated successfully"));
         }
         catch (ProviderNotFoundException ex)
         {

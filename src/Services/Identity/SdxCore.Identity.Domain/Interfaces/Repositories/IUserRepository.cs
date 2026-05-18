@@ -1,4 +1,8 @@
+using SdxCore.Common.Data;
 using SdxCore.Identity.Domain.Entities;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Domain.Interfaces.Repositories;
 
@@ -6,7 +10,7 @@ namespace SdxCore.Identity.Domain.Interfaces.Repositories;
 /// Repository interface for user account data access.
 /// Provides methods for querying and managing user records in persistent storage.
 /// </summary>
-public interface IUserRepository
+public interface IUserRepository : IRepository<User, Guid>
 {
     /// <summary>
     /// Finds a user by username.
@@ -15,14 +19,6 @@ public interface IUserRepository
     /// <param name="ct">Cancellation token.</param>
     /// <returns>User record if found; otherwise null.</returns>
     Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default);
-
-    /// <summary>
-    /// Creates a new user record.
-    /// </summary>
-    /// <param name="user">User record to create.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The created user record with assigned ID.</returns>
-    Task<User> CreateAsync(User user, CancellationToken ct = default);
 
     /// <summary>
     /// Increments the failed authentication attempts counter for a user.
@@ -60,14 +56,6 @@ public interface IUserRepository
     /// <param name="lockedUntil">Timestamp until which the account should be locked.</param>
     /// <param name="ct">Cancellation token.</param>
     Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default);
-
-    /// <summary>
-    /// Finds a user by their unique identifier.
-    /// </summary>
-    /// <param name="userId">User ID.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>User record if found; otherwise null.</returns>
-    Task<User?> FindByIdAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>
     /// Updates a user's password hash.

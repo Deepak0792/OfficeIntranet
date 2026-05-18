@@ -57,7 +57,7 @@ public class InHouseProviderPropertyTests
         // Capture the User that gets created
         User? capturedUser = null;
         userRepositoryMock
-            .Setup(repo => repo.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((User user, CancellationToken ct) =>
             {
                 capturedUser = user;

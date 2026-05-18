@@ -86,7 +86,8 @@ public sealed class AuditLogger : IAuditLogger, IDisposable
             {
                 try
                 {
-                    await _auditRepository.InsertAsync(auditEvent, ct);
+                    await _auditRepository.AddAsync(auditEvent, ct);
+                    await _auditRepository.SaveChangesAsync(ct);
 
                     _logger.LogDebug(
                         "Audit event persisted: {EventType} for user {Username} from {IpAddress}",

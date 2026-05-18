@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace SdxCore.Common.Data;
 
-public interface IRepository<TEntity> where TEntity : class
+public interface IRepository<TEntity, TKey> where TEntity : class
 {
-    Task<TEntity?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
+    Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default);
     Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<(IEnumerable<TEntity> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
     Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default);
@@ -23,3 +23,6 @@ public interface IRepository<TEntity> where TEntity : class
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 
+public interface IRepository<TEntity> : IRepository<TEntity, long> where TEntity : class
+{
+}

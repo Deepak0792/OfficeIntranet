@@ -2,6 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Persistence.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Persistence.Repositories;
 
@@ -13,17 +18,11 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// <remarks>
 /// Initializes a new instance of the <see cref="AuditRepository"/> class.
 /// </remarks>
-/// <param name="context">The database context.</param>
-public class AuditRepository(IdentityDbContext context) : IAuditRepository
+/// <param name="dbContext">The database context.</param>
+public class AuditRepository : BaseRepository<AuditEvent, Guid>, IAuditRepository
 {
-    private readonly IdentityDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
-
-    /// <inheritdoc />
-    public async Task InsertAsync(AuditEvent auditEvent, CancellationToken ct = default)
+    public AuditRepository(IdentityDbContext dbContext) : base(dbContext)
     {
-        ArgumentNullException.ThrowIfNull(auditEvent);
-        _context.AuditEvents.Add(auditEvent);
-        await _context.SaveChangesAsync(ct);
     }
 
     /// <inheritdoc />
@@ -32,7 +31,7 @@ public class AuditRepository(IdentityDbContext context) : IAuditRepository
         if (string.IsNullOrWhiteSpace(username))
             return [];
 
-        return await _context.AuditEvents
+        return await _dbContext.AuditEvents
             .Where(e => e.Username == username)
             .OrderByDescending(e => e.OccurredAt)
             .ToListAsync(ct);

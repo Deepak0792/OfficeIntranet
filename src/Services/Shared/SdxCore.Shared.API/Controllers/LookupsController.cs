@@ -25,7 +25,7 @@ public class LookupsController : ControllerBase
     /// Gets a list of lookup items by lookup code.
     /// </summary>
     [HttpGet("{code}")]
-    [ProducesResponseType(typeof(IEnumerable<LookupItem>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<LookupItem>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetLookup(string code, CancellationToken cancellationToken)
@@ -33,7 +33,7 @@ public class LookupsController : ControllerBase
         try
         {
             var result = await _lookupService.GetLookupAsync(code, null, cancellationToken);
-            return Ok(result);
+            return Ok(new ApiResponse<IEnumerable<LookupItem>>(result, "Successfully fetched lookup items."));
         }
         catch (Exception ex)
         {
@@ -50,7 +50,7 @@ public class LookupsController : ControllerBase
     /// Gets a list of lookup items by lookup code and parent ID.
     /// </summary>
     [HttpGet("{code}/{parentId}")]
-    [ProducesResponseType(typeof(IEnumerable<LookupItem>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<LookupItem>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetLookupWithParent(string code, string parentId, CancellationToken cancellationToken)
@@ -58,7 +58,7 @@ public class LookupsController : ControllerBase
         try
         {
             var result = await _lookupService.GetLookupAsync(code, parentId, cancellationToken);
-            return Ok(result);
+            return Ok(new ApiResponse<IEnumerable<LookupItem>>(result, "Successfully fetched lookup items."));
         }
         catch (Exception ex)
         {

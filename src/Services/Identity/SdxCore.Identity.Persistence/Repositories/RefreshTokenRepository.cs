@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Persistence.Data;
@@ -9,25 +9,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Persistence.Repositories;
-public sealed class RefreshTokenRepository : IRefreshTokenRepository
+public sealed class RefreshTokenRepository : BaseRepository<RefreshToken, Guid>, IRefreshTokenRepository
 {
-    private readonly IdentityDbContext _dbContext;
-
-    public RefreshTokenRepository(IdentityDbContext dbContext)
+    public RefreshTokenRepository(IdentityDbContext dbContext) : base(dbContext)
     {
-        _dbContext = dbContext;
-    }
-
-    /// <summary>
-    /// Adds a new refresh token to the database.
-    /// </summary>
-    public async Task AddAsync(RefreshToken token, CancellationToken ct = default)
-    {
-        if (token is null)
-            throw new ArgumentNullException(nameof(token));
-
-        await _dbContext.RefreshTokens.AddAsync(token, ct);
-        await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -41,17 +26,5 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         return await _dbContext.RefreshTokens
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.HashToken == hashToken, ct);
-    }
-
-    /// <summary>
-    /// Updates refresh token (rotation, revoke, etc.)
-    /// </summary>
-    public async Task UpdateAsync(RefreshToken token, CancellationToken ct = default)
-    {
-        if (token is null)
-            throw new ArgumentNullException(nameof(token));
-
-        _dbContext.RefreshTokens.Update(token);
-        await _dbContext.SaveChangesAsync(ct);
     }
 }

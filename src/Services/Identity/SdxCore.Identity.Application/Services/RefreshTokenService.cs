@@ -1,4 +1,4 @@
-﻿using SdxCore.Common.Contexts;
+using SdxCore.Common.Contexts;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
@@ -66,7 +66,7 @@ public class RefreshTokenService : IRefreshTokenService
         }
 
         // Build claims (IMPORTANT: ideally load user from DB here)
-        User? user = await _userRepository.FindByIdAsync(existingToken.UserId, ct);
+        User? user = await _userRepository.GetByIdAsync(existingToken.UserId, ct);
 
         if (user is null)
         {
@@ -159,6 +159,7 @@ public class RefreshTokenService : IRefreshTokenService
         };
 
         await _refreshTokenRepository.AddAsync(entity, ct);
+        await _refreshTokenRepository.SaveChangesAsync(ct);
        
         var result = new RefreshTokenResponse
         {
@@ -216,7 +217,8 @@ public class RefreshTokenService : IRefreshTokenService
         existingToken.RevokedByIp = ipAddress;
         existingToken.ReplacedByHashToken = _passwordHasher.HashToken(rawRefreshToken);
 
-        await _refreshTokenRepository.UpdateAsync(existingToken, ct);
+        _refreshTokenRepository.Update(existingToken);
+        await _refreshTokenRepository.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -238,7 +240,8 @@ public class RefreshTokenService : IRefreshTokenService
         token.RevokedAt = DateTimeOffset.UtcNow;
         token.RevokedByIp = _requestContext.IpAddress;
 
-        await _refreshTokenRepository.UpdateAsync(token, ct);
+        _refreshTokenRepository.Update(token);
+        await _refreshTokenRepository.SaveChangesAsync(ct);
     }
 
     private static IReadOnlyList<Claim> BuildClaims(User user)

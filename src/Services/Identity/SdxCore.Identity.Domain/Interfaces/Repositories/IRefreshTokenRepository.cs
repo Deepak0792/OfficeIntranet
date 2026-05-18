@@ -1,11 +1,8 @@
-﻿using SdxCore.Identity.Domain.Entities;
+using SdxCore.Common.Data;
+using SdxCore.Identity.Domain.Entities;
 
 namespace SdxCore.Identity.Domain.Interfaces.Repositories;
-public interface IRefreshTokenRepository
+public interface IRefreshTokenRepository : IRepository<RefreshToken, Guid>
 {
-    Task AddAsync(RefreshToken token, CancellationToken ct = default);
-
     Task<RefreshToken?> GetByHashAsync(string hashToken, CancellationToken ct = default);
-
-    Task UpdateAsync(RefreshToken token, CancellationToken ct = default);
 }

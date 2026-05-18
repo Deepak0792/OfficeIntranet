@@ -105,8 +105,16 @@ public class ProviderExtensionsTests
     {
         public Task<Domain.Entities.User?> FindByUsernameAsync(string username, CancellationToken ct = default)
             => Task.FromResult<Domain.Entities.User?>(null);
-        public Task<Domain.Entities.User> CreateAsync(Domain.Entities.User user, CancellationToken ct = default)
-            => Task.FromResult(user);
+        public Task<Domain.Entities.User?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult<Domain.Entities.User?>(null);
+        public Task<IEnumerable<Domain.Entities.User>> GetAllAsync(CancellationToken ct = default) => Task.FromResult<IEnumerable<Domain.Entities.User>>([]);
+        public Task<(IEnumerable<Domain.Entities.User> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken ct = default) => Task.FromResult<(IEnumerable<Domain.Entities.User> Items, int TotalCount)>(([], 0));
+        public Task<IEnumerable<Domain.Entities.User>> FindAsync(System.Linq.Expressions.Expression<Func<Domain.Entities.User, bool>> predicate, CancellationToken ct = default) => Task.FromResult<IEnumerable<Domain.Entities.User>>([]);
+        public Task<Domain.Entities.User> AddAsync(Domain.Entities.User user, CancellationToken ct = default) => Task.FromResult(user);
+        public Task AddRangeAsync(IEnumerable<Domain.Entities.User> entities, CancellationToken ct = default) => Task.CompletedTask;
+        public void Update(Domain.Entities.User entity) { }
+        public void Remove(Domain.Entities.User entity) { }
+        public void RemoveRange(IEnumerable<Domain.Entities.User> entities) { }
+        public Task<int> SaveChangesAsync(CancellationToken ct = default) => Task.FromResult(0);
         public Task IncrementFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
         public Task ResetFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
@@ -117,8 +125,7 @@ public class ProviderExtensionsTests
             => Task.CompletedTask;
         public Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task<Domain.Entities.User?> FindByIdAsync(Guid userId, CancellationToken ct = default)
-            => Task.FromResult<Domain.Entities.User?>(null);
+
         public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default)
             => Task.CompletedTask;
     }

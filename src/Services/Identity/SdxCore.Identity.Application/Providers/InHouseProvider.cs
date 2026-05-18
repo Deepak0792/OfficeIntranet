@@ -169,7 +169,8 @@ public sealed class InHouseProvider : IInHouseProvider
             LastLoginAt = null
         };
 
-        User createdUser = await _userRepository.CreateAsync(user, ct);
+        User createdUser = await _userRepository.AddAsync(user, ct);
+        await _userRepository.SaveChangesAsync(ct);
 
         _logger.LogInformation("Created new user: {UserId}, Username: {Username}", createdUser.Id, createdUser.Username);
 
@@ -199,7 +200,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // Load user
-        User? user = await _userRepository.FindByIdAsync(userId, ct);
+        User? user = await _userRepository.GetByIdAsync(userId, ct);
         if (user is null)
         {
             _logger.LogWarning("User not found: {UserId}", userId);
