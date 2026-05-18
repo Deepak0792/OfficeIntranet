@@ -46,7 +46,7 @@ public sealed class GatewayAuthenticationMiddleware
 
         // ALWAYS ADD HEADERS
         // (public + private routes)
-        EnrichHeaders(context);
+        EnrichHeaders(context, _configuration);
 
         // Check if this is a public route that doesn't require authentication
         if (_publicRouteValidator.IsPublicRoute(path))
@@ -145,7 +145,7 @@ public sealed class GatewayAuthenticationMiddleware
         }
     }
 
-    private static void EnrichHeaders(HttpContext context)
+    private static void EnrichHeaders(HttpContext context, IConfiguration configuration)
     {
         var headers = context.Request.Headers;
 
@@ -185,6 +185,17 @@ public sealed class GatewayAuthenticationMiddleware
         // Gateway info
         headers["X-Gateway"] = "YARP";
         headers["X-Gateway-Time"] = DateTime.UtcNow.ToString("O");
+
+        // Internal API Key for downstream services to validate Gateway origin
+        var internalApiKey = configuration["Authentication:InternalApiKey"];
+        if (!string.IsNullOrEmpty(internalApiKey))
+        {
+            if (headers.ContainsKey("X-Internal-API-Key"))
+            {
+                headers.Remove("X-Internal-API-Key");
+            }
+            headers.Add("X-Internal-API-Key", internalApiKey);
+        }
     }
 
     private static void AttachIdentityHeaders(

@@ -14,6 +14,7 @@ namespace SdxCore.Identity.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/auth")]
+[GatewayOnly]
 public sealed class AuthController : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService;
@@ -259,18 +260,6 @@ public sealed class AuthController : ControllerBase
     {
         try
         {
-            // SECURITY: Verify this is an internal call from Gateway middleware
-            if (!IsInternalGatewayCall())
-            {
-                _logger.LogWarning("Unauthorized access attempt to validate-token endpoint from {RemoteIpAddress}",
-                    Request.HttpContext.Connection.RemoteIpAddress);
-                return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
-                {
-                    ErrorCode = "FORBIDDEN",
-                    ErrorMessage = "This endpoint is only accessible by the Gateway"
-                });
-            }
-
             // Extract bearer token from Authorization header
             var authorizationHeader = Request.Headers.Authorization.FirstOrDefault();
 
@@ -348,17 +337,6 @@ public sealed class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Verifies that the request is coming from the Gateway middleware.
-    /// Uses internal API key authentication to restrict access.
-    /// </summary>
-    /// <returns>True if the request is from Gateway, false otherwise.</returns>
-    private bool IsInternalGatewayCall()
-    {
-        return InternalApiKeyValidator.IsInternalGatewayCall(Request,
-            HttpContext.RequestServices.GetRequiredService<IConfiguration>(),
-            _logger);
-    }
 
     /// <summary>
     /// Test endpoint for validating token middleware functionality.
