@@ -10,6 +10,11 @@ namespace SdxCore.Identity.Domain.Entities;
 public sealed record AuditEvent
 {
     /// <summary>
+    /// Unique identifier for the audit event record.
+    /// </summary>
+    public int Id { get; init; }
+
+    /// <summary>
     /// Type of authentication event (e.g., "LOGIN_SUCCESS", "LOGIN_FAILURE").
     /// </summary>
     public required string EventType { get; init; }
@@ -22,7 +27,7 @@ public sealed record AuditEvent
     /// <summary>
     /// User identifier if available. May be null for failed attempts where user was not found.
     /// </summary>
-    public string? UserId { get; init; }
+    public int? EmployeeId { get; init; }
 
     /// <summary>
     /// Username submitted in the authentication request. May be null for non-username protocols.
@@ -32,12 +37,12 @@ public sealed record AuditEvent
     /// <summary>
     /// IP address of the client making the authentication request.
     /// </summary>
-    public required string IpAddress { get; init; }
+    public string? IpAddress { get; init; }
 
     /// <summary>
     /// Timestamp when the authentication event occurred.
     /// </summary>
-    public required DateTimeOffset OccurredAt { get; init; }
+    public DateTime? CreatedAt { get; set; }
 
     /// <summary>
     /// Reason for authentication failure. Null for successful authentications.

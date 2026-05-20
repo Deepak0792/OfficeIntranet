@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using SdxCore.Common.Contexts;
+using Microsoft.Extensions.Logging;
+using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Services;
@@ -9,6 +9,7 @@ public sealed class AuditLoggerService : IAuditLoggerService
 {
     private readonly IAuditLogger _auditLogger;
     private readonly ILogger<AuditLoggerService> _logger;
+    private readonly IRequestContext _requestContext;
 
     public AuditLoggerService(
         IAuditLogger auditLogger,
@@ -17,6 +18,7 @@ public sealed class AuditLoggerService : IAuditLoggerService
     {
         _auditLogger = auditLogger;
         _logger = logger;
+        _requestContext = requestContext;
     }
 
     public async Task LogAsync(AuditEventRequest auditEventRequest, CancellationToken ct = default)
@@ -27,11 +29,10 @@ public sealed class AuditLoggerService : IAuditLoggerService
             {
                 EventType = auditEventRequest.EventType,
                 Protocol = auditEventRequest.Protocol,
-                UserId = auditEventRequest.UserId,
+                EmployeeId = auditEventRequest.EmployeeId,
                 Username = auditEventRequest.Username,
-                IpAddress = auditEventRequest.IpAddress ?? throw new ArgumentNullException(nameof(auditEventRequest.IpAddress)),
-                FailureReason = auditEventRequest.FailureReason,
-                OccurredAt = DateTimeOffset.UtcNow
+                IpAddress = _requestContext.IpAddress,
+                FailureReason = auditEventRequest.FailureReason
             };
 
             await _auditLogger.LogAsync(auditEvent, ct);

@@ -1,48 +1,28 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SdxCore.Time.Persistence.Data;
-using SdxCore.Time.Domain.Interfaces;
-using SdxCore.Time.Persistence.Repositories;
-using SdxCore.Time.Application.Services;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Configuration;
+using SdxCore.Identity.Application.Extensions;
+using SdxCore.Time.Application.Extensions;
+using SdxCore.Time.Persistence.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+// HttpContext Access (Required for RequestContext)
+builder.Services.AddHttpContextAccessor();
+
+// Add health checks
+builder.Services.AddHealthChecks();
+
+// Add OpenAPI/Swagger for development
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Server=localhost;Database=SdxCore;Trusted_Connection=True;TrustServerCertificate=True;";
+// Register the common layer
+builder.Services.AddSdxCoreCommon(builder.Configuration);
 
-builder.Services.AddDbContext<TimeDbContext>(options =>
-    options.UseSqlServer(connectionString));
+// Register the persistence and application layers
+builder.Services.AddTimePersistence(builder.Configuration);
+builder.Services.AddTimeServicesApplication();
 
-// Register Repositories and Services
-builder.Services.AddScoped<IBiometricDeviceRepository, BiometricDeviceRepository>();
-builder.Services.AddScoped<IBiometricDeviceService, BiometricDeviceService>();
-builder.Services.AddScoped<IGeoFenceRepository, GeoFenceRepository>();
-builder.Services.AddScoped<IGeoFenceService, GeoFenceService>();
-builder.Services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
-builder.Services.AddScoped<IDocumentTypeService, DocumentTypeService>();
-builder.Services.AddScoped<IDesignationRepository, DesignationRepository>();
-builder.Services.AddScoped<IDesignationService, DesignationService>();
-builder.Services.AddScoped<IScopeTypeRepository, ScopeTypeRepository>();
-builder.Services.AddScoped<IScopeTypeService, ScopeTypeService>();
-builder.Services.AddScoped<IOfficeLocationRepository, OfficeLocationRepository>();
-builder.Services.AddScoped<IOfficeLocationService, OfficeLocationService>();
-builder.Services.AddScoped<ILegalEntityRepository, LegalEntityRepository>();
-builder.Services.AddScoped<ILegalEntityService, LegalEntityService>();
-builder.Services.AddScoped<IRegionRepository, RegionRepository>();
-builder.Services.AddScoped<IRegionService, RegionService>();
-builder.Services.AddScoped<ICountryRepository, CountryRepository>();
-builder.Services.AddScoped<ICountryService, CountryService>();
-builder.Services.AddScoped<ITimeZoneMasterRepository, TimeZoneMasterRepository>();
-builder.Services.AddScoped<ITimeZoneMasterService, TimeZoneMasterService>();
-builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
-builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 
 var app = builder.Build();
 
@@ -54,9 +34,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+// Map health check endpoint
+app.MapHealthChecks("/health");
+
 app.MapControllers();
 
 app.Run();
+
+
+// Make Program class accessible for integration tests
+public partial class Program { }
 
 
 

@@ -1,4 +1,4 @@
-using SdxCore.Common.Contexts;
+using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
@@ -66,11 +66,11 @@ public class RefreshTokenService : IRefreshTokenService
         }
 
         // Build claims (IMPORTANT: ideally load user from DB here)
-        User? user = await _userRepository.GetByIdAsync(existingToken.UserId, ct);
+        User? user = await _userRepository.GetByIdAsync(existingToken.EmployeeId, ct);
 
         if (user is null)
         {
-            throw new RecordNotFoundException($"User with Id {existingToken.UserId} not found.");
+            throw new RecordNotFoundException($"User with Id {existingToken.EmployeeId} not found.");
         }
 
         var claims = BuildClaims(user);
@@ -85,7 +85,7 @@ public class RefreshTokenService : IRefreshTokenService
         // Store new refresh token
         var refreshTokenResult =
             await CreateAsync(
-                existingToken.UserId,
+                existingToken.EmployeeId,
                 ct);
 
         if (refreshTokenResult.RawToken is null)
@@ -106,7 +106,7 @@ public class RefreshTokenService : IRefreshTokenService
             EventType = "REFRESH_TOKEN_SUCCESS",
             Protocol = AuthProtocol.InHouse,
             Username = user.Username,
-            UserId = existingToken.UserId.ToString()
+            EmployeeId = existingToken.EmployeeId
         }, ct);
 
         return new AuthenticationResponse
@@ -141,18 +141,18 @@ public class RefreshTokenService : IRefreshTokenService
     /// <param name="ct"></param>
     /// <returns></returns>
     public async Task<RefreshTokenResponse> CreateAsync(
-        Guid userId,
+        int employeeId,
         CancellationToken ct = default)
     {
         string rawRefreshToken = GenerateRefreshToken();
 
         var entity = new RefreshToken
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
+            EmployeeId = employeeId,
             HashToken = _passwordHasher.HashToken(rawRefreshToken),
-            CreatedAt = DateTimeOffset.UtcNow,
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
+            CreatedBy = employeeId,
+            LastUpdatedBy = employeeId,
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedByIp = _requestContext.IpAddress,
             UserAgent = _requestContext.UserAgent,
             Device = _requestContext.Device
@@ -164,7 +164,7 @@ public class RefreshTokenService : IRefreshTokenService
         var result = new RefreshTokenResponse
         {
             Id = entity.Id,
-            UserId = entity.UserId,
+            EmployeeId = entity.EmployeeId,
             RawToken = rawRefreshToken,
             HashToken = entity.HashToken,
             ExpiresAt = entity.ExpiresAt
@@ -193,7 +193,7 @@ public class RefreshTokenService : IRefreshTokenService
         if (entity.RevokedAt != null)
             return null;
 
-        if (entity.ExpiresAt <= DateTimeOffset.UtcNow)
+        if (entity.ExpiresAt <= DateTime.UtcNow)
             return null;
 
         return entity;
@@ -213,7 +213,7 @@ public class RefreshTokenService : IRefreshTokenService
         string? ipAddress,
         CancellationToken ct = default)
     {
-        existingToken.RevokedAt = DateTimeOffset.UtcNow;
+        existingToken.RevokedAt = DateTime.UtcNow;
         existingToken.RevokedByIp = ipAddress;
         existingToken.ReplacedByHashToken = _passwordHasher.HashToken(rawRefreshToken);
 
@@ -237,7 +237,7 @@ public class RefreshTokenService : IRefreshTokenService
         if (token == null)
             return;
 
-        token.RevokedAt = DateTimeOffset.UtcNow;
+        token.RevokedAt = DateTime.UtcNow;
         token.RevokedByIp = _requestContext.IpAddress;
 
         _refreshTokenRepository.Update(token);
@@ -248,7 +248,7 @@ public class RefreshTokenService : IRefreshTokenService
     {
         return new List<Claim>
         {
-            new ("sub", user.Id.ToString()),
+            new ("sub", user.EmployeeId.ToString()),
             new ("username", user.Username),
             new ("email", user.Email)
         };

@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Shared.Domain.Entities;
-using SdxCore.Shared.Domain.Interfaces;
+using SdxCore.Shared.Domain.Interfaces.Repositories;
 using SdxCore.Shared.Persistence.Data;
 
 namespace SdxCore.Shared.Persistence.Repositories;
@@ -34,3 +34,4 @@ public class LookupRepository : ILookupRepository
         return result;
     }
 }
+

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.DTOs;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -52,8 +53,8 @@ public class TokenFactoryTests
         Assert.NotNull(token.AccessToken);
         Assert.NotEmpty(token.AccessToken);
         Assert.Equal("Bearer", token.TokenType);
-        Assert.True(token.ExpiresAt > DateTimeOffset.UtcNow);
-        Assert.True(token.ExpiresAt <= DateTimeOffset.UtcNow.AddHours(1).AddMinutes(1)); // Allow 1 minute tolerance
+        Assert.True(token.ExpiresAt > DateTime.UtcNow);
+        Assert.True(token.ExpiresAt <= DateTime.UtcNow.AddHours(1).AddMinutes(1)); // Allow 1 minute tolerance
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
+using SdxCore.Common.Interfaces.Contexts;
 namespace SdxCore.Common.Contexts;
 public class RequestContext : IRequestContext
 {
@@ -14,13 +15,12 @@ public class RequestContext : IRequestContext
     public bool IsAuthenticated =>
         !string.IsNullOrEmpty(Http?.Request?.Headers["X-User-Id"]);
 
-    public Guid? UserId
+    public int? UserId
     {
         get
         {
             var value = Http?.Request?.Headers["X-User-Id"].FirstOrDefault();
-
-            return Guid.TryParse(value, out var guid) ? guid : null;
+            return int.TryParse(value, out var userId) ? userId : null;
         }
     }
 

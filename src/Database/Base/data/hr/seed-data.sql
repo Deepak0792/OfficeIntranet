@@ -209,49 +209,49 @@ INSERT INTO hr.InterviewRoundConfig (JobPostingId, InterviewRoundId, InterviewTy
 
 PRINT 'Inserting hr.Interview...';
 -- Poornima Hegde - HR Screen (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='poornima.hegde@gmail.com') AND JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Senior Staff Nurse - ICU')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Senior Staff Nurse - ICU') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='HR_SCREEN')),
     '2025-02-10 11:00:00', 30, 'COMPLETED', (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005')
 );
 -- Poornima Hegde - Technical Round 1 (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='poornima.hegde@gmail.com') AND JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Senior Staff Nurse - ICU')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Senior Staff Nurse - ICU') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='TECH_1')),
     '2025-02-18 14:00:00', 60, 'https://teams.microsoft.com/meet/medcare/poornima-tech1', 'COMPLETED', (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP004')
 );
 -- Poornima Hegde - Manager Round (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='poornima.hegde@gmail.com') AND JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Senior Staff Nurse - ICU')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Senior Staff Nurse - ICU') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='MANAGER')),
     '2025-03-03 10:00:00', 45, 'MedCare Mumbai HQ - HR Conference Room B', 'COMPLETED', (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005')
 );
 -- Siddharth Joshi - HR Screen (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='siddharth.joshi@gmail.com')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Resident Doctor - Cardiology') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='HR_SCREEN')),
     '2025-02-27 10:30:00', 30, 'COMPLETED', (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005')
 );
 -- Siddharth Joshi - Technical Round 1 (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='siddharth.joshi@gmail.com')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Resident Doctor - Cardiology') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='TECH_1')),
     '2025-03-08 11:00:00', 60, 'https://teams.microsoft.com/meet/medcare/siddharth-tech1', 'COMPLETED', (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP042')
 );
 -- Rashida Shaikh - HR Screen (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='rashida.shaikh@gmail.com')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Systems Administrator - EHR & Network') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='HR_SCREEN')),
     '2025-01-24 15:00:00', 30, 'COMPLETED', (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP019')
 );
 -- Rashida Shaikh - Technical Round 1 (completed)
-INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.Interview (ApplicationId, InterviewRoundConfigId, ScheduledAt, DurationMins, Venue, InterviewStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.Application WHERE CandidateId=(SELECT Id FROM hr.Candidate WHERE Email='rashida.shaikh@gmail.com')),
     (SELECT Id FROM hr.InterviewRoundConfig WHERE JobPostingId=(SELECT Id FROM hr.JobPosting WHERE Title='Systems Administrator - EHR & Network') AND InterviewRoundId=(SELECT Id FROM hr.InterviewRound WHERE RoundCode='TECH_1')),
@@ -568,7 +568,7 @@ INSERT INTO hr.PolicyCategory (CategoryCode, CategoryName, Description) VALUES
 
 
 PRINT 'Inserting hr.PolicyDocument...';
-INSERT INTO hr.PolicyDocument (PolicyCategoryId, PolicyCode, PolicyName, Description, ScopeTypeId, ScopeReferenceId, AcknowledgementRequired, AcknowledgementDeadlineDays, IsActive, CreatedByEmployeeId) VALUES
+INSERT INTO hr.PolicyDocument (PolicyCategoryId, PolicyCode, PolicyName, Description, ScopeTypeId, ScopeReferenceId, AcknowledgementRequired, AcknowledgementDeadlineDays, IsActive, CreatedBy) VALUES
 (
     (SELECT Id FROM hr.PolicyCategory WHERE CategoryCode='HR_POLICY'),
     'POL-HR-001', 'Leave and Attendance Policy',
@@ -748,7 +748,7 @@ INSERT INTO hr.PolicyAcknowledgement (PolicyVersionId, EmployeeId, AckStatus, De
 -- MODULE E: PERFORMANCE REVIEWS
 
 PRINT 'Inserting hr.PerformanceCycle...';
-INSERT INTO hr.PerformanceCycle (CycleName, CycleType, StartDate, EndDate, GoalSettingDeadline, ReviewStartDate, ReviewEndDate, CycleStatus, LegalEntityId, CreatedByEmployeeId) VALUES
+INSERT INTO hr.PerformanceCycle (CycleName, CycleType, StartDate, EndDate, GoalSettingDeadline, ReviewStartDate, ReviewEndDate, CycleStatus, LegalEntityId, CreatedBy) VALUES
 ('Annual Appraisal 2023 - MedCare India',       'ANNUAL',   '2023-01-01', '2023-12-31', '2023-02-28', '2024-01-15', '2024-02-28', 'COMPLETED',    (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'),    (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005')),
 ('Annual Appraisal 2024 - MedCare India',       'ANNUAL',   '2024-01-01', '2024-12-31', '2024-02-29', '2025-01-15', '2025-02-28', 'COMPLETED',    (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'),    (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005')),
 ('Annual Appraisal 2024 - MedCare North',       'ANNUAL',   '2024-01-01', '2024-12-31', '2024-02-29', '2025-01-15', '2025-02-28', 'COMPLETED',    (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-NORTH'), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP019')),
@@ -1052,7 +1052,7 @@ INSERT INTO hr.ExitReason (ReasonText, Category) VALUES
 
 PRINT 'Inserting hr.ExitRecord (samples)...';
 -- EMP015 Suresh Naidu - Front Desk - Resigned for better opportunity (Mumbai)
-INSERT INTO hr.ExitRecord (EmployeeId, ExitReasonId, ExitType, AdditionalReason, ResignationDate, LastWorkingDate, NoticePeriodDays, IsNoticeWaived, ExitInterviewStatus, ExitInterviewDate, ConductedByEmployeeId, ExitFeedback, IsRehireEligible, ClearanceStatus, FinalSettlementStatus, FinalSettlementDate, CreatedByEmployeeId) VALUES
+INSERT INTO hr.ExitRecord (EmployeeId, ExitReasonId, ExitType, AdditionalReason, ResignationDate, LastWorkingDate, NoticePeriodDays, IsNoticeWaived, ExitInterviewStatus, ExitInterviewDate, ConductedByEmployeeId, ExitFeedback, IsRehireEligible, ClearanceStatus, FinalSettlementStatus, FinalSettlementDate, CreatedBy) VALUES
 (
     (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP015'),
     (SELECT Id FROM hr.ExitReason WHERE ReasonText='Better Career Opportunity'),
@@ -1066,7 +1066,7 @@ INSERT INTO hr.ExitRecord (EmployeeId, ExitReasonId, ExitType, AdditionalReason,
 );
 
 -- EMP013 Manoj Verma - Pharmacist Mumbai - Resigned for higher education
-INSERT INTO hr.ExitRecord (EmployeeId, ExitReasonId, ExitType, AdditionalReason, ResignationDate, LastWorkingDate, NoticePeriodDays, IsNoticeWaived, ExitInterviewStatus, ExitInterviewDate, ConductedByEmployeeId, ExitFeedback, IsRehireEligible, ClearanceStatus, FinalSettlementStatus, CreatedByEmployeeId) VALUES
+INSERT INTO hr.ExitRecord (EmployeeId, ExitReasonId, ExitType, AdditionalReason, ResignationDate, LastWorkingDate, NoticePeriodDays, IsNoticeWaived, ExitInterviewStatus, ExitInterviewDate, ConductedByEmployeeId, ExitFeedback, IsRehireEligible, ClearanceStatus, FinalSettlementStatus, CreatedBy) VALUES
 (
     (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP013'),
     (SELECT Id FROM hr.ExitReason WHERE ReasonText='Higher Education / Research'),

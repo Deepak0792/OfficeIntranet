@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Identity.Application.Providers;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
@@ -51,7 +52,7 @@ public class InHouseProviderPropertyTests
 
         // Mock FindByUsernameAsync to return null (username doesn't exist)
         userRepositoryMock
-            .Setup(repo => repo.FindByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         // Capture the User that gets created
@@ -145,7 +146,7 @@ public class InHouseProviderPropertyTests
             IsActive = true,
             FailedAttempts = 0,
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -154,7 +155,7 @@ public class InHouseProviderPropertyTests
 
         // Mock FindByUsernameAsync to return the user
         userRepositoryMock
-            .Setup(repo => repo.FindByUsernameAsync(username.Get, It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.GetByUsernameAsync(username.Get, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // Mock IncrementFailedAttemptsAsync to simulate incrementing the counter
@@ -169,7 +170,7 @@ public class InHouseProviderPropertyTests
 
         // Mock LockAccountAsync (should not be called with high threshold)
         userRepositoryMock
-            .Setup(repo => repo.LockAccountAsync(It.IsAny<Guid>(), It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .Setup(repo => repo.LockAccountAsync(It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var provider = new InHouseProvider(

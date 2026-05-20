@@ -1,9 +1,5 @@
-using SdxCore.Common.Data;
+using SdxCore.Common.Interfaces.Data;
 using SdxCore.Identity.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Domain.Interfaces.Repositories;
 
@@ -11,7 +7,7 @@ namespace SdxCore.Identity.Domain.Interfaces.Repositories;
 /// Repository interface for audit event data access.
 /// Provides append-only access to audit logs for compliance and security monitoring.
 /// </summary>
-public interface IAuditRepository : IRepository<AuditEvent, Guid>
+public interface IAuditRepository : IRepository<AuditEvent, int>
 {
     /// <summary>
     /// Retrieves audit events for a specific username.
@@ -22,3 +18,4 @@ public interface IAuditRepository : IRepository<AuditEvent, Guid>
     /// <returns>List of audit events for the specified username.</returns>
     Task<IReadOnlyList<AuditEvent>> GetByUsernameAsync(string username, CancellationToken ct = default);
 }
+

@@ -9,7 +9,7 @@ public sealed class User
     /// <summary>
     /// Unique identifier for the user account.
     /// </summary>
-    public Guid Id { get; set; }
+    public int EmployeeId { get; set; }
 
     /// <summary>
     /// Username for authentication. Must be unique across all users.
@@ -27,11 +27,6 @@ public sealed class User
     public required string Email { get; set; }
 
     /// <summary>
-    /// Indicates whether the account is active. Inactive accounts cannot authenticate.
-    /// </summary>
-    public bool IsActive { get; set; } = true;
-
-    /// <summary>
     /// Counter for consecutive failed authentication attempts.
     /// Reset to zero on successful authentication.
     /// </summary>
@@ -41,16 +36,36 @@ public sealed class User
     /// Timestamp until which the account is locked due to excessive failed attempts.
     /// Null indicates the account is not locked.
     /// </summary>
-    public DateTimeOffset? LockedUntil { get; set; }
-
-    /// <summary>
-    /// Timestamp when the user account was created.
-    /// </summary>
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTime? LockedUntil { get; set; }
 
     /// <summary>
     /// Timestamp of the user's last successful authentication.
     /// Null if the user has never logged in.
     /// </summary>
-    public DateTimeOffset? LastLoginAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>
+    /// Indicates whether the account is active. Inactive accounts cannot authenticate.
+    /// </summary>
+    public bool IsActive { get; set; } = false;
+
+    /// <summary>
+    /// Timestamp when the user account was created.
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Identifier of the user who created this account.
+    /// </summary>
+    public int? CreatedBy { get; set; }
+
+    /// <summary>
+    /// Timestamp of the last update to this account.
+    /// </summary>
+    public DateTime LastUpdatedAt { get; set; }
+
+    /// <summary>
+    /// Identifier of the user who last updated this account.
+    /// </summary>
+    public int? LastUpdatedBy { get; set; }
 }

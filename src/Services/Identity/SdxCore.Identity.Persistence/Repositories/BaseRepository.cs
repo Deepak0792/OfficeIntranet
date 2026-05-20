@@ -1,27 +1,66 @@
+using SdxCore.Common.Interfaces.Contexts;
 using Microsoft.EntityFrameworkCore;
-using SdxCore.Common.Data;
+using SdxCore.Common.Interfaces.Data;
 using SdxCore.Identity.Persistence.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Persistence.Repositories;
 
-public abstract class BaseRepository<TEntity, TKey> : IRepository<TEntity, TKey> where TEntity : class
+public abstract class BaseRepository<TEntity> : IRepository<TEntity, int> where TEntity : class
 {
     protected readonly IdentityDbContext _dbContext;
     protected readonly DbSet<TEntity> _dbSet;
+    protected readonly IRequestContext _requestContext;
 
-    protected BaseRepository(IdentityDbContext dbContext)
+    protected BaseRepository(IdentityDbContext dbContext, IRequestContext requestContext)
     {
         _dbContext = dbContext;
         _dbSet = dbContext.Set<TEntity>();
+        _requestContext = requestContext;
     }
 
-    public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
+    protected virtual void ApplyAuditFields(TEntity entity, bool isUpdate = false)
+    {
+        int? userId = _requestContext?.UserId;
+
+        var now = DateTime.UtcNow;
+        var type = entity.GetType();
+
+        if (!isUpdate)
+        {
+            var createdAtProp = type.GetProperty("CreatedAt");
+            if (createdAtProp != null && createdAtProp.CanWrite)
+                createdAtProp.SetValue(entity, now);
+
+            var createdByProp = type.GetProperty("CreatedBy");
+            if (createdByProp != null && createdByProp.CanWrite)
+            {
+                var currentValue = createdByProp.GetValue(entity);
+
+                if (currentValue == null)
+                {
+                    createdByProp.SetValue(entity, userId);
+                }
+            }
+        }
+
+        var lastUpdatedProp = type.GetProperty("LastUpdatedAt");
+        if (lastUpdatedProp != null && lastUpdatedProp.CanWrite)
+            lastUpdatedProp.SetValue(entity, now);
+
+        var lastUpdatedByProp = type.GetProperty("LastUpdatedBy");
+        if (lastUpdatedByProp != null && lastUpdatedByProp.CanWrite)
+        {
+            var currentValue = lastUpdatedByProp.GetValue(entity);
+
+            if (currentValue == null)
+            {
+                lastUpdatedByProp.SetValue(entity, userId);
+            }
+        }
+    }
+
+    public virtual async Task<TEntity?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _dbSet.FindAsync(new object[] { id! }, cancellationToken);
     }
@@ -48,17 +87,23 @@ public abstract class BaseRepository<TEntity, TKey> : IRepository<TEntity, TKey>
 
     public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
+        ApplyAuditFields(entity, isUpdate: false);
         await _dbSet.AddAsync(entity, cancellationToken);
         return entity;
     }
 
     public virtual async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
+        foreach (var entity in entities)
+        {
+            ApplyAuditFields(entity, isUpdate: false);
+        }
         await _dbSet.AddRangeAsync(entities, cancellationToken);
     }
 
     public virtual void Update(TEntity entity)
     {
+        ApplyAuditFields(entity, isUpdate: true);
         _dbSet.Update(entity);
     }
 
@@ -77,3 +122,4 @@ public abstract class BaseRepository<TEntity, TKey> : IRepository<TEntity, TKey>
         return await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }
+

@@ -1,5 +1,6 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 
 var hasher = new PasswordHasher();
 

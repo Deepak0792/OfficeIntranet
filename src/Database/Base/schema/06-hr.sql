@@ -12,7 +12,7 @@ GO
 
 -- MODULE A: RECRUITMENT & SELECTION
 CREATE TABLE hr.InterviewRound (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     RoundNumber             INT             NOT NULL UNIQUE,
     RoundCode               NVARCHAR(50)    NOT NULL UNIQUE,
     RoundName               NVARCHAR(150)   NOT NULL,
@@ -21,8 +21,11 @@ CREATE TABLE hr.InterviewRound (
     InterviewTypeGroup      AS CAST('INTERVIEW_TYPE' AS NVARCHAR(50)) PERSISTED,
     IsMandatory             BIT             NOT NULL DEFAULT 1,
     DisplayOrder            TINYINT         NOT NULL DEFAULT 0,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_InterviewRound_InterviewType
         FOREIGN KEY (InterviewType, InterviewTypeGroup)
@@ -31,24 +34,27 @@ CREATE TABLE hr.InterviewRound (
 GO
 
 CREATE TABLE hr.PanelRole (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     RoleCode            NVARCHAR(50)    NOT NULL UNIQUE,
     RoleName            NVARCHAR(150)   NOT NULL,
     Description         NVARCHAR(1000)  NULL,
     CanSubmitFeedback   BIT             NOT NULL DEFAULT 1,
     DisplayOrder        TINYINT         NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 );
 GO
 
 CREATE TABLE hr.JobPosting (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     Title               NVARCHAR(200)   NOT NULL,
-    DepartmentId        BIGINT          NOT NULL,
-    DesignationId       BIGINT          NOT NULL,
-    LocationId          BIGINT          NULL,
-    LegalEntityId       BIGINT          NULL,
+    DepartmentId        INT          NOT NULL,
+    DesignationId       INT          NOT NULL,
+    LocationId          INT          NULL,
+    LegalEntityId       INT          NULL,
     EmploymentType      NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
     EmploymentTypeGroup AS CAST('EMPLOYMENT_TYPE' AS NVARCHAR(50)) PERSISTED,
     ExperienceMinYrs    DECIMAL(4,1)    NULL,
@@ -61,12 +67,14 @@ CREATE TABLE hr.JobPosting (
     OpeningsCount       INT             NOT NULL DEFAULT 1,
     JobPostingStatus    NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     JobPostingStatusGroup AS CAST('JOB_POSTING_STATUS' AS NVARCHAR(50)) PERSISTED,
-    PostedByEmployeeId  BIGINT          NULL,
+    PostedByEmployeeId  INT          NULL,
     PostedDate          DATE            NULL,
     ClosingDate         DATE            NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt           DATETIME2       NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_JobPosting_Department
         FOREIGN KEY (DepartmentId)
@@ -99,7 +107,7 @@ CREATE TABLE hr.JobPosting (
 GO
 
 CREATE TABLE hr.Candidate (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     FirstName               NVARCHAR(100)   NOT NULL,
     MiddleName              NVARCHAR(100)   NULL,
     LastName                NVARCHAR(100)   NOT NULL,
@@ -116,10 +124,12 @@ CREATE TABLE hr.Candidate (
     LinkedInUrl             NVARCHAR(500)   NULL,
     ResumeUrl               NVARCHAR(1000)  NULL,
     Source                  NVARCHAR(100)   NULL,
-    ReferredByEmployeeId    BIGINT          NULL,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    ReferredByEmployeeId    INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_Candidate_ReferredBy
         FOREIGN KEY (ReferredByEmployeeId)
@@ -128,17 +138,21 @@ CREATE TABLE hr.Candidate (
 GO
 
 CREATE TABLE hr.Application (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    JobPostingId            BIGINT          NOT NULL,
-    CandidateId             BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    JobPostingId            INT          NOT NULL,
+    CandidateId             INT          NOT NULL,
     ApplicationStatus       NVARCHAR(50)    NOT NULL DEFAULT 'APPLIED',
     ApplicationStatusGroup  AS CAST('APPLICATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     CoverLetter             NVARCHAR(MAX)   NULL,
-    ReviewedByEmployeeId   BIGINT          NULL,
+    ReviewedByEmployeeId   INT          NULL,
     RejectionReason        NVARCHAR(2000)  NULL,
     AppliedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    AppliedBy           INT             NULL,
     StatusUpdatedAt         DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
+    
     CONSTRAINT UQ_Application_JobCandidate
         UNIQUE (JobPostingId, CandidateId),
 
@@ -161,11 +175,11 @@ CREATE TABLE hr.Application (
 GO
 
 CREATE TABLE hr.ApplicationStatusHistory (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ApplicationId           BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId           INT          NOT NULL,
     FromStatus              NVARCHAR(50)    NULL,
     ToStatus                NVARCHAR(50)    NOT NULL,
-    ChangedByEmployeeId     BIGINT          NULL,
+    ChangedByEmployeeId     INT          NULL,
     Remarks                 NVARCHAR(2000)  NULL,
     ChangedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -180,15 +194,18 @@ CREATE TABLE hr.ApplicationStatusHistory (
 GO
 
 CREATE TABLE hr.InterviewRoundConfig (
-    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
-    JobPostingId        BIGINT  NOT NULL,
-    InterviewRoundId    BIGINT  NOT NULL,
+    Id                  INT  PRIMARY KEY IDENTITY(1,1),
+    JobPostingId        INT  NOT NULL,
+    InterviewRoundId    INT  NOT NULL,
     InterviewType           NVARCHAR(50)    NULL,
     InterviewTypeGroup      AS CAST('INTERVIEW_TYPE' AS NVARCHAR(50)) PERSISTED,
     DurationMins        INT     NOT NULL DEFAULT 60,
     IsMandatory         BIT     NOT NULL DEFAULT 1,
-    IsActive            BIT     NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT UQ_InterviewRoundConfig_JobRound
         UNIQUE (JobPostingId, InterviewRoundId),
@@ -208,20 +225,21 @@ CREATE TABLE hr.InterviewRoundConfig (
 GO
 
 CREATE TABLE hr.Interview (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ApplicationId               BIGINT          NOT NULL,
-    InterviewRoundConfigId      BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId               INT          NOT NULL,
+    InterviewRoundConfigId      INT          NOT NULL,
     ScheduledAt                 DATETIME2       NULL,
     DurationMins                INT             NOT NULL DEFAULT 60,
     MeetingLink                 NVARCHAR(1000)  NULL,
     Venue                       NVARCHAR(500)   NULL,
     InterviewStatus             NVARCHAR(50)    NOT NULL DEFAULT 'SCHEDULED',
     InterviewStatusGroup        AS CAST('INTERVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
-    RescheduledToInterviewId    BIGINT          NULL,
-    CreatedByEmployeeId         BIGINT          NULL,
-    IsActive                    BIT             NOT NULL DEFAULT 1,
-    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    RescheduledToInterviewId    INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_Interview_Application
         FOREIGN KEY (ApplicationId)
@@ -236,7 +254,7 @@ CREATE TABLE hr.Interview (
         REFERENCES hr.Interview(Id),
 
     CONSTRAINT FK_Interview_CreatedBy
-        FOREIGN KEY (CreatedByEmployeeId)
+        FOREIGN KEY (CreatedBy)
         REFERENCES employee.Employee(Id),
 
     CONSTRAINT FK_Interview_Status
@@ -246,18 +264,21 @@ CREATE TABLE hr.Interview (
 GO
 
 CREATE TABLE hr.InterviewPanel (
-    Id                      BIGINT      PRIMARY KEY IDENTITY(1,1),
-    InterviewId             BIGINT      NOT NULL,
-    InterviewerEmployeeId   BIGINT      NOT NULL,
-    PanelRoleId             BIGINT      NOT NULL,
+    Id                      INT      PRIMARY KEY IDENTITY(1,1),
+    InterviewId             INT      NOT NULL,
+    InterviewerEmployeeId   INT      NOT NULL,
+    PanelRoleId             INT      NOT NULL,
     InterviewPurpose        NVARCHAR(50)    NOT NULL,
     InterviewPurposeGroup   AS CAST('INTERVIEW_PURPOSE' AS NVARCHAR(50)) PERSISTED,
     EvaluationTopics        NVARCHAR(MAX) NULL,
     IsLead                  BIT         NOT NULL DEFAULT 0,
     CanSubmitFeedback       BIT         NOT NULL DEFAULT 1,
     ConfirmedAt             DATETIME2   NULL,
-    IsActive                BIT         NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT UQ_InterviewPanel_Interviewer
         UNIQUE (InterviewId, InterviewerEmployeeId),
@@ -281,8 +302,8 @@ CREATE TABLE hr.InterviewPanel (
 GO
 
 CREATE TABLE hr.InterviewFeedback (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    InterviewPanelId        BIGINT          NOT NULL UNIQUE,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    InterviewPanelId        INT          NOT NULL UNIQUE,
     OverallRating           DECIMAL(3,1)    NULL,
     TechnicalScore          DECIMAL(3,1)    NULL,
     CommunicationScore      DECIMAL(3,1)    NULL,
@@ -294,6 +315,11 @@ CREATE TABLE hr.InterviewFeedback (
     RecommendationStatusGroup AS CAST('RECOMMENDATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     AdditionalNotes         NVARCHAR(MAX)   NULL,
     SubmittedAt             DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_InterviewFeedback_Panel
         FOREIGN KEY (InterviewPanelId)
@@ -306,9 +332,9 @@ CREATE TABLE hr.InterviewFeedback (
 GO
 
 CREATE TABLE hr.PackageNegotiation (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ApplicationId           BIGINT          NOT NULL,
-    HREmployeeId            BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId           INT          NOT NULL,
+    HREmployeeId            INT          NOT NULL,
     RoundNumber             INT             NOT NULL DEFAULT 1,
     OfferedCTC              DECIMAL(18,2)   NOT NULL,
     CandidateAsk            DECIMAL(18,2)   NULL,
@@ -321,6 +347,11 @@ CREATE TABLE hr.PackageNegotiation (
     NegotiationStatusGroup  AS CAST('NEGOTIATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     Notes                   NVARCHAR(MAX)   NULL,
     NegotiatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_PackageNegotiation_Application
         FOREIGN KEY (ApplicationId)
@@ -337,9 +368,9 @@ CREATE TABLE hr.PackageNegotiation (
 GO
 
 CREATE TABLE hr.OfferLetter (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ApplicationId           BIGINT          NOT NULL,
-    PackageNegotiationId    BIGINT          NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    ApplicationId           INT          NOT NULL,
+    PackageNegotiationId    INT          NULL,
     LetterFileUrl           NVARCHAR(1000)  NOT NULL,
     IssuedDate              DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
     ExpiryDate              DATE            NOT NULL,
@@ -349,9 +380,12 @@ CREATE TABLE hr.OfferLetter (
     OfferStatusGroup        AS CAST('OFFER_STATUS' AS NVARCHAR(50)) PERSISTED,
     AcceptedAt              DATETIME2       NULL,
     RevokedReason           NVARCHAR(2000)  NULL,
-    IssuedByEmployeeId      BIGINT          NULL,
+    IssuedByEmployeeId      INT          NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_OfferLetter_Application
         FOREIGN KEY (ApplicationId)
@@ -373,25 +407,31 @@ GO
 
 -- MODULE B: ONBOARDING
 CREATE TABLE hr.OnboardingChecklist (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     ChecklistName   NVARCHAR(200)   NOT NULL,
     Phase           NVARCHAR(50)    NOT NULL,
     EmploymentType  NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt       DATETIME2       NULL
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 CREATE TABLE hr.OnboardingChecklistItem (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    OnboardingChecklistId   BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    OnboardingChecklistId   INT          NOT NULL,
     TaskName                NVARCHAR(250)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
     OwnerRole               NVARCHAR(50)    NULL,
     SequenceOrder           INT             NOT NULL DEFAULT 0,
     IsMandatory             BIT             NOT NULL DEFAULT 1,
-    IsActive                BIT             NOT NULL DEFAULT 1,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_OnboardingChecklistItem_Checklist
         FOREIGN KEY (OnboardingChecklistId)
@@ -400,9 +440,9 @@ CREATE TABLE hr.OnboardingChecklistItem (
 GO
 
 CREATE TABLE hr.OnboardingTask (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                  BIGINT          NOT NULL,
-    OnboardingChecklistItemId   BIGINT          NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                  INT          NOT NULL,
+    OnboardingChecklistItemId   INT          NULL,
     TaskName                    NVARCHAR(250)   NOT NULL,
     Phase                       NVARCHAR(50)    NOT NULL,
     OwnerRole                   NVARCHAR(50)    NULL,
@@ -410,11 +450,14 @@ CREATE TABLE hr.OnboardingTask (
     TaskStatusGroup             AS CAST('ONBOARDING_TASK_STATUS' AS NVARCHAR(50)) PERSISTED,
     DueDate                     DATE            NULL,
     CompletedDate               DATE            NULL,
-    CompletedByEmployeeId       BIGINT          NULL,
+    CompletedByEmployeeId       INT          NULL,
     Remarks                     NVARCHAR(2000)  NULL,
-    WorkflowInstanceId          BIGINT          NULL,
-    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    WorkflowInstanceId          INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_OnboardingTask_Employee
         FOREIGN KEY (EmployeeId)
@@ -439,9 +482,9 @@ CREATE TABLE hr.OnboardingTask (
 GO
 
 CREATE TABLE hr.DocumentVerification (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    DocumentTypeId          BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
+    DocumentTypeId          INT          NOT NULL,
     OnboardingPhase         NVARCHAR(50)    NOT NULL DEFAULT 'PRE_ONBOARDING',
     OnboardingPhaseGroup    AS CAST('ONBOARDING_PHASE' AS NVARCHAR(50)) PERSISTED,
     FileUrl                 NVARCHAR(1000)  NULL,
@@ -453,11 +496,14 @@ CREATE TABLE hr.DocumentVerification (
     DocVerifyStatusGroup    AS CAST('DOC_VERIFY_STATUS' AS NVARCHAR(50)) PERSISTED,
     SubmittedDate           DATE            NULL,
     VerifiedDate            DATE            NULL,
-    VerifiedByEmployeeId    BIGINT          NULL,
+    VerifiedByEmployeeId    INT          NULL,
     RejectionReason         NVARCHAR(2000)  NULL,
     Remarks                 NVARCHAR(2000)  NULL,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_DocVerification_Employee
         FOREIGN KEY (EmployeeId)
@@ -482,27 +528,30 @@ CREATE TABLE hr.DocumentVerification (
 GO
 
 CREATE TABLE hr.BGVAgency (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     AgencyName      NVARCHAR(200)   NOT NULL UNIQUE,
     ContactPerson   NVARCHAR(200)   NULL,
     Email           NVARCHAR(255)   NULL,
     Phone           NVARCHAR(30)    NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 CREATE TABLE hr.BackgroundVerification (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    BGVAgencyId             BIGINT          NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
+    BGVAgencyId             INT          NULL,
     BGVCheckType            NVARCHAR(50)    NOT NULL,
     BGVCheckTypeGroup       AS CAST('BGV_CHECK_TYPE' AS NVARCHAR(50)) PERSISTED,
     OnboardingPhase         NVARCHAR(50)    NOT NULL DEFAULT 'PRE_ONBOARDING',
     OnboardingPhaseGroup    AS CAST('ONBOARDING_PHASE' AS NVARCHAR(50)) PERSISTED,
     ReferenceName           NVARCHAR(200)   NULL,
     ReferenceContact        NVARCHAR(200)   NULL,
-    InitiatedByEmployeeId   BIGINT          NULL,
+    InitiatedByEmployeeId   INT          NULL,
     InitiatedDate           DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
     ExpectedDate            DATE            NULL,
     CompletedDate           DATE            NULL,
@@ -512,8 +561,11 @@ CREATE TABLE hr.BackgroundVerification (
     BGVResultGroup          AS CAST('BGV_RESULT' AS NVARCHAR(50)) PERSISTED,
     Findings                NVARCHAR(MAX)   NULL,
     ReportUrl               NVARCHAR(1000)  NULL,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_BGV_Employee
         FOREIGN KEY (EmployeeId)
@@ -547,7 +599,7 @@ GO
 
 -- MODULE C: POLICY DOCUMENTS
 CREATE TABLE hr.PolicyCategory (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode    NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName    NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
@@ -557,19 +609,20 @@ CREATE TABLE hr.PolicyCategory (
 GO
 
 CREATE TABLE hr.PolicyDocument (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PolicyCategoryId            BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    PolicyCategoryId            INT          NOT NULL,
     PolicyCode                  NVARCHAR(50)    NOT NULL UNIQUE,
     PolicyName                  NVARCHAR(300)   NOT NULL,
     Description                 NVARCHAR(MAX)   NULL,
-    ScopeTypeId                 BIGINT          NULL,
-    ScopeReferenceId            BIGINT          NULL,
+    ScopeTypeId                 INT          NULL,
+    ScopeReferenceId            INT          NULL,
     AcknowledgementRequired     BIT             NOT NULL DEFAULT 1,
     AcknowledgementDeadlineDays INT             NULL,
-    IsActive                    BIT             NOT NULL DEFAULT 1,
-    CreatedByEmployeeId         BIGINT          NULL,
-    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_PolicyDocument_Category
         FOREIGN KEY (PolicyCategoryId)
@@ -580,14 +633,14 @@ CREATE TABLE hr.PolicyDocument (
         REFERENCES time.ScopeType(Id),
 
     CONSTRAINT FK_PolicyDocument_CreatedBy
-        FOREIGN KEY (CreatedByEmployeeId)
+        FOREIGN KEY (CreatedBy)
         REFERENCES employee.Employee(Id)
 );
 GO
 
 CREATE TABLE hr.PolicyVersion (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PolicyDocumentId        BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    PolicyDocumentId        INT          NOT NULL,
     VersionNumber           INT             NOT NULL,
     VersionLabel            NVARCHAR(50)    NULL,
     FileUrl                 NVARCHAR(1000)  NOT NULL,
@@ -596,10 +649,14 @@ CREATE TABLE hr.PolicyVersion (
     PolicyStatus            NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     PolicyStatusGroup       AS CAST('POLICY_STATUS' AS NVARCHAR(50)) PERSISTED,
     EffectiveDate           DATE            NULL,
-    SupersededByVersionId   BIGINT          NULL,
-    PublishedByEmployeeId   BIGINT          NULL,
+    SupersededByVersionId   INT          NULL,
+    PublishedByEmployeeId   INT          NULL,
     PublishedAt             DATETIME2       NULL,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT UQ_PolicyVersion
         UNIQUE (PolicyDocumentId, VersionNumber),
@@ -623,15 +680,19 @@ CREATE TABLE hr.PolicyVersion (
 GO
 
 CREATE TABLE hr.PolicyAcknowledgement (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PolicyVersionId     BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    PolicyVersionId     INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     AckStatus           NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     AckStatusGroup      AS CAST('POLICY_ACK_STATUS' AS NVARCHAR(50)) PERSISTED,
     DeadlineDate        DATE            NULL,
     AcknowledgedAt      DATETIME2       NULL,
     IPAddress           NVARCHAR(50)   NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT UQ_PolicyAcknowledgement
         UNIQUE (PolicyVersionId, EmployeeId),
@@ -652,7 +713,7 @@ GO
 
 -- MODULE D: PERFORMANCE REVIEWS
 CREATE TABLE hr.PerformanceCycle (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     CycleName               NVARCHAR(150)   NOT NULL UNIQUE,
     CycleType               NVARCHAR(50)    NOT NULL DEFAULT 'ANNUAL',
     CycleTypeGroup          AS CAST('PERF_CYCLE_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -663,17 +724,19 @@ CREATE TABLE hr.PerformanceCycle (
     ReviewEndDate           DATE            NULL,
     CycleStatus             NVARCHAR(50)    NOT NULL DEFAULT 'UPCOMING',
     CycleStatusGroup        AS CAST('PERF_CYCLE_STATUS' AS NVARCHAR(50)) PERSISTED,
-    LegalEntityId           BIGINT          NULL,
-    CreatedByEmployeeId     BIGINT          NULL,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    LegalEntityId           INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_PerfCycle_LegalEntity
         FOREIGN KEY (LegalEntityId)
         REFERENCES time.LegalEntity(Id),
 
     CONSTRAINT FK_PerfCycle_CreatedBy
-        FOREIGN KEY (CreatedByEmployeeId)
+        FOREIGN KEY (CreatedBy)
         REFERENCES employee.Employee(Id),
 
     CONSTRAINT FK_PerfCycle_CycleType
@@ -687,9 +750,9 @@ CREATE TABLE hr.PerformanceCycle (
 GO
 
 CREATE TABLE hr.Goal (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    PerformanceCycleId      BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
+    PerformanceCycleId      INT          NOT NULL,
     Title                   NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
     Category                NVARCHAR(100)   NULL,
@@ -702,9 +765,12 @@ CREATE TABLE hr.Goal (
         CONSTRAINT CK_Goal_Progress CHECK (ProgressPct BETWEEN 0 AND 100),
     EmployeeRating          DECIMAL(3,1)    NULL,
     ManagerRating           DECIMAL(3,1)    NULL,
-    ApprovedByEmployeeId    BIGINT          NULL,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    ApprovedByEmployeeId    INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_Goal_Employee
         FOREIGN KEY (EmployeeId)
@@ -725,15 +791,18 @@ CREATE TABLE hr.Goal (
 GO
 
 CREATE TABLE hr.GoalKeyResult (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
-    GoalId          BIGINT          NOT NULL,
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    GoalId          INT          NOT NULL,
     Description     NVARCHAR(MAX)   NOT NULL,
     TargetValue     NVARCHAR(200)   NULL,
     ActualValue     NVARCHAR(200)   NULL,
     KRStatus        NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     KRStatusGroup   AS CAST('GOAL_KR_STATUS' AS NVARCHAR(50)) PERSISTED,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt       DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_GoalKR_Goal
         FOREIGN KEY (GoalId)
@@ -746,10 +815,10 @@ CREATE TABLE hr.GoalKeyResult (
 GO
 
 CREATE TABLE hr.PerformanceReview (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                  BIGINT          NOT NULL,
-    PerformanceCycleId          BIGINT          NOT NULL,
-    ReviewerEmployeeId          BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                  INT          NOT NULL,
+    PerformanceCycleId          INT          NOT NULL,
+    ReviewerEmployeeId          INT          NOT NULL,
     SelfRating                  DECIMAL(3,1)    NULL,
     ManagerRating               DECIMAL(3,1)    NULL,
     FinalRating                 DECIMAL(3,1)    NULL,
@@ -762,9 +831,12 @@ CREATE TABLE hr.PerformanceReview (
     SelfSubmittedAt             DATETIME2       NULL,
     ManagerSubmittedAt         DATETIME2       NULL,
     CompletedAt                 DATETIME2       NULL,
-    WorkflowInstanceId          BIGINT          NULL,
-    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    WorkflowInstanceId          INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT UQ_PerformanceReview_EmployeeCycle
         UNIQUE (EmployeeId, PerformanceCycleId),
@@ -792,11 +864,11 @@ CREATE TABLE hr.PerformanceReview (
 GO
 
 CREATE TABLE hr.PerformanceReviewHistory (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PerformanceReviewId     BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    PerformanceReviewId     INT          NOT NULL,
     FromStatus              NVARCHAR(50)    NULL,
     ToStatus                NVARCHAR(50)    NOT NULL,
-    ChangedByEmployeeId     BIGINT          NULL,
+    ChangedByEmployeeId     INT          NULL,
     Remarks                 NVARCHAR(2000)  NULL,
     ChangedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -812,7 +884,7 @@ GO
 
 -- MODULE E: TRAINING RECORDS
 CREATE TABLE hr.TrainingProgram (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     TrainingCategory        NVARCHAR(50)          NOT NULL,
     TrainingCategoryGroup   AS CAST('TRAINING_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     ProgramCode             NVARCHAR(50)    NOT NULL UNIQUE,
@@ -826,9 +898,11 @@ CREATE TABLE hr.TrainingProgram (
     ApplicableTo            NVARCHAR(100)   NULL,
     MaxParticipants         INT             NULL,
     CertificateProvided     BIT             NOT NULL DEFAULT 0,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_TrainingProgram_TrainingCategory
         FOREIGN KEY (TrainingCategory, TrainingCategoryGroup)
@@ -841,18 +915,21 @@ CREATE TABLE hr.TrainingProgram (
 GO
 
 CREATE TABLE hr.TrainingBatch (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    TrainingProgramId       BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    TrainingProgramId       INT          NOT NULL,
     BatchName               NVARCHAR(200)   NULL,
-    FacilitatorEmployeeId   BIGINT          NULL,
+    FacilitatorEmployeeId   INT          NULL,
     StartDate               DATE            NOT NULL,
     EndDate                 DATE            NULL,
     VenueOrLink             NVARCHAR(1000)  NULL,
     MaxSeats                INT             NULL,
     BatchStatus             NVARCHAR(50)    NOT NULL DEFAULT 'UPCOMING',
     BatchStatusGroup        AS CAST('TRAINING_BATCH_STATUS' AS NVARCHAR(50)) PERSISTED,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_TrainingBatch_Program
         FOREIGN KEY (TrainingProgramId)
@@ -869,10 +946,10 @@ CREATE TABLE hr.TrainingBatch (
 GO
 
 CREATE TABLE hr.EmployeeTrainingRecord (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    TrainingProgramId       BIGINT          NOT NULL,
-    TrainingBatchId         BIGINT          NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
+    TrainingProgramId       INT          NOT NULL,
+    TrainingBatchId         INT          NULL,
     EnrolledDate            DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
     CompletedDate           DATE            NULL,
     RecordStatus            NVARCHAR(50)    NOT NULL DEFAULT 'ENROLLED',
@@ -888,8 +965,11 @@ CREATE TABLE hr.EmployeeTrainingRecord (
     CertificateUrl          NVARCHAR(1000)  NULL,
     CertificateIssuedDate   DATE            NULL,
     Feedback                NVARCHAR(MAX)   NULL,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_EmpTrainingRecord_Employee
         FOREIGN KEY (EmployeeId)
@@ -915,14 +995,17 @@ CREATE TABLE hr.ExitReason (
     ReasonText  NVARCHAR(200)   NOT NULL UNIQUE,
     Category    NVARCHAR(20)    NOT NULL
         CONSTRAINT CK_ExitReason_Category CHECK (Category IN ('VOLUNTARY', 'INVOLUNTARY')),
-    IsActive    BIT             NOT NULL DEFAULT 1,
-    CreatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 CREATE TABLE hr.ExitRecord (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                  BIGINT          NOT NULL UNIQUE,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                  INT          NOT NULL UNIQUE,
     ExitReasonId                INT         NULL,
     ExitType                    NVARCHAR(50)    NOT NULL DEFAULT 'RESIGNATION',
     ExitTypeGroup               AS CAST('EXIT_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -934,7 +1017,7 @@ CREATE TABLE hr.ExitRecord (
     ExitInterviewStatus         NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     ExitInterviewStatusGroup    AS CAST('EXIT_INTERVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
     ExitInterviewDate           DATE            NULL,
-    ConductedByEmployeeId       BIGINT          NULL,
+    ConductedByEmployeeId       INT          NULL,
     ExitFeedback                NVARCHAR(MAX)   NULL,
     IsRehireEligible            BIT             NOT NULL DEFAULT 1,
     ClearanceStatus             NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
@@ -942,10 +1025,12 @@ CREATE TABLE hr.ExitRecord (
     FinalSettlementStatus       NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     FinalSettlementStatusGroup  AS CAST('FINAL_SETTLEMENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     FinalSettlementDate         DATE            NULL,
-    WorkflowInstanceId          BIGINT          NULL,
-    CreatedByEmployeeId         BIGINT          NULL,
-    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    WorkflowInstanceId          INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ExitRecord_Employee
         FOREIGN KEY (EmployeeId)
@@ -964,7 +1049,7 @@ CREATE TABLE hr.ExitRecord (
         REFERENCES workflow.WorkflowInstance(Id),
 
     CONSTRAINT FK_ExitRecord_CreatedBy
-        FOREIGN KEY (CreatedByEmployeeId)
+        FOREIGN KEY (CreatedBy)
         REFERENCES employee.Employee(Id),
 
     CONSTRAINT FK_ExitRecord_ExitType
@@ -986,17 +1071,20 @@ CREATE TABLE hr.ExitRecord (
 GO
 
 CREATE TABLE hr.ExitClearanceItem (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ExitRecordId                BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    ExitRecordId                INT          NOT NULL,
     ItemName                    NVARCHAR(200)   NOT NULL,
     OwnerDepartment             NVARCHAR(100)   NULL,
     ItemStatus                  NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     ItemStatusGroup             AS CAST('CLEARANCE_ITEM_STATUS' AS NVARCHAR(50)) PERSISTED,
-    CompletedByEmployeeId       BIGINT          NULL,
+    CompletedByEmployeeId       INT          NULL,
     CompletedAt                 DATETIME2       NULL,
     Remarks                     NVARCHAR(2000)  NULL,
-    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ExitClearanceItem_ExitRecord
         FOREIGN KEY (ExitRecordId)

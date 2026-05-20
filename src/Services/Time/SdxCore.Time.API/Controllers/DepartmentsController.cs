@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Application.DTOs;
+using SdxCore.Time.Domain.DTOs;
 using SdxCore.Time.Application.Services;
+using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;

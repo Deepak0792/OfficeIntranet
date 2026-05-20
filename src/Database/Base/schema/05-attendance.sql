@@ -12,7 +12,7 @@ GO
 
 -- ATTENDANCE STATUS
 CREATE TABLE attendance.AttendanceStatus (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     StatusCode          NVARCHAR(100)   NOT NULL UNIQUE,
     StatusName          NVARCHAR(200)   NOT NULL,
     IsPresent           BIT             NOT NULL DEFAULT 0,
@@ -21,17 +21,21 @@ CREATE TABLE attendance.AttendanceStatus (
     CountsAsWorkingDay  BIT             NOT NULL DEFAULT 0,
     DisplayOrder        INT             NOT NULL DEFAULT 1,
     IsSystemStatus      BIT             NOT NULL DEFAULT 1,
-    IsActive            BIT             NOT NULL DEFAULT 1
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- ATTENDANCE RECORD
 CREATE TABLE attendance.AttendanceRecord (
-    Id                      BIGINT      PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT      NOT NULL,
+    Id                      INT      PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT      NOT NULL,
     AttendanceDate          DATE        NOT NULL,
-    ShiftId                 BIGINT      NULL,
-    AttendanceStatusId      BIGINT      NULL,
+    ShiftId                 INT      NULL,
+    AttendanceStatusId      INT      NULL,
     CheckInTime             DATETIME2   NULL,
     CheckOutTime            DATETIME2   NULL,
     LateByMinutes           INT         NULL,
@@ -39,10 +43,14 @@ CREATE TABLE attendance.AttendanceRecord (
     WorkedMinutes           INT         NULL,
     OvertimeMinutes         INT         NULL,
     IsManualEntry           BIT         NOT NULL DEFAULT 0,
-    ApprovedBy              BIGINT      NULL,
-    ApprovedAt              DATETIME2   NULL,
     Remarks                 NVARCHAR(1000) NULL,
+    ApprovedBy              INT      NULL,
+    ApprovedAt              DATETIME2   NULL,
+    IsActive                BIT         NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT         NULL,
+    LastUpdatedAt           DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT         NULL,
 
     CONSTRAINT FK_Attendance_Employee
         FOREIGN KEY (EmployeeId)
@@ -59,14 +67,18 @@ GO
 
 -- ATTENDANCE LOG - Raw biometric punches
 CREATE TABLE attendance.AttendanceLog (
-    Id          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId  BIGINT          NOT NULL,
-    PunchTime   DATETIME2       NOT NULL,
-    PunchType   NVARCHAR(20)    NULL,
-    DeviceId    NVARCHAR(100)   NULL,
-    Location    NVARCHAR(500)  NULL,
-    IsProcessed BIT             NOT NULL DEFAULT 0,
-    CreatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    PunchTime           DATETIME2       NOT NULL,
+    PunchType           NVARCHAR(20)    NULL,
+    DeviceId            NVARCHAR(100)   NULL,
+    Location            NVARCHAR(500)   NULL,
+    IsProcessed         BIT             NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_AttendanceLog_Employee
         FOREIGN KEY (EmployeeId)
@@ -76,15 +88,19 @@ GO
 
 -- MOBILE ATTENDANCE LOG - GPS-based mobile punches
 CREATE TABLE attendance.MobileAttendanceLog (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    GeoFenceId          BIGINT          NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    GeoFenceId          INT          NULL,
     PunchTime           DATETIME2       NOT NULL,
     Latitude            DECIMAL(18,8)   NOT NULL,
     Longitude           DECIMAL(18,8)   NOT NULL,
     IsInsideGeoFence    BIT             NOT NULL DEFAULT 0,
     DeviceInfo          NVARCHAR(500)   NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_MobileAttendanceLog_Employee
         FOREIGN KEY (EmployeeId)
@@ -98,7 +114,7 @@ GO
 
 -- LEAVE TYPE
 CREATE TABLE attendance.LeaveType (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     LeaveCode           NVARCHAR(100)   NOT NULL UNIQUE,
     LeaveName           NVARCHAR(200)   NOT NULL,
     IsPaid              BIT             NOT NULL DEFAULT 1,
@@ -107,15 +123,18 @@ CREATE TABLE attendance.LeaveType (
     RequiresApproval    BIT             NOT NULL DEFAULT 1,
     AllowHalfDay        BIT             NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- LEAVE REQUEST
 CREATE TABLE attendance.LeaveRequest (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    LeaveTypeId         BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    LeaveTypeId         INT          NOT NULL,
     LeaveStatus         NVARCHAR(50)    NOT NULL,
     LeaveStatusGroup    AS CAST('LEAVE_STATUS' AS NVARCHAR(50)) PERSISTED,
     FromDate            DATE            NOT NULL,
@@ -124,11 +143,15 @@ CREATE TABLE attendance.LeaveRequest (
     IsHalfDay           BIT             NOT NULL DEFAULT 0,
     HalfDaySession      NVARCHAR(20)    NULL,
     Reason              NVARCHAR(1000)  NULL,
-    WorkflowInstanceId  BIGINT          NULL,
-    ApprovedBy          BIGINT          NULL,
-    ApprovedAt          DATETIME2       NULL,
+    WorkflowInstanceId  INT          NULL,
     Remarks             NVARCHAR(1000)  NULL,
-    AppliedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    ApprovedBy          INT          NULL,
+    ApprovedAt          DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_LeaveRequest_Employee
         FOREIGN KEY (EmployeeId)
@@ -150,9 +173,9 @@ GO
 
 -- LEAVE BALANCE
 CREATE TABLE attendance.LeaveBalance (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId      BIGINT          NOT NULL,
-    LeaveTypeId     BIGINT          NOT NULL,
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId      INT          NOT NULL,
+    LeaveTypeId     INT          NOT NULL,
     BalanceYear     INT             NOT NULL,
     OpeningBalance  DECIMAL(10,2)   NOT NULL DEFAULT 0,
     Allocated       DECIMAL(10,2)   NOT NULL DEFAULT 0,
@@ -160,7 +183,11 @@ CREATE TABLE attendance.LeaveBalance (
     Encashed        DECIMAL(10,2)   NOT NULL DEFAULT 0,
     CarryForward    DECIMAL(10,2)   NOT NULL DEFAULT 0,
     ClosingBalance  AS (OpeningBalance + Allocated + CarryForward - Availed - Encashed),
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_LeaveBalance_Employee
         FOREIGN KEY (EmployeeId)
@@ -177,28 +204,35 @@ GO
 
 -- COMP-OFF TYPE
 CREATE TABLE attendance.CompOffType (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     CompOffTypeCode NVARCHAR(100)   NOT NULL UNIQUE,
     CompOffTypeName NVARCHAR(200)   NOT NULL,
     ExpiryDays      INT             NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- COMP-OFF BALANCE
 CREATE TABLE attendance.CompOffBalance (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    CompOffTypeId       BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    CompOffTypeId       INT          NOT NULL,
     EarnedDate          DATE            NOT NULL,
     ExpiryDate          DATE            NULL,
     TotalDays           DECIMAL(10,2)   NOT NULL,
     AvailedDays         DECIMAL(10,2)   NOT NULL DEFAULT 0,
     RemainingDays       AS (TotalDays - AvailedDays),
-    AttendanceRecordId  BIGINT          NULL,
-    WorkflowInstanceId  BIGINT          NULL,
+    AttendanceRecordId  INT          NULL,
+    WorkflowInstanceId  INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_CompOffBalance_Employee
         FOREIGN KEY (EmployeeId)
@@ -220,19 +254,23 @@ GO
 
 -- ATTENDANCE REGULARIZATION
 CREATE TABLE attendance.AttendanceRegularization (
-    Id                                  BIGINT      PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                          BIGINT      NOT NULL,
+    Id                                  INT      PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                          INT      NOT NULL,
     AttendanceDate                      DATE        NOT NULL,
     RequestedCheckIn                    DATETIME2   NULL,
     RequestedCheckOut                   DATETIME2   NULL,
     Reason                              NVARCHAR(1000) NULL,
     RegularizationStatus                NVARCHAR(50) NOT NULL,
     RegularizationStatusGroup           AS CAST('ATTENDANCE_REGULARIZATION_STATUS' AS NVARCHAR(50)) PERSISTED,
-    WorkflowInstanceId                  BIGINT      NULL,
-    ApprovedBy                          BIGINT      NULL,
+    WorkflowInstanceId                  INT      NULL,
+    ApprovedBy                          INT      NULL,
     ApprovedAt                          DATETIME2   NULL,
     Remarks                             NVARCHAR(1000) NULL,
-    CreatedAt                           DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
+    IsActive                            BIT             NOT NULL DEFAULT 1,
+    CreatedAt                           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                           INT             NULL,
+    LastUpdatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                       INT             NULL,
 
     CONSTRAINT FK_Regularization_Employee
         FOREIGN KEY (EmployeeId)
@@ -250,7 +288,7 @@ GO
 
 -- SHIFT
 CREATE TABLE attendance.Shift (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     ShiftCode               NVARCHAR(100)   NOT NULL UNIQUE,
     ShiftName               NVARCHAR(200)   NOT NULL,
     StartTime               TIME            NOT NULL,
@@ -265,7 +303,10 @@ CREATE TABLE attendance.Shift (
     IsFlexible              BIT             NOT NULL DEFAULT 0,
     AllowOvertime           BIT             NOT NULL DEFAULT 1,
     IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL
 );
 GO
 
@@ -277,16 +318,19 @@ GO
 
 -- SHIFT ASSIGNMENT
 CREATE TABLE attendance.ShiftAssignment (
-    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
-    ShiftId             BIGINT  NOT NULL,
-    ScopeTypeId         BIGINT  NOT NULL,
-    ScopeReferenceId    BIGINT  NOT NULL,
+    Id                  INT  PRIMARY KEY IDENTITY(1,1),
+    ShiftId             INT  NOT NULL,
+    ScopeTypeId         INT  NOT NULL,
+    ScopeReferenceId    INT  NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
     PriorityOrder       INT     NOT NULL DEFAULT 1,
     IsPrimaryShift      BIT     NOT NULL DEFAULT 1,
-    IsActive            BIT     NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ShiftAssignment_Shift
         FOREIGN KEY (ShiftId)
@@ -300,26 +344,36 @@ GO
 
 -- SHIFT SWAP STATUS
 CREATE TABLE attendance.ShiftSwapStatus (
-    Id          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    StatusCode  NVARCHAR(100)   NOT NULL UNIQUE,
-    StatusName  NVARCHAR(200)   NOT NULL
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    StatusCode          NVARCHAR(100)   NOT NULL UNIQUE,
+    StatusName          NVARCHAR(200)   NOT NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- SHIFT SWAP REQUEST
 CREATE TABLE attendance.ShiftSwapRequest (
-    Id                      BIGINT      PRIMARY KEY IDENTITY(1,1),
-    RequesterEmployeeId     BIGINT      NOT NULL,
-    TargetEmployeeId        BIGINT      NOT NULL,
-    RequesterRosterId       BIGINT      NOT NULL,
-    TargetRosterId          BIGINT      NOT NULL,
+    Id                      INT      PRIMARY KEY IDENTITY(1,1),
+    RequesterEmployeeId     INT      NOT NULL,
+    TargetEmployeeId        INT      NOT NULL,
+    RequesterRosterId       INT      NOT NULL,
+    TargetRosterId          INT      NOT NULL,
     ShiftSwapStatus         NVARCHAR(50) NOT NULL,
     ShiftSwapStatusGroup    AS CAST('SHIFT_SWAP_STATUS' AS NVARCHAR(50)) PERSISTED,
-    WorkflowInstanceId      BIGINT      NULL,
+    WorkflowInstanceId      INT      NULL,
     RequestedAt             DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    ApprovedBy              BIGINT      NULL,
+    ApprovedBy              INT      NULL,
     ApprovedAt              DATETIME2   NULL,
     Remarks                 NVARCHAR(1000) NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_ShiftSwapRequest_RequesterEmployee
         FOREIGN KEY (RequesterEmployeeId)
@@ -341,23 +395,31 @@ GO
 
 -- ROTATION SHIFT
 CREATE TABLE attendance.RotationShift (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     RotationCode    NVARCHAR(100)   NOT NULL UNIQUE,
     RotationName    NVARCHAR(200)   NOT NULL,
     CycleLengthDays INT             NOT NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- ROTATION SHIFT DETAIL
 CREATE TABLE attendance.RotationShiftDetail (
-    Id              BIGINT  PRIMARY KEY IDENTITY(1,1),
-    RotationShiftId BIGINT  NOT NULL,
+    Id              INT  PRIMARY KEY IDENTITY(1,1),
+    RotationShiftId INT  NOT NULL,
     SequenceNo      INT     NOT NULL,
-    ShiftId         BIGINT  NULL,
+    ShiftId         INT  NULL,
     DurationDays    INT     NOT NULL,
     IsOffDay        BIT     NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_RotationDetail_Rotation
         FOREIGN KEY (RotationShiftId)
@@ -371,15 +433,18 @@ GO
 
 -- ROTATION SHIFT ASSIGNMENT
 CREATE TABLE attendance.RotationShiftAssignment (
-    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
-    RotationShiftId     BIGINT  NOT NULL,
-    ScopeTypeId         BIGINT  NOT NULL,
-    ScopeReferenceId    BIGINT  NOT NULL,
+    Id                  INT  PRIMARY KEY IDENTITY(1,1),
+    RotationShiftId     INT  NOT NULL,
+    ScopeTypeId         INT  NOT NULL,
+    ScopeReferenceId    INT  NOT NULL,
     RotationStartDate   DATE    NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
-    IsActive            BIT     NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_RotationAssignment_Rotation
         FOREIGN KEY (RotationShiftId)
@@ -393,10 +458,10 @@ GO
 
 -- EMPLOYEE SHIFT ROSTER
 CREATE TABLE attendance.EmployeeShiftRoster (
-    Id                  BIGINT      PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT      NOT NULL,
+    Id                  INT      PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT      NOT NULL,
     RosterDate          DATE        NOT NULL,
-    ShiftId             BIGINT      NULL,
+    ShiftId             INT      NULL,
     IsOffDay            BIT         NOT NULL DEFAULT 0,
     IsHoliday           BIT         NOT NULL DEFAULT 0,
     PlannedStartTime    DATETIME2   NULL,
@@ -405,7 +470,11 @@ CREATE TABLE attendance.EmployeeShiftRoster (
     ActualEndTime       DATETIME2   NULL,
     Remarks             NVARCHAR(1000) NULL,
     IsLocked            BIT         NOT NULL DEFAULT 0,
-    CreatedAt           DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_Roster_Employee
         FOREIGN KEY (EmployeeId)
@@ -434,31 +503,38 @@ GO
 
 -- HOLIDAY CALENDAR
 CREATE TABLE attendance.HolidayCalendar (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     CalendarCode    NVARCHAR(100)   NOT NULL UNIQUE,
     CalendarName    NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
     IsDefault       BIT             NOT NULL DEFAULT 0,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- HOLIDAY TYPE
 CREATE TABLE attendance.HolidayType (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     HolidayTypeCode     NVARCHAR(100)   NOT NULL UNIQUE,
     HolidayTypeName     NVARCHAR(200)   NOT NULL,
     IsOptional          BIT             NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- HOLIDAY
 CREATE TABLE attendance.Holiday (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    HolidayCalendarId   BIGINT          NOT NULL,
-    HolidayTypeId       BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    HolidayCalendarId   INT          NOT NULL,
+    HolidayTypeId       INT          NOT NULL,
     HolidayCode         NVARCHAR(100)   NULL,
     HolidayName         NVARCHAR(200)   NOT NULL,
     HolidayDate         DATE            NOT NULL,
@@ -469,6 +545,9 @@ CREATE TABLE attendance.Holiday (
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_Holiday_Calendar
         FOREIGN KEY (HolidayCalendarId)
@@ -482,17 +561,20 @@ GO
 
 -- HOLIDAY CALENDAR ASSIGNMENT
 CREATE TABLE attendance.HolidayCalendarAssignment (
-    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
-    HolidayCalendarId   BIGINT  NOT NULL,
-    ScopeTypeId         BIGINT  NOT NULL,
-    ScopeReferenceId    BIGINT  NOT NULL,
+    Id                  INT  PRIMARY KEY IDENTITY(1,1),
+    HolidayCalendarId   INT  NOT NULL,
+    ScopeTypeId         INT  NOT NULL,
+    ScopeReferenceId    INT  NOT NULL,
     EffectiveFrom       DATE    NULL,
     EffectiveTo         DATE    NULL,
     PriorityOrder       INT     NOT NULL DEFAULT 1,
     MergeStrategy       NVARCHAR(50)    NULL,
     IsPrimary           BIT     NOT NULL DEFAULT 1,
-    IsActive            BIT     NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_HolidayAssignment_Calendar
         FOREIGN KEY (HolidayCalendarId)
@@ -506,25 +588,32 @@ GO
 
 -- WORK WEEK POLICY
 CREATE TABLE attendance.WorkWeekPolicy (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     PolicyCode      NVARCHAR(100)   NOT NULL UNIQUE,
     PolicyName      NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
     IsDefault       BIT             NOT NULL DEFAULT 0,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt       DATETIME2       NULL
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
 -- WORK WEEK POLICY DAY
 CREATE TABLE attendance.WorkWeekPolicyDay (
-    Id                      BIGINT  PRIMARY KEY IDENTITY(1,1),
-    WorkWeekPolicyId        BIGINT  NOT NULL,
+    Id                      INT  PRIMARY KEY IDENTITY(1,1),
+    WorkWeekPolicyId        INT  NOT NULL,
     DayOfWeek               TINYINT NOT NULL,
     IsWorkingDay            BIT     NOT NULL,
     StandardWorkingMinutes  INT     NULL,
     IsHalfDay               BIT     NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_WorkWeekPolicyDay_Policy
         FOREIGN KEY (WorkWeekPolicyId)
@@ -537,15 +626,18 @@ GO
 
 -- WORK WEEK POLICY ASSIGNMENT
 CREATE TABLE attendance.WorkWeekPolicyAssignment (
-    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
-    WorkWeekPolicyId    BIGINT  NOT NULL,
-    ScopeTypeId         BIGINT  NOT NULL,
-    ScopeReferenceId    BIGINT  NOT NULL,
+    Id                  INT  PRIMARY KEY IDENTITY(1,1),
+    WorkWeekPolicyId    INT  NOT NULL,
+    ScopeTypeId         INT  NOT NULL,
+    ScopeReferenceId    INT  NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
     PriorityOrder       INT     NOT NULL DEFAULT 1,
-    IsActive            BIT     NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_WorkWeekAssignment_Policy
         FOREIGN KEY (WorkWeekPolicyId)

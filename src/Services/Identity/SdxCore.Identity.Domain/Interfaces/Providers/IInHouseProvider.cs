@@ -31,5 +31,5 @@ public interface IInHouseProvider : IAuthenticationProvider
     /// <param name="userId">User ID to deactivate.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>True if the account was deactivated successfully; otherwise false.</returns>
-    Task<bool> DeactivateUserAsync(string userId, CancellationToken ct = default);
+    Task<bool> DeactivateUserAsync(int employeeId, CancellationToken ct = default);
 }

@@ -36,25 +36,31 @@ GO
 
 -- Functional module that owns workflows  e.g. LEAVE, EXPENSE, HIRING
 CREATE TABLE workflow.WorkflowModule (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     ModuleCode      NVARCHAR(100)   NOT NULL UNIQUE,
     ModuleName      NVARCHAR(200)   NOT NULL,
     EntityName      NVARCHAR(100)   NOT NULL,   -- Logical entity name tracked by the module
     IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),    
+    LastUpdatedBy   INT             NULL
 );
 GO
 
 -- Versioned workflow template belonging to a module
 CREATE TABLE workflow.WorkflowDefinition (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowModuleId    BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowModuleId    INT          NOT NULL,
     WorkflowCode        NVARCHAR(100)   NOT NULL UNIQUE,
     WorkflowName        NVARCHAR(200)   NOT NULL,
     VersionNo           INT             NOT NULL DEFAULT 1,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_WorkflowDefinition_Module
         FOREIGN KEY (WorkflowModuleId)
@@ -65,8 +71,8 @@ GO
 -- Ordered steps within a workflow definition
 -- WorkflowStepType values (WORKFLOW_STEP_TYPE): APPROVAL, REVIEW, NOTIFICATION, FYI
 CREATE TABLE workflow.WorkflowStep (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowDefinitionId    BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowDefinitionId    INT          NOT NULL,
     StepNo                  INT             NOT NULL,
     StepName                NVARCHAR(200)   NOT NULL,
     WorkflowStepType        NVARCHAR(50)    NOT NULL,
@@ -76,6 +82,9 @@ CREATE TABLE workflow.WorkflowStep (
     EscalationAfterHours    INT             NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_WorkflowStep_Definition
         FOREIGN KEY (WorkflowDefinitionId)
@@ -124,16 +133,19 @@ GO
 --   A separate column would duplicate this and create two resolution paths.
 -- ============================================================
 CREATE TABLE workflow.WorkflowStepApprover (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowStepId              BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowStepId              INT          NOT NULL,
     WorkflowApproverType        NVARCHAR(50)    NOT NULL,
     WorkflowApproverTypeGroup   AS CAST('WORKFLOW_APPROVER_TYPE' AS NVARCHAR(50)) PERSISTED,
-    ScopeTypeId                 BIGINT          NULL,   -- FK → time.ScopeType
-    ScopeReferenceId            BIGINT          NULL,   -- Entity id within that scope level
+    ScopeTypeId                 INT          NULL,   -- FK → time.ScopeType
+    ScopeReferenceId            INT          NULL,   -- Entity id within that scope level
     PriorityOrder               INT             NOT NULL DEFAULT 1,
     IsMandatory                 BIT             NOT NULL DEFAULT 1,
     IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                   INT             NULL,
+    LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy               INT             NULL,
 
     CONSTRAINT FK_WorkflowStepApprover_Step
         FOREIGN KEY (WorkflowStepId)
@@ -154,9 +166,14 @@ GO
 -- (e.g. Step 2 accepts CONSULTANT or SRSURGEON as Department Head)
 -- ============================================================
 CREATE TABLE workflow.WorkflowStepApproverDesignation (
-    Id                      BIGINT  PRIMARY KEY IDENTITY(1,1),
-    WorkflowStepApproverId  BIGINT  NOT NULL,
-    DesignationId           BIGINT  NOT NULL,   -- FK → time.Designation
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowStepApproverId  INT          NOT NULL,
+    DesignationId           INT          NOT NULL,   -- FK → time.Designation
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_WSADesignation_StepApprover
         FOREIGN KEY (WorkflowStepApproverId)
@@ -180,15 +197,18 @@ CREATE TABLE workflow.WorkflowStepApproverDesignation (
 -- Example: Assign LEAVE_WF to DEPARTMENT 42 effective 2025-01-01
 -- ============================================================
 CREATE TABLE workflow.WorkflowAssignment (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowDefinitionId    BIGINT          NOT NULL,
-    ScopeTypeId             BIGINT          NOT NULL,   -- FK → time.ScopeType (routing scope)
-    ScopeReferenceId        BIGINT          NOT NULL,   -- Entity id at the routing scope
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowDefinitionId    INT          NOT NULL,
+    ScopeTypeId             INT          NOT NULL,   -- FK → time.ScopeType (routing scope)
+    ScopeReferenceId        INT          NOT NULL,   -- Entity id at the routing scope
     EffectiveFrom           DATE            NOT NULL,
     EffectiveTo             DATE            NULL,
     PriorityOrder           INT             NOT NULL DEFAULT 1,  -- Conflict resolution when multiple match
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_WorkflowAssignment_Definition
         FOREIGN KEY (WorkflowDefinitionId)
@@ -208,16 +228,17 @@ GO
 -- One instance per submitted transaction.
 -- ReferenceTransactionId → PK of the originating record (e.g. LeaveRequest.Id)
 CREATE TABLE workflow.WorkflowInstance (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowDefinitionId    BIGINT          NOT NULL,
-    WorkflowModuleId        BIGINT          NOT NULL,
-    ReferenceTransactionId  BIGINT          NOT NULL,
-    CurrentWorkflowStepId   BIGINT          NULL,       -- NULL when completed or cancelled
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowDefinitionId    INT          NOT NULL,
+    WorkflowModuleId        INT          NOT NULL,
+    ReferenceTransactionId  INT          NOT NULL,
+    CurrentWorkflowStepId   INT          NULL,       -- NULL when completed or cancelled
     WorkflowStatus          NVARCHAR(50)    NOT NULL,
     WorkflowStatusGroup     AS CAST('WORKFLOW_STATUS' AS NVARCHAR(50)) PERSISTED,
-    InitiatedBy             BIGINT          NOT NULL,   -- FK → employee.Employee
-    InitiatedAt             DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NOT NULL,   -- FK → employee.Employee
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CompletedAt             DATETIME2       NULL,
+    CompletedBy             INT             NULL,
 
     CONSTRAINT FK_WorkflowInstance_Definition
         FOREIGN KEY (WorkflowDefinitionId)
@@ -258,19 +279,21 @@ GO
 -- TaskStatus values (WORKFLOW_TASK_STATUS): PENDING, COMPLETED, DELEGATED, CANCELLED, ESCALATED
 -- ============================================================
 CREATE TABLE workflow.WorkflowTask (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowInstanceId          BIGINT          NOT NULL,
-    WorkflowStepId              BIGINT          NOT NULL,
-    WorkflowStepApproverId      BIGINT          NOT NULL,   -- The rule that generated this task
-    AssignedToEmployeeId        BIGINT          NOT NULL,   -- FK → employee.Employee (resolved approver)
-    DelegatedFromEmployeeId     BIGINT          NULL,       -- FK → employee.Employee (set when delegated)
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowInstanceId          INT          NOT NULL,
+    WorkflowStepId              INT          NOT NULL,
+    WorkflowStepApproverId      INT          NOT NULL,   -- The rule that generated this task
+    AssignedToEmployeeId        INT          NOT NULL,   -- FK → employee.Employee (resolved approver)
+    DelegatedFromEmployeeId     INT          NULL,       -- FK → employee.Employee (set when delegated)
     TaskStatus                  NVARCHAR(50)    NOT NULL,
     TaskStatusGroup             AS CAST('WORKFLOW_TASK_STATUS' AS NVARCHAR(50)) PERSISTED,
+    Remarks                     NVARCHAR(2000)  NULL,
+    ParentWorkflowTaskId        INT          NULL,       -- Set when this task is a delegation child
     AssignedAt                  DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     DueAt                       DATETIME2       NULL,       -- Computed from step EscalationAfterHours
     ActionAt                    DATETIME2       NULL,       -- Timestamp when approver acted
-    Remarks                     NVARCHAR(2000)  NULL,
-    ParentWorkflowTaskId        BIGINT          NULL,       -- Set when this task is a delegation child
+    ActionBy                    INT             NOT NULL,       -- Timestamp when approver acted
+    IsActive                    BIT             NOT NULL DEFAULT 1,
 
     CONSTRAINT FK_WorkflowTask_Instance
         FOREIGN KEY (WorkflowInstanceId)
@@ -303,21 +326,20 @@ GO
 -- own composite FK into shared.StatusLookup (StatusCode, StatusGroup).
 -- ============================================================
 CREATE TABLE workflow.WorkflowActionHistory (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowInstanceId          BIGINT          NOT NULL,
-    WorkflowTaskId              BIGINT          NULL,       -- Task that was acted on (NULL for system actions)
-    WorkflowStepId              BIGINT          NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowInstanceId          INT          NOT NULL,
+    WorkflowTaskId              INT          NULL,       -- Task that was acted on (NULL for system actions)
+    WorkflowStepId              INT          NULL,
     WorkflowActionType          NVARCHAR(50)    NOT NULL,
-    WorkflowActionTypeGroup     AS CAST('WORKFLOW_ACTION_TYPE' AS NVARCHAR(50)) PERSISTED,
-    ActionBy                    BIGINT          NOT NULL,   -- FK → employee.Employee
-    ActionAt                    DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    WorkflowActionTypeGroup     AS CAST('WORKFLOW_ACTION_TYPE' AS NVARCHAR(50)) PERSISTED,    
     Remarks                     NVARCHAR(2000)  NULL,
-
     FromWorkflowStatus          NVARCHAR(50)    NULL,
     FromWorkflowStatusGroup     AS CAST('WORKFLOW_STATUS' AS NVARCHAR(50)) PERSISTED,
-
     ToWorkflowStatus            NVARCHAR(50)    NULL,
     ToWorkflowStatusGroup       AS CAST('WORKFLOW_STATUS' AS NVARCHAR(50)) PERSISTED,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
+    ActionBy                    INT          NOT NULL,   -- FK → employee.Employee
+    ActionAt                    DATETIME2       NOT NULL,
 
     CONSTRAINT FK_WorkflowActionHistory_Instance
         FOREIGN KEY (WorkflowInstanceId)
@@ -364,8 +386,8 @@ CREATE INDEX IX_WorkflowStepApprover_Scope
 CREATE INDEX IX_WorkflowInstance_Module_Transaction
     ON workflow.WorkflowInstance (WorkflowModuleId, ReferenceTransactionId);
 
-CREATE INDEX IX_WorkflowInstance_InitiatedBy
-    ON workflow.WorkflowInstance (InitiatedBy);
+CREATE INDEX IX_WorkflowInstance_CreatedBy
+    ON workflow.WorkflowInstance (CreatedBy);
 
 CREATE INDEX IX_WorkflowInstance_CurrentStep
     ON workflow.WorkflowInstance (CurrentWorkflowStepId);

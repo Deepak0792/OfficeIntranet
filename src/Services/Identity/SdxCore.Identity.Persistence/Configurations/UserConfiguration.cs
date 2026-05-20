@@ -20,10 +20,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.ToTable("Users");
 
         // Primary key
-        builder.HasKey(u => u.Id);
+        builder.HasKey(u => u.EmployeeId);
 
         // Properties
-        builder.Property(u => u.Id)
+        builder.Property(u => u.EmployeeId)
             .IsRequired()
             .ValueGeneratedOnAdd();
 

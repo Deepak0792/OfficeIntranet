@@ -1,17 +1,13 @@
+using SdxCore.Common.Interfaces.Contexts;
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Persistence.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Persistence.Repositories;
-public sealed class RefreshTokenRepository : BaseRepository<RefreshToken, Guid>, IRefreshTokenRepository
+public sealed class RefreshTokenRepository : BaseRepository<RefreshToken>, IRefreshTokenRepository
 {
-    public RefreshTokenRepository(IdentityDbContext dbContext) : base(dbContext)
+    public RefreshTokenRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext)
     {
     }
 
@@ -28,3 +24,4 @@ public sealed class RefreshTokenRepository : BaseRepository<RefreshToken, Guid>,
             .FirstOrDefaultAsync(t => t.HashToken == hashToken, ct);
     }
 }
+

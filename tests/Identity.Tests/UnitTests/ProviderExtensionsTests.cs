@@ -103,7 +103,7 @@ public class ProviderExtensionsTests
     // Mock implementations for testing
     private class MockUserRepository : IUserRepository
     {
-        public Task<Domain.Entities.User?> FindByUsernameAsync(string username, CancellationToken ct = default)
+        public Task<Domain.Entities.User?> GetByUsernameAsync(string username, CancellationToken ct = default)
             => Task.FromResult<Domain.Entities.User?>(null);
         public Task<Domain.Entities.User?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult<Domain.Entities.User?>(null);
         public Task<IEnumerable<Domain.Entities.User>> GetAllAsync(CancellationToken ct = default) => Task.FromResult<IEnumerable<Domain.Entities.User>>([]);
@@ -119,11 +119,11 @@ public class ProviderExtensionsTests
             => Task.CompletedTask;
         public Task ResetFailedAttemptsAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task UpdateLastLoginAsync(Guid userId, DateTimeOffset loginTime, CancellationToken ct = default)
+        public Task UpdateLastLoginAsync(Guid userId, DateTime loginTime, CancellationToken ct = default)
             => Task.CompletedTask;
         public Task DeactivateAsync(Guid userId, CancellationToken ct = default)
             => Task.CompletedTask;
-        public Task LockAccountAsync(Guid userId, DateTimeOffset lockedUntil, CancellationToken ct = default)
+        public Task LockAccountAsync(Guid userId, DateTime lockedUntil, CancellationToken ct = default)
             => Task.CompletedTask;
 
         public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken ct = default)
@@ -167,7 +167,7 @@ public class ProviderExtensionsTests
             return new Domain.DTOs.AuthToken
             {
                 AccessToken = "mock.jwt.token",
-                ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+                ExpiresAt = DateTime.UtcNow.AddHours(1),
                 TokenType = "Bearer"
             };
         }

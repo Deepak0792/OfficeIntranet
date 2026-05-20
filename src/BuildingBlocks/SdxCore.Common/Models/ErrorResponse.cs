@@ -1,3 +1,5 @@
+using System;
+
 namespace SdxCore.Common.Models;
 
 /// <summary>
@@ -18,7 +20,7 @@ public sealed record ErrorResponse
     /// <summary>
     /// Optional timestamp when the error occurred.
     /// </summary>
-    public DateTimeOffset? Timestamp { get; init; }
+    public DateTime? Timestamp { get; init; } = DateTime.UtcNow;
 
     /// <summary>
     /// Optional additional error details or context.

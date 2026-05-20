@@ -7,7 +7,7 @@ public interface IRefreshTokenService
 {
     string GenerateRefreshToken();
 
-    Task<RefreshTokenResponse> CreateAsync(Guid userId, CancellationToken ct = default);
+    Task<RefreshTokenResponse> CreateAsync(int employeeId, CancellationToken ct = default);
 
     Task<AuthenticationResponse> RefreshTokenAsync(RefreshTokenRequest refreshTokenRequest, CancellationToken ct = default);
 

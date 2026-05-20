@@ -3,6 +3,9 @@
 -- Dependencies: shared, time
 
 -- MODULE 1: EMPLOYEE CORE DATA
+PRINT 'Inserting System Employee...';
+INSERT INTO employee.Employee (EmployeeCode, FirstName, LastName, DisplayName, Email, MobileNumber, DesignationId, PreferredLanguage, PreferredTimeZoneId, DateOfJoining, AboutMe, CreatedBy, LastUpdatedBy, IsSystemEmployee) VALUES
+('SYS000', 'System', 'User', 'System', 'system@internal.local', NULL, NULL, 'en', NULL, '2000-01-01', 'Internal system account used for automated operations. Do not modify or delete.', 0, 0, 1);
 
 PRINT 'Inserting Employee...';
 INSERT INTO employee.Employee (EmployeeCode, FirstName, LastName, DisplayName, Email, MobileNumber, DesignationId, PreferredLanguage, PreferredTimeZoneId, DateOfJoining, EmploymentType, AboutMe) VALUES

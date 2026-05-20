@@ -8,7 +8,7 @@ public sealed record TokenClaims
     /// <summary>
     /// User identifier from the token.
     /// </summary>
-    public string? UserId { get; init; }
+    public int UserId { get; init; }
 
     /// <summary>
     /// Username from the token.
@@ -33,5 +33,5 @@ public sealed record TokenClaims
     /// <summary>
     /// Token expiration timestamp.
     /// </summary>
-    public DateTimeOffset? ExpiresAt { get; init; }
+    public DateTime? ExpiresAt { get; init; }
 }

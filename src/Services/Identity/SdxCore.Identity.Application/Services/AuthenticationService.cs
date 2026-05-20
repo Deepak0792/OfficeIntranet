@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using SdxCore.Common.Contexts;
+using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
@@ -103,23 +103,23 @@ public sealed class AuthenticationService : IAuthenticationService
             if (token is null)
                 throw new ArgumentNullException("Token Generation failed");
 
-            string? userId = ExtractSubjectFromClaims(providerResult.Claims);
+            int employeeId = ExtractSubjectFromClaims(providerResult.Claims);
 
-            if (string.IsNullOrEmpty(userId))
+            if (employeeId == 0)
             {
-                throw new ArgumentException("UserId is empty");
+                throw new ArgumentException("EmployeeId is 0");
             }
 
             _logger.LogInformation(
                "Authentication successful for user {Username} using protocol {Protocol}",
-               request.Username ?? ExtractSubjectFromClaims(providerResult.Claims),
+               request.Username ?? ExtractSubjectFromClaims(providerResult.Claims).ToString(),
             protocol);
 
             // 5.1 Generate refresh token
             // Store new refresh token
             var refreshTokenResult =
                 await _refreshTokenService.CreateAsync(
-                    Guid.Parse(userId),
+                    employeeId,
                     ct);
 
             token.RefreshToken = refreshTokenResult.RawToken;
@@ -131,7 +131,7 @@ public sealed class AuthenticationService : IAuthenticationService
                 EventType = "LOGIN_SUCCESS",
                 Protocol = protocol,
                 Username = request.Username,
-                UserId = userId
+                EmployeeId = employeeId
             }, ct);
 
             // 7. Return successful result
@@ -323,8 +323,8 @@ public sealed class AuthenticationService : IAuthenticationService
     /// <summary>
     /// Extracts the subject (user ID) from claims.
     /// </summary>
-    private string? ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
+    private int ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
     {
-        return claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value;
+        return Convert.ToInt32(claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value);
     }
 }

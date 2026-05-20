@@ -48,7 +48,7 @@ GO
 --      module tables store the payload detail.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.AuditEvent (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
+    Id                      INT          NOT NULL IDENTITY(1,1),
 
     -- Identity of the actor
     ActorUserId             NVARCHAR(100)   NOT NULL,               -- internal user / service-account id
@@ -100,8 +100,8 @@ GO
 --      Kept separate to avoid sparse columns on AuditEvent and to allow multi-value tags.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.AuditEventTag (
-    Id              BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId    BIGINT          NOT NULL,
+    Id              INT          NOT NULL IDENTITY(1,1),
+    AuditEventId    INT          NOT NULL,
     TagKey          NVARCHAR(200)   NOT NULL,
     TagValue        NVARCHAR(1000)  NULL,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -128,8 +128,8 @@ GO
 --      Links to AuditEvent for actor and service context.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.EntityChangeLog (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId        BIGINT          NOT NULL,
+    Id                  INT          NOT NULL IDENTITY(1,1),
+    AuditEventId        INT          NOT NULL,
 
     -- Entity identity
     EntityName          NVARCHAR(200)   NOT NULL,               -- logical entity, e.g. "Employee", "LeaveRequest"
@@ -167,8 +167,8 @@ GO
 --      Each row represents one field that changed value.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.FieldAuditLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    EntityChangeLogId       BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    EntityChangeLogId       INT          NOT NULL,
 
     -- Field identity
     FieldName               NVARCHAR(200)   NOT NULL,           -- logical field name, e.g. "AnnualCTC"
@@ -204,8 +204,8 @@ GO
 --      Paired 1-to-1 with ApiResponseLog.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ApiRequestLog (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId        BIGINT          NOT NULL,
+    Id                  INT          NOT NULL IDENTITY(1,1),
+    AuditEventId        INT          NOT NULL,
 
     -- HTTP context
     HttpMethod          NVARCHAR(10)    NOT NULL,               -- GET | POST | PUT | PATCH | DELETE
@@ -213,7 +213,7 @@ CREATE TABLE audit.ApiRequestLog (
     RoutePath           NVARCHAR(500)   NULL,                   -- normalised route, e.g. /api/employees/{id}
     QueryString         NVARCHAR(2000)  NULL,
     ContentType         NVARCHAR(200)   NULL,
-    RequestSizeBytes    BIGINT          NULL,
+    RequestSizeBytes    INT          NULL,
 
     -- Payload (can be redacted for sensitive endpoints)
     RequestBodyJson     NVARCHAR(MAX)   NULL                    CONSTRAINT CK_ARL_RequestBodyJson CHECK (RequestBodyJson IS NULL OR ISJSON(RequestBodyJson) = 1),
@@ -237,12 +237,12 @@ GO
 --      Stores HTTP status, response size, error detail, and end-to-end latency.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ApiResponseLog (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    ApiRequestLogId     BIGINT          NOT NULL,
+    Id                  INT          NOT NULL IDENTITY(1,1),
+    ApiRequestLogId     INT          NOT NULL,
 
     -- Response metadata
     HttpStatusCode      INT             NOT NULL,
-    ResponseSizeBytes   BIGINT          NULL,
+    ResponseSizeBytes   INT          NULL,
     ContentType         NVARCHAR(200)   NULL,
 
     -- Payload
@@ -276,8 +276,8 @@ GO
 --      Supports end-to-end message tracing and retry/failure forensics.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.IntegrationMessageLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Direction
     Direction               NVARCHAR(20)    NOT NULL,           -- OUTBOUND | INBOUND
@@ -291,7 +291,7 @@ CREATE TABLE audit.IntegrationMessageLog (
 
     -- Payload
     PayloadJson             NVARCHAR(MAX)   NULL                CONSTRAINT CK_IML_PayloadJson CHECK (PayloadJson IS NULL OR ISJSON(PayloadJson) = 1),
-    PayloadSizeBytes        BIGINT          NULL,
+    PayloadSizeBytes        INT          NULL,
     IsPayloadRedacted       BIT             NOT NULL DEFAULT 0,
 
     -- Outcome
@@ -326,8 +326,8 @@ GO
 --      provides a separate, append-only audit trail.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.WorkflowAuditLog (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId                BIGINT          NOT NULL,
+    Id                          INT          NOT NULL IDENTITY(1,1),
+    AuditEventId                INT          NOT NULL,
 
     -- Workflow identity
     WorkflowDefinitionCode      NVARCHAR(100)   NOT NULL,       -- e.g. "LEAVE_APPROVAL", "PAYROLL_DISBURSEMENT"
@@ -354,7 +354,7 @@ CREATE TABLE audit.WorkflowAuditLog (
 
     -- Timing
     TransitionTimestampUtc      DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
-    TimeSpentInPreviousStepMs   BIGINT          NULL,
+    TimeSpentInPreviousStepMs   INT          NULL,
 
     CONSTRAINT PK_WorkflowAuditLog PRIMARY KEY (Id),
 
@@ -371,8 +371,8 @@ GO
 --      Links to WorkflowAuditLog for the parent transition context.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ApprovalDecisionLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    WorkflowAuditLogId      BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    WorkflowAuditLogId      INT          NOT NULL,
 
     -- Approver identity
     ApproverUserId          NVARCHAR(100)   NOT NULL,
@@ -386,7 +386,7 @@ CREATE TABLE audit.ApprovalDecisionLog (
 
     -- Timing
     DecisionTimestampUtc    DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
-    TimeToDecideMs          BIGINT          NULL,               -- time from step assignment to decision
+    TimeToDecideMs          INT          NULL,               -- time from step assignment to decision
 
     CONSTRAINT PK_ApprovalDecisionLog PRIMARY KEY (Id),
 
@@ -409,8 +409,8 @@ GO
 --      Captures totals, outcome summary, and source file metadata.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.BulkOperationLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Operation identity
     OperationType           NVARCHAR(200)   NOT NULL,           -- e.g. "PAYROLL_IMPORT", "EMPLOYEE_BULK_UPDATE"
@@ -435,7 +435,7 @@ CREATE TABLE audit.BulkOperationLog (
     -- Timing
     StartedAt               DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     CompletedAt             DATETIME2(7)    NULL,
-    DurationMs              BIGINT          NULL,
+    DurationMs              INT          NULL,
 
     CONSTRAINT PK_BulkOperationLog PRIMARY KEY (Id),
 
@@ -451,8 +451,8 @@ GO
 --      Links to EntityChangeLog when a change was persisted, allowing full diff tracing per item.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.BulkOperationItemLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    BulkOperationLogId      BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    BulkOperationLogId      INT          NOT NULL,
 
     -- Item identity
     RowSequence             INT             NOT NULL,           -- position in the source file / batch
@@ -468,7 +468,7 @@ CREATE TABLE audit.BulkOperationItemLog (
     ErrorMessage            NVARCHAR(2000)  NULL,
 
     -- Change linkage (set when ItemStatus = SUCCESS and a change was persisted)
-    EntityChangeLogId       BIGINT          NULL,
+    EntityChangeLogId       INT          NULL,
 
     CONSTRAINT PK_BulkOperationItemLog PRIMARY KEY (Id),
 
@@ -496,8 +496,8 @@ GO
 --      by configuration drift.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ConfigChangeLog (
-    Id                  BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId        BIGINT          NOT NULL,
+    Id                  INT          NOT NULL IDENTITY(1,1),
+    AuditEventId        INT          NOT NULL,
 
     -- Config identity
     ConfigScope         NVARCHAR(100)   NOT NULL,               -- GLOBAL | SERVICE | TENANT | FEATURE_FLAG | ROLE_PERMISSION | LOOKUP
@@ -538,8 +538,8 @@ GO
 --      Stores run outcome, affected record counts, and any error detail for SLA and incident tracking.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ScheduledJobLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Job identity
     JobCode                 NVARCHAR(200)   NOT NULL,           -- unique code for the job, e.g. "PAYROLL_PROCESS_MAR25"
@@ -551,7 +551,7 @@ CREATE TABLE audit.ScheduledJobLog (
     -- Execution
     StartedAt               DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     CompletedAt             DATETIME2(7)    NULL,
-    DurationMs              BIGINT          NULL,
+    DurationMs              INT          NULL,
 
     -- Outcome
     ExecutionStatus         NVARCHAR(50)    NOT NULL,           -- RUNNING | COMPLETED | FAILED | TIMED_OUT | CANCELLED | SKIPPED
@@ -591,8 +591,8 @@ GO
 --      Captures channel, template, delivery status, and retry history.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.NotificationLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Notification identity
     NotificationType        NVARCHAR(100)   NOT NULL,           -- EMAIL | SMS | IN_APP | PUSH | WEBHOOK_ALERT | ESCALATION
@@ -644,8 +644,8 @@ GO
 --      Captures the filter criteria, output format, file metadata, and delivery method.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.DataExportLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Export identity
     ExportType              NVARCHAR(200)   NOT NULL,           -- REPORT | DATA_DUMP | SALARY_SLIP | TAX_STATEMENT | CUSTOM
@@ -658,7 +658,7 @@ CREATE TABLE audit.DataExportLog (
     -- Output
     OutputFormat            NVARCHAR(50)    NULL,               -- CSV | XLSX | PDF | JSON | XML
     TotalRecordsExported    INT             NULL,
-    FileSizeBytes           BIGINT          NULL,
+    FileSizeBytes           INT          NULL,
     FileHash                NVARCHAR(128)   NULL,               -- SHA-256 of the output file
     StorageLocation         NVARCHAR(1000)  NULL,               -- cloud blob path / download URL
 
@@ -694,8 +694,8 @@ GO
 --       Captures entity, field, access justification, and the policy that permitted the access.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.SensitiveDataAccessLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Subject (whose data was accessed)
     SubjectUserId           NVARCHAR(100)   NULL,               -- data subject; may differ from actor
@@ -736,8 +736,8 @@ GO
 --       Provides the complete audit trail for privileged user access.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ImpersonationLog (
-    Id                          BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId                BIGINT          NOT NULL,
+    Id                          INT          NOT NULL IDENTITY(1,1),
+    AuditEventId                INT          NOT NULL,
 
     -- Who is doing the impersonating / delegating
     ActorUserId                 NVARCHAR(100)   NOT NULL,
@@ -782,8 +782,8 @@ GO
 --       Each row is a point-in-time snapshot of the consent state.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ConsentAuditLog (
-    Id                      BIGINT          NOT NULL IDENTITY(1,1),
-    AuditEventId            BIGINT          NOT NULL,
+    Id                      INT          NOT NULL IDENTITY(1,1),
+    AuditEventId            INT          NOT NULL,
 
     -- Subject
     SubjectUserId           NVARCHAR(100)   NOT NULL,

@@ -108,7 +108,7 @@ public sealed class GatewayAuthenticationMiddleware
         try
         {
             // Call the Identity service's INTERNAL token validation endpoint
-            var response = await httpClient.PostAsync("/api/auth/validate-token", null, cancellationToken);
+            var response = await httpClient.PostAsync("/api/v1/auth/validate-token", null, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -121,12 +121,12 @@ public sealed class GatewayAuthenticationMiddleware
 
             // Parse the successful response
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            var validationResult = JsonSerializer.Deserialize<TokenValidationResponse>(responseContent, new JsonSerializerOptions
+            var validationResult = JsonSerializer.Deserialize<ApiResponse<TokenValidationResponse>>(responseContent, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            return validationResult;
+            return validationResult?.Data;
         }
         catch (HttpRequestException ex)
         {
@@ -205,9 +205,9 @@ public sealed class GatewayAuthenticationMiddleware
         var headers = context.Request.Headers;
 
         // Add user context to headers for downstream services
-        if (!string.IsNullOrEmpty(validationResult.UserId))
+        if (validationResult.UserId != 0)
         {
-            context.Request.Headers["X-User-Id"] = validationResult.UserId;
+            context.Request.Headers["X-User-Id"] = validationResult.UserId.ToString();
         }
 
         if (!string.IsNullOrEmpty(validationResult.Username))

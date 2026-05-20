@@ -503,7 +503,7 @@ GO
 
 INSERT INTO workflow.WorkflowInstance
     (WorkflowDefinitionId, WorkflowModuleId, ReferenceTransactionId,
-     CurrentWorkflowStepId, WorkflowStatus, InitiatedBy, InitiatedAt, CompletedAt)
+     CurrentWorkflowStepId, WorkflowStatus, CreatedBy, CreatedAt, CompletedAt)
 SELECT
     (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
     (SELECT Id FROM workflow.WorkflowModule     WHERE ModuleCode   = v.ModuleCode),

@@ -13,7 +13,7 @@ namespace SdxCore.Identity.API.Controllers;
 /// Authentication controller providing login and token management endpoints.
 /// </summary>
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 [GatewayOnly]
 public sealed class AuthController : ControllerBase
 {
@@ -320,7 +320,7 @@ public sealed class AuthController : ControllerBase
                 Roles = tokenClaims.Roles,
                 Provider = tokenClaims.Provider,
                 ExpiresAt = tokenClaims.ExpiresAt,
-                ValidatedAt = DateTimeOffset.UtcNow
+                ValidatedAt = DateTime.UtcNow
             }, "Token is valid"));
         }
         catch (Exception ex)
@@ -351,7 +351,7 @@ public sealed class AuthController : ControllerBase
         return Ok(new ApiResponse<object>(new
         {
             Message = "Token is valid",
-            Timestamp = DateTimeOffset.UtcNow,
+            Timestamp = DateTime.UtcNow,
             UserIdFromGateway = userIdFromGateway,
             Note = userIdFromGateway != null
                 ? "X-User-Id header was provided by Gateway"
@@ -400,11 +400,11 @@ public sealed class AuthController : ControllerBase
             // Create the user
             var user = await provider.CreateUserAsync(request, ct);
 
-            _logger.LogInformation("Created test user: {UserId}, Username: {Username}", user.Id, user.Username);
+            _logger.LogInformation("Created test user: {UserId}, Username: {Username}", user.EmployeeId, user.Username);
 
-            return Created($"/api/auth/users/{user.Id}", new ApiResponse<object>(new
+            return Created($"/api/auth/users/{user.Email}", new ApiResponse<object>(new
             {
-                Id = user.Id,
+                Id = user.EmployeeId,
                 Username = user.Username,
                 Email = user.Email,
                 CreatedAt = user.CreatedAt
@@ -424,6 +424,15 @@ public sealed class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error while deactivating user");
             return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "CREATE_USER_ERROR",
+                ErrorMessage = ex.Message
+            });
+        }
+        catch(InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            return StatusCode(StatusCodes.Status409Conflict, new ErrorResponse
             {
                 ErrorCode = "CREATE_USER_ERROR",
                 ErrorMessage = ex.Message
@@ -472,7 +481,7 @@ public sealed class AuthController : ControllerBase
 
             if (!status)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+                return StatusCode(StatusCodes.Status401Unauthorized, new ErrorResponse
                 {
                     ErrorCode = "CHANGE_PASSWORD_ERROR",
                     ErrorMessage = "Failed to change the password"
@@ -523,7 +532,7 @@ public sealed class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeactivatePassword([FromBody] string userId, CancellationToken ct)
+    public async Task<IActionResult> DeactivatePassword([FromBody] DeactivateUserRequest deactivateUserRequest, CancellationToken ct)
     {
         try
         {
@@ -540,7 +549,7 @@ public sealed class AuthController : ControllerBase
             }
 
             // Deactivating user
-            var status = await provider.DeactivateUserAsync(userId, ct);
+            var status = await provider.DeactivateUserAsync(deactivateUserRequest.EmployeeId, ct);
 
             if (!status)
             {
@@ -550,7 +559,7 @@ public sealed class AuthController : ControllerBase
                     ErrorMessage = "Failed to deactivate user"
                 });
             }
-            _logger.LogInformation($"User deactivate successfully {userId}");
+            _logger.LogInformation($"User deactivate successfully {deactivateUserRequest.EmployeeId}");
 
             return Ok(new ApiResponse<bool>(true, "User deactivated successfully"));
         }

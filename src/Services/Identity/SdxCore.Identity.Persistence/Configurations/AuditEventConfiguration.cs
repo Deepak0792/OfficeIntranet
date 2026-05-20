@@ -38,7 +38,7 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
             .HasConversion<string>()
             .HasMaxLength(50);
 
-        builder.Property(a => a.UserId)
+        builder.Property(a => a.EmployeeId)
             .IsRequired(false)
             .HasMaxLength(256);
 
@@ -50,7 +50,7 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
             .IsRequired()
             .HasMaxLength(45); // IPv6 max length
 
-        builder.Property(a => a.OccurredAt)
+        builder.Property(a => a.CreatedAt)
             .IsRequired();
 
         builder.Property(a => a.FailureReason)
@@ -67,11 +67,11 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
         builder.HasIndex(a => a.Username)
             .HasDatabaseName("IX_AuditEvents_Username");
 
-        builder.HasIndex(a => a.OccurredAt)
+        builder.HasIndex(a => a.CreatedAt)
             .HasDatabaseName("IX_AuditEvents_OccurredAt");
 
         // Composite index for common queries (username + timestamp)
-        builder.HasIndex(a => new { a.Username, a.OccurredAt })
+        builder.HasIndex(a => new { a.Username, a.CreatedAt })
             .HasDatabaseName("IX_AuditEvents_Username_OccurredAt");
     }
 }

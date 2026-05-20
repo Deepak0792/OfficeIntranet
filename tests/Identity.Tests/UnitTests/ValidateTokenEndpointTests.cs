@@ -127,7 +127,7 @@ public sealed class ValidateTokenEndpointTests
         var response = Assert.IsType<TokenValidationResponse>(okResult.Value);
         
         Assert.True(response.IsValid);
-        Assert.True(response.ValidatedAt > DateTimeOffset.MinValue);
+        Assert.True(response.ValidatedAt > DateTime.MinValue);
         
         _authenticationServiceMock.Verify(
             s => s.ValidateTokenAsync(token, It.IsAny<CancellationToken>()), 

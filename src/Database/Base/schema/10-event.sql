@@ -101,7 +101,7 @@ GO
 
 -- EVENT CATEGORY - Categories for events
 CREATE TABLE event.EventCategory (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode        NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
     Description         NVARCHAR(1000)  NULL,
@@ -114,15 +114,15 @@ GO
 
 -- EVENT - Main event entity
 CREATE TABLE event.Event (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EventCode               NVARCHAR(50)    NOT NULL UNIQUE,
     EventTitle              NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
-    CategoryId              BIGINT          NOT NULL,
+    CategoryId              INT          NOT NULL,
     CategoryStatus          NVARCHAR(50)    NOT NULL DEFAULT 'ANNUAL_FUNCTION',
     CategoryStatusGroup     AS CAST('EVENT_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     Venue                   NVARCHAR(500)   NULL,
-    OfficeLocationId        BIGINT          NULL,
+    OfficeLocationId        INT          NULL,
     EventDate               DATE            NOT NULL,
     StartTime               TIME            NOT NULL,
     EndTime                 TIME            NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE event.Event (
     Capacity                INT             NULL,
     IsRegistrationRequired BIT             NOT NULL DEFAULT 1,
     IsPublic                BIT             NOT NULL DEFAULT 1,
-    OrganizerId             BIGINT          NOT NULL,
+    OrganizerId             INT          NOT NULL,
     StatusCode              NVARCHAR(50)   NOT NULL DEFAULT 'DRAFT',
     StatusGroup             AS CAST('EVENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     QRCodeUrl               NVARCHAR(1000)  NULL,
@@ -171,16 +171,16 @@ GO
 
 -- EVENT BANNER - Event images and attachments
 CREATE TABLE event.EventBanner (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
     FileName            NVARCHAR(255)   NOT NULL,
     FileUrl             NVARCHAR(1000)  NOT NULL,
     FileType            NVARCHAR(50)    NOT NULL,
-    FileSize            BIGINT          NULL,
+    FileSize            INT          NULL,
     DisplayOrder        INT             NOT NULL DEFAULT 0,
     IsCoverImage        BIT             NOT NULL DEFAULT 0,
     Description         NVARCHAR(500)   NULL,
-    UploadedById        BIGINT          NOT NULL,
+    UploadedById        INT          NOT NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_EventBanner_Event
@@ -196,14 +196,14 @@ GO
 
 -- EVENT ATTACHMENT - Additional event documents
 CREATE TABLE event.EventAttachment (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
     FileName            NVARCHAR(255)   NOT NULL,
     FileUrl             NVARCHAR(1000)  NOT NULL,
     FileType            NVARCHAR(50)    NOT NULL,
-    FileSize            BIGINT          NULL,
+    FileSize            INT          NULL,
     Description         NVARCHAR(500)   NULL,
-    UploadedById        BIGINT          NOT NULL,
+    UploadedById        INT          NOT NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_EventAttachment_Event
@@ -219,9 +219,9 @@ GO
 
 -- EVENT DEPARTMENT - Departments invited to event
 CREATE TABLE event.EventDepartment (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
-    DepartmentId        BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
+    DepartmentId        INT          NOT NULL,
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -240,9 +240,9 @@ GO
 
 -- EVENT INVITEE - Specific employees invited to event
 CREATE TABLE event.EventInvitee (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     InvitedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -261,9 +261,9 @@ GO
 
 -- EVENT RSVP - Employee response to event invitation
 CREATE TABLE event.EventRSVP (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     ResponseStatus      NVARCHAR(50)   NOT NULL DEFAULT 'PENDING',
     ResponseStatusGroup AS CAST('RSVP_STATUS' AS NVARCHAR(50)) PERSISTED,
     ResponseDate        DATETIME2       NULL,
@@ -290,9 +290,9 @@ GO
 
 -- EVENT WAITLIST - Employees waiting for event capacity
 CREATE TABLE event.EventWaitlist (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     Position            INT             NOT NULL,
     NotifiedAt          DATETIME2       NULL,
     OfferedAt           DATETIME2       NULL,
@@ -316,9 +316,9 @@ GO
 
 -- EVENT ATTENDANCE - QR code based attendance tracking
 CREATE TABLE event.EventAttendance (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     CheckInTime         DATETIME2       NULL,
     CheckOutTime        DATETIME2       NULL,
     AttendanceStatus    NVARCHAR(50)   NOT NULL DEFAULT 'CHECKED_IN',
@@ -349,12 +349,12 @@ GO
 
 -- EVENT NOTIFICATION - Notification history for events
 CREATE TABLE event.EventNotification (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
     NotificationType    NVARCHAR(50)   NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
     ChannelStatusGroup  AS CAST('NOTIFICATION_CHANNEL' AS NVARCHAR(50)) PERSISTED,
-    RecipientId         BIGINT          NULL,
+    RecipientId         INT          NULL,
     RecipientEmail      NVARCHAR(255)  NULL,
     Subject             NVARCHAR(300)  NULL,
     Message             NVARCHAR(MAX)  NULL,
@@ -386,8 +386,8 @@ GO
 
 -- EVENT FEEDBACK QUESTION - Questions for event feedback
 CREATE TABLE event.EventFeedbackQuestion (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
     QuestionText        NVARCHAR(500)  NOT NULL,
     QuestionType        NVARCHAR(50)   NOT NULL,
     IsRequired          BIT             NOT NULL DEFAULT 1,
@@ -404,9 +404,9 @@ GO
 
 -- EVENT FEEDBACK - Employee feedback for an event
 CREATE TABLE event.EventFeedback (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EventId             BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EventId             INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     OverallRating       DECIMAL(3,2)   NOT NULL,
     Comments            NVARCHAR(MAX)  NULL,
     WouldRecommend      BIT             NULL,
@@ -427,9 +427,9 @@ GO
 
 -- EVENT FEEDBACK ANSWER - Individual answers to feedback questions
 CREATE TABLE event.EventFeedbackAnswer (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    FeedbackId          BIGINT          NOT NULL,
-    QuestionId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    FeedbackId          INT          NOT NULL,
+    QuestionId          INT          NOT NULL,
     AnswerText          NVARCHAR(MAX)  NULL,
     AnswerRating        DECIMAL(3,2)   NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -541,8 +541,8 @@ GO
 
 -- CELEBRATION SCHEDULE - Daily schedule for birthdays and anniversaries
 CREATE TABLE event.CelebrationSchedule (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
     CelebrationType         NVARCHAR(50)   NOT NULL,
     CelebrationTypeGroup    AS CAST('CELEBRATION_TYPE' AS NVARCHAR(50)) PERSISTED,
     CelebrationDate        DATE            NOT NULL,
@@ -566,9 +566,9 @@ GO
 
 -- GREETING CARD - Generated greeting cards for celebrations
 CREATE TABLE event.GreetingCard (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    CelebrationScheduleId   BIGINT          NOT NULL,
-    EmployeeId              BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    CelebrationScheduleId   INT          NOT NULL,
+    EmployeeId              INT          NOT NULL,
     GreetingType            NVARCHAR(50)   NOT NULL,
     GreetingTypeGroup       AS CAST('CELEBRATION_TYPE' AS NVARCHAR(50)) PERSISTED,
     CardTemplate           NVARCHAR(100)  NULL,
@@ -607,11 +607,11 @@ GO
 
 -- GREETING CARD NOTIFICATION - Track notifications sent for greetings
 CREATE TABLE event.GreetingNotification (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    GreetingCardId      BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    GreetingCardId      INT          NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
     ChannelStatusGroup  AS CAST('NOTIFICATION_CHANNEL' AS NVARCHAR(50)) PERSISTED,
-    RecipientId         BIGINT          NOT NULL,
+    RecipientId         INT          NOT NULL,
     RecipientEmail      NVARCHAR(255)   NULL,
     Subject             NVARCHAR(300)   NULL,
     Message             NVARCHAR(MAX)   NULL,
@@ -643,9 +643,9 @@ GO
 
 -- CELEBRATION WISH - Employee wishes on greeting cards
 CREATE TABLE event.CelebrationWish (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    GreetingCardId      BIGINT          NOT NULL,
-    WisherId            BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    GreetingCardId      INT          NOT NULL,
+    WisherId            INT          NOT NULL,
     WishText            NVARCHAR(500)  NOT NULL,
     IsGif               BIT             NOT NULL DEFAULT 0,
     GifUrl             NVARCHAR(1000)  NULL,
@@ -668,9 +668,9 @@ GO
 
 -- CELEBRATION REACTION - Reactions to celebration wishes
 CREATE TABLE event.CelebrationReaction (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WishId              BIGINT          NOT NULL,
-    ReactorId           BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    WishId              INT          NOT NULL,
+    ReactorId           INT          NOT NULL,
     ReactionType        NVARCHAR(50)   NOT NULL,
     ReactionTypeGroup   AS CAST('REACTION_TYPE' AS NVARCHAR(50)) PERSISTED,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -694,10 +694,10 @@ GO
 
 -- CELEBRATION COMMENT - Comments on celebration wishes
 CREATE TABLE event.CelebrationComment (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    WishId              BIGINT          NOT NULL,
-    CommenterId         BIGINT          NOT NULL,
-    ParentCommentId     BIGINT          NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    WishId              INT          NOT NULL,
+    CommenterId         INT          NOT NULL,
+    ParentCommentId     INT          NULL,
     CommentText         NVARCHAR(500)  NOT NULL,
     IsEdited            BIT             NOT NULL DEFAULT 0,
     EditedAt            DATETIME2       NULL,
@@ -722,9 +722,9 @@ GO
 
 -- BIRTHDAY WALL POST - Featured birthday/anniversary posts on dashboard
 CREATE TABLE event.BirthdayWallPost (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    GreetingCardId      BIGINT          NOT NULL,
-    PostedById          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    GreetingCardId      INT          NOT NULL,
+    PostedById          INT          NOT NULL,
     PostContent         NVARCHAR(MAX)  NULL,
     ImageUrl            NVARCHAR(1000)  NULL,
     IsFeatured          BIT             NOT NULL DEFAULT 0,
@@ -746,7 +746,7 @@ GO
 
 -- MILESTONE BADGE - Awarded for work anniversary milestones
 CREATE TABLE event.MilestoneBadge (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     BadgeCode           NVARCHAR(50)    NOT NULL UNIQUE,
     BadgeName           NVARCHAR(100)   NOT NULL,
     Description         NVARCHAR(500)   NULL,
@@ -761,10 +761,10 @@ GO
 
 -- EMPLOYEE BADGE - Badges earned by employees for milestones
 CREATE TABLE event.EmployeeBadge (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    BadgeId             BIGINT          NOT NULL,
-    GreetingCardId      BIGINT          NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    BadgeId             INT          NOT NULL,
+    GreetingCardId      INT          NULL,
     AwardedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     DisplayOnProfile    BIT             NOT NULL DEFAULT 1,
 

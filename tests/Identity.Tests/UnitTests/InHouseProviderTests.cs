@@ -76,7 +76,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 0,
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -87,7 +87,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -99,7 +99,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         _mockUserRepository
-            .Setup(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -116,7 +116,7 @@ public sealed class InHouseProviderTests
 
         // Verify repository interactions
         _mockUserRepository.Verify(r => r.ResetFailedAttemptsAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockUserRepository.Verify(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockUserRepository.Verify(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync("nonexistent", It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync("nonexistent", It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         // Act
@@ -198,7 +198,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 2,
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -209,7 +209,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -249,7 +249,7 @@ public sealed class InHouseProviderTests
             IsActive = false, // Account is inactive
             FailedAttempts = 0,
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -260,7 +260,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // Act
@@ -282,7 +282,7 @@ public sealed class InHouseProviderTests
         var userId = Guid.NewGuid();
         var username = "testuser";
         var password = "password";
-        var lockedUntil = DateTimeOffset.UtcNow.AddMinutes(10); // Locked for 10 more minutes
+        var lockedUntil = DateTime.UtcNow.AddMinutes(10); // Locked for 10 more minutes
 
         var user = new User
         {
@@ -293,7 +293,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 5,
             LockedUntil = lockedUntil, // Account is locked
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -304,7 +304,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         // Act
@@ -327,7 +327,7 @@ public sealed class InHouseProviderTests
         var username = "testuser";
         var password = "password";
         var passwordHash = "hashed_password";
-        var lockedUntil = DateTimeOffset.UtcNow.AddMinutes(-5); // Lock expired 5 minutes ago
+        var lockedUntil = DateTime.UtcNow.AddMinutes(-5); // Lock expired 5 minutes ago
 
         var user = new User
         {
@@ -338,7 +338,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 5,
             LockedUntil = lockedUntil, // Lock has expired
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -349,7 +349,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -361,7 +361,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         _mockUserRepository
-            .Setup(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -391,7 +391,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 2, // Currently at 2 failed attempts
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -402,7 +402,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -439,7 +439,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 4, // One more attempt will reach the threshold of 5
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -450,7 +450,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -462,7 +462,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         _mockUserRepository
-            .Setup(r => r.LockAccountAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.LockAccountAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -474,7 +474,7 @@ public sealed class InHouseProviderTests
 
         // Verify account was locked
         _mockUserRepository.Verify(r => r.IncrementFailedAttemptsAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockUserRepository.Verify(r => r.LockAccountAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockUserRepository.Verify(r => r.LockAccountAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -495,7 +495,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 3, // Had previous failed attempts
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -506,7 +506,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -518,7 +518,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         _mockUserRepository
-            .Setup(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -529,7 +529,7 @@ public sealed class InHouseProviderTests
 
         // Verify failed attempts were reset
         _mockUserRepository.Verify(r => r.ResetFailedAttemptsAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
-        _mockUserRepository.Verify(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockUserRepository.Verify(r => r.UpdateLastLoginAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -555,7 +555,7 @@ public sealed class InHouseProviderTests
             IsActive = true,
             FailedAttempts = 2, // One more will reach threshold of 3
             LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = DateTime.UtcNow,
             LastLoginAt = null
         };
 
@@ -566,7 +566,7 @@ public sealed class InHouseProviderTests
         };
 
         _mockUserRepository
-            .Setup(r => r.FindByUsernameAsync(username, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByUsernameAsync(username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _mockPasswordHasher
@@ -578,7 +578,7 @@ public sealed class InHouseProviderTests
             .Returns(Task.CompletedTask);
 
         _mockUserRepository
-            .Setup(r => r.LockAccountAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.LockAccountAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -588,6 +588,6 @@ public sealed class InHouseProviderTests
         Assert.False(result.IsSuccess);
 
         // Verify account was locked with custom threshold
-        _mockUserRepository.Verify(r => r.LockAccountAsync(userId, It.IsAny<DateTimeOffset>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockUserRepository.Verify(r => r.LockAccountAsync(userId, It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

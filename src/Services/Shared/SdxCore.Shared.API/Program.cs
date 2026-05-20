@@ -1,3 +1,4 @@
+using SdxCore.Identity.Application.Extensions;
 using SdxCore.Shared.Application.Extensions;
 using SdxCore.Shared.Persistence.Extensions;
 
@@ -6,12 +7,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add controllers
 builder.Services.AddControllers();
 
+// HttpContext Access (Required for RequestContext)
+builder.Services.AddHttpContextAccessor();
+
 // Add health checks
 builder.Services.AddHealthChecks();
 
 // Add OpenAPI/Swagger for development
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Register the common layer
+builder.Services.AddSdxCoreCommon(builder.Configuration);
 
 // Register the persistence and application layers
 builder.Services.AddSharedPersistence(builder.Configuration);

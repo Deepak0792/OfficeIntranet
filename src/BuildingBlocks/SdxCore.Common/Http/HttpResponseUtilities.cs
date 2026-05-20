@@ -43,7 +43,7 @@ public static class HttpResponseUtilities
         {
             ErrorCode = errorCode,
             ErrorMessage = errorMessage,
-            Timestamp = DateTimeOffset.UtcNow,
+            Timestamp = DateTime.UtcNow,
             Details = details
         };
 

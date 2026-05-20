@@ -5,10 +5,7 @@ namespace SdxCore.Identity.Domain.DTOs.Request;
 /// </summary>
 public sealed record ChangePasswordRequest
 {
-    /// <summary>
-    /// The unique identifier of the user whose password is being changed.
-    /// </summary>
-    public required string UserId { get; set; }
+    public required int EmployeeId { get; set; }
 
     /// <summary>
     /// The current password for verification.

@@ -14,37 +14,43 @@ GO
 CREATE TABLE shared.StatusLookup (
     StatusCode      NVARCHAR(50)    NOT NULL,
     StatusGroup     NVARCHAR(50)    NOT NULL,
-    Label           NVARCHAR(100)  NOT NULL,
-    Description     NVARCHAR(500)  NULL,
-    DisplayOrder    TINYINT         NOT NULL DEFAULT 0,
+    Label           NVARCHAR(100)   NOT NULL,
+    Description     NVARCHAR(500)   NULL,
+    DisplayOrder    INT             NOT NULL DEFAULT 0,
     IsTerminal      BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
     CONSTRAINT PK_StatusLookup PRIMARY KEY (StatusCode, StatusGroup)
 );
 GO
 
 CREATE TABLE shared.LookupDefinition
 (
-    LookupDefinitionId     BIGINT IDENTITY(1,1) NOT NULL,
-    LookupCode             NVARCHAR(100) NOT NULL,
-    LookupName             NVARCHAR(200) NOT NULL,
+    LookupDefinitionId       INT        IDENTITY(1,1) NOT NULL,
+    LookupCode               NVARCHAR(100) NOT NULL,
+    LookupName               NVARCHAR(200) NOT NULL,
     -- STATIC_SQL | TABLE | PROCEDURE
-    LookupSourceType       NVARCHAR(30) NOT NULL,
-    SourceObjectName       NVARCHAR(300) NULL,
-    SqlStatement           NVARCHAR(MAX) NULL,
-    ProcedureName          NVARCHAR(300) NULL,
-    ParentLookupDefinitionId BIGINT NULL,
+    LookupSourceType         NVARCHAR(30)  NOT NULL,
+    SourceObjectName         NVARCHAR(300) NULL,
+    SqlStatement             NVARCHAR(MAX) NULL,
+    ProcedureName            NVARCHAR(300) NULL,
+    ParentLookupDefinitionId INT        NULL,
     -- UI Metadata
-    ValueField             NVARCHAR(100) NOT NULL DEFAULT 'Id',
-    TextField              NVARCHAR(100) NOT NULL DEFAULT 'Name',
-    ParentValueField       NVARCHAR(100) NULL,
+    ValueField               NVARCHAR(100) NOT NULL DEFAULT 'Id',
+    TextField                NVARCHAR(100) NOT NULL DEFAULT 'Name',
+    ParentValueField         NVARCHAR(100) NULL,
     -- Dynamic filtering support
-    SupportsParentFilter   BIT NOT NULL DEFAULT 0,
+    SupportsParentFilter     BIT           NOT NULL DEFAULT 0,
     -- System
-    IsSystem               BIT NOT NULL DEFAULT 0,
-    IsActive               BIT NOT NULL DEFAULT 1,
-    CreatedAt              DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    IsSystem                 BIT           NOT NULL DEFAULT 0,
+    IsActive                 BIT             NOT NULL DEFAULT 1,
+    CreatedAt                DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                INT             NULL,
+    LastUpdatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy            INT             NULL,
 
     CONSTRAINT PK_LookupDefinition
         PRIMARY KEY (LookupDefinitionId),

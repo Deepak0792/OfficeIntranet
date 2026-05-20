@@ -18,12 +18,12 @@ public sealed record LoginResponse
     /// <summary>
     /// Token expiration timestamp.
     /// </summary>
-    public required DateTimeOffset ExpiresAt { get; init; }
+    public required DateTime ExpiresAt { get; init; }
 
     /// <summary>
     /// Optional refresh token for token renewal.
     /// </summary>
     public string? RefreshToken { get; init; }
 
-    public required DateTimeOffset RefreshTokenExpiresAt { get; init; }
+    public required DateTime RefreshTokenExpiresAt { get; init; }
 }

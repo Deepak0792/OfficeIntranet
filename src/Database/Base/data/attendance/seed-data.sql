@@ -45,7 +45,7 @@ INSERT INTO attendance.LeaveBalance (EmployeeId, LeaveTypeId, BalanceYear, Openi
 ((SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005'), (SELECT Id FROM attendance.LeaveType WHERE LeaveCode='SL'),  2025, 0.00, 12.00, 0.00,  0.00, 0.00, GETUTCDATE());
 
 PRINT 'Inserting LeaveRequest (samples)...';
-INSERT INTO attendance.LeaveRequest (EmployeeId, LeaveTypeId, LeaveStatus, FromDate, ToDate, TotalDays, IsHalfDay, Reason, ApprovedBy, ApprovedAt, AppliedAt) VALUES
+INSERT INTO attendance.LeaveRequest (EmployeeId, LeaveTypeId, LeaveStatus, FromDate, ToDate, TotalDays, IsHalfDay, Reason, ApprovedBy, ApprovedAt, CreatedAt) VALUES
 -- EMP009 Resident took sick leave
 ((SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP009'),
  (SELECT Id FROM attendance.LeaveType WHERE LeaveCode='SL'),

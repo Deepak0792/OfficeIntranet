@@ -108,12 +108,12 @@ GO
 
 -- SURVEY - Main survey entity
 CREATE TABLE survey.Survey (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     SurveyCode              NVARCHAR(50)    NOT NULL UNIQUE,
     Title                   NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
     Instructions            NVARCHAR(MAX)   NULL,
-    CreatedById             BIGINT          NOT NULL,
+    CreatedById             INT          NOT NULL,
     StartDate               DATE            NOT NULL,
     EndDate                 DATE            NOT NULL,
     IsAnonymous             BIT             NOT NULL DEFAULT 0,
@@ -150,8 +150,8 @@ GO
 
 -- SURVEY TARGET - Departments/employees targeted for survey
 CREATE TABLE survey.SurveyTarget (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    SurveyId            INT          NOT NULL,
     TargetType          NVARCHAR(50)   NOT NULL,
     TargetTypeGroup     AS CAST('TARGET_TYPE' AS NVARCHAR(50)) PERSISTED,
     -- TargetId mapping based on TargetType:
@@ -159,10 +159,10 @@ CREATE TABLE survey.SurveyTarget (
     -- DEPARTMENT: - time.Department(Id)
     -- LOCATION: - time.OfficeLocation(Id)
     -- EMPLOYEE: - employee.Employee(Id)
-    TargetId            BIGINT          NULL,
-    DepartmentId        BIGINT          NULL,
-    LocationId          BIGINT          NULL,
-    EmployeeId          BIGINT          NULL,
+    TargetId            INT          NULL,
+    DepartmentId        INT          NULL,
+    LocationId          INT          NULL,
+    EmployeeId          INT          NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_SurveyTarget_Survey
@@ -190,8 +190,8 @@ GO
 
 -- SURVEY QUESTION - Questions in a survey
 CREATE TABLE survey.SurveyQuestion (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    SurveyId            INT          NOT NULL,
     QuestionText        NVARCHAR(1000) NOT NULL,
     QuestionType        NVARCHAR(50)   NOT NULL,
     QuestionTypeGroup   AS CAST('QUESTION_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -218,9 +218,9 @@ GO
 
 -- SURVEY RESPONSE - Employee responses to survey
 CREATE TABLE survey.SurveyResponse (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    SurveyId            INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     SubmissionNumber    INT             NOT NULL DEFAULT 1,
     IsAnonymous         BIT             NOT NULL DEFAULT 0,
     AnonymousHash       NVARCHAR(64)    NULL,
@@ -246,9 +246,9 @@ GO
 
 -- SURVEY RESPONSE ANSWER - Individual answers to survey questions
 CREATE TABLE survey.SurveyResponseAnswer (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    ResponseId          BIGINT          NOT NULL,
-    QuestionId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    ResponseId          INT          NOT NULL,
+    QuestionId          INT          NOT NULL,
     AnswerText          NVARCHAR(MAX)  NULL,
     AnswerRating        DECIMAL(5,2)   NULL,
     AnswerOptions       NVARCHAR(MAX)  NULL,
@@ -267,9 +267,9 @@ GO
 
 -- SURVEY NOTIFICATION - Survey notifications to employees
 CREATE TABLE survey.SurveyNotification (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    SurveyId            INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     NotificationType    NVARCHAR(50)   NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
     ChannelStatusGroup  AS CAST('NOTIFICATION_CHANNEL' AS NVARCHAR(50)) PERSISTED,
@@ -303,8 +303,8 @@ GO
 
 -- SURVEY ANALYTICS - Pre-computed survey analytics
 CREATE TABLE survey.SurveyAnalytics (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    SurveyId            INT          NOT NULL,
     TotalQuestions      INT             NOT NULL DEFAULT 0,
     TotalResponses      INT             NOT NULL DEFAULT 0,
     CompletionRate      DECIMAL(5,2)   NOT NULL DEFAULT 0,
@@ -327,13 +327,13 @@ GO
 
 -- POLL - Main poll entity
 CREATE TABLE survey.Poll (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
     PollCode                NVARCHAR(50)    NOT NULL UNIQUE,
     Question                NVARCHAR(500)   NOT NULL,
     Description             NVARCHAR(1000)  NULL,
     PollType                NVARCHAR(50)   NOT NULL,
     PollTypeGroup           AS CAST('POLL_TYPE' AS NVARCHAR(50)) PERSISTED,
-    CreatedById             BIGINT          NOT NULL,
+    CreatedById             INT          NOT NULL,
     IsAnonymous             BIT             NOT NULL DEFAULT 0,
     AllowMultipleVotes      BIT             NOT NULL DEFAULT 0,
     ExpiryDate              DATETIME2       NULL,
@@ -364,8 +364,8 @@ GO
 
 -- POLL OPTION - Options for a poll
 CREATE TABLE survey.PollOption (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PollId              BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    PollId              INT          NOT NULL,
     OptionText          NVARCHAR(300)   NOT NULL,
     DisplayOrder        INT             NOT NULL DEFAULT 0,
     ImageUrl            NVARCHAR(1000)  NULL,
@@ -382,10 +382,10 @@ GO
 
 -- POLL VOTE - Employee votes on poll
 CREATE TABLE survey.PollVote (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PollId              BIGINT          NOT NULL,
-    OptionId            BIGINT          NOT NULL,
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    PollId              INT          NOT NULL,
+    OptionId            INT          NOT NULL,
+    EmployeeId          INT          NOT NULL,
     AnonymousHash       NVARCHAR(64)    NULL,
     VoteDate            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IPAddress           NVARCHAR(50)    NULL,
@@ -409,8 +409,8 @@ GO
 
 -- POLL TARGET - Departments/employees targeted for poll
 CREATE TABLE survey.PollTarget (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PollId              BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    PollId              INT          NOT NULL,
     TargetType          NVARCHAR(50)   NOT NULL,
     TargetTypeGroup     AS CAST('TARGET_TYPE' AS NVARCHAR(50)) PERSISTED,
     -- TargetId mapping based on TargetType:
@@ -418,10 +418,10 @@ CREATE TABLE survey.PollTarget (
     -- DEPARTMENT: - time.Department(Id)
     -- LOCATION: - time.OfficeLocation(Id)
     -- EMPLOYEE: - employee.Employee(Id)
-    TargetId            BIGINT          NULL,
-    DepartmentId        BIGINT          NULL,
-    LocationId          BIGINT          NULL,
-    EmployeeId          BIGINT          NULL,
+    TargetId            INT          NULL,
+    DepartmentId        INT          NULL,
+    LocationId          INT          NULL,
+    EmployeeId          INT          NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_PollTarget_Poll
@@ -451,7 +451,7 @@ GO
 
 -- ANONYMOUS FEEDBACK - Employee anonymous feedback
 CREATE TABLE survey.AnonymousFeedback (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
     FeedbackReference   NVARCHAR(20)   NOT NULL UNIQUE,
     FeedbackCategory    NVARCHAR(50)   NOT NULL,
     FeedbackCategoryGroup AS CAST('FEEDBACK_CATEGORY' AS NVARCHAR(50)) PERSISTED,
@@ -460,9 +460,9 @@ CREATE TABLE survey.AnonymousFeedback (
     StatusCode          NVARCHAR(50)   NOT NULL DEFAULT 'SUBMITTED',
     StatusCodeGroup     AS CAST('FEEDBACK_STATUS' AS NVARCHAR(50)) PERSISTED,
     Priority            NVARCHAR(20)   NOT NULL DEFAULT 'NORMAL',
-    AssignedToId        BIGINT          NULL,
+    AssignedToId        INT          NULL,
     AnonymousHash       NVARCHAR(64)   NOT NULL,
-    EmployeeId          BIGINT          NULL,
+    EmployeeId          INT          NULL,
     IsAnonymousByChoice BIT             NOT NULL DEFAULT 1,
     AttachmentUrl       NVARCHAR(1000)  NULL,
     AttachmentName      NVARCHAR(255)  NULL,
@@ -493,10 +493,10 @@ GO
 
 -- FEEDBACK ACTION - Actions taken on feedback
 CREATE TABLE survey.FeedbackAction (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    FeedbackId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    FeedbackId          INT          NOT NULL,
     ActionType          NVARCHAR(50)   NOT NULL,
-    ActionById          BIGINT          NOT NULL,
+    ActionById          INT          NOT NULL,
     PreviousStatus      NVARCHAR(50)   NULL,
     NewStatus           NVARCHAR(50)   NULL,
     Comments            NVARCHAR(MAX)  NULL,
@@ -518,10 +518,10 @@ GO
 
 -- FEEDBACK ESCALATION - Escalation tracking for feedback
 CREATE TABLE survey.FeedbackEscalation (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    FeedbackId          BIGINT          NOT NULL,
-    EscalatedById       BIGINT          NOT NULL,
-    EscalatedToId       BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    FeedbackId          INT          NOT NULL,
+    EscalatedById       INT          NOT NULL,
+    EscalatedToId       INT          NOT NULL,
     EscalationLevel     INT             NOT NULL DEFAULT 1,
     Reason              NVARCHAR(500)  NOT NULL,
     IsAccepted          BIT             NULL,

@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SdxCore.Common.Contexts;
+using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
@@ -66,10 +66,10 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // 2. Load user from SQL Server
-        User? user = await _userRepository.FindByUsernameAsync(request.Username, ct);
+        User? user = await _userRepository.GetByUsernameAsync(request.Username, ct);
         if (user is null)
         {
-            _logger.LogWarning("Authentication attempt for non-existent user");
+            _logger.LogWarning("Authentication attempt for non-existent employee");
             // Use generic error message to prevent user enumeration
             return Fail("Invalid credentials.");
         }
@@ -77,14 +77,14 @@ public sealed class InHouseProvider : IInHouseProvider
         // 3. Check account status
         if (!user.IsActive)
         {
-            _logger.LogWarning("Authentication attempt for inactive account: {UserId}", user.Id);
+            _logger.LogWarning("Authentication attempt for inactive account: {EmployeeId}", user.EmployeeId);
             return Fail("Account is inactive.");
         }
 
-        if (user.LockedUntil.HasValue && user.LockedUntil > DateTimeOffset.UtcNow)
+        if (user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
         {
-            _logger.LogWarning("Authentication attempt for locked account: {UserId}, locked until {LockedUntil}",
-                user.Id, user.LockedUntil);
+            _logger.LogWarning("Authentication attempt for locked account: {EmployeeId}, locked until {LockedUntil}",
+                user.EmployeeId, user.LockedUntil);
             return Fail("Account is temporarily locked.");
         }
 
@@ -93,24 +93,24 @@ public sealed class InHouseProvider : IInHouseProvider
 
         if (!passwordValid)
         {
-            _logger.LogWarning("Failed authentication attempt for user: {UserId}", user.Id);
+            _logger.LogWarning("Failed authentication attempt for employee: {EmployeeId}", user.EmployeeId);
 
             // Check if we need to lock the account after incrementing
             int maxFailedAttempts = _configuration.GetValue<int>(MaxFailedAttemptsKey, DefaultMaxFailedAttempts);
             int newFailedAttempts = user.FailedAttempts + 1;
 
             // Increment failed attempts
-            await _userRepository.IncrementFailedAttemptsAsync(user.Id, ct);
+            await _userRepository.IncrementFailedAttemptsAsync(user.EmployeeId, ct);
 
             // Lock account if threshold reached
             if (newFailedAttempts >= maxFailedAttempts)
             {
                 TimeSpan lockoutDuration = _configuration.GetValue<TimeSpan>(LockoutDurationKey, DefaultLockoutDuration);
-                DateTimeOffset lockedUntil = DateTimeOffset.UtcNow.Add(lockoutDuration);
-                await _userRepository.LockAccountAsync(user.Id, lockedUntil, ct);
+                DateTime lockedUntil = DateTime.UtcNow.Add(lockoutDuration);
+                await _userRepository.LockAccountAsync(user.EmployeeId, lockedUntil, ct);
 
-                _logger.LogWarning("Account {UserId} locked until {LockedUntil} after {FailedAttempts} failed attempts",
-                    user.Id, lockedUntil, newFailedAttempts);
+                _logger.LogWarning("Account {EmployeeId} locked until {LockedUntil} after {FailedAttempts} failed attempts",
+                    user.EmployeeId, lockedUntil, newFailedAttempts);
             }
 
             // Use generic error message to prevent user enumeration
@@ -118,10 +118,10 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // 5. Reset failed attempts on success
-        await _userRepository.ResetFailedAttemptsAsync(user.Id, ct);
-        await _userRepository.UpdateLastLoginAsync(user.Id, DateTimeOffset.UtcNow, ct);
+        await _userRepository.ResetFailedAttemptsAsync(user.EmployeeId, ct);
+        await _userRepository.UpdateLastLoginAsync(user.EmployeeId, DateTime.UtcNow, ct);
 
-        _logger.LogInformation("Successful authentication for user: {UserId}", user.Id);
+        _logger.LogInformation("Successful authentication for employee: {EmployeeId}", user.EmployeeId);
 
         // 6. Build claims
         IReadOnlyList<Claim> claims = BuildClaims(user);
@@ -132,8 +132,10 @@ public sealed class InHouseProvider : IInHouseProvider
     /// <inheritdoc />
     public async Task<User> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.EmployeeId == 0)
+            throw new ArgumentException("EmployeeId cannot be null or 0.", nameof(request));
 
         if (string.IsNullOrWhiteSpace(request.Username))
             throw new ArgumentException("Username cannot be null or empty.", nameof(request));
@@ -145,7 +147,7 @@ public sealed class InHouseProvider : IInHouseProvider
             throw new ArgumentException("Email cannot be null or empty.", nameof(request));
 
         // Validate uniqueness
-        User? existingUser = await _userRepository.FindByUsernameAsync(request.Username, ct);
+        User? existingUser = await _userRepository.GetByUsernameAsync(request.Username, ct);
         if (existingUser is not null)
         {
             _logger.LogWarning("Attempt to create user with duplicate username: {Username}", request.Username);
@@ -158,21 +160,18 @@ public sealed class InHouseProvider : IInHouseProvider
         // Create User with defaults
         var user = new User
         {
-            Id = Guid.NewGuid(),
+            EmployeeId = request.EmployeeId,
             Username = request.Username,
             PasswordHash = passwordHash,
             Email = request.Email,
             IsActive = true,
-            FailedAttempts = 0,
-            LockedUntil = null,
-            CreatedAt = DateTimeOffset.UtcNow,
-            LastLoginAt = null
+            FailedAttempts = 0
         };
 
         User createdUser = await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Created new user: {UserId}, Username: {Username}", createdUser.Id, createdUser.Username);
+        _logger.LogInformation("Created new employee: {EmployeeId}, Username: {Username}", createdUser.EmployeeId, createdUser.Username);
 
         return createdUser;
     }
@@ -180,11 +179,10 @@ public sealed class InHouseProvider : IInHouseProvider
     /// <inheritdoc />
     public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
+        ArgumentNullException.ThrowIfNull(request);
 
-        if (string.IsNullOrWhiteSpace(request.UserId))
-            throw new ArgumentException("UserId cannot be null or empty.", nameof(request));
+        if (request.EmployeeId == 0)
+            throw new ArgumentException("EmployeeId cannot be null or 0.", nameof(request));
 
         if (string.IsNullOrWhiteSpace(request.CurrentPassword))
             throw new ArgumentException("CurrentPassword cannot be null or empty.", nameof(request));
@@ -192,18 +190,11 @@ public sealed class InHouseProvider : IInHouseProvider
         if (string.IsNullOrWhiteSpace(request.NewPassword))
             throw new ArgumentException("NewPassword cannot be null or empty.", nameof(request));
 
-        // Parse user ID
-        if (!Guid.TryParse(request.UserId, out Guid userId))
-        {
-            _logger.LogWarning("Invalid UserId format: {UserId}", request.UserId);
-            return false;
-        }
-
         // Load user
-        User? user = await _userRepository.GetByIdAsync(userId, ct);
+        User? user = await _userRepository.GetByIdAsync(request.EmployeeId, ct);
         if (user is null)
         {
-            _logger.LogWarning("User not found: {UserId}", userId);
+            _logger.LogWarning("Employee not found: {EmployeeId}", request.EmployeeId);
             return false;
         }
 
@@ -211,7 +202,7 @@ public sealed class InHouseProvider : IInHouseProvider
         bool currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
         if (!currentPasswordValid)
         {
-            _logger.LogWarning("Invalid current password for user: {UserId}", userId);
+            _logger.LogWarning("Invalid current password for employee: {EmployeeId}", request.EmployeeId);
             return false;
         }
 
@@ -219,35 +210,28 @@ public sealed class InHouseProvider : IInHouseProvider
         string newPasswordHash = _passwordHasher.Hash(request.NewPassword);
 
         // Update password in database
-        await _userRepository.UpdatePasswordHashAsync(userId, newPasswordHash, ct);
+        await _userRepository.UpdatePasswordHashAsync(request.EmployeeId, newPasswordHash, ct);
 
-        _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+        _logger.LogInformation("Password changed successfully for employee: {EmployeeId}", request.EmployeeId);
 
         return true;
     }
 
     /// <inheritdoc />
-    public async Task<bool> DeactivateUserAsync(string userId, CancellationToken ct = default)
+    public async Task<bool> DeactivateUserAsync(int employeeId, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentNullException("UserId cannot be null or empty.", nameof(userId));
-
-        // Parse user ID
-        if (!Guid.TryParse(userId, out Guid userGuid))
-        {
-            _logger.LogWarning("Invalid UserId format: {UserId}", userId);
-            return false;
-        }
+        if (employeeId == 0)
+            throw new ArgumentNullException("EmployeeId cannot be null or empty.", nameof(employeeId));
 
         try
         {
-            await _userRepository.DeactivateAsync(userGuid, ct);
-            _logger.LogInformation("Deactivated user: {UserId}", userGuid);
+            await _userRepository.DeactivateAsync(employeeId, ct);
+            _logger.LogInformation("Deactivated employee: {EmployeeId}", employeeId);
             return true;
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to deactivate user: {UserId}", userGuid);
+            _logger.LogWarning(ex, "Failed to deactivate employee: {EmployeeId}", employeeId);
             return false;
         }
     }
@@ -275,7 +259,7 @@ public sealed class InHouseProvider : IInHouseProvider
     {
         return new List<Claim>
         {
-            new ("sub", user.Id.ToString()),
+            new ("sub", user.EmployeeId.ToString()),
             new ("username", user.Username),
             new ("email", user.Email)
         };

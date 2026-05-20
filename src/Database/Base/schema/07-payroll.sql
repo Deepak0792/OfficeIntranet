@@ -29,7 +29,7 @@ GO
 
 -- SALARY GRADE
 CREATE TABLE payroll.SalaryGrade (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     GradeCode       NVARCHAR(50)    NOT NULL UNIQUE,
     GradeName       NVARCHAR(200)   NOT NULL,
     MinCTC          DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -44,10 +44,10 @@ GO
 
 -- SALARY STRUCTURE
 CREATE TABLE payroll.SalaryStructure (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     StructureCode   NVARCHAR(100)   NOT NULL UNIQUE,
     StructureName   NVARCHAR(200)   NOT NULL,
-    LegalEntityId   BIGINT          NOT NULL,
+    LegalEntityId   INT          NOT NULL,
     CurrencyCode    NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     VersionNo       INT             NOT NULL DEFAULT 1,
     IsDefault       BIT             NOT NULL DEFAULT 0,
@@ -64,7 +64,7 @@ GO
 
 -- PAYROLL COMPONENT
 CREATE TABLE payroll.PayrollComponent (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     ComponentCode   NVARCHAR(100)   NOT NULL UNIQUE,
     ComponentName   NVARCHAR(200)   NOT NULL,
     IsEarning       BIT             NOT NULL DEFAULT 1,
@@ -76,13 +76,13 @@ GO
 
 -- SALARY STRUCTURE COMPONENT
 CREATE TABLE payroll.SalaryStructureComponent (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    SalaryStructureId   BIGINT          NOT NULL,
-    PayrollComponentId  BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    SalaryStructureId   INT          NOT NULL,
+    PayrollComponentId  INT          NOT NULL,
     CalculationType     NVARCHAR(50)    NOT NULL DEFAULT 'FIXED',
     CalculationTypeGroup AS CAST('CALC_TYPE' AS NVARCHAR(50)) PERSISTED,
     PercentageValue     DECIMAL(10,4)   NULL,
-    BaseComponentId     BIGINT          NULL,
+    BaseComponentId     INT          NULL,
     FormulaExpression   NVARCHAR(2000)  NULL,
     IsStatutory         BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
@@ -109,8 +109,8 @@ GO
 
 -- PAYROLL ATTENDANCE SUMMARY
 CREATE TABLE payroll.PayrollAttendanceSummary (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
     PayrollMonth        INT             NOT NULL,
     PayrollYear         INT             NOT NULL,
     TotalWorkingDays    DECIMAL(10,2)   NOT NULL,
@@ -132,10 +132,10 @@ GO
 
 -- EMPLOYEE SALARY
 CREATE TABLE payroll.EmployeeSalary (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    SalaryStructureId   BIGINT          NOT NULL,
-    SalaryGradeId       BIGINT          NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    SalaryStructureId   INT          NOT NULL,
+    SalaryGradeId       INT          NULL,
     AnnualCTC           DECIMAL(18,2)   NOT NULL,
     MonthlyCTC          DECIMAL(18,2)   NOT NULL,
     MonthlyGross        DECIMAL(18,2)   NOT NULL,
@@ -164,9 +164,9 @@ GO
 
 -- EMPLOYEE SALARY COMPONENT
 CREATE TABLE payroll.EmployeeSalaryComponent (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeSalaryId            BIGINT          NOT NULL,
-    SalaryStructureComponentId  BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeSalaryId            INT          NOT NULL,
+    SalaryStructureComponentId  INT          NOT NULL,
     PayrollMonth                INT             NOT NULL,
     PayrollYear                 INT             NOT NULL,
     ComputedAmount              DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -190,10 +190,10 @@ GO
 
 -- SALARY REVISION
 CREATE TABLE payroll.SalaryRevision (
-    Id                   BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId           BIGINT          NOT NULL,
-    OldEmployeeSalaryId  BIGINT          NULL,
-    NewEmployeeSalaryId  BIGINT          NOT NULL,
+    Id                   INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId           INT          NOT NULL,
+    OldEmployeeSalaryId  INT          NULL,
+    NewEmployeeSalaryId  INT          NOT NULL,
     RevisionType         NVARCHAR(50)    NOT NULL,
     RevisionTypeGroup    AS CAST('SALARY_REVISION_TYPE' AS NVARCHAR(50)) PERSISTED,
     RevisionDate         DATE            NOT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE payroll.SalaryRevision (
     IncrementAmount      AS (NewAnnualCTC - ISNULL(OldAnnualCTC, 0)),
     IncrementPercentage  DECIMAL(10,4)   NULL,
     Reason               NVARCHAR(2000)  NULL,
-    ApprovedBy           BIGINT          NULL,
+    ApprovedBy           INT          NULL,
     ApprovedAt           DATETIME2       NULL,
     CreatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -230,7 +230,7 @@ GO
 
 -- BANK MASTER
 CREATE TABLE payroll.BankMaster (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     BankCode        NVARCHAR(50)    NOT NULL UNIQUE,
     BankName        NVARCHAR(300)   NOT NULL,
     IfscPrefix      NVARCHAR(10)    NULL,
@@ -243,9 +243,9 @@ GO
 
 -- EMPLOYEE BANK ACCOUNT
 CREATE TABLE payroll.EmployeeBankAccount (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    BankMasterId        BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    BankMasterId        INT          NOT NULL,
     AccountHolderName   NVARCHAR(300)   NOT NULL,
     AccountNumber       NVARCHAR(100)   NOT NULL,
     AccountType         NVARCHAR(50)    NOT NULL DEFAULT 'SAVINGS',
@@ -257,7 +257,7 @@ CREATE TABLE payroll.EmployeeBankAccount (
     CurrencyCode        NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     IsPrimary           BIT             NOT NULL DEFAULT 0,
     IsVerified          BIT             NOT NULL DEFAULT 0,
-    VerifiedBy          BIGINT          NULL,
+    VerifiedBy          INT          NULL,
     VerifiedAt          DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -283,8 +283,8 @@ GO
 
 -- PAYROLL DISBURSEMENT
 CREATE TABLE payroll.PayrollDisbursement (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    LegalEntityId           BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    LegalEntityId           INT          NOT NULL,
     PayrollMonth            INT             NOT NULL,
     PayrollYear             INT             NOT NULL,
     DisbursementDate        DATE            NULL,
@@ -294,8 +294,8 @@ CREATE TABLE payroll.PayrollDisbursement (
     DisbursementStatus      NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     DisbursementStatusGroup AS CAST('DISBURSEMENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     BankBatchReferenceNo    NVARCHAR(200)   NULL,
-    InitiatedBy             BIGINT          NOT NULL,
-    ApprovedBy              BIGINT          NULL,
+    InitiatedBy             INT          NOT NULL,
+    ApprovedBy              INT          NULL,
     ApprovedAt              DATETIME2       NULL,
     ProcessedAt             DATETIME2       NULL,
     Remarks                 NVARCHAR(1000)  NULL,
@@ -325,10 +325,10 @@ GO
 
 -- PAYROLL DISBURSEMENT TRANSACTION
 CREATE TABLE payroll.PayrollDisbursementTransaction (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    PayrollDisbursementId   BIGINT          NOT NULL,
-    EmployeeId              BIGINT          NOT NULL,
-    EmployeeBankAccountId   BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    PayrollDisbursementId   INT          NOT NULL,
+    EmployeeId              INT          NOT NULL,
+    EmployeeBankAccountId   INT          NOT NULL,
     PayrollMonth            INT             NOT NULL,
     PayrollYear             INT             NOT NULL,
     GrossAmount             DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -376,7 +376,7 @@ GO
 
 -- TAX REGIME
 CREATE TABLE payroll.TaxRegime (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     RegimeCode      NVARCHAR(100)   NOT NULL UNIQUE,
     RegimeName      NVARCHAR(300)   NOT NULL,
     CountryCode     NVARCHAR(10)    NOT NULL,
@@ -389,8 +389,8 @@ GO
 
 -- TAX SLAB
 CREATE TABLE payroll.TaxSlab (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
-    TaxRegimeId     BIGINT          NOT NULL,
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    TaxRegimeId     INT          NOT NULL,
     FiscalYear      INT             NOT NULL,
     SlabOrder       INT             NOT NULL,
     MinIncome       DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -412,9 +412,9 @@ GO
 
 -- EMPLOYEE TAX DECLARATION
 CREATE TABLE payroll.EmployeeTaxDeclaration (
-    Id                       BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId               BIGINT          NOT NULL,
-    TaxRegimeId              BIGINT          NOT NULL,
+    Id                       INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId               INT          NOT NULL,
+    TaxRegimeId              INT          NOT NULL,
     FiscalYear               INT             NOT NULL
         CONSTRAINT CK_ETD_FiscalYear CHECK (FiscalYear BETWEEN 2000 AND 2099),
     DeclaredTotalIncome      DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -424,7 +424,7 @@ CREATE TABLE payroll.EmployeeTaxDeclaration (
     DeclarationStatus        NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     DeclarationStatusGroup   AS CAST('DECLARATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     SubmittedAt              DATETIME2       NULL,
-    VerifiedBy               BIGINT          NULL,
+    VerifiedBy               INT          NULL,
     VerifiedAt               DATETIME2       NULL,
     Remarks                  NVARCHAR(2000)  NULL,
     CreatedAt                DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -453,8 +453,8 @@ GO
 
 -- TAX DECLARATION ITEM
 CREATE TABLE payroll.TaxDeclarationItem (
-    Id                          BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeTaxDeclarationId    BIGINT          NOT NULL,
+    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeTaxDeclarationId    INT          NOT NULL,
     TaxProofCategoryId          INT             NOT NULL,
     DeclaredAmount              DECIMAL(18,2)   NOT NULL DEFAULT 0
         CONSTRAINT CK_TDI_DeclaredAmount CHECK (DeclaredAmount >= 0),
@@ -479,8 +479,8 @@ GO
 
 -- TAX DECLARATION PROOF
 CREATE TABLE payroll.TaxDeclarationProof (
-    Id                   BIGINT          PRIMARY KEY IDENTITY(1,1),
-    TaxDeclarationItemId BIGINT          NOT NULL,
+    Id                   INT          PRIMARY KEY IDENTITY(1,1),
+    TaxDeclarationItemId INT          NOT NULL,
     Description          NVARCHAR(500)   NULL,
     DeclaredAmount       DECIMAL(18,2)   NOT NULL DEFAULT 0
         CONSTRAINT CK_TDP_DeclaredAmount CHECK (DeclaredAmount >= 0),
@@ -491,7 +491,7 @@ CREATE TABLE payroll.TaxDeclarationProof (
     UploadedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     ReviewStatus         NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     ReviewStatusGroup    AS CAST('PROOF_REVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
-    ReviewedBy           BIGINT          NULL,
+    ReviewedBy           INT          NULL,
     ReviewedAt           DATETIME2       NULL,
     RejectionReason      NVARCHAR(500)   NULL,
     CreatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -512,10 +512,10 @@ GO
 
 -- EMPLOYEE TAX DEDUCTION
 CREATE TABLE payroll.EmployeeTaxDeduction (
-    Id                               BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                       BIGINT          NOT NULL,
-    EmployeeTaxDeclarationId         BIGINT          NULL,
-    TaxRegimeId                      BIGINT          NOT NULL,
+    Id                               INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                       INT          NOT NULL,
+    EmployeeTaxDeclarationId         INT          NULL,
+    TaxRegimeId                      INT          NOT NULL,
     PayrollMonth                     INT             NOT NULL,
     PayrollYear                      INT             NOT NULL,
     FiscalYear                       INT             NOT NULL,
@@ -530,7 +530,7 @@ CREATE TABLE payroll.EmployeeTaxDeduction (
     CumulativeTDSYTD                 DECIMAL(18,2)   NOT NULL DEFAULT 0,
     IsAdjustment                     BIT             NOT NULL DEFAULT 0,
     AdjustmentReason                 NVARCHAR(500)   NULL,
-    PayrollDisbursementTransactionId BIGINT          NULL,
+    PayrollDisbursementTransactionId INT          NULL,
     CreatedAt                        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     UpdatedAt                        DATETIME2       NULL,
 
@@ -557,8 +557,8 @@ GO
 
 -- TAX DEDUCTION BREAKDOWN
 CREATE TABLE payroll.TaxDeductionBreakdown (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeTaxDeductionId  BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeTaxDeductionId  INT          NOT NULL,
     DeductionHead           NVARCHAR(200)   NOT NULL,
     DeductionCategory       NVARCHAR(50)    NULL,
     DeductionCategoryGroup  AS CAST('DEDUCTION_CATEGORY' AS NVARCHAR(50)) PERSISTED,
@@ -580,8 +580,8 @@ GO
 
 -- SALARY SLIP PUBLICATION
 CREATE TABLE payroll.SalarySlipPublication (
-    Id                              BIGINT          PRIMARY KEY IDENTITY(1,1),
-    DisbursementTransactionId       BIGINT          NOT NULL UNIQUE,
+    Id                              INT          PRIMARY KEY IDENTITY(1,1),
+    DisbursementTransactionId       INT          NOT NULL UNIQUE,
     SlipStatus                      NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     SlipStatusGroup                 AS CAST('SALARY_SLIP_STATUS' AS NVARCHAR(50)) PERSISTED,
     FileUrl                         NVARCHAR(1000)  NULL,

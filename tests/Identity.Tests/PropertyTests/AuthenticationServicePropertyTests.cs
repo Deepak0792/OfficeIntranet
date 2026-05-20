@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Common.Contexts;
+using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
@@ -52,7 +54,7 @@ public class AuthenticationServicePropertyTests
             .Returns(new AuthToken
             {
                 AccessToken = "test-token",
-                ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+                ExpiresAt = DateTime.UtcNow.AddHours(1),
                 TokenType = "Bearer"
             });
 
@@ -216,7 +218,7 @@ public class AuthenticationServicePropertyTests
             .Returns(new AuthToken
             {
                 AccessToken = "test-token",
-                ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
+                ExpiresAt = DateTime.UtcNow.AddHours(1),
                 TokenType = "Bearer"
             });
 

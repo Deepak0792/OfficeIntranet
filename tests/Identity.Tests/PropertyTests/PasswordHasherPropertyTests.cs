@@ -1,6 +1,7 @@
 using FsCheck;
 using FsCheck.Xunit;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.Interfaces.Security;
 
 namespace SdxCore.Identity.Tests.PropertyTests;

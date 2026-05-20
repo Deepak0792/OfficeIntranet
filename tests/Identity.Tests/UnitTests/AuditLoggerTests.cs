@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
@@ -31,7 +32,7 @@ public class AuditLoggerTests : IDisposable
             UserId = "user123",
             Username = "testuser",
             IpAddress = "192.168.1.1",
-            OccurredAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         // Act
@@ -68,7 +69,7 @@ public class AuditLoggerTests : IDisposable
                 Protocol = AuthProtocol.InHouse,
                 Username = "user1",
                 IpAddress = "192.168.1.1",
-                OccurredAt = DateTimeOffset.UtcNow
+                CreatedAt = DateTime.UtcNow
             },
             new AuditEvent
             {
@@ -76,7 +77,7 @@ public class AuditLoggerTests : IDisposable
                 Protocol = AuthProtocol.InHouse,
                 Username = "user2",
                 IpAddress = "192.168.1.2",
-                OccurredAt = DateTimeOffset.UtcNow,
+                CreatedAt = DateTime.UtcNow,
                 FailureReason = "Invalid credentials"
             },
             new AuditEvent
@@ -85,7 +86,7 @@ public class AuditLoggerTests : IDisposable
                 Protocol = AuthProtocol.Saml,
                 Username = "user3",
                 IpAddress = "192.168.1.3",
-                OccurredAt = DateTimeOffset.UtcNow
+                CreatedAt = DateTime.UtcNow
             }
         };
 
@@ -114,7 +115,7 @@ public class AuditLoggerTests : IDisposable
             Protocol = AuthProtocol.InHouse,
             Username = "user1",
             IpAddress = "192.168.1.1",
-            OccurredAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         var event2 = new AuditEvent
@@ -123,7 +124,7 @@ public class AuditLoggerTests : IDisposable
             Protocol = AuthProtocol.InHouse,
             Username = "user2",
             IpAddress = "192.168.1.2",
-            OccurredAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         // Setup repository to throw on first call, succeed on second
@@ -155,7 +156,7 @@ public class AuditLoggerTests : IDisposable
             Protocol = AuthProtocol.InHouse,
             Username = "testuser",
             IpAddress = "192.168.1.1",
-            OccurredAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         // Setup repository with delay to simulate slow database
@@ -186,7 +187,7 @@ public class AuditLoggerTests : IDisposable
             Protocol = AuthProtocol.InHouse,
             Username = "testuser",
             IpAddress = "192.168.1.1",
-            OccurredAt = DateTimeOffset.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         // Act

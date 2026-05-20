@@ -1,7 +1,8 @@
-﻿using SdxCore.Time.Application.DTOs;
+using SdxCore.Time.Domain.DTOs;
 using SdxCore.Time.Application.Helpers;
 using SdxCore.Time.Domain.Entities;
-using SdxCore.Time.Domain.Interfaces;
+using SdxCore.Time.Domain.Interfaces.Services;
+using SdxCore.Time.Domain.Interfaces.Repositories;
 using System;
 using SdxCore.Common.Models;
 using System.Collections.Generic;

@@ -17,6 +17,9 @@ builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Register the common layer
+builder.Services.AddSdxCoreCommon(builder.Configuration);
+
 // Register the persistence layer (EF Core + SQL Server)
 // Connection string comes from appsettings.json
 builder.Services.AddSdxCorePersistence(builder.Configuration);

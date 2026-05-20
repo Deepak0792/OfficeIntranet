@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Common.Contexts;
+using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Application.Services;
+using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Security;
 using SdxCore.Identity.Domain.Interfaces.Services;
@@ -39,13 +41,9 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
 
-        if (configuration is null)
-            throw new ArgumentNullException(nameof(configuration));
-
-        services.AddScoped<IRequestContext, RequestContext>();
         // Register IAuthenticationService as scoped (per-request lifetime)
         // Requirement 12.2: IAuthenticationService registered as scoped service             
         services.AddScoped<IAuditLoggerService, AuditLoggerService>();

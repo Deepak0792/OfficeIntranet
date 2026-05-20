@@ -4,11 +4,12 @@ using SdxCore.Common.Models;
 using SdxCore.Common.Security;
 using SdxCore.Shared.Application.Services;
 using SdxCore.Shared.Domain.Entities;
+using SdxCore.Shared.Domain.Interfaces.Services;
 
 namespace SdxCore.Shared.API.Controllers;
 
 [ApiController]
-[Route("api/lookups")]
+[Route("api/v1/lookups")]
 [GatewayOnly]
 public class LookupsController : ControllerBase
 {

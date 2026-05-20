@@ -1,12 +1,8 @@
+using SdxCore.Common.Interfaces.Contexts;
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Persistence.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SdxCore.Identity.Persistence.Repositories;
 
@@ -19,9 +15,9 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// Initializes a new instance of the <see cref="AuditRepository"/> class.
 /// </remarks>
 /// <param name="dbContext">The database context.</param>
-public class AuditRepository : BaseRepository<AuditEvent, Guid>, IAuditRepository
+public class AuditRepository : BaseRepository<AuditEvent>, IAuditRepository
 {
-    public AuditRepository(IdentityDbContext dbContext) : base(dbContext)
+    public AuditRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext)
     {
     }
 
@@ -33,7 +29,9 @@ public class AuditRepository : BaseRepository<AuditEvent, Guid>, IAuditRepositor
 
         return await _dbContext.AuditEvents
             .Where(e => e.Username == username)
-            .OrderByDescending(e => e.OccurredAt)
+            .OrderByDescending(e => e.CreatedAt)
             .ToListAsync(ct);
     }
 }
+
+

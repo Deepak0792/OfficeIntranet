@@ -23,7 +23,7 @@ public static class JwtTokenUtilities
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            
+
             if (!tokenHandler.CanReadToken(token))
             {
                 logger?.LogWarning("Token is not in valid JWT format during claims extraction");
@@ -34,26 +34,26 @@ public static class JwtTokenUtilities
             var claims = jwtToken.Claims.ToList();
 
             // Extract common claims using multiple possible claim types
-            var userId = ExtractClaimValue(claims, 
-                ClaimTypes.NameIdentifier, "sub", "user_id", "userId");
+            var userId = Convert.ToInt32(ExtractClaimValue(claims,
+                ClaimTypes.NameIdentifier, "sub", "user_id", "userId"));
 
-            var username = ExtractClaimValue(claims, 
+            var username = ExtractClaimValue(claims,
                 ClaimTypes.Name, "username", "preferred_username");
 
-            var email = ExtractClaimValue(claims, 
+            var email = ExtractClaimValue(claims,
                 ClaimTypes.Email, "email");
 
-            var roles = ExtractClaimValues(claims, 
+            var roles = ExtractClaimValues(claims,
                 ClaimTypes.Role, "role", "roles");
 
-            var provider = ExtractClaimValue(claims, 
+            var provider = ExtractClaimValue(claims,
                 "provider", "auth_provider", "identity_provider");
 
             // Extract expiration time
-            DateTimeOffset? expiresAt = null;
+            DateTime? expiresAt = null;
             if (jwtToken.ValidTo != DateTime.MinValue)
             {
-                expiresAt = new DateTimeOffset(jwtToken.ValidTo);
+                expiresAt = jwtToken.ValidTo;
             }
 
             return new TokenClaims
@@ -127,9 +127,9 @@ public static class JwtTokenUtilities
     {
         foreach (var claimType in claimTypes)
         {
-            var claim = claims.FirstOrDefault(c => 
+            var claim = claims.FirstOrDefault(c =>
                 string.Equals(c.Type, claimType, StringComparison.OrdinalIgnoreCase));
-            
+
             if (claim != null && !string.IsNullOrWhiteSpace(claim.Value))
             {
                 return claim.Value;
@@ -151,7 +151,7 @@ public static class JwtTokenUtilities
 
         foreach (var claimType in claimTypes)
         {
-            var matchingClaims = claims.Where(c => 
+            var matchingClaims = claims.Where(c =>
                 string.Equals(c.Type, claimType, StringComparison.OrdinalIgnoreCase) &&
                 !string.IsNullOrWhiteSpace(c.Value));
 

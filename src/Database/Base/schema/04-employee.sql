@@ -12,24 +12,27 @@ GO
 
 -- EMPLOYEE - Core employee profile
 CREATE TABLE employee.Employee (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id                      INT             PRIMARY KEY IDENTITY(1,1),
     EmployeeCode            NVARCHAR(50)    NOT NULL UNIQUE,
     FirstName               NVARCHAR(100)   NOT NULL,
     LastName                NVARCHAR(100)   NULL,
     DisplayName             NVARCHAR(200)   NULL,
     Email                   NVARCHAR(255)   NOT NULL UNIQUE,
     MobileNumber            NVARCHAR(30)    NULL,
-    DesignationId           BIGINT          NULL,
+    DesignationId           INT          NULL,
     PreferredLanguage       NVARCHAR(20)    NULL,
-    PreferredTimeZoneId     BIGINT          NULL,
+    PreferredTimeZoneId     INT          NULL,
     DateOfJoining           DATE            NULL,
     EmploymentType          NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
     EmploymentTypeGroup     AS CAST('EMPLOYMENT_TYPE' AS NVARCHAR(50)) PERSISTED,
     AboutMe                 NVARCHAR(MAX)   NULL,
     ProfilePhotoUrl         NVARCHAR(1000)  NULL,
+    IsSystemEmployee        BIT             NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_Employee_Designation
         FOREIGN KEY (DesignationId)
@@ -47,13 +50,17 @@ GO
 
 -- EMPLOYEE LEGAL ENTITY
 CREATE TABLE employee.EmployeeLegalEntity (
-    Id              BIGINT  PRIMARY KEY IDENTITY(1,1),
-    EmployeeId      BIGINT  NOT NULL,
-    LegalEntityId   BIGINT  NOT NULL,
+    Id              INT  PRIMARY KEY IDENTITY(1,1),
+    EmployeeId      INT     NOT NULL,
+    LegalEntityId   INT  NOT NULL,
     IsPrimary       BIT     NOT NULL DEFAULT 0,
     StartDate       DATE    NULL,
     EndDate         DATE    NULL,
-    IsActive        BIT     NOT NULL DEFAULT 1,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_ELE_Employee
         FOREIGN KEY (EmployeeId)
@@ -67,14 +74,18 @@ GO
 
 -- EMPLOYEE DEPARTMENT
 CREATE TABLE employee.EmployeeDepartment (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    DepartmentId            BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT             NOT NULL,
+    DepartmentId            INT          NOT NULL,
     IsPrimaryDepartment     BIT             NOT NULL DEFAULT 0,
     AllocationPercentage    DECIMAL(5,2)    NULL,
     StartDate               DATE            NULL,
     EndDate                 DATE            NULL,
-    IsActive                BIT             NOT NULL DEFAULT 1,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_EmployeeDepartment_Employee
         FOREIGN KEY (EmployeeId)
@@ -88,13 +99,17 @@ GO
 
 -- EMPLOYEE LOCATION
 CREATE TABLE employee.EmployeeLocation (
-    Id                  BIGINT  PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT  NOT NULL,
-    LocationId          BIGINT  NOT NULL,
+    Id                  INT  PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT  NOT NULL,
+    LocationId          INT  NOT NULL,
     IsPrimaryLocation   BIT     NOT NULL DEFAULT 1,
     StartDate           DATE    NULL,
     EndDate             DATE    NULL,
-    IsActive            BIT     NOT NULL DEFAULT 1,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_EmployeeLocation_Employee
         FOREIGN KEY (EmployeeId)
@@ -108,16 +123,20 @@ GO
 
 -- EMPLOYEE RELATIONSHIP
 CREATE TABLE employee.EmployeeRelationship (
-    Id                      BIGINT  PRIMARY KEY IDENTITY(1,1),
-    ParentEmployeeId        BIGINT  NOT NULL,
-    ChildEmployeeId         BIGINT  NOT NULL,
+    Id                      INT  PRIMARY KEY IDENTITY(1,1),
+    ParentEmployeeId        INT  NOT NULL,
+    ChildEmployeeId         INT  NOT NULL,
     RelationshipType        NVARCHAR(50)  NOT NULL,
     RelationshipTypeGroup   AS CAST('RELATIONSHIP_TYPE' AS NVARCHAR(50)) PERSISTED,
-    DepartmentId            BIGINT  NULL,
+    DepartmentId            INT  NULL,
     IsPrimaryRelationship   BIT     NOT NULL DEFAULT 0,
     EffectiveFrom           DATE    NULL,
     EffectiveTo             DATE    NULL,
-    IsActive                BIT     NOT NULL DEFAULT 1,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_ER_ParentEmployee
         FOREIGN KEY (ParentEmployeeId)
@@ -139,15 +158,17 @@ GO
 
 -- EMPLOYEE CONTACT
 CREATE TABLE employee.EmployeeContact (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
     ContactType         NVARCHAR(50)    NOT NULL,
     ContactTypeGroup    AS CAST('CONTACT_TYPE' AS NVARCHAR(50)) PERSISTED,
     ContactValue        NVARCHAR(500)   NOT NULL,
     IsPrimary           BIT             NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt           DATETIME2       NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_EmployeeContact_Employee
         FOREIGN KEY (EmployeeId)
@@ -161,14 +182,14 @@ GO
 
 -- EMPLOYEE DOCUMENT
 CREATE TABLE employee.EmployeeDocument (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    DocumentTypeId          BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
+    DocumentTypeId          INT          NOT NULL,
     FileName                NVARCHAR(500)   NULL,
     OriginalFileName        NVARCHAR(500)   NULL,
     FileExtension           NVARCHAR(20)    NULL,
     MimeType                NVARCHAR(100)   NULL,
-    FileSizeInBytes         BIGINT          NULL,
+    FileSizeInBytes         INT          NULL,
     FileUrl                 NVARCHAR(1000)  NULL,
     DocumentNumber          NVARCHAR(200)   NULL,
     IssuedDate              DATE            NULL,
@@ -176,10 +197,14 @@ CREATE TABLE employee.EmployeeDocument (
     Remarks                 NVARCHAR(1000)  NULL,
     UploadedAt              DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsVerified              BIT             NOT NULL DEFAULT 0,
-    VerifiedByEmployeeId    BIGINT          NULL,
+    VerifiedByEmployeeId    INT          NULL,
     VerifiedAt              DATETIME2       NULL,
-    WorkflowInstanceId      BIGINT          NULL,
-    IsActive                BIT             NOT NULL DEFAULT 1,
+    WorkflowInstanceId      INT          NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_EmployeeDocument_Employee
         FOREIGN KEY (EmployeeId)
@@ -201,23 +226,32 @@ GO
 
 -- SKILL
 CREATE TABLE employee.Skill (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     SkillName       NVARCHAR(200)   NOT NULL UNIQUE,
     SkillCategory   NVARCHAR(100)   NULL,
     Description     NVARCHAR(1000)  NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL
 );
 GO
 
 -- EMPLOYEE SKILL
 CREATE TABLE employee.EmployeeSkill (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    SkillId             BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    SkillId             INT          NOT NULL,
     SkillLevel          NVARCHAR(50)    NULL,
     YearsOfExperience   DECIMAL(5,2)    NULL,
     IsPrimarySkill      BIT             NOT NULL DEFAULT 0,
     LastUsedDate        DATE            NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_EmployeeSkill_Employee
         FOREIGN KEY (EmployeeId)
@@ -231,26 +265,33 @@ GO
 
 -- TEAM
 CREATE TABLE employee.Team (
-    Id              BIGINT          PRIMARY KEY IDENTITY(1,1),
+    Id              INT          PRIMARY KEY IDENTITY(1,1),
     TeamCode        NVARCHAR(50)    NOT NULL UNIQUE,
     TeamName        NVARCHAR(200)   NOT NULL,
     TeamType        NVARCHAR(100)   NULL,
     Description     NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL
 );
 GO
 
 -- EMPLOYEE TEAM
 CREATE TABLE employee.EmployeeTeam (
-    Id                      BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              BIGINT          NOT NULL,
-    TeamId                  BIGINT          NOT NULL,
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT          NOT NULL,
+    TeamId                  INT          NOT NULL,
     RoleInTeam              NVARCHAR(100)   NULL,
     AllocationPercentage    DECIMAL(5,2)    NULL,
     StartDate               DATE            NULL,
     EndDate                 DATE            NULL,
-    IsActive                BIT             NOT NULL DEFAULT 1,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_EmployeeTeam_Employee
         FOREIGN KEY (EmployeeId)
@@ -264,12 +305,15 @@ GO
 
 -- BIOMETRIC EMPLOYEE MAPPING
 CREATE TABLE employee.BiometricEmployeeMapping (
-    Id                  BIGINT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          BIGINT          NOT NULL,
-    BiometricDeviceId   BIGINT          NOT NULL,
+    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT          NOT NULL,
+    BiometricDeviceId   INT          NOT NULL,
     DeviceEmployeeCode  NVARCHAR(100)   NOT NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_BiometricEmployeeMapping_Employee
         FOREIGN KEY (EmployeeId)

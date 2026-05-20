@@ -14,7 +14,7 @@ public sealed record TokenValidationResponse
     /// <summary>
     /// User identifier extracted from the token.
     /// </summary>
-    public string? UserId { get; init; }
+    public int UserId { get; init; }
 
     /// <summary>
     /// Username extracted from the token.
@@ -39,10 +39,10 @@ public sealed record TokenValidationResponse
     /// <summary>
     /// Token expiration timestamp.
     /// </summary>
-    public DateTimeOffset? ExpiresAt { get; init; }
+    public DateTime? ExpiresAt { get; init; }
 
     /// <summary>
     /// Timestamp when the validation was performed.
     /// </summary>
-    public required DateTimeOffset ValidatedAt { get; init; }
+    public required DateTime ValidatedAt { get; init; }
 }
