@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Interfaces.Repositories;
 
-public interface IOfficeLocationRepository : IRepository<OfficeLocation> { }
+public interface IOfficeLocationRepository : IRepository<OfficeLocation, short> { }
 

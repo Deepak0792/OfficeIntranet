@@ -5,7 +5,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class DepartmentRepository : BaseRepository<Department>, IDepartmentRepository
+public class DepartmentRepository : BaseRepository<Department, short>, IDepartmentRepository
 {
     public DepartmentRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext)
     {

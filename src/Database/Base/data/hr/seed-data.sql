@@ -28,7 +28,8 @@ INSERT INTO hr.PanelRole (RoleCode, RoleName, Description, CanSubmitFeedback, Di
 
 
 PRINT 'Inserting hr.JobPosting...';
-INSERT INTO hr.JobPosting (Title, DepartmentId, DesignationId, LocationId, LegalEntityId, EmploymentType, ExperienceMinYrs, ExperienceMaxYrs, SalaryMin, SalaryMax, CurrencyCode, Description, Requirements, OpeningsCount, JobPostingStatus, PostedByEmployeeId, PostedDate, ClosingDate) VALUES
+INSERT INTO hr.JobPosting (Title, DepartmentId, DesignationId, LocationId, LegalEntityId, EmploymentType, ExperienceMinYrs, ExperienceMaxYrs, SalaryMin, SalaryMax, 
+                            CurrencyCode, Description, Requirements, OpeningsCount, JobPostingStatus, CreatedBy, CreatedAt, ClosingDate) VALUES
 (
     'Senior Staff Nurse - ICU',
     (SELECT Id FROM time.Department WHERE DepartmentCode='ICU'),
@@ -425,7 +426,7 @@ INSERT INTO hr.OnboardingChecklist (ChecklistName, Phase, EmploymentType) VALUES
 
 PRINT 'Inserting hr.OnboardingChecklistItem...';
 -- Clinical Pre-Onboarding
-INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, SequenceOrder, IsMandatory) VALUES
+INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, DisplayOrder, IsMandatory) VALUES
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Pre-Onboarding'), 'Collect signed offer letter',          'Obtain candidate-signed copy of the offer letter',                                     'HR',       1,  1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Pre-Onboarding'), 'Verify Medical License / MCI Reg.',    'Validate MCI or State Medical Council registration number',                            'HR',       2,  1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Pre-Onboarding'), 'Collect Aadhaar and PAN copies',       'Collect self-attested copies of government IDs',                                       'HR',       3,  1),
@@ -436,7 +437,7 @@ INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Descrip
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Pre-Onboarding'), 'COVID-19 vaccination certificate',     'Collect proof of full COVID-19 vaccination',                                           'HR',       8,  1);
 
 -- Clinical Day One
-INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, SequenceOrder, IsMandatory) VALUES
+INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, DisplayOrder, IsMandatory) VALUES
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Day One'), 'Issue employee ID card',               'Generate and issue photo ID badge with department and floor access',   'HR',       1,  1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Day One'), 'Create EHR system login',             'Provision EHR (hospital system) credentials with correct role',         'IT',       2,  1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Day One'), 'Register biometric at device',        'Enrol fingerprint on floor biometric device',                           'IT',       3,  1),
@@ -445,7 +446,7 @@ INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Descrip
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - Day One'), 'Collect uniform and equipment',       'Issue hospital scrubs, stethoscope (where applicable), and locker',    'Admin',    6,  1);
 
 -- Clinical First Week
-INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, SequenceOrder, IsMandatory) VALUES
+INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, DisplayOrder, IsMandatory) VALUES
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - First Week'), 'Complete infection control training',      'Mandatory online module on hospital infection prevention and PPE',              'HR',       1,  1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - First Week'), 'Complete BLS refresher (if lapsed)',        'Basic Life Support recertification if certificate is older than 2 years',        'Training', 2,  0),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - First Week'), 'Shadow senior for department orientation',  'Spend first 2 days shadowing assigned senior staff',                           'Manager',  3,  1),
@@ -453,7 +454,7 @@ INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Descrip
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Clinical Staff - First Week'), 'Complete HRMS self-service setup',          'Employee to update profile, upload photo, and review leave balance in HRMS',    'Employee', 5,  1);
 
 -- Admin / Support Pre-Onboarding
-INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, SequenceOrder, IsMandatory) VALUES
+INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, DisplayOrder, IsMandatory) VALUES
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Pre-Onboarding'), 'Collect signed offer letter',      'Obtain candidate-signed copy of the offer letter',                     'HR',  1, 1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Pre-Onboarding'), 'Collect Aadhaar and PAN copies',   'Collect self-attested government ID copies',                           'HR',  2, 1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Pre-Onboarding'), 'Collect educational certificates',  'Degree and diploma certificates relevant to the role',                 'HR',  3, 1),
@@ -461,7 +462,7 @@ INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Descrip
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Pre-Onboarding'), 'Initiate BGV - Employment History','Raise BGV request for employment history and identity verification',  'HR',  5, 1);
 
 -- Admin Day One
-INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, SequenceOrder, IsMandatory) VALUES
+INSERT INTO hr.OnboardingChecklistItem (OnboardingChecklistId, TaskName, Description, OwnerRole, DisplayOrder, IsMandatory) VALUES
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Day One'), 'Issue employee ID card',           'Generate and issue photo ID with office access',                   'HR',       1, 1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Day One'), 'Create system/application login',  'Provision email, HRMS, and relevant application access',           'IT',       2, 1),
 ((SELECT Id FROM hr.OnboardingChecklist WHERE ChecklistName='Full-Time Admin / Support Staff - Day One'), 'Register biometric at device',    'Enrol fingerprint on main entrance biometric device',              'IT',       3, 1),

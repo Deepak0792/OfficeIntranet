@@ -5,7 +5,7 @@ using SdxCore.Common.Interfaces.Contexts;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class CountryRepository : BaseRepository<Country>, ICountryRepository
+public class CountryRepository : BaseRepository<Country, short>, ICountryRepository
 {
     public CountryRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
 }

@@ -51,7 +51,7 @@ GO
 --      Examples: Attendance, Payroll, HR, Helpdesk
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.BusinessModule (
-    Id              INT          NOT NULL IDENTITY(1,1),
+    Id              SMALLINT          NOT NULL IDENTITY(1,1),
     ModuleCode      NVARCHAR(50)    NOT NULL,
     ModuleName      NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(500)   NULL,
@@ -75,8 +75,8 @@ GO
 --      the auth framework. It is decoupled from any physical schema/table name.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.BusinessEntity (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    BusinessModuleId    INT          NOT NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    BusinessModuleId    SMALLINT          NOT NULL,
     EntityName          NVARCHAR(100)   NOT NULL,   -- logical name, e.g. "LeaveRequest"
     EntityLabel         NVARCHAR(200)   NOT NULL,   -- display label,  e.g. "Leave Request"
     Description         NVARCHAR(500)   NULL,
@@ -102,7 +102,7 @@ GO
 --      Examples: VIEW, CREATE, UPDATE, DELETE, APPROVE, REJECT, EXPORT
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.EntityAction (
-    Id              INT          NOT NULL IDENTITY(1,1),
+    Id              SMALLINT          NOT NULL IDENTITY(1,1),
     ActionCode      NVARCHAR(50)    NOT NULL,
     ActionGroup     AS CAST('PERMISSION_ACTION' AS NVARCHAR(50)) PERSISTED,
     IsActive        BIT             NOT NULL DEFAULT 1,
@@ -132,11 +132,11 @@ GO
 --        SalarySlip    + EXPORT  - SALARY_SLIP.EXPORT
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.Permission (
-    Id                      INT          NOT NULL IDENTITY(1,1),
+    Id                      SMALLINT          NOT NULL IDENTITY(1,1),
     PermissionCode          NVARCHAR(200)   NOT NULL,    -- e.g. LEAVE_REQUEST.APPROVE
     PermissionName          NVARCHAR(300)   NOT NULL,
-    BusinessEntityId        INT          NOT NULL,
-    EntityActionId          INT          NOT NULL,
+    BusinessEntityId        SMALLINT          NOT NULL,
+    EntityActionId          SMALLINT          NOT NULL,
     PermissionCategory      NVARCHAR(50)    NOT NULL,    -- PERMISSION_CATEGORY
     PermissionCategoryGroup AS CAST('PERMISSION_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     Description             NVARCHAR(500)   NULL,
@@ -175,7 +175,7 @@ GO
 -- 3.1  Role
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.Role (
-    Id              INT          NOT NULL IDENTITY(1,1),
+    Id              SMALLINT          NOT NULL IDENTITY(1,1),
     RoleCode        NVARCHAR(100)   NOT NULL,
     RoleName        NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(500)   NULL,
@@ -197,7 +197,7 @@ GO
 --      Examples: HR Operations, Payroll Team, People Manager, Helpdesk Agent
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RoleGroup (
-    Id              INT          NOT NULL IDENTITY(1,1),
+    Id              SMALLINT          NOT NULL IDENTITY(1,1),
     RoleGroupCode   NVARCHAR(100)   NOT NULL,
     RoleGroupName   NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(500)   NULL,
@@ -218,8 +218,8 @@ GO
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RoleGroupRole (
     Id          INT      NOT NULL IDENTITY(1,1),
-    RoleGroupId INT      NOT NULL,
-    RoleId      INT      NOT NULL,
+    RoleGroupId SMALLINT      NOT NULL,
+    RoleId      SMALLINT      NOT NULL,
     IsActive    BIT         NOT NULL DEFAULT 1,
     CreatedAt   DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy   INT      NOT NULL,
@@ -242,8 +242,8 @@ GO
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RolePermission (
     Id              INT          NOT NULL IDENTITY(1,1),
-    RoleId          INT          NOT NULL,
-    PermissionId    INT          NOT NULL,
+    RoleId          SMALLINT          NOT NULL,
+    PermissionId    SMALLINT          NOT NULL,
     Effect          NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',   -- AUTH_EFFECT
     EffectGroup     AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive        BIT             NOT NULL DEFAULT 1,
@@ -280,12 +280,12 @@ GO
 CREATE TABLE auth.EmployeeRoleGroup (
     Id                  INT      NOT NULL IDENTITY(1,1),
     EmployeeId          INT      NOT NULL,
-    RoleGroupId         INT      NOT NULL,
+    RoleGroupId         SMALLINT      NOT NULL,
     -- Optional scope: narrows the effective reach of this assignment.
     -- ScopeTypeId  - time.ScopeType (GLOBAL/COUNTRY/LEGAL_ENTITY/OFFICE/DEPARTMENT/TEAM/EMPLOYEE)
-    -- ScopeRefId   - PK of the scoped entity (e.g. DepartmentId when ScopeType = DEPARTMENT)
-    ScopeTypeId         INT      NULL,
-    ScopeRefId          INT      NULL,
+    -- ScopeReferenceId   - PK of the scoped entity (e.g. DepartmentId when ScopeType = DEPARTMENT)
+    ScopeTypeId         SMALLINT      NULL,
+    ScopeReferenceId          INT      NULL,
     EffectiveFrom       DATE        NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
     EffectiveTo         DATE        NULL,
     AssignedBy          INT      NOT NULL,
@@ -327,8 +327,8 @@ GO
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RecordAccessPolicy (
     Id                  INT          NOT NULL IDENTITY(1,1),
-    RoleId              INT          NOT NULL,
-    BusinessEntityId    INT          NOT NULL,
+    RoleId              SMALLINT          NOT NULL,
+    BusinessEntityId    SMALLINT          NOT NULL,
     -- The broadest scope level this policy applies to.
     AccessScope         NVARCHAR(50)    NOT NULL,    -- RECORD_ACCESS_SCOPE
     AccessScopeGroup    AS CAST('RECORD_ACCESS_SCOPE' AS NVARCHAR(50)) PERSISTED,
@@ -366,14 +366,14 @@ GO
 -- ----------------------------------------------------------------------------------------------------------------------------
 -- 5.2  RecordAccessScope
 --      Concrete scope values for a RecordAccessPolicy.
---      When ScopeRefId IS NULL the policy covers all values of that ScopeType
---      (e.g. ScopeType = DEPARTMENT, ScopeRefId = NULL - all departments).
+--      When ScopeReferenceId IS NULL the policy covers all values of that ScopeType
+--      (e.g. ScopeType = DEPARTMENT, ScopeReferenceId = NULL - all departments).
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RecordAccessScope (
     Id                      INT      NOT NULL IDENTITY(1,1),
     RecordAccessPolicyId    INT      NOT NULL,
-    ScopeTypeId             INT      NOT NULL,    -- time.ScopeType
-    ScopeRefId              INT      NULL,         -- PK of the scoped entity; NULL = all
+    ScopeTypeId             SMALLINT      NOT NULL,    -- time.ScopeType
+    ScopeReferenceId        INT      NULL,         -- PK of the scoped entity; NULL = all
     IsActive                BIT         NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy               INT      NOT NULL,
@@ -408,8 +408,8 @@ GO
 --      Neither references a physical schema, table, or column name.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.ConfidentialField (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    BusinessEntityId    INT          NOT NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    BusinessEntityId    SMALLINT          NOT NULL,
     EntityName          NVARCHAR(100)   NOT NULL,    -- logical entity  (e.g. "Employee")
     FieldName           NVARCHAR(100)   NOT NULL,    -- logical field   (e.g. "PANNumber")
     FieldLabel          NVARCHAR(200)   NOT NULL,    -- display label
@@ -443,9 +443,9 @@ GO
 --      Effect = DENY   - always mask, even if the role would otherwise allow it.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.ConfidentialAccessPolicy (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    ConfidentialFieldId     INT          NOT NULL,
-    GranteeRoleId           INT          NULL,    -- grant to a role ...
+    Id                      SMALLINT          NOT NULL IDENTITY(1,1),
+    ConfidentialFieldId     SMALLINT          NOT NULL,
+    GranteeRoleId           SMALLINT          NULL,    -- grant to a role ...
     GranteeEmployeeId       INT          NULL,    -- ... or to a specific employee
     Effect                  NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
     EffectGroup             AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
@@ -486,12 +486,12 @@ GO
 --      A navigable page, menu item, or component in the frontend.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.UIResource (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    BusinessEntityId    INT          NULL,        -- optional link to business entity
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    BusinessEntityId    SMALLINT          NULL,        -- optional link to business entity
     ResourceKey         NVARCHAR(200)   NOT NULL,    -- e.g. "PAGE:/payroll/salary-slip"
     ResourceLabel       NVARCHAR(200)   NOT NULL,    -- e.g. "Salary Slip"
     ResourceType        NVARCHAR(50)    NOT NULL,    -- PAGE | MENU | COMPONENT | BUTTON
-    ParentUIResourceId  INT          NULL,
+    ParentUIResourceId  SMALLINT          NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy           INT          NOT NULL,
@@ -514,9 +514,9 @@ GO
 --      Maps a Role to a UIResource (ALLOW / DENY visibility).
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.UIPermission (
-    Id              INT          NOT NULL IDENTITY(1,1),
-    RoleId          INT          NOT NULL,
-    UIResourceId    INT          NOT NULL,
+    Id              SMALLINT          NOT NULL IDENTITY(1,1),
+    RoleId          SMALLINT          NOT NULL,
+    UIResourceId    SMALLINT          NOT NULL,
     Effect          NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
     EffectGroup     AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive        BIT             NOT NULL DEFAULT 1,
@@ -545,8 +545,8 @@ GO
 --      A REST endpoint registered for authorization.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.APIResource (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    BusinessEntityId    INT          NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    BusinessEntityId    SMALLINT          NULL,
     ResourceKey         NVARCHAR(300)   NOT NULL,    -- e.g. "POST /api/attendance/leave"
     RoutePath           NVARCHAR(300)   NOT NULL,    -- e.g. "/api/attendance/leave"
     HttpMethod          NVARCHAR(50)    NOT NULL,
@@ -575,9 +575,9 @@ GO
 --      Maps a Role to an APIResource (ALLOW / DENY).
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.APIPermission (
-    Id              INT          NOT NULL IDENTITY(1,1),
-    RoleId          INT          NOT NULL,
-    APIResourceId   INT          NOT NULL,
+    Id              SMALLINT          NOT NULL IDENTITY(1,1),
+    RoleId          SMALLINT          NOT NULL,
+    APIResourceId   SMALLINT          NOT NULL,
     Effect          NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
     EffectGroup     AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive        BIT             NOT NULL DEFAULT 1,
@@ -611,12 +611,12 @@ GO
 -- 8.1  WorkflowPermission
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.WorkflowPermission (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    WorkflowDefinitionId    INT          NOT NULL,
-    WorkflowStepId          INT          NOT NULL,
-    RoleId                  INT          NOT NULL,
+    Id                      SMALLINT          NOT NULL IDENTITY(1,1),
+    WorkflowDefinitionId    SMALLINT          NOT NULL,
+    WorkflowStepId          SMALLINT          NOT NULL,
+    RoleId                  SMALLINT          NOT NULL,
     -- Action must be a workflow-relevant permission action (APPROVE / REJECT / VIEW …)
-    EntityActionId          INT          NOT NULL,
+    EntityActionId          SMALLINT          NOT NULL,
     Effect                  NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
     EffectGroup             AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive                BIT             NOT NULL DEFAULT 1,
@@ -685,9 +685,9 @@ CREATE TABLE auth.DelegatedAccess (
     -- Optional scope: when set, the delegated permissions apply only within this scope
     -- (e.g. a manager on leave grants their leave-approval right scoped to their department).
     -- ScopeTypeId  - time.ScopeType
-    -- ScopeRefId   - PK of the scoped entity (e.g. DepartmentId)
-    ScopeTypeId         INT          NULL,
-    ScopeRefId          INT          NULL,
+    -- ScopeReferenceId   - PK of the scoped entity (e.g. DepartmentId)
+    ScopeTypeId         SMALLINT          NULL,
+    ScopeReferenceId    INT          NULL,
 
     -- Validity window - both are DATETIME2 so intra-day delegations are supported.
     ValidFrom           DATETIME2       NOT NULL,
@@ -753,7 +753,7 @@ GO
 CREATE TABLE auth.DelegatedAccessPermission (
     Id                  INT          NOT NULL IDENTITY(1,1),
     DelegatedAccessId   INT          NOT NULL,
-    PermissionId        INT          NOT NULL,
+    PermissionId        SMALLINT          NOT NULL,
     Effect              NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
     EffectGroup         AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive            BIT             NOT NULL DEFAULT 1,
@@ -796,7 +796,7 @@ CREATE INDEX IX_RolePermission_Effect   ON auth.RolePermission (RoleId, Effect, 
 -- EmployeeRoleGroup  (hot path - evaluated on every auth check)
 CREATE INDEX IX_ERG_Employee            ON auth.EmployeeRoleGroup (EmployeeId, IsActive, EffectiveFrom, EffectiveTo);
 CREATE INDEX IX_ERG_RoleGroup           ON auth.EmployeeRoleGroup (RoleGroupId, IsActive);
-CREATE INDEX IX_ERG_Scope               ON auth.EmployeeRoleGroup (ScopeTypeId, ScopeRefId);
+CREATE INDEX IX_ERG_Scope               ON auth.EmployeeRoleGroup (ScopeTypeId, ScopeReferenceId);
 
 -- RecordAccessPolicy
 CREATE INDEX IX_RAP_Role_Entity         ON auth.RecordAccessPolicy (RoleId, BusinessEntityId, IsActive);
@@ -804,7 +804,7 @@ CREATE INDEX IX_RAP_AccessScope         ON auth.RecordAccessPolicy (AccessScope,
 
 -- RecordAccessScope
 CREATE INDEX IX_RAS_Policy              ON auth.RecordAccessScope (RecordAccessPolicyId, IsActive);
-CREATE INDEX IX_RAS_Scope               ON auth.RecordAccessScope (ScopeTypeId, ScopeRefId);
+CREATE INDEX IX_RAS_Scope               ON auth.RecordAccessScope (ScopeTypeId, ScopeReferenceId);
 
 -- ConfidentialField
 CREATE INDEX IX_CF_EntityField          ON auth.ConfidentialField (EntityName, FieldName);
@@ -832,7 +832,7 @@ CREATE INDEX IX_WP_Step_Role            ON auth.WorkflowPermission (WorkflowStep
 CREATE INDEX IX_DA_Delegatee_Status     ON auth.DelegatedAccess (DelegateeEmployeeId, DelegationStatus, IsActive, ValidFrom, ValidTo);
 CREATE INDEX IX_DA_Delegator_Status     ON auth.DelegatedAccess (DelegatorEmployeeId, DelegationStatus, IsActive);
 CREATE INDEX IX_DA_Validity             ON auth.DelegatedAccess (ValidFrom, ValidTo, DelegationStatus);
-CREATE INDEX IX_DA_Scope                ON auth.DelegatedAccess (ScopeTypeId, ScopeRefId);
+CREATE INDEX IX_DA_Scope                ON auth.DelegatedAccess (ScopeTypeId, ScopeReferenceId);
 
 -- DelegatedAccessPermission
 CREATE INDEX IX_DAP_DelegatedAccess     ON auth.DelegatedAccessPermission (DelegatedAccessId, IsActive);
@@ -859,7 +859,7 @@ SELECT
     r.RoleCode,
     r.RoleName,
     erg.ScopeTypeId,
-    erg.ScopeRefId,
+    erg.ScopeReferenceId,
     erg.EffectiveFrom,
     erg.EffectiveTo
 FROM      auth.EmployeeRoleGroup erg
@@ -891,7 +891,7 @@ SELECT
     p.PermissionCategory,
     rp.Effect,
     er.ScopeTypeId,
-    er.ScopeRefId
+    er.ScopeReferenceId
 FROM      auth.vw_EmployeeEffectiveRoles er
 JOIN      auth.RolePermission rp ON rp.RoleId     = er.RoleId      AND rp.IsActive = 1
 JOIN      auth.Permission     p  ON p.Id          = rp.PermissionId AND p.IsActive  = 1
@@ -962,7 +962,7 @@ SELECT
     p.PermissionCategory,
     dap.Effect,
     da.ScopeTypeId,
-    da.ScopeRefId,
+    da.ScopeReferenceId,
     da.ValidFrom,
     da.ValidTo,
     da.Reason                           AS DelegationReason

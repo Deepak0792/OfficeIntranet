@@ -5,7 +5,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class OfficeLocationRepository : BaseRepository<OfficeLocation>, IOfficeLocationRepository
+public class OfficeLocationRepository : BaseRepository<OfficeLocation, short>, IOfficeLocationRepository
 {
     public OfficeLocationRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
 }

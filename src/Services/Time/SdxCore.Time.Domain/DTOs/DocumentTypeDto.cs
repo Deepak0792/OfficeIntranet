@@ -2,7 +2,7 @@ namespace SdxCore.Time.Domain.DTOs;
 
 public class DocumentTypeDto
 {
-    public long Id { get; set; }
+    public short Id { get; set; }
     public required string DocumentTypeCode { get; set; }
     public required string DocumentTypeName { get; set; }
     public string? Category { get; set; }

@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Interfaces.Repositories;
 
-public interface IDocumentTypeRepository : IRepository<DocumentType> { }
+public interface IDocumentTypeRepository : IRepository<DocumentType, short> { }
 

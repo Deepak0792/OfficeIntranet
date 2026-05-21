@@ -13,11 +13,11 @@ GO
 
 -- TIME ZONE MASTER
 CREATE TABLE time.TimeZoneMaster (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    Id                      SMALLINT        PRIMARY KEY IDENTITY(1,1),
     TimeZoneCode            NVARCHAR(100)   NOT NULL UNIQUE,
     TimeZoneName            NVARCHAR(200)   NOT NULL,
     UtcOffset               NVARCHAR(20)    NOT NULL,
-    OffsetMinutes           INT             NOT NULL,
+    OffsetMinutes           SMALLINT        NOT NULL,
     SupportsDaylightSaving  BIT             NOT NULL DEFAULT 0,
     WindowsTimeZoneId       NVARCHAR(200)   NULL,
     IanaTimeZoneId          NVARCHAR(200)   NULL,
@@ -32,12 +32,12 @@ GO
 
 -- COUNTRY
 CREATE TABLE time.Country (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     CountryCode     NVARCHAR(10)    NOT NULL UNIQUE,
     CountryName     NVARCHAR(200)   NOT NULL,
     CurrencyCode    NVARCHAR(10)    NULL,
-    TimeZoneId      INT          NULL,
-    DisplayOrder    INT             NULL,
+    TimeZoneId      SMALLINT        NULL,
+    DisplayOrder    SMALLINT        NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy       INT             NULL,
@@ -52,12 +52,12 @@ GO
 
 -- REGION
 CREATE TABLE time.Region (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
-    CountryId       INT          NOT NULL,
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    CountryId       SMALLINT          NOT NULL,
     RegionName      NVARCHAR(200)   NOT NULL,
     RegionType      NVARCHAR(50)    NULL,
-    ParentRegionId  INT          NULL,
-    DisplayOrder    INT             NULL,
+    ParentRegionId  SMALLINT          NULL,
+    DisplayOrder    SMALLINT             NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy       INT             NULL,
@@ -76,10 +76,10 @@ GO
 
 -- LEGAL ENTITY
 CREATE TABLE time.LegalEntity (
-    Id                          INT          PRIMARY KEY IDENTITY(1,1),
+    Id                          SMALLINT          PRIMARY KEY IDENTITY(1,1),
     EntityCode                  NVARCHAR(50)    NOT NULL UNIQUE,
     EntityName                  NVARCHAR(300)   NOT NULL,
-    CountryId                   INT          NOT NULL,
+    CountryId                   SMALLINT          NOT NULL,
     TaxIdentificationNumber     NVARCHAR(100)   NULL,
     RegistrationNumber          NVARCHAR(100)   NULL,
     CurrencyCode                NVARCHAR(10)    NULL,
@@ -97,10 +97,10 @@ GO
 
 -- OFFICE LOCATION
 CREATE TABLE time.OfficeLocation (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
-    LegalEntityId   INT          NOT NULL,
-    CountryId       INT          NOT NULL,
-    RegionId        INT          NULL,
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    LegalEntityId   SMALLINT          NOT NULL,
+    CountryId       SMALLINT          NOT NULL,
+    RegionId        SMALLINT          NULL,
     LocationCode    NVARCHAR(50)    NOT NULL UNIQUE,
     LocationName    NVARCHAR(200)   NOT NULL,
     BuildingName    NVARCHAR(200)   NULL,
@@ -111,7 +111,7 @@ CREATE TABLE time.OfficeLocation (
     PostalCode      NVARCHAR(20)    NULL,
     Latitude        DECIMAL(10,7)   NULL,
     Longitude       DECIMAL(10,7)   NULL,
-    TimeZoneId      INT          NULL,
+    TimeZoneId      SMALLINT          NULL,
     IsHeadOffice    BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -139,10 +139,10 @@ GO
 
 -- DEPARTMENT
 CREATE TABLE time.Department (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     DepartmentCode      NVARCHAR(50)    NOT NULL UNIQUE,
     DepartmentName      NVARCHAR(200)   NOT NULL,
-    ParentDepartmentId  INT          NULL,
+    ParentDepartmentId  SMALLINT          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -158,10 +158,10 @@ GO
 
 -- SCOPE TYPE - Organizational hierarchy levels
 CREATE TABLE time.ScopeType (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     ScopeCode       NVARCHAR(100)   NOT NULL UNIQUE,
     ScopeName       NVARCHAR(200)   NOT NULL,
-    HierarchyLevel  INT             NOT NULL,
+    HierarchyLevel  SMALLINT             NOT NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy       INT             NULL,
@@ -172,7 +172,7 @@ GO
 
 -- DESIGNATION
 CREATE TABLE time.Designation (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     DesignationCode     NVARCHAR(50)    NOT NULL UNIQUE,
     DesignationName     NVARCHAR(200)   NOT NULL,
     Grade               NVARCHAR(50)    NULL,
@@ -186,7 +186,7 @@ GO
 
 -- DOCUMENT TYPE
 CREATE TABLE time.DocumentType (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     DocumentTypeCode    NVARCHAR(50)    NOT NULL UNIQUE,
     DocumentTypeName    NVARCHAR(200)   NOT NULL,
     Category            NVARCHAR(100)   NULL,
@@ -202,13 +202,13 @@ GO
 
 -- GEO FENCE
 CREATE TABLE time.GeoFence (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     GeoFenceCode    NVARCHAR(100)   NOT NULL UNIQUE,
     GeoFenceName    NVARCHAR(200)   NOT NULL,
     Latitude        DECIMAL(18,8)   NOT NULL,
     Longitude       DECIMAL(18,8)   NOT NULL,
     RadiusMeters    DECIMAL(18,2)   NOT NULL,
-    OfficeId        INT          NULL,
+    OfficeId        SMALLINT          NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy       INT             NULL,
@@ -227,7 +227,7 @@ CREATE TABLE time.BiometricDevice (
     DeviceCode      NVARCHAR(100)   NOT NULL UNIQUE,
     DeviceName      NVARCHAR(200)   NOT NULL,
     SerialNumber    NVARCHAR(200)   NULL,
-    OfficeId        INT          NULL,
+    OfficeId        SMALLINT          NULL,
     IpAddress       NVARCHAR(100)   NULL,    
     LastSyncAt      DATETIME2       NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,

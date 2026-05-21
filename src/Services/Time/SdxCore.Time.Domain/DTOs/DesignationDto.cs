@@ -2,7 +2,7 @@ namespace SdxCore.Time.Domain.DTOs;
 
 public class DesignationDto
 {
-    public long Id { get; set; }
+    public short Id { get; set; }
     public required string DesignationCode { get; set; }
     public required string DesignationName { get; set; }
     public string? Grade { get; set; }

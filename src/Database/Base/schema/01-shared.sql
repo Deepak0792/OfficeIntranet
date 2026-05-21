@@ -16,7 +16,7 @@ CREATE TABLE shared.StatusLookup (
     StatusGroup     NVARCHAR(50)    NOT NULL,
     Label           NVARCHAR(100)   NOT NULL,
     Description     NVARCHAR(500)   NULL,
-    DisplayOrder    INT             NOT NULL DEFAULT 0,
+    DisplayOrder    SMAllINT             NOT NULL DEFAULT 0,
     IsTerminal      BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),

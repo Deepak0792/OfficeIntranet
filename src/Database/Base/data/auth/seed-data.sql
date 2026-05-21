@@ -1005,7 +1005,7 @@ GO
 
 -- SEED 11  -  Record Access Policies  (RLS defaults per role)
 -- Each policy declares the broadest scope a role can see for a given entity.
--- RecordAccessScope rows further narrow this to specific ScopeType / ScopeRefId values.
+-- RecordAccessScope rows further narrow this to specific ScopeType / ScopeReferenceId values.
 
 -- EMPLOYEE_SELF_SERVICE: EMPLOYEE scope (own records only)
 INSERT INTO auth.RecordAccessPolicy (RoleId, BusinessEntityId, AccessScope, Effect, Description, CreatedBy)

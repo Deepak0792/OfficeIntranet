@@ -12,10 +12,10 @@ GO
 
 -- MODULE 1: MASTER TABLES
 CREATE TABLE helpdesk.TicketCategory (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode        NVARCHAR(100)   NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
-    ParentCategoryId    INT          NULL,
+    ParentCategoryId    SMALLINT          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -27,10 +27,10 @@ CREATE TABLE helpdesk.TicketCategory (
 GO
 
 CREATE TABLE helpdesk.SupportGroup (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     SupportGroupCode    NVARCHAR(100)   NOT NULL UNIQUE,
     SupportGroupName    NVARCHAR(200)   NOT NULL,
-    DepartmentId        INT          NULL,
+    DepartmentId        SMALLINT          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -42,10 +42,10 @@ CREATE TABLE helpdesk.SupportGroup (
 GO
 
 CREATE TABLE helpdesk.AssetCategory (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode        NVARCHAR(100)   NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
-    ParentCategoryId    INT          NULL,
+    ParentCategoryId    SMALLINT          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsTrackable         BIT             NOT NULL DEFAULT 1,
     IsConsumable        BIT             NOT NULL DEFAULT 0,
@@ -58,7 +58,7 @@ CREATE TABLE helpdesk.AssetCategory (
 GO
 
 CREATE TABLE helpdesk.Vendor (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     VendorCode          NVARCHAR(100)   NOT NULL UNIQUE,
     VendorName          NVARCHAR(300)   NOT NULL,
     ContactPerson       NVARCHAR(200)   NULL,
@@ -77,15 +77,15 @@ CREATE TABLE helpdesk.Ticket (
     TicketNumber                    NVARCHAR(50)    NOT NULL UNIQUE,
     RequesterEmployeeId             INT          NOT NULL,
     RequestedForEmployeeId          INT          NULL,
-    TicketCategoryId                INT          NOT NULL,
+    TicketCategoryId                SMALLINT          NOT NULL,
     TicketPriorityCode              NVARCHAR(50)    NOT NULL,
     TicketPriorityGroup             AS CAST('HELPDESK_TICKET_PRIORITY' AS NVARCHAR(50)) PERSISTED,
     TicketStatusCode                NVARCHAR(50)    NOT NULL,
     TicketStatusGroup               AS CAST('HELPDESK_TICKET_STATUS' AS NVARCHAR(50)) PERSISTED,
-    SupportGroupId                  INT          NULL,
+    SupportGroupId                  SMALLINT          NULL,
     AssignedToEmployeeId            INT          NULL,
     AssetId                         INT          NULL,
-    OfficeLocationId                INT          NULL,
+    OfficeLocationId                SMALLINT          NULL,
     Subject                         NVARCHAR(300)   NOT NULL,
     Description                     NVARCHAR(MAX)  NULL,
     OpenedAt                        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -94,7 +94,7 @@ CREATE TABLE helpdesk.Ticket (
     ClosedAt                        DATETIME2       NULL,
     WorkflowInstanceId              INT          NULL,
     IsReopened                      BIT             NOT NULL DEFAULT 0,
-    ReopenedCount                   INT             NOT NULL DEFAULT 0,
+    ReopenedCount                   SMALLINT             NOT NULL DEFAULT 0,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     UpdatedAt                       DATETIME2       NULL,
@@ -175,14 +175,14 @@ GO
 
 -- MODULE 3: SLA MANAGEMENT
 CREATE TABLE helpdesk.SlaPolicy (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
+    Id                              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     PolicyCode                      NVARCHAR(100)   NOT NULL UNIQUE,
     PolicyName                      NVARCHAR(200)   NOT NULL,
     TicketPriorityCode              NVARCHAR(50)    NOT NULL,
     TicketPriorityGroup             AS CAST('HELPDESK_TICKET_PRIORITY' AS NVARCHAR(50)) PERSISTED,
-    ResponseTimeMinutes             INT             NOT NULL,
-    ResolutionTimeMinutes           INT             NOT NULL,
-    EscalationTimeMinutes           INT             NULL,
+    ResponseTimeMinutes             SMALLINT             NOT NULL,
+    ResolutionTimeMinutes           SMALLINT             NOT NULL,
+    EscalationTimeMinutes           SMALLINT             NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -195,7 +195,7 @@ GO
 CREATE TABLE helpdesk.TicketSlaTracking (
     Id                              INT          PRIMARY KEY IDENTITY(1,1),
     TicketId                        INT          NOT NULL,
-    SlaPolicyId                     INT          NOT NULL,
+    SlaPolicyId                     SMALLINT          NOT NULL,
     ResponseDueAt                   DATETIME2       NULL,
     ResolutionDueAt                 DATETIME2       NULL,
     FirstResponseAt                 DATETIME2       NULL,
@@ -225,10 +225,10 @@ CREATE TABLE helpdesk.Asset (
     AssetCode                       NVARCHAR(100)   NOT NULL UNIQUE,
     AssetTag                        NVARCHAR(100)   NULL UNIQUE,
     AssetName                       NVARCHAR(300)   NOT NULL,
-    AssetCategoryId                 INT          NOT NULL,
+    AssetCategoryId                 SMALLINT          NOT NULL,
     AssetStatusCode                 NVARCHAR(50)    NOT NULL,
     AssetStatusGroup                AS CAST('HELPDESK_ASSET_STATUS' AS NVARCHAR(50)) PERSISTED,
-    VendorId                        INT          NULL,
+    VendorId                        SMALLINT          NULL,
     SerialNumber                    NVARCHAR(200)   NULL,
     ModelNumber                     NVARCHAR(200)   NULL,
     Manufacturer                    NVARCHAR(200)   NULL,
@@ -240,7 +240,7 @@ CREATE TABLE helpdesk.Asset (
     WarrantyExpiryDate              DATE            NULL,
     PurchaseCost                    DECIMAL(18,2)   NULL,
     CurrentBookValue                DECIMAL(18,2)   NULL,
-    OfficeLocationId                INT          NULL,
+    OfficeLocationId                SMALLINT          NULL,
     CurrentEmployeeId               INT          NULL,
     Description                     NVARCHAR(1000)  NULL,
     LastAuditDate                   DATE            NULL,
@@ -301,7 +301,7 @@ GO
 CREATE TABLE helpdesk.AssetMaintenance (
     Id                              INT          PRIMARY KEY IDENTITY(1,1),
     AssetId                         INT          NOT NULL,
-    VendorId                        INT          NULL,
+    VendorId                        SMALLINT          NULL,
     MaintenanceDate                 DATE            NOT NULL,
     MaintenanceType                 NVARCHAR(100)   NULL,
     CostAmount                      DECIMAL(18,2)   NULL,
@@ -330,7 +330,7 @@ CREATE TABLE helpdesk.SoftwareProduct (
     SoftwareCode                        NVARCHAR(100)   NOT NULL UNIQUE,
     SoftwareName                        NVARCHAR(300)   NOT NULL,
     VersionNumber                       NVARCHAR(100)   NULL,
-    VendorId                            INT          NULL,
+    VendorId                            SMALLINT          NULL,
     LicenseTypeCode                     NVARCHAR(50)    NOT NULL,
     LicenseTypeGroup                    AS CAST('HELPDESK_LICENSE_TYPE' AS NVARCHAR(50)) PERSISTED,
     Description                         NVARCHAR(1000)  NULL,
@@ -351,8 +351,8 @@ CREATE TABLE helpdesk.SoftwareLicense (
     Id                              INT          PRIMARY KEY IDENTITY(1,1),
     SoftwareProductId               INT          NOT NULL,
     LicenseKey                      NVARCHAR(500)   NULL,
-    LicenseCount                    INT             NOT NULL DEFAULT 1,
-    UsedLicenseCount                INT             NOT NULL DEFAULT 0,
+    LicenseCount                    SMALLINT             NOT NULL DEFAULT 1,
+    UsedLicenseCount                SMALLINT             NOT NULL DEFAULT 0,
     PurchaseDate                    DATE            NULL,
     ExpiryDate                      DATE            NULL,
     PurchaseCost                    DECIMAL(18,2)   NULL,

@@ -141,13 +141,13 @@ WHILE @@FETCH_STATUS = 0
 BEGIN
     -- 1. BASIC - FIXED anchor
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 0, 1, 1
     FROM payroll.PayrollComponent WHERE ComponentCode = 'BASIC';
 
     -- 2. HRA - 20% of BASIC
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'PERCENTAGE', 20.0000,
         (SELECT Id FROM payroll.SalaryStructureComponent
          WHERE SalaryStructureId = @SID
@@ -157,25 +157,25 @@ BEGIN
 
     -- 3. TA - FIXED 1,600
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 0, 1, 3
     FROM payroll.PayrollComponent WHERE ComponentCode = 'TA';
 
     -- 4. MEDICAL_ALL - FIXED 1,250
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 0, 1, 4
     FROM payroll.PayrollComponent WHERE ComponentCode = 'MEDICAL_ALL';
 
     -- 5. NIGHTALL - FIXED (override per employee)
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 0, 1, 5
     FROM payroll.PayrollComponent WHERE ComponentCode = 'NIGHTALL';
 
     -- 6. SPECIAL_ALL - FORMULA balancing
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FORMULA', NULL, NULL,
         'MonthlyCTC - BASIC - HRA - TA - MEDICAL_ALL - NIGHTALL - PF_ER - ESI_ER - GRATUITY',
         0, 1, 6
@@ -183,7 +183,7 @@ BEGIN
 
     -- 7. PF_ER - 12% of BASIC (employer contribution)
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'PERCENTAGE', 12.0000,
         (SELECT Id FROM payroll.SalaryStructureComponent
          WHERE SalaryStructureId = @SID
@@ -193,7 +193,7 @@ BEGIN
 
     -- 8. ESI_ER - 3.25% of Gross if Gross <= 21,000
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FORMULA', 3.2500, NULL,
         'IF(MonthlyGross <= 21000, MonthlyGross * 0.0325, 0)',
         1, 1, 8
@@ -201,7 +201,7 @@ BEGIN
 
     -- 9. GRATUITY - 4.81% of BASIC
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'PERCENTAGE', 4.8100,
         (SELECT Id FROM payroll.SalaryStructureComponent
          WHERE SalaryStructureId = @SID
@@ -211,13 +211,13 @@ BEGIN
 
     -- 10. OTPAY - FIXED (from attendance OT; override per month)
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 0, 1, 10
     FROM payroll.PayrollComponent WHERE ComponentCode = 'OTPAY';
 
     -- 11. PF_EMP - 12% of BASIC (employee deduction)
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'PERCENTAGE', 12.0000,
         (SELECT Id FROM payroll.SalaryStructureComponent
          WHERE SalaryStructureId = @SID
@@ -227,7 +227,7 @@ BEGIN
 
     -- 12. ESI_EMP - 0.75% of Gross if Gross <= 21,000
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FORMULA', 0.7500, NULL,
         'IF(MonthlyGross <= 21000, MonthlyGross * 0.0075, 0)',
         1, 1, 12
@@ -235,13 +235,13 @@ BEGIN
 
     -- 13. PT - FIXED (state slab; Maharashtra INR 200/month)
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 1, 1, 13
     FROM payroll.PayrollComponent WHERE ComponentCode = 'PT';
 
     -- 14. TDS - FIXED (monthly from tax engine; override per month)
     INSERT INTO payroll.SalaryStructureComponent
-        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, SortOrder)
+        (SalaryStructureId, PayrollComponentId, CalculationType, PercentageValue, BaseComponentId, FormulaExpression, IsStatutory, IsActive, DisplayOrder)
     SELECT @SID, Id, 'FIXED', NULL, NULL, NULL, 1, 1, 14
     FROM payroll.PayrollComponent WHERE ComponentCode = 'TDS';
 

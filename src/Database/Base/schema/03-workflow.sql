@@ -36,7 +36,7 @@ GO
 
 -- Functional module that owns workflows  e.g. LEAVE, EXPENSE, HIRING
 CREATE TABLE workflow.WorkflowModule (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     ModuleCode      NVARCHAR(100)   NOT NULL UNIQUE,
     ModuleName      NVARCHAR(200)   NOT NULL,
     EntityName      NVARCHAR(100)   NOT NULL,   -- Logical entity name tracked by the module
@@ -50,11 +50,11 @@ GO
 
 -- Versioned workflow template belonging to a module
 CREATE TABLE workflow.WorkflowDefinition (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowModuleId    INT          NOT NULL,
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowModuleId    SMALLINT          NOT NULL,
     WorkflowCode        NVARCHAR(100)   NOT NULL UNIQUE,
     WorkflowName        NVARCHAR(200)   NOT NULL,
-    VersionNo           INT             NOT NULL DEFAULT 1,
+    VersionNo           SMALLINT             NOT NULL DEFAULT 1,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -71,9 +71,9 @@ GO
 -- Ordered steps within a workflow definition
 -- WorkflowStepType values (WORKFLOW_STEP_TYPE): APPROVAL, REVIEW, NOTIFICATION, FYI
 CREATE TABLE workflow.WorkflowStep (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowDefinitionId    INT          NOT NULL,
-    StepNo                  INT             NOT NULL,
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowDefinitionId    SMALLINT          NOT NULL,
+    StepNo                  SMALLINT             NOT NULL,
     StepName                NVARCHAR(200)   NOT NULL,
     WorkflowStepType        NVARCHAR(50)    NOT NULL,
     WorkflowStepTypeGroup   AS CAST('WORKFLOW_STEP_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -133,13 +133,13 @@ GO
 --   A separate column would duplicate this and create two resolution paths.
 -- ============================================================
 CREATE TABLE workflow.WorkflowStepApprover (
-    Id                          INT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowStepId              INT          NOT NULL,
+    Id                          SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowStepId              SMALLINT          NOT NULL,
     WorkflowApproverType        NVARCHAR(50)    NOT NULL,
     WorkflowApproverTypeGroup   AS CAST('WORKFLOW_APPROVER_TYPE' AS NVARCHAR(50)) PERSISTED,
-    ScopeTypeId                 INT          NULL,   -- FK → time.ScopeType
-    ScopeReferenceId            INT          NULL,   -- Entity id within that scope level
-    PriorityOrder               INT             NOT NULL DEFAULT 1,
+    ScopeTypeId                 SMALLINT          NULL,   -- FK → time.ScopeType
+    ScopeReferenceId            SMALLINT          NULL,   -- Entity id within that scope level
+    PriorityOrder               SMALLINT             NOT NULL DEFAULT 1,
     IsMandatory                 BIT             NOT NULL DEFAULT 1,
     IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -166,9 +166,9 @@ GO
 -- (e.g. Step 2 accepts CONSULTANT or SRSURGEON as Department Head)
 -- ============================================================
 CREATE TABLE workflow.WorkflowStepApproverDesignation (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowStepApproverId  INT          NOT NULL,
-    DesignationId           INT          NOT NULL,   -- FK → time.Designation
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowStepApproverId  SMALLINT          NOT NULL,
+    DesignationId           SMALLINT          NOT NULL,   -- FK → time.Designation
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy               INT             NULL,
@@ -197,13 +197,13 @@ CREATE TABLE workflow.WorkflowStepApproverDesignation (
 -- Example: Assign LEAVE_WF to DEPARTMENT 42 effective 2025-01-01
 -- ============================================================
 CREATE TABLE workflow.WorkflowAssignment (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowDefinitionId    INT          NOT NULL,
-    ScopeTypeId             INT          NOT NULL,   -- FK → time.ScopeType (routing scope)
-    ScopeReferenceId        INT          NOT NULL,   -- Entity id at the routing scope
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    WorkflowDefinitionId    SMALLINT          NOT NULL,
+    ScopeTypeId             SMALLINT          NOT NULL,   -- FK → time.ScopeType (routing scope)
+    ScopeReferenceId        SMALLINT          NOT NULL,   -- Entity id at the routing scope
     EffectiveFrom           DATE            NOT NULL,
     EffectiveTo             DATE            NULL,
-    PriorityOrder           INT             NOT NULL DEFAULT 1,  -- Conflict resolution when multiple match
+    PriorityOrder           SMALLINT             NOT NULL DEFAULT 1,  -- Conflict resolution when multiple match
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy               INT             NULL,
@@ -229,10 +229,10 @@ GO
 -- ReferenceTransactionId → PK of the originating record (e.g. LeaveRequest.Id)
 CREATE TABLE workflow.WorkflowInstance (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    WorkflowDefinitionId    INT          NOT NULL,
-    WorkflowModuleId        INT          NOT NULL,
+    WorkflowDefinitionId    SMALLINT          NOT NULL,
+    WorkflowModuleId        SMALLINT          NOT NULL,
     ReferenceTransactionId  INT          NOT NULL,
-    CurrentWorkflowStepId   INT          NULL,       -- NULL when completed or cancelled
+    CurrentWorkflowStepId   SMALLINT          NULL,       -- NULL when completed or cancelled
     WorkflowStatus          NVARCHAR(50)    NOT NULL,
     WorkflowStatusGroup     AS CAST('WORKFLOW_STATUS' AS NVARCHAR(50)) PERSISTED,
     CreatedBy               INT             NOT NULL,   -- FK → employee.Employee
@@ -281,8 +281,8 @@ GO
 CREATE TABLE workflow.WorkflowTask (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     WorkflowInstanceId          INT          NOT NULL,
-    WorkflowStepId              INT          NOT NULL,
-    WorkflowStepApproverId      INT          NOT NULL,   -- The rule that generated this task
+    WorkflowStepId              SMALLINT          NOT NULL,
+    WorkflowStepApproverId      SMALLINT          NOT NULL,   -- The rule that generated this task
     AssignedToEmployeeId        INT          NOT NULL,   -- FK → employee.Employee (resolved approver)
     DelegatedFromEmployeeId     INT          NULL,       -- FK → employee.Employee (set when delegated)
     TaskStatus                  NVARCHAR(50)    NOT NULL,
@@ -329,7 +329,7 @@ CREATE TABLE workflow.WorkflowActionHistory (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     WorkflowInstanceId          INT          NOT NULL,
     WorkflowTaskId              INT          NULL,       -- Task that was acted on (NULL for system actions)
-    WorkflowStepId              INT          NULL,
+    WorkflowStepId              SMALLINT          NULL,
     WorkflowActionType          NVARCHAR(50)    NOT NULL,
     WorkflowActionTypeGroup     AS CAST('WORKFLOW_ACTION_TYPE' AS NVARCHAR(50)) PERSISTED,    
     Remarks                     NVARCHAR(2000)  NULL,

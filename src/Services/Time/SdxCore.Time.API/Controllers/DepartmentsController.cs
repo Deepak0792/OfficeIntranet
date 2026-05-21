@@ -53,7 +53,7 @@ public class DepartmentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DepartmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetById(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
     {
         try
         {
@@ -104,7 +104,7 @@ public class DepartmentsController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(long id, [FromBody] UpdateDepartmentDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateDepartmentDto dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -130,7 +130,7 @@ public class DepartmentsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
     {
         try
         {

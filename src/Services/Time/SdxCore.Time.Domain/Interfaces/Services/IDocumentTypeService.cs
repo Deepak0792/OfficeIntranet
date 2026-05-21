@@ -9,10 +9,10 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 public interface IDocumentTypeService
 {
     Task<IEnumerable<DocumentTypeDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<DocumentTypeDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default);
+    Task<DocumentTypeDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
     Task<DocumentTypeDto> CreateAsync(CreateDocumentTypeDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(long id, UpdateDocumentTypeDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateDocumentTypeDto dto, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
 }
 
 

@@ -28,7 +28,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return new PagedResponse<IEnumerable<BiometricDeviceDto>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
     }
 
-    public async Task<BiometricDeviceDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<BiometricDeviceDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
@@ -47,7 +47,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(long id, UpdateBiometricDeviceDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(int id, UpdateBiometricDeviceDto dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -59,7 +59,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

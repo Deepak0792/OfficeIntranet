@@ -3,10 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using SdxCore.Common.Interfaces.Data;
 using SdxCore.Time.Persistence.Data;
 using System.Linq.Expressions;
+using System.Diagnostics;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public abstract class BaseRepository<TEntity> : IRepository<TEntity> where TEntity : class
+public abstract class BaseRepository<TEntity, TKey> : IRepository<TEntity, TKey> 
+    where TEntity : class 
+    where TKey : struct
 {
     protected readonly TimeDbContext _dbContext;
     protected readonly DbSet<TEntity> _dbSet;
@@ -60,7 +63,7 @@ public abstract class BaseRepository<TEntity> : IRepository<TEntity> where TEnti
         }
     }
 
-    public virtual async Task<TEntity?> GetByIdAsync(long id, CancellationToken cancellationToken = default)
+    public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         return await _dbSet.FindAsync(new object[] { id }, cancellationToken);
     }

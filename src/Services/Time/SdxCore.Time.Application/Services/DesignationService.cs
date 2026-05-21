@@ -27,7 +27,7 @@ public class DesignationService : IDesignationService
         return entities.Select(e => SimpleMapper.Map<Designation, DesignationDto>(e));
     }
 
-    public async Task<DesignationDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<DesignationDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
@@ -46,7 +46,7 @@ public class DesignationService : IDesignationService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(long id, UpdateDesignationDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateDesignationDto dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,7 +58,7 @@ public class DesignationService : IDesignationService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

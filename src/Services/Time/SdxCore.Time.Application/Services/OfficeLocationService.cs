@@ -27,7 +27,7 @@ public class OfficeLocationService : IOfficeLocationService
         return entities.Select(e => SimpleMapper.Map<OfficeLocation, OfficeLocationDto>(e));
     }
 
-    public async Task<OfficeLocationDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<OfficeLocationDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
@@ -46,7 +46,7 @@ public class OfficeLocationService : IOfficeLocationService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(long id, UpdateOfficeLocationDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateOfficeLocationDto dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,7 +58,7 @@ public class OfficeLocationService : IOfficeLocationService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

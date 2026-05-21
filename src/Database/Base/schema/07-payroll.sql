@@ -12,7 +12,7 @@ GO
 
 -- TAX PROOF CATEGORY - IT Declaration Sections
 CREATE TABLE payroll.TaxProofCategory (
-    Id                      INT             PRIMARY KEY IDENTITY(1,1),
+    Id                      SMALLINT             PRIMARY KEY IDENTITY(1,1),
     CategoryCode            NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName            NVARCHAR(200)   NOT NULL,
     Section                 NVARCHAR(100)   NULL,
@@ -20,7 +20,7 @@ CREATE TABLE payroll.TaxProofCategory (
     IsApplicableOldRegime   BIT             NOT NULL DEFAULT 1,
     IsApplicableNewRegime   BIT             NOT NULL DEFAULT 0,
     RequiresDocument        BIT             NOT NULL DEFAULT 1,
-    DisplayOrder            TINYINT         NOT NULL DEFAULT 0,
+    DisplayOrder            SMALLINT         NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     UpdatedAt               DATETIME2       NULL
@@ -29,7 +29,7 @@ GO
 
 -- SALARY GRADE
 CREATE TABLE payroll.SalaryGrade (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     GradeCode       NVARCHAR(50)    NOT NULL UNIQUE,
     GradeName       NVARCHAR(200)   NOT NULL,
     MinCTC          DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -44,12 +44,12 @@ GO
 
 -- SALARY STRUCTURE
 CREATE TABLE payroll.SalaryStructure (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     StructureCode   NVARCHAR(100)   NOT NULL UNIQUE,
     StructureName   NVARCHAR(200)   NOT NULL,
-    LegalEntityId   INT          NOT NULL,
+    LegalEntityId   SMALLINT          NOT NULL,
     CurrencyCode    NVARCHAR(10)    NOT NULL DEFAULT 'INR',
-    VersionNo       INT             NOT NULL DEFAULT 1,
+    VersionNo       SMALLINT             NOT NULL DEFAULT 1,
     IsDefault       BIT             NOT NULL DEFAULT 0,
     Description     NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
@@ -64,7 +64,7 @@ GO
 
 -- PAYROLL COMPONENT
 CREATE TABLE payroll.PayrollComponent (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     ComponentCode   NVARCHAR(100)   NOT NULL UNIQUE,
     ComponentName   NVARCHAR(200)   NOT NULL,
     IsEarning       BIT             NOT NULL DEFAULT 1,
@@ -76,17 +76,17 @@ GO
 
 -- SALARY STRUCTURE COMPONENT
 CREATE TABLE payroll.SalaryStructureComponent (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    SalaryStructureId   INT          NOT NULL,
-    PayrollComponentId  INT          NOT NULL,
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    SalaryStructureId   SMALLINT          NOT NULL,
+    PayrollComponentId  SMALLINT          NOT NULL,
     CalculationType     NVARCHAR(50)    NOT NULL DEFAULT 'FIXED',
     CalculationTypeGroup AS CAST('CALC_TYPE' AS NVARCHAR(50)) PERSISTED,
     PercentageValue     DECIMAL(10,4)   NULL,
-    BaseComponentId     INT          NULL,
+    BaseComponentId     SMALLINT          NULL,
     FormulaExpression   NVARCHAR(2000)  NULL,
     IsStatutory         BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
-    SortOrder           INT             NOT NULL DEFAULT 1,
+    DisplayOrder        SMALLINT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
     CONSTRAINT FK_SSC_SalaryStructure
@@ -111,13 +111,13 @@ GO
 CREATE TABLE payroll.PayrollAttendanceSummary (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId          INT          NOT NULL,
-    PayrollMonth        INT             NOT NULL,
-    PayrollYear         INT             NOT NULL,
+    PayrollMonth        SMALLINT             NOT NULL,
+    PayrollYear         SMALLINT             NOT NULL,
     TotalWorkingDays    DECIMAL(10,2)   NOT NULL,
     PresentDays         DECIMAL(10,2)   NOT NULL,
     LeaveDays           DECIMAL(10,2)   NOT NULL DEFAULT 0,
     AbsentDays          DECIMAL(10,2)   NOT NULL DEFAULT 0,
-    OvertimeMinutes     INT             NOT NULL DEFAULT 0,
+    OvertimeMinutes     SMALLINT             NOT NULL DEFAULT 0,
     ProcessedAt         DATETIME2       NULL,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -134,8 +134,8 @@ GO
 CREATE TABLE payroll.EmployeeSalary (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId          INT          NOT NULL,
-    SalaryStructureId   INT          NOT NULL,
-    SalaryGradeId       INT          NULL,
+    SalaryStructureId   SMALLINT          NOT NULL,
+    SalaryGradeId       SMALLINT          NULL,
     AnnualCTC           DECIMAL(18,2)   NOT NULL,
     MonthlyCTC          DECIMAL(18,2)   NOT NULL,
     MonthlyGross        DECIMAL(18,2)   NOT NULL,
@@ -166,9 +166,9 @@ GO
 CREATE TABLE payroll.EmployeeSalaryComponent (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeSalaryId            INT          NOT NULL,
-    SalaryStructureComponentId  INT          NOT NULL,
-    PayrollMonth                INT             NOT NULL,
-    PayrollYear                 INT             NOT NULL,
+    SalaryStructureComponentId  SMALLINT          NOT NULL,
+    PayrollMonth                SMALLINT             NOT NULL,
+    PayrollYear                 SMALLINT             NOT NULL,
     ComputedAmount              DECIMAL(18,2)   NOT NULL DEFAULT 0,
     OverrideAmount              DECIMAL(18,2)   NULL,
     FinalAmount                 AS (COALESCE(OverrideAmount, ComputedAmount)),
@@ -230,7 +230,7 @@ GO
 
 -- BANK MASTER
 CREATE TABLE payroll.BankMaster (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     BankCode        NVARCHAR(50)    NOT NULL UNIQUE,
     BankName        NVARCHAR(300)   NOT NULL,
     IfscPrefix      NVARCHAR(10)    NULL,
@@ -245,7 +245,7 @@ GO
 CREATE TABLE payroll.EmployeeBankAccount (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId          INT          NOT NULL,
-    BankMasterId        INT          NOT NULL,
+    BankMasterId        SMALLINT          NOT NULL,
     AccountHolderName   NVARCHAR(300)   NOT NULL,
     AccountNumber       NVARCHAR(100)   NOT NULL,
     AccountType         NVARCHAR(50)    NOT NULL DEFAULT 'SAVINGS',
@@ -284,11 +284,11 @@ GO
 -- PAYROLL DISBURSEMENT
 CREATE TABLE payroll.PayrollDisbursement (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    LegalEntityId           INT          NOT NULL,
-    PayrollMonth            INT             NOT NULL,
-    PayrollYear             INT             NOT NULL,
+    LegalEntityId           SMALLINT          NOT NULL,
+    PayrollMonth            SMALLINT             NOT NULL,
+    PayrollYear             SMALLINT             NOT NULL,
     DisbursementDate        DATE            NULL,
-    TotalEmployeeCount      INT             NOT NULL DEFAULT 0,
+    TotalEmployeeCount      SMALLINT             NOT NULL DEFAULT 0,
     TotalNetPayable         DECIMAL(18,2)   NOT NULL DEFAULT 0,
     CurrencyCode            NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     DisbursementStatus      NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
@@ -329,8 +329,8 @@ CREATE TABLE payroll.PayrollDisbursementTransaction (
     PayrollDisbursementId   INT          NOT NULL,
     EmployeeId              INT          NOT NULL,
     EmployeeBankAccountId   INT          NOT NULL,
-    PayrollMonth            INT             NOT NULL,
-    PayrollYear             INT             NOT NULL,
+    PayrollMonth            SMALLINT             NOT NULL,
+    PayrollYear             SMALLINT             NOT NULL,
     GrossAmount             DECIMAL(18,2)   NOT NULL DEFAULT 0,
     TotalDeductions         DECIMAL(18,2)   NOT NULL DEFAULT 0,
     NetAmountCredited       AS (GrossAmount - TotalDeductions),
@@ -376,7 +376,7 @@ GO
 
 -- TAX REGIME
 CREATE TABLE payroll.TaxRegime (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     RegimeCode      NVARCHAR(100)   NOT NULL UNIQUE,
     RegimeName      NVARCHAR(300)   NOT NULL,
     CountryCode     NVARCHAR(10)    NOT NULL,
@@ -389,10 +389,10 @@ GO
 
 -- TAX SLAB
 CREATE TABLE payroll.TaxSlab (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
-    TaxRegimeId     INT          NOT NULL,
-    FiscalYear      INT             NOT NULL,
-    SlabOrder       INT             NOT NULL,
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    TaxRegimeId     SMALLINT          NOT NULL,
+    FiscalYear      SMALLINT             NOT NULL,
+    SlabOrder       SMALLINT             NOT NULL,
     MinIncome       DECIMAL(18,2)   NOT NULL DEFAULT 0,
     MaxIncome       DECIMAL(18,2)   NULL,
     TaxRate         DECIMAL(10,4)   NOT NULL DEFAULT 0,
@@ -414,8 +414,8 @@ GO
 CREATE TABLE payroll.EmployeeTaxDeclaration (
     Id                       INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId               INT          NOT NULL,
-    TaxRegimeId              INT          NOT NULL,
-    FiscalYear               INT             NOT NULL
+    TaxRegimeId              SMALLINT          NOT NULL,
+    FiscalYear               SMALLINT             NOT NULL
         CONSTRAINT CK_ETD_FiscalYear CHECK (FiscalYear BETWEEN 2000 AND 2099),
     DeclaredTotalIncome      DECIMAL(18,2)   NOT NULL DEFAULT 0,
     DeclaredExemptions       DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -455,7 +455,7 @@ GO
 CREATE TABLE payroll.TaxDeclarationItem (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeTaxDeclarationId    INT          NOT NULL,
-    TaxProofCategoryId          INT             NOT NULL,
+    TaxProofCategoryId          SMALLINT             NOT NULL,
     DeclaredAmount              DECIMAL(18,2)   NOT NULL DEFAULT 0
         CONSTRAINT CK_TDI_DeclaredAmount CHECK (DeclaredAmount >= 0),
     ApprovedAmount              DECIMAL(18,2)   NULL
@@ -515,10 +515,10 @@ CREATE TABLE payroll.EmployeeTaxDeduction (
     Id                               INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                       INT          NOT NULL,
     EmployeeTaxDeclarationId         INT          NULL,
-    TaxRegimeId                      INT          NOT NULL,
-    PayrollMonth                     INT             NOT NULL,
-    PayrollYear                      INT             NOT NULL,
-    FiscalYear                       INT             NOT NULL,
+    TaxRegimeId                      SMALLINT          NOT NULL,
+    PayrollMonth                     SMALLINT             NOT NULL,
+    PayrollYear                      SMALLINT             NOT NULL,
+    FiscalYear                       SMALLINT             NOT NULL,
     GrossIncome                      DECIMAL(18,2)   NOT NULL DEFAULT 0,
     TotalExemptions                  DECIMAL(18,2)   NOT NULL DEFAULT 0,
     TotalDeductions                  DECIMAL(18,2)   NOT NULL DEFAULT 0,

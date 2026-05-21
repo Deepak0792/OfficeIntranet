@@ -5,7 +5,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class ScopeTypeRepository : BaseRepository<ScopeType>, IScopeTypeRepository
+public class ScopeTypeRepository : BaseRepository<ScopeType, short>, IScopeTypeRepository
 {
     public ScopeTypeRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
 }

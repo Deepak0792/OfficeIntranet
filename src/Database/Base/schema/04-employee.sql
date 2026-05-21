@@ -19,9 +19,9 @@ CREATE TABLE employee.Employee (
     DisplayName             NVARCHAR(200)   NULL,
     Email                   NVARCHAR(255)   NOT NULL UNIQUE,
     MobileNumber            NVARCHAR(30)    NULL,
-    DesignationId           INT          NULL,
+    DesignationId           SMALLINT          NULL,
     PreferredLanguage       NVARCHAR(20)    NULL,
-    PreferredTimeZoneId     INT          NULL,
+    PreferredTimeZoneId     SMALLINT          NULL,
     DateOfJoining           DATE            NULL,
     EmploymentType          NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
     EmploymentTypeGroup     AS CAST('EMPLOYMENT_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -52,7 +52,7 @@ GO
 CREATE TABLE employee.EmployeeLegalEntity (
     Id              INT  PRIMARY KEY IDENTITY(1,1),
     EmployeeId      INT     NOT NULL,
-    LegalEntityId   INT  NOT NULL,
+    LegalEntityId   SMALLINT  NOT NULL,
     IsPrimary       BIT     NOT NULL DEFAULT 0,
     StartDate       DATE    NULL,
     EndDate         DATE    NULL,
@@ -76,7 +76,7 @@ GO
 CREATE TABLE employee.EmployeeDepartment (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              INT             NOT NULL,
-    DepartmentId            INT          NOT NULL,
+    DepartmentId            SMALLINT          NOT NULL,
     IsPrimaryDepartment     BIT             NOT NULL DEFAULT 0,
     AllocationPercentage    DECIMAL(5,2)    NULL,
     StartDate               DATE            NULL,
@@ -101,7 +101,7 @@ GO
 CREATE TABLE employee.EmployeeLocation (
     Id                  INT  PRIMARY KEY IDENTITY(1,1),
     EmployeeId          INT  NOT NULL,
-    LocationId          INT  NOT NULL,
+    LocationId          SMALLINT  NOT NULL,
     IsPrimaryLocation   BIT     NOT NULL DEFAULT 1,
     StartDate           DATE    NULL,
     EndDate             DATE    NULL,
@@ -128,7 +128,7 @@ CREATE TABLE employee.EmployeeRelationship (
     ChildEmployeeId         INT  NOT NULL,
     RelationshipType        NVARCHAR(50)  NOT NULL,
     RelationshipTypeGroup   AS CAST('RELATIONSHIP_TYPE' AS NVARCHAR(50)) PERSISTED,
-    DepartmentId            INT  NULL,
+    DepartmentId            SMALLINT  NULL,
     IsPrimaryRelationship   BIT     NOT NULL DEFAULT 0,
     EffectiveFrom           DATE    NULL,
     EffectiveTo             DATE    NULL,
@@ -184,7 +184,7 @@ GO
 CREATE TABLE employee.EmployeeDocument (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              INT          NOT NULL,
-    DocumentTypeId          INT          NOT NULL,
+    DocumentTypeId          SMALLINT          NOT NULL,
     FileName                NVARCHAR(500)   NULL,
     OriginalFileName        NVARCHAR(500)   NULL,
     FileExtension           NVARCHAR(20)    NULL,
@@ -226,7 +226,7 @@ GO
 
 -- SKILL
 CREATE TABLE employee.Skill (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     SkillName       NVARCHAR(200)   NOT NULL UNIQUE,
     SkillCategory   NVARCHAR(100)   NULL,
     Description     NVARCHAR(1000)  NULL,
@@ -242,7 +242,7 @@ GO
 CREATE TABLE employee.EmployeeSkill (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId          INT          NOT NULL,
-    SkillId             INT          NOT NULL,
+    SkillId             SMALLINT          NOT NULL,
     SkillLevel          NVARCHAR(50)    NULL,
     YearsOfExperience   DECIMAL(5,2)    NULL,
     IsPrimarySkill      BIT             NOT NULL DEFAULT 0,
@@ -265,7 +265,7 @@ GO
 
 -- TEAM
 CREATE TABLE employee.Team (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     TeamCode        NVARCHAR(50)    NOT NULL UNIQUE,
     TeamName        NVARCHAR(200)   NOT NULL,
     TeamType        NVARCHAR(100)   NULL,
@@ -282,7 +282,7 @@ GO
 CREATE TABLE employee.EmployeeTeam (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              INT          NOT NULL,
-    TeamId                  INT          NOT NULL,
+    TeamId                  SMALLINT          NOT NULL,
     RoleInTeam              NVARCHAR(100)   NULL,
     AllocationPercentage    DECIMAL(5,2)    NULL,
     StartDate               DATE            NULL,

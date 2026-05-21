@@ -1,8 +1,9 @@
 ﻿namespace SdxCore.Time.Domain.Entities;
 public class OfficeLocation : BaseEntity {
-    public long LegalEntityId { get; set; }
-    public long CountryId { get; set; }
-    public long? RegionId { get; set; }
+    public short Id { get; set; }
+    public short LegalEntityId { get; set; }
+    public short CountryId { get; set; }
+    public short? RegionId { get; set; }
     public required string LocationCode { get; set; }
     public required string LocationName { get; set; }
     public string? BuildingName { get; set; }
@@ -13,7 +14,7 @@ public class OfficeLocation : BaseEntity {
     public string? PostalCode { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public long? TimeZoneId { get; set; }
+    public short? TimeZoneId { get; set; }
     public bool IsHeadOffice { get; set; }
     public LegalEntity? LegalEntity { get; set; }
     public Country? Country { get; set; }

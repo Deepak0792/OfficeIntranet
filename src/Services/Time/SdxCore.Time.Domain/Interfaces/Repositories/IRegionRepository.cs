@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Interfaces.Repositories;
 
-public interface IRegionRepository : IRepository<Region> { }
+public interface IRegionRepository : IRepository<Region, short> { }
 

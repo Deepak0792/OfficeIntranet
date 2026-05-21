@@ -1,6 +1,9 @@
 ﻿namespace SdxCore.Time.Domain.Entities;
-public abstract class BaseEntity {
-    public long Id { get; set; }
+public abstract class BaseEntity
+{    
     public bool IsActive { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
+    public int CreatedBy { get; set; }
+    public DateTime LastUpdatedAt { get; set; }
+    public int LastUpdatedBy { get; set; }
 }

@@ -27,7 +27,7 @@ public class DepartmentService : IDepartmentService
         return entities.Select(e => SimpleMapper.Map<Department, DepartmentDto>(e));
     }
 
-    public async Task<DepartmentDto?> GetByIdAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<DepartmentDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var d = await _repository.GetByIdAsync(id, cancellationToken);
         if (d == null) return null;
@@ -50,7 +50,7 @@ public class DepartmentService : IDepartmentService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(long id, UpdateDepartmentDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateDepartmentDto dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -65,7 +65,7 @@ public class DepartmentService : IDepartmentService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken = default) 
+    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

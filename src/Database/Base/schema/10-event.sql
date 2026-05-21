@@ -101,7 +101,7 @@ GO
 
 -- EVENT CATEGORY - Categories for events
 CREATE TABLE event.EventCategory (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode        NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
     Description         NVARCHAR(1000)  NULL,
@@ -118,11 +118,11 @@ CREATE TABLE event.Event (
     EventCode               NVARCHAR(50)    NOT NULL UNIQUE,
     EventTitle              NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
-    CategoryId              INT          NOT NULL,
+    EventCategoryId              SMALLINT          NOT NULL,
     CategoryStatus          NVARCHAR(50)    NOT NULL DEFAULT 'ANNUAL_FUNCTION',
     CategoryStatusGroup     AS CAST('EVENT_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     Venue                   NVARCHAR(500)   NULL,
-    OfficeLocationId        INT          NULL,
+    OfficeLocationId        SMALLINT          NULL,
     EventDate               DATE            NOT NULL,
     StartTime               TIME            NOT NULL,
     EndTime                 TIME            NOT NULL,
@@ -136,8 +136,8 @@ CREATE TABLE event.Event (
     StatusGroup             AS CAST('EVENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     QRCodeUrl               NVARCHAR(1000)  NULL,
     AllowWaitlist           BIT             NOT NULL DEFAULT 1,
-    MaxWaitlistCount        INT             NULL,
-    IsFeedbackEnabled      BIT             NOT NULL DEFAULT 1,
+    MaxWaitlistCount        SMALLINT             NULL,
+    IsFeedbackEnabled       BIT             NOT NULL DEFAULT 1,
     FeedbackStartDate       DATETIME2       NULL,
     FeedbackEndDate         DATETIME2       NULL,
     Tags                    NVARCHAR(500)   NULL,
@@ -147,7 +147,7 @@ CREATE TABLE event.Event (
     UpdatedAt               DATETIME2       NULL,
 
     CONSTRAINT FK_Event_Category
-        FOREIGN KEY (CategoryId)
+        FOREIGN KEY (EventCategoryId)
         REFERENCES event.EventCategory(Id),
 
     CONSTRAINT FK_Event_CategoryStatus
@@ -177,7 +177,7 @@ CREATE TABLE event.EventBanner (
     FileUrl             NVARCHAR(1000)  NOT NULL,
     FileType            NVARCHAR(50)    NOT NULL,
     FileSize            INT          NULL,
-    DisplayOrder        INT             NOT NULL DEFAULT 0,
+    DisplayOrder        SMALLINT             NOT NULL DEFAULT 0,
     IsCoverImage        BIT             NOT NULL DEFAULT 0,
     Description         NVARCHAR(500)   NULL,
     UploadedById        INT          NOT NULL,
@@ -221,7 +221,7 @@ GO
 CREATE TABLE event.EventDepartment (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     EventId             INT          NOT NULL,
-    DepartmentId        INT          NOT NULL,
+    DepartmentId        SMALLINT          NOT NULL,
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
 
@@ -448,7 +448,7 @@ GO
 -- INDEXES - For performance optimization
 
 -- Event indexes
-CREATE INDEX IX_Event_Category ON event.Event(CategoryId);
+CREATE INDEX IX_Event_Category ON event.Event(EventCategoryId);
 CREATE INDEX IX_Event_Organizer ON event.Event(OrganizerId);
 CREATE INDEX IX_Event_Status ON event.Event(StatusCode);
 CREATE INDEX IX_Event_Date ON event.Event(EventDate);

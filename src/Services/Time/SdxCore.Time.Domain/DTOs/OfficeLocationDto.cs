@@ -2,10 +2,10 @@ namespace SdxCore.Time.Domain.DTOs;
 
 public class OfficeLocationDto
 {
-    public long Id { get; set; }
-    public long LegalEntityId { get; set; }
-    public long CountryId { get; set; }
-    public long? RegionId { get; set; }
+    public short Id { get; set; }
+    public short LegalEntityId { get; set; }
+    public short CountryId { get; set; }
+    public short? RegionId { get; set; }
     public required string LocationCode { get; set; }
     public required string LocationName { get; set; }
     public string? BuildingName { get; set; }
@@ -16,16 +16,16 @@ public class OfficeLocationDto
     public string? PostalCode { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public long? TimeZoneId { get; set; }
+    public short? TimeZoneId { get; set; }
     public bool IsHeadOffice { get; set; }
     public bool IsActive { get; set; }
 }
 
 public class CreateOfficeLocationDto
 {
-    public long LegalEntityId { get; set; }
-    public long CountryId { get; set; }
-    public long? RegionId { get; set; }
+    public short LegalEntityId { get; set; }
+    public short CountryId { get; set; }
+    public short? RegionId { get; set; }
     public required string LocationCode { get; set; }
     public required string LocationName { get; set; }
     public string? BuildingName { get; set; }
@@ -36,7 +36,7 @@ public class CreateOfficeLocationDto
     public string? PostalCode { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public long? TimeZoneId { get; set; }
+    public short? TimeZoneId { get; set; }
     public bool IsHeadOffice { get; set; }
 }
 

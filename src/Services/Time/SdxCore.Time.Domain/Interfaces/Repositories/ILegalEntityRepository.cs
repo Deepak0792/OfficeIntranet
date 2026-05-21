@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Interfaces.Repositories;
 
-public interface ILegalEntityRepository : IRepository<LegalEntity> { }
+public interface ILegalEntityRepository : IRepository<LegalEntity, short> { }
 

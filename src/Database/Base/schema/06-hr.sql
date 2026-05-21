@@ -12,8 +12,8 @@ GO
 
 -- MODULE A: RECRUITMENT & SELECTION
 CREATE TABLE hr.InterviewRound (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    RoundNumber             INT             NOT NULL UNIQUE,
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    RoundNumber             SMALLINT             NOT NULL UNIQUE,
     RoundCode               NVARCHAR(50)    NOT NULL UNIQUE,
     RoundName               NVARCHAR(150)   NOT NULL,
     Description             NVARCHAR(1000)  NULL,
@@ -34,12 +34,12 @@ CREATE TABLE hr.InterviewRound (
 GO
 
 CREATE TABLE hr.PanelRole (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
     RoleCode            NVARCHAR(50)    NOT NULL UNIQUE,
     RoleName            NVARCHAR(150)   NOT NULL,
     Description         NVARCHAR(1000)  NULL,
     CanSubmitFeedback   BIT             NOT NULL DEFAULT 1,
-    DisplayOrder        TINYINT         NOT NULL DEFAULT 0,
+    DisplayOrder        SMALLINT         NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy           INT             NULL,
@@ -51,10 +51,10 @@ GO
 CREATE TABLE hr.JobPosting (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     Title               NVARCHAR(200)   NOT NULL,
-    DepartmentId        INT          NOT NULL,
-    DesignationId       INT          NOT NULL,
-    LocationId          INT          NULL,
-    LegalEntityId       INT          NULL,
+    DepartmentId        SMALLINT          NOT NULL,
+    DesignationId       SMALLINT          NOT NULL,
+    LocationId          SMALLINT          NULL,
+    LegalEntityId       SMALLINT          NULL,
     EmploymentType      NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
     EmploymentTypeGroup AS CAST('EMPLOYMENT_TYPE' AS NVARCHAR(50)) PERSISTED,
     ExperienceMinYrs    DECIMAL(4,1)    NULL,
@@ -64,11 +64,9 @@ CREATE TABLE hr.JobPosting (
     CurrencyCode        NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     Description         NVARCHAR(MAX)   NULL,
     Requirements        NVARCHAR(MAX)   NULL,
-    OpeningsCount       INT             NOT NULL DEFAULT 1,
+    OpeningsCount       SMALLINT             NOT NULL DEFAULT 1,
     JobPostingStatus    NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     JobPostingStatusGroup AS CAST('JOB_POSTING_STATUS' AS NVARCHAR(50)) PERSISTED,
-    PostedByEmployeeId  INT          NULL,
-    PostedDate          DATE            NULL,
     ClosingDate         DATE            NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -92,8 +90,8 @@ CREATE TABLE hr.JobPosting (
         FOREIGN KEY (LegalEntityId)
         REFERENCES time.LegalEntity(Id),
 
-    CONSTRAINT FK_JobPosting_PostedBy
-        FOREIGN KEY (PostedByEmployeeId)
+    CONSTRAINT FK_JobPosting_CreatedBy
+        FOREIGN KEY (CreatedBy)
         REFERENCES employee.Employee(Id),
 
     CONSTRAINT FK_Employee_EmploymentType
@@ -118,7 +116,7 @@ CREATE TABLE hr.Candidate (
     CurrentCompany          NVARCHAR(200)   NULL,
     CurrentTitle            NVARCHAR(200)   NULL,
     TotalExpYrs             DECIMAL(4,1)    NULL,
-    NoticePeriodDays        INT             NULL,
+    NoticePeriodDays        SMALLINT             NULL,
     CurrentSalary           DECIMAL(18,2)   NULL,
     CurrencyCode            NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     LinkedInUrl             NVARCHAR(500)   NULL,
@@ -196,10 +194,10 @@ GO
 CREATE TABLE hr.InterviewRoundConfig (
     Id                  INT  PRIMARY KEY IDENTITY(1,1),
     JobPostingId        INT  NOT NULL,
-    InterviewRoundId    INT  NOT NULL,
+    InterviewRoundId    SMALLINT  NOT NULL,
     InterviewType           NVARCHAR(50)    NULL,
     InterviewTypeGroup      AS CAST('INTERVIEW_TYPE' AS NVARCHAR(50)) PERSISTED,
-    DurationMins        INT     NOT NULL DEFAULT 60,
+    DurationMins        SMALLINT     NOT NULL DEFAULT 60,
     IsMandatory         BIT     NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -229,7 +227,7 @@ CREATE TABLE hr.Interview (
     ApplicationId               INT          NOT NULL,
     InterviewRoundConfigId      INT          NOT NULL,
     ScheduledAt                 DATETIME2       NULL,
-    DurationMins                INT             NOT NULL DEFAULT 60,
+    DurationMins                SMALLINT             NOT NULL DEFAULT 60,
     MeetingLink                 NVARCHAR(1000)  NULL,
     Venue                       NVARCHAR(500)   NULL,
     InterviewStatus             NVARCHAR(50)    NOT NULL DEFAULT 'SCHEDULED',
@@ -267,7 +265,7 @@ CREATE TABLE hr.InterviewPanel (
     Id                      INT      PRIMARY KEY IDENTITY(1,1),
     InterviewId             INT      NOT NULL,
     InterviewerEmployeeId   INT      NOT NULL,
-    PanelRoleId             INT      NOT NULL,
+    PanelRoleId             SMALLINT      NOT NULL,
     InterviewPurpose        NVARCHAR(50)    NOT NULL,
     InterviewPurposeGroup   AS CAST('INTERVIEW_PURPOSE' AS NVARCHAR(50)) PERSISTED,
     EvaluationTopics        NVARCHAR(MAX) NULL,
@@ -335,7 +333,7 @@ CREATE TABLE hr.PackageNegotiation (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     ApplicationId           INT          NOT NULL,
     HREmployeeId            INT          NOT NULL,
-    RoundNumber             INT             NOT NULL DEFAULT 1,
+    RoundNumber             SMALLINT             NOT NULL DEFAULT 1,
     OfferedCTC              DECIMAL(18,2)   NOT NULL,
     CandidateAsk            DECIMAL(18,2)   NULL,
     FinalCTC                DECIMAL(18,2)   NULL,
@@ -407,7 +405,7 @@ GO
 
 -- MODULE B: ONBOARDING
 CREATE TABLE hr.OnboardingChecklist (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     ChecklistName   NVARCHAR(200)   NOT NULL,
     Phase           NVARCHAR(50)    NOT NULL,
     EmploymentType  NVARCHAR(50)    NOT NULL DEFAULT 'FULL_TIME',
@@ -420,12 +418,12 @@ CREATE TABLE hr.OnboardingChecklist (
 GO
 
 CREATE TABLE hr.OnboardingChecklistItem (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    OnboardingChecklistId   INT          NOT NULL,
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    OnboardingChecklistId   SMALLINT          NOT NULL,
     TaskName                NVARCHAR(250)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
     OwnerRole               NVARCHAR(50)    NULL,
-    SequenceOrder           INT             NOT NULL DEFAULT 0,
+    DisplayOrder           SMALLINT             NOT NULL DEFAULT 0,
     IsMandatory             BIT             NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -442,7 +440,7 @@ GO
 CREATE TABLE hr.OnboardingTask (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                  INT          NOT NULL,
-    OnboardingChecklistItemId   INT          NULL,
+    OnboardingChecklistItemId   SMALLINT          NULL,
     TaskName                    NVARCHAR(250)   NOT NULL,
     Phase                       NVARCHAR(50)    NOT NULL,
     OwnerRole                   NVARCHAR(50)    NULL,
@@ -484,7 +482,7 @@ GO
 CREATE TABLE hr.DocumentVerification (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              INT          NOT NULL,
-    DocumentTypeId          INT          NOT NULL,
+    DocumentTypeId          SMALLINT          NOT NULL,
     OnboardingPhase         NVARCHAR(50)    NOT NULL DEFAULT 'PRE_ONBOARDING',
     OnboardingPhaseGroup    AS CAST('ONBOARDING_PHASE' AS NVARCHAR(50)) PERSISTED,
     FileUrl                 NVARCHAR(1000)  NULL,
@@ -599,7 +597,7 @@ GO
 
 -- MODULE C: POLICY DOCUMENTS
 CREATE TABLE hr.PolicyCategory (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
     CategoryCode    NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName    NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
@@ -609,12 +607,12 @@ CREATE TABLE hr.PolicyCategory (
 GO
 
 CREATE TABLE hr.PolicyDocument (
-    Id                          INT          PRIMARY KEY IDENTITY(1,1),
-    PolicyCategoryId            INT          NOT NULL,
+    Id                          SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    PolicyCategoryId            SMALLINT          NOT NULL,
     PolicyCode                  NVARCHAR(50)    NOT NULL UNIQUE,
     PolicyName                  NVARCHAR(300)   NOT NULL,
     Description                 NVARCHAR(MAX)   NULL,
-    ScopeTypeId                 INT          NULL,
+    ScopeTypeId                 SMALLINT          NULL,
     ScopeReferenceId            INT          NULL,
     AcknowledgementRequired     BIT             NOT NULL DEFAULT 1,
     AcknowledgementDeadlineDays INT             NULL,
@@ -639,9 +637,9 @@ CREATE TABLE hr.PolicyDocument (
 GO
 
 CREATE TABLE hr.PolicyVersion (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    PolicyDocumentId        INT          NOT NULL,
-    VersionNumber           INT             NOT NULL,
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    PolicyDocumentId        SMALLINT          NOT NULL,
+    VersionNumber           SMALLINT             NOT NULL,
     VersionLabel            NVARCHAR(50)    NULL,
     FileUrl                 NVARCHAR(1000)  NOT NULL,
     OriginalFileName        NVARCHAR(500)   NULL,
@@ -649,7 +647,7 @@ CREATE TABLE hr.PolicyVersion (
     PolicyStatus            NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     PolicyStatusGroup       AS CAST('POLICY_STATUS' AS NVARCHAR(50)) PERSISTED,
     EffectiveDate           DATE            NULL,
-    SupersededByVersionId   INT          NULL,
+    SupersededByVersionId   SMALLINT          NULL,
     PublishedByEmployeeId   INT          NULL,
     PublishedAt             DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
@@ -681,7 +679,7 @@ GO
 
 CREATE TABLE hr.PolicyAcknowledgement (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    PolicyVersionId     INT          NOT NULL,
+    PolicyVersionId     SMALLINT          NOT NULL,
     EmployeeId          INT          NOT NULL,
     AckStatus           NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     AckStatusGroup      AS CAST('POLICY_ACK_STATUS' AS NVARCHAR(50)) PERSISTED,
@@ -713,7 +711,7 @@ GO
 
 -- MODULE D: PERFORMANCE REVIEWS
 CREATE TABLE hr.PerformanceCycle (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
     CycleName               NVARCHAR(150)   NOT NULL UNIQUE,
     CycleType               NVARCHAR(50)    NOT NULL DEFAULT 'ANNUAL',
     CycleTypeGroup          AS CAST('PERF_CYCLE_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -724,7 +722,7 @@ CREATE TABLE hr.PerformanceCycle (
     ReviewEndDate           DATE            NULL,
     CycleStatus             NVARCHAR(50)    NOT NULL DEFAULT 'UPCOMING',
     CycleStatusGroup        AS CAST('PERF_CYCLE_STATUS' AS NVARCHAR(50)) PERSISTED,
-    LegalEntityId           INT          NULL,
+    LegalEntityId           SMALLINT          NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy           INT             NULL,
@@ -752,7 +750,7 @@ GO
 CREATE TABLE hr.Goal (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              INT          NOT NULL,
-    PerformanceCycleId      INT          NOT NULL,
+    PerformanceCycleId      SMALLINT          NOT NULL,
     Title                   NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
     Category                NVARCHAR(100)   NULL,
@@ -761,7 +759,7 @@ CREATE TABLE hr.Goal (
     TargetDate              DATE            NULL,
     GoalStatus              NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     GoalStatusGroup         AS CAST('GOAL_STATUS' AS NVARCHAR(50)) PERSISTED,
-    ProgressPct             INT             NOT NULL DEFAULT 0
+    ProgressPct             SMALLINT             NOT NULL DEFAULT 0
         CONSTRAINT CK_Goal_Progress CHECK (ProgressPct BETWEEN 0 AND 100),
     EmployeeRating          DECIMAL(3,1)    NULL,
     ManagerRating           DECIMAL(3,1)    NULL,
@@ -817,7 +815,7 @@ GO
 CREATE TABLE hr.PerformanceReview (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                  INT          NOT NULL,
-    PerformanceCycleId          INT          NOT NULL,
+    PerformanceCycleId          SMALLINT          NOT NULL,
     ReviewerEmployeeId          INT          NOT NULL,
     SelfRating                  DECIMAL(3,1)    NULL,
     ManagerRating               DECIMAL(3,1)    NULL,
@@ -884,7 +882,7 @@ GO
 
 -- MODULE E: TRAINING RECORDS
 CREATE TABLE hr.TrainingProgram (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
     TrainingCategory        NVARCHAR(50)          NOT NULL,
     TrainingCategoryGroup   AS CAST('TRAINING_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     ProgramCode             NVARCHAR(50)    NOT NULL UNIQUE,
@@ -896,7 +894,7 @@ CREATE TABLE hr.TrainingProgram (
     Provider                NVARCHAR(200)   NULL,
     IsMandatory             BIT             NOT NULL DEFAULT 0,
     ApplicableTo            NVARCHAR(100)   NULL,
-    MaxParticipants         INT             NULL,
+    MaxParticipants         SMALLINT             NULL,
     CertificateProvided     BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -915,14 +913,14 @@ CREATE TABLE hr.TrainingProgram (
 GO
 
 CREATE TABLE hr.TrainingBatch (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    TrainingProgramId       INT          NOT NULL,
+    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    TrainingProgramId       SMALLINT          NOT NULL,
     BatchName               NVARCHAR(200)   NULL,
     FacilitatorEmployeeId   INT          NULL,
     StartDate               DATE            NOT NULL,
     EndDate                 DATE            NULL,
     VenueOrLink             NVARCHAR(1000)  NULL,
-    MaxSeats                INT             NULL,
+    MaxSeats                SMALLINT             NULL,
     BatchStatus             NVARCHAR(50)    NOT NULL DEFAULT 'UPCOMING',
     BatchStatusGroup        AS CAST('TRAINING_BATCH_STATUS' AS NVARCHAR(50)) PERSISTED,
     IsActive            BIT             NOT NULL DEFAULT 1,
@@ -948,8 +946,8 @@ GO
 CREATE TABLE hr.EmployeeTrainingRecord (
     Id                      INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId              INT          NOT NULL,
-    TrainingProgramId       INT          NOT NULL,
-    TrainingBatchId         INT          NULL,
+    TrainingProgramId       SMALLINT          NOT NULL,
+    TrainingBatchId         SMALLINT          NULL,
     EnrolledDate            DATE            NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
     CompletedDate           DATE            NULL,
     RecordStatus            NVARCHAR(50)    NOT NULL DEFAULT 'ENROLLED',
@@ -991,7 +989,7 @@ GO
 
 -- MODULE F: EXIT MANAGEMENT
 CREATE TABLE hr.ExitReason (
-    Id          INT          PRIMARY KEY IDENTITY(1,1),
+    Id          SMALLINT          PRIMARY KEY IDENTITY(1,1),
     ReasonText  NVARCHAR(200)   NOT NULL UNIQUE,
     Category    NVARCHAR(20)    NOT NULL
         CONSTRAINT CK_ExitReason_Category CHECK (Category IN ('VOLUNTARY', 'INVOLUNTARY')),
@@ -1006,13 +1004,13 @@ GO
 CREATE TABLE hr.ExitRecord (
     Id                          INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId                  INT          NOT NULL UNIQUE,
-    ExitReasonId                INT         NULL,
+    ExitReasonId                SMALLINT         NULL,
     ExitType                    NVARCHAR(50)    NOT NULL DEFAULT 'RESIGNATION',
     ExitTypeGroup               AS CAST('EXIT_TYPE' AS NVARCHAR(50)) PERSISTED,
     AdditionalReason            NVARCHAR(MAX)   NULL,
     ResignationDate             DATE            NULL,
     LastWorkingDate             DATE            NULL,
-    NoticePeriodDays            INT             NULL,
+    NoticePeriodDays            SMALLINT             NULL,
     IsNoticeWaived              BIT             NOT NULL DEFAULT 0,
     ExitInterviewStatus         NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     ExitInterviewStatusGroup    AS CAST('EXIT_INTERVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,

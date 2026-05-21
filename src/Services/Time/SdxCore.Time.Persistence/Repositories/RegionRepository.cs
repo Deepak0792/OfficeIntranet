@@ -5,7 +5,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class RegionRepository : BaseRepository<Region>, IRegionRepository
+public class RegionRepository : BaseRepository<Region, short>, IRegionRepository
 {
     public RegionRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
 }
