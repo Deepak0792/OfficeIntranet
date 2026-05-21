@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using System.Collections.Generic;
 using SdxCore.Common.Models;
 using System.Threading;
@@ -8,11 +9,11 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 
 public interface ICountryService
 {
-    Task<IEnumerable<CountryDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<CountryDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<CountryDto> CreateAsync(CreateCountryDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateCountryDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<CountryResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<CountryResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<CountryResponse> CreateAsync(CreateCountryRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateCountryRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

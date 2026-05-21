@@ -1,4 +1,4 @@
-﻿namespace SdxCore.Time.Domain.Entities;
+namespace SdxCore.Time.Domain.Entities;
 public class BiometricDevice : BaseEntity {
     public int Id { get; set; }
     public required string DeviceCode { get; set; }

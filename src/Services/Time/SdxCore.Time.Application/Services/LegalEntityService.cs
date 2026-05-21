@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Services;
@@ -21,22 +22,22 @@ public class LegalEntityService : ILegalEntityService
         _repository = repository;
     }
     
-            public async Task<IEnumerable<LegalEntityDto>> GetAllAsync(CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<LegalEntityResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
         var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<LegalEntity, LegalEntityDto>(e));
+        return entities.Select(e => SimpleMapper.Map<LegalEntity, LegalEntityResponse>(e));
     }
 
-    public async Task<LegalEntityDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<LegalEntityResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-        return SimpleMapper.Map<LegalEntity, LegalEntityDto>(entity);
+        return SimpleMapper.Map<LegalEntity, LegalEntityResponse>(entity);
     }
     
-    public async Task<LegalEntityDto> CreateAsync(CreateLegalEntityDto dto, CancellationToken cancellationToken = default) 
+    public async Task<LegalEntityResponse> CreateAsync(CreateLegalEntityRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateLegalEntityDto, LegalEntity>(dto);
+        var entity = SimpleMapper.Map<CreateLegalEntityRequest, LegalEntity>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -46,7 +47,7 @@ public class LegalEntityService : ILegalEntityService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(short id, UpdateLegalEntityDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateLegalEntityRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,12 +59,12 @@ public class LegalEntityService : ILegalEntityService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        entity.IsActive = false; // Soft delete
+        entity.IsActive = request.IsActive;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Services;
@@ -21,22 +22,22 @@ public class OfficeLocationService : IOfficeLocationService
         _repository = repository;
     }
     
-            public async Task<IEnumerable<OfficeLocationDto>> GetAllAsync(CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<OfficeLocationResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
         var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<OfficeLocation, OfficeLocationDto>(e));
+        return entities.Select(e => SimpleMapper.Map<OfficeLocation, OfficeLocationResponse>(e));
     }
 
-    public async Task<OfficeLocationDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<OfficeLocationResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-        return SimpleMapper.Map<OfficeLocation, OfficeLocationDto>(entity);
+        return SimpleMapper.Map<OfficeLocation, OfficeLocationResponse>(entity);
     }
     
-    public async Task<OfficeLocationDto> CreateAsync(CreateOfficeLocationDto dto, CancellationToken cancellationToken = default) 
+    public async Task<OfficeLocationResponse> CreateAsync(CreateOfficeLocationRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateOfficeLocationDto, OfficeLocation>(dto);
+        var entity = SimpleMapper.Map<CreateOfficeLocationRequest, OfficeLocation>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -46,7 +47,7 @@ public class OfficeLocationService : IOfficeLocationService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(short id, UpdateOfficeLocationDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateOfficeLocationRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,12 +59,12 @@ public class OfficeLocationService : IOfficeLocationService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        entity.IsActive = false; // Soft delete
+        entity.IsActive = request.IsActive;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Services;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -21,23 +22,23 @@ public class DepartmentService : IDepartmentService
         _repository = repository;
     }
     
-            public async Task<IEnumerable<DepartmentDto>> GetAllAsync(CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
         var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<Department, DepartmentDto>(e));
+        return entities.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
     }
 
-    public async Task<DepartmentDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<DepartmentResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var d = await _repository.GetByIdAsync(id, cancellationToken);
         if (d == null) return null;
-        return new DepartmentDto {
+        return new DepartmentResponse {
             Id = d.Id, DepartmentCode = d.DepartmentCode, DepartmentName = d.DepartmentName,
             ParentDepartmentId = d.ParentDepartmentId, Description = d.Description, IsActive = d.IsActive
         };
     }
     
-    public async Task<DepartmentDto> CreateAsync(CreateDepartmentDto dto, CancellationToken cancellationToken = default) 
+    public async Task<DepartmentResponse> CreateAsync(CreateDepartmentRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = new Department {
             DepartmentCode = dto.DepartmentCode, DepartmentName = dto.DepartmentName,
@@ -50,7 +51,7 @@ public class DepartmentService : IDepartmentService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(short id, UpdateDepartmentDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateDepartmentRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -65,16 +66,78 @@ public class DepartmentService : IDepartmentService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        entity.IsActive = false; // Soft delete
+        entity.IsActive = request.IsActive;
+        _repository.Update(entity);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<IEnumerable<DepartmentResponse>> GetTreeAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var allActive = await _repository.FindAsync(x => x.IsActive, cancellationToken);
+            var dtos = allActive.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e)).ToList();
+
+            var lookup = dtos.ToLookup(x => x.ParentDepartmentId);
+            foreach (var dto in dtos)
+            {
+                var children = lookup[dto.Id].ToList();
+                if (children.Any()) dto.Children = children;
+            }
+
+            return lookup[null].ToList();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
+    public async Task<IEnumerable<DepartmentResponse>> GetChildrenAsync(short id, CancellationToken cancellationToken = default)
+    {
+        var children = await _repository.FindAsync(x => x.ParentDepartmentId == id && x.IsActive, cancellationToken);
+        return children.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
+    }
+
+    public async Task<IEnumerable<DepartmentResponse>> GetAncestorsAsync(short id, CancellationToken cancellationToken = default)
+    {
+        var ancestors = new List<DepartmentResponse>();
+        var currentId = id;
+        
+        while (true)
+        {
+            var entity = await _repository.GetByIdAsync(currentId, cancellationToken);
+            if (entity == null || entity.ParentDepartmentId == null) break;
+            
+            var parent = await _repository.GetByIdAsync(entity.ParentDepartmentId.Value, cancellationToken);
+            if (parent == null || !parent.IsActive) break;
+            
+            ancestors.Add(SimpleMapper.Map<Department, DepartmentResponse>(parent));
+            currentId = parent.Id;
+        }
+        
+        return ancestors;
+    }
+
+    public async Task<bool> UpdateParentAsync(short id, UpdateParentRequest request, CancellationToken cancellationToken = default)
+    {
+        var entity = await _repository.GetByIdAsync(id, cancellationToken);
+        if (entity == null) return false;
+        
+        if (request.ParentId == id) throw new InvalidOperationException("A department cannot be its own parent.");
+        
+        entity.ParentDepartmentId = request.ParentId;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
     }
 }
+
 
 

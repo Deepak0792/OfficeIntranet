@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class BiometricDevicesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PagedResponse<IEnumerable<BiometricDeviceDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<IEnumerable<BiometricDeviceResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter, CancellationToken cancellationToken)
@@ -36,6 +37,7 @@ public class BiometricDevicesController : ControllerBase
         try
         {
             var response = await _service.GetAllAsync(filter, cancellationToken);
+            response.Message = "Successfully fetched BiometricDevices.";
             return Ok(response);
         }
         catch (Exception ex)
@@ -50,7 +52,7 @@ public class BiometricDevicesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<BiometricDeviceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BiometricDeviceResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
@@ -60,7 +62,7 @@ public class BiometricDevicesController : ControllerBase
             var result = await _service.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "BiometricDevice not found." });
             
-            return Ok(new ApiResponse<BiometricDeviceDto>(result));
+            return Ok(new ApiResponse<BiometricDeviceResponse>(result, "Successfully fetched BiometricDevice."));
         }
         catch (Exception ex)
         {
@@ -74,17 +76,17 @@ public class BiometricDevicesController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<BiometricDeviceDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<BiometricDeviceResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateBiometricDeviceDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateBiometricDeviceRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _service.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<BiometricDeviceDto>(result, "BiometricDevice created successfully.");
+            var response = new ApiResponse<BiometricDeviceResponse>(result, "BiometricDevice created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +106,7 @@ public class BiometricDevicesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateBiometricDeviceDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateBiometricDeviceRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,28 +128,43 @@ public class BiometricDevicesController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(int id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "BiometricDevice not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "BiometricDevice not found." });
             
-            return Ok(new ApiResponse<bool>(true, "BiometricDevice deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"BiometricDevice {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting BiometricDevice with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for BiometricDevice with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "DELETE_ERROR",
+                ErrorCode = "UPDATE_ERROR",
                 ErrorMessage = "An unexpected error occurred while processing the request."
             });
         }
     }
+
+    [HttpPatch("{id}/sync")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SyncDevice(int id, CancellationToken cancellationToken)
+    {
+        var updated = await _service.SyncDeviceAsync(id, cancellationToken);
+        if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Active BiometricDevice not found." });
+        return Ok(new ApiResponse<bool>(true, "Device synchronized successfully."));
+    }
 }
+
 

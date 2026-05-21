@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Services;
@@ -21,22 +22,22 @@ public class DocumentTypeService : IDocumentTypeService
         _repository = repository;
     }
     
-            public async Task<IEnumerable<DocumentTypeDto>> GetAllAsync(CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<DocumentTypeResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
         var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<DocumentType, DocumentTypeDto>(e));
+        return entities.Select(e => SimpleMapper.Map<DocumentType, DocumentTypeResponse>(e));
     }
 
-    public async Task<DocumentTypeDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<DocumentTypeResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-        return SimpleMapper.Map<DocumentType, DocumentTypeDto>(entity);
+        return SimpleMapper.Map<DocumentType, DocumentTypeResponse>(entity);
     }
     
-    public async Task<DocumentTypeDto> CreateAsync(CreateDocumentTypeDto dto, CancellationToken cancellationToken = default) 
+    public async Task<DocumentTypeResponse> CreateAsync(CreateDocumentTypeRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateDocumentTypeDto, DocumentType>(dto);
+        var entity = SimpleMapper.Map<CreateDocumentTypeRequest, DocumentType>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -46,7 +47,7 @@ public class DocumentTypeService : IDocumentTypeService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(short id, UpdateDocumentTypeDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateDocumentTypeRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,12 +59,12 @@ public class DocumentTypeService : IDocumentTypeService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        entity.IsActive = false; // Soft delete
+        entity.IsActive = request.IsActive;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

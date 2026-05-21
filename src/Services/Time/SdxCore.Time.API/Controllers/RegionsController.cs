@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class RegionsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<RegionDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<RegionResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
             public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -36,7 +37,7 @@ public class RegionsController : ControllerBase
         try
         {
             var result = await _service.GetAllAsync(cancellationToken);
-            return Ok(new ApiResponse<IEnumerable<RegionDto>>(result, "Successfully fetched Regions."));
+            return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Regions."));
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public class RegionsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<RegionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<RegionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
@@ -60,7 +61,7 @@ public class RegionsController : ControllerBase
             var result = await _service.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Region not found." });
             
-            return Ok(new ApiResponse<RegionDto>(result));
+            return Ok(new ApiResponse<RegionResponse>(result, "Successfully fetched Region."));
         }
         catch (Exception ex)
         {
@@ -74,17 +75,17 @@ public class RegionsController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<RegionDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<RegionResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateRegionDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateRegionRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _service.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<RegionDto>(result, "Region created successfully.");
+            var response = new ApiResponse<RegionResponse>(result, "Region created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +105,7 @@ public class RegionsController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateRegionDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateRegionRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,29 +127,83 @@ public class RegionsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Region not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Region not found." });
             
-            return Ok(new ApiResponse<bool>(true, "Region deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"Region {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting Region with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for Region with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "DELETE_ERROR",
+                ErrorCode = "UPDATE_ERROR",
                 ErrorMessage = "An unexpected error occurred while processing the request."
             });
         }
     }
+
+    [HttpGet("by-country/{countryId}")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<RegionResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByCountry(short countryId, CancellationToken cancellationToken)
+    {
+        var result = await _service.GetByCountryIdAsync(countryId, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
+    }
+
+    [HttpGet("tree")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<RegionResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTree(CancellationToken cancellationToken)
+    {
+        var result = await _service.GetTreeAsync(cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
+    }
+
+    [HttpGet("{id}/children")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<RegionResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetChildren(short id, CancellationToken cancellationToken)
+    {
+        var result = await _service.GetChildrenAsync(id, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
+    }
+
+    [HttpGet("{id}/ancestors")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<RegionResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAncestors(short id, CancellationToken cancellationToken)
+    {
+        var result = await _service.GetAncestorsAsync(id, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
+    }
+
+    [HttpPatch("{id}/parent")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateParent(short id, [FromBody] UpdateParentRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var updated = await _service.UpdateParentAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Region not found." });
+            return Ok(new ApiResponse<bool>(true, "Region parent updated successfully."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErrorResponse { ErrorCode = "INVALID_PARENT", ErrorMessage = ex.Message });
+        }
+    }
 }
+
 
 

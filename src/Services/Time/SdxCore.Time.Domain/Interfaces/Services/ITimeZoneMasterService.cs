@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using System.Collections.Generic;
 using SdxCore.Common.Models;
 using System.Threading;
@@ -8,11 +9,11 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 
 public interface ITimeZoneMasterService
 {
-    Task<IEnumerable<TimeZoneMasterDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<TimeZoneMasterDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<TimeZoneMasterDto> CreateAsync(CreateTimeZoneMasterDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateTimeZoneMasterDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<TimeZoneMasterResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<TimeZoneMasterResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<TimeZoneMasterResponse> CreateAsync(CreateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

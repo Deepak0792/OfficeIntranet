@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class LegalEntitiesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<LegalEntityDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<LegalEntityResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
             public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -36,7 +37,7 @@ public class LegalEntitiesController : ControllerBase
         try
         {
             var result = await _service.GetAllAsync(cancellationToken);
-            return Ok(new ApiResponse<IEnumerable<LegalEntityDto>>(result, "Successfully fetched LegalEntities."));
+            return Ok(new ApiResponse<IEnumerable<LegalEntityResponse>>(result, "Successfully fetched LegalEntities."));
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public class LegalEntitiesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<LegalEntityDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<LegalEntityResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
@@ -60,7 +61,7 @@ public class LegalEntitiesController : ControllerBase
             var result = await _service.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "LegalEntity not found." });
             
-            return Ok(new ApiResponse<LegalEntityDto>(result));
+            return Ok(new ApiResponse<LegalEntityResponse>(result, "Successfully fetched LegalEntity."));
         }
         catch (Exception ex)
         {
@@ -74,17 +75,17 @@ public class LegalEntitiesController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<LegalEntityDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<LegalEntityResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateLegalEntityDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateLegalEntityRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _service.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<LegalEntityDto>(result, "LegalEntity created successfully.");
+            var response = new ApiResponse<LegalEntityResponse>(result, "LegalEntity created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +105,7 @@ public class LegalEntitiesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateLegalEntityDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateLegalEntityRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,25 +127,29 @@ public class LegalEntitiesController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "LegalEntity not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "LegalEntity not found." });
             
-            return Ok(new ApiResponse<bool>(true, "LegalEntity deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"LegalEntity {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting LegalEntity with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for LegalEntity with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "DELETE_ERROR",
+                ErrorCode = "UPDATE_ERROR",
                 ErrorMessage = "An unexpected error occurred while processing the request."
             });
         }

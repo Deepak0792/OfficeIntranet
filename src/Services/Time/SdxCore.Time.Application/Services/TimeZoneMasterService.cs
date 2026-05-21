@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Services;
@@ -21,22 +22,22 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         _repository = repository;
     }
     
-            public async Task<IEnumerable<TimeZoneMasterDto>> GetAllAsync(CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<TimeZoneMasterResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
         var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<TimeZoneMaster, TimeZoneMasterDto>(e));
+        return entities.Select(e => SimpleMapper.Map<TimeZoneMaster, TimeZoneMasterResponse>(e));
     }
 
-    public async Task<TimeZoneMasterDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<TimeZoneMasterResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-        return SimpleMapper.Map<TimeZoneMaster, TimeZoneMasterDto>(entity);
+        return SimpleMapper.Map<TimeZoneMaster, TimeZoneMasterResponse>(entity);
     }
     
-    public async Task<TimeZoneMasterDto> CreateAsync(CreateTimeZoneMasterDto dto, CancellationToken cancellationToken = default) 
+    public async Task<TimeZoneMasterResponse> CreateAsync(CreateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateTimeZoneMasterDto, TimeZoneMaster>(dto);
+        var entity = SimpleMapper.Map<CreateTimeZoneMasterRequest, TimeZoneMaster>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -46,7 +47,7 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(short id, UpdateTimeZoneMasterDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,12 +59,12 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        entity.IsActive = false; // Soft delete
+        entity.IsActive = request.IsActive;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

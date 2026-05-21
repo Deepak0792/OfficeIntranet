@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Common.Models;
 using System.Collections.Generic;
 
@@ -6,11 +7,15 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 
 public interface IDepartmentService
 {
-    Task<IEnumerable<DepartmentDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<DepartmentDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<DepartmentDto> CreateAsync(CreateDepartmentDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateDepartmentDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<DepartmentResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<DepartmentResponse> CreateAsync(CreateDepartmentRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateDepartmentRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
+    Task<System.Collections.Generic.IEnumerable<DepartmentResponse>> GetTreeAsync(System.Threading.CancellationToken cancellationToken = default);
+    Task<System.Collections.Generic.IEnumerable<DepartmentResponse>> GetChildrenAsync(short id, System.Threading.CancellationToken cancellationToken = default);
+    Task<System.Collections.Generic.IEnumerable<DepartmentResponse>> GetAncestorsAsync(short id, System.Threading.CancellationToken cancellationToken = default);
+    Task<bool> UpdateParentAsync(short id, UpdateParentRequest request, System.Threading.CancellationToken cancellationToken = default);
 }
 
 

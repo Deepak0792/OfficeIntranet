@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using System.Collections.Generic;
 using SdxCore.Common.Models;
 using System.Threading;
@@ -8,11 +9,11 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 
 public interface IScopeTypeService
 {
-    Task<IEnumerable<ScopeTypeDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<ScopeTypeDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<ScopeTypeDto> CreateAsync(CreateScopeTypeDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateScopeTypeDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<ScopeTypeResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<ScopeTypeResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<ScopeTypeResponse> CreateAsync(CreateScopeTypeRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateScopeTypeRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

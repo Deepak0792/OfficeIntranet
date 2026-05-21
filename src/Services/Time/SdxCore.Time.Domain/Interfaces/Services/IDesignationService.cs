@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using System.Collections.Generic;
 using SdxCore.Common.Models;
 using System.Threading;
@@ -8,11 +9,11 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 
 public interface IDesignationService
 {
-    Task<IEnumerable<DesignationDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<DesignationDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<DesignationDto> CreateAsync(CreateDesignationDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateDesignationDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<DesignationResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<DesignationResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<DesignationResponse> CreateAsync(CreateDesignationRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateDesignationRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

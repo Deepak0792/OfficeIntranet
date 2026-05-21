@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Services;
@@ -21,22 +22,22 @@ public class GeoFenceService : IGeoFenceService
         _repository = repository;
     }
     
-            public async Task<IEnumerable<GeoFenceDto>> GetAllAsync(CancellationToken cancellationToken = default) 
+            public async Task<IEnumerable<GeoFenceResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
         var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<GeoFence, GeoFenceDto>(e));
+        return entities.Select(e => SimpleMapper.Map<GeoFence, GeoFenceResponse>(e));
     }
 
-    public async Task<GeoFenceDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<GeoFenceResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return null;
-        return SimpleMapper.Map<GeoFence, GeoFenceDto>(entity);
+        return SimpleMapper.Map<GeoFence, GeoFenceResponse>(entity);
     }
     
-    public async Task<GeoFenceDto> CreateAsync(CreateGeoFenceDto dto, CancellationToken cancellationToken = default) 
+    public async Task<GeoFenceResponse> CreateAsync(CreateGeoFenceRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateGeoFenceDto, GeoFence>(dto);
+        var entity = SimpleMapper.Map<CreateGeoFenceRequest, GeoFence>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -46,7 +47,7 @@ public class GeoFenceService : IGeoFenceService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
     
-    public async Task<bool> UpdateAsync(short id, UpdateGeoFenceDto dto, CancellationToken cancellationToken = default) 
+    public async Task<bool> UpdateAsync(short id, UpdateGeoFenceRequest dto, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -58,16 +59,31 @@ public class GeoFenceService : IGeoFenceService
         return true;
     }
     
-    public async Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        entity.IsActive = false; // Soft delete
+        entity.IsActive = request.IsActive;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<GeoFenceResponse?> CheckGeoFenceAsync(GeoFenceCheckRequest request, CancellationToken cancellationToken = default)
+    {
+        var allFences = await _repository.FindAsync(x => x.IsActive, cancellationToken);
+        
+        // Simple distance-based logic (mock implementation for architecture)
+        // In reality, this would use spatial querying like NetTopologySuite or Haversine formula
+        var matched = allFences.FirstOrDefault(x => 
+            Math.Abs(x.Latitude - request.Latitude) < 0.01m && 
+            Math.Abs(x.Longitude - request.Longitude) < 0.01m);
+            
+        if (matched == null) return null;
+        return SimpleMapper.Map<GeoFence, GeoFenceResponse>(matched);
+    }
 }
+
 
 

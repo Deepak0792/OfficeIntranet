@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class TimeZoneMastersController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<TimeZoneMasterDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<TimeZoneMasterResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
             public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -36,7 +37,7 @@ public class TimeZoneMastersController : ControllerBase
         try
         {
             var result = await _service.GetAllAsync(cancellationToken);
-            return Ok(new ApiResponse<IEnumerable<TimeZoneMasterDto>>(result, "Successfully fetched TimeZoneMasters."));
+            return Ok(new ApiResponse<IEnumerable<TimeZoneMasterResponse>>(result, "Successfully fetched TimeZoneMasters."));
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public class TimeZoneMastersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<TimeZoneMasterDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TimeZoneMasterResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
@@ -60,7 +61,7 @@ public class TimeZoneMastersController : ControllerBase
             var result = await _service.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "TimeZoneMaster not found." });
             
-            return Ok(new ApiResponse<TimeZoneMasterDto>(result));
+            return Ok(new ApiResponse<TimeZoneMasterResponse>(result, "Successfully fetched TimeZoneMaster."));
         }
         catch (Exception ex)
         {
@@ -74,17 +75,17 @@ public class TimeZoneMastersController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<TimeZoneMasterDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<TimeZoneMasterResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateTimeZoneMasterDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateTimeZoneMasterRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _service.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<TimeZoneMasterDto>(result, "TimeZoneMaster created successfully.");
+            var response = new ApiResponse<TimeZoneMasterResponse>(result, "TimeZoneMaster created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +105,7 @@ public class TimeZoneMastersController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateTimeZoneMasterDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,25 +127,29 @@ public class TimeZoneMastersController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "TimeZoneMaster not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "TimeZoneMaster not found." });
             
-            return Ok(new ApiResponse<bool>(true, "TimeZoneMaster deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"TimeZoneMaster {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting TimeZoneMaster with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for TimeZoneMaster with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "DELETE_ERROR",
+                ErrorCode = "UPDATE_ERROR",
                 ErrorMessage = "An unexpected error occurred while processing the request."
             });
         }

@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class DocumentTypesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DocumentTypeDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DocumentTypeResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
             public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -36,7 +37,7 @@ public class DocumentTypesController : ControllerBase
         try
         {
             var result = await _service.GetAllAsync(cancellationToken);
-            return Ok(new ApiResponse<IEnumerable<DocumentTypeDto>>(result, "Successfully fetched DocumentTypes."));
+            return Ok(new ApiResponse<IEnumerable<DocumentTypeResponse>>(result, "Successfully fetched DocumentTypes."));
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public class DocumentTypesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<DocumentTypeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<DocumentTypeResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
@@ -60,7 +61,7 @@ public class DocumentTypesController : ControllerBase
             var result = await _service.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "DocumentType not found." });
             
-            return Ok(new ApiResponse<DocumentTypeDto>(result));
+            return Ok(new ApiResponse<DocumentTypeResponse>(result, "Successfully fetched DocumentType."));
         }
         catch (Exception ex)
         {
@@ -74,17 +75,17 @@ public class DocumentTypesController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<DocumentTypeDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<DocumentTypeResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateDocumentTypeDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateDocumentTypeRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _service.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<DocumentTypeDto>(result, "DocumentType created successfully.");
+            var response = new ApiResponse<DocumentTypeResponse>(result, "DocumentType created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +105,7 @@ public class DocumentTypesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateDocumentTypeDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateDocumentTypeRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,25 +127,29 @@ public class DocumentTypesController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "DocumentType not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "DocumentType not found." });
             
-            return Ok(new ApiResponse<bool>(true, "DocumentType deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"DocumentType {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting DocumentType with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for DocumentType with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "DELETE_ERROR",
+                ErrorCode = "UPDATE_ERROR",
                 ErrorMessage = "An unexpected error occurred while processing the request."
             });
         }

@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class GeoFencesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<GeoFenceDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<GeoFenceResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
             public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -36,7 +37,7 @@ public class GeoFencesController : ControllerBase
         try
         {
             var result = await _service.GetAllAsync(cancellationToken);
-            return Ok(new ApiResponse<IEnumerable<GeoFenceDto>>(result, "Successfully fetched GeoFences."));
+            return Ok(new ApiResponse<IEnumerable<GeoFenceResponse>>(result, "Successfully fetched GeoFences."));
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public class GeoFencesController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<GeoFenceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<GeoFenceResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
@@ -60,7 +61,7 @@ public class GeoFencesController : ControllerBase
             var result = await _service.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "GeoFence not found." });
             
-            return Ok(new ApiResponse<GeoFenceDto>(result));
+            return Ok(new ApiResponse<GeoFenceResponse>(result, "Successfully fetched GeoFence."));
         }
         catch (Exception ex)
         {
@@ -74,17 +75,17 @@ public class GeoFencesController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<GeoFenceDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<GeoFenceResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateGeoFenceDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateGeoFenceRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _service.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<GeoFenceDto>(result, "GeoFence created successfully.");
+            var response = new ApiResponse<GeoFenceResponse>(result, "GeoFence created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +105,7 @@ public class GeoFencesController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateGeoFenceDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateGeoFenceRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,29 +127,44 @@ public class GeoFencesController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _service.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "GeoFence not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "GeoFence not found." });
             
-            return Ok(new ApiResponse<bool>(true, "GeoFence deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"GeoFence {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting GeoFence with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for GeoFence with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
-                ErrorCode = "DELETE_ERROR",
+                ErrorCode = "UPDATE_ERROR",
                 ErrorMessage = "An unexpected error occurred while processing the request."
             });
         }
     }
+
+    [HttpPost("check")]
+    [ProducesResponseType(typeof(ApiResponse<GeoFenceResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CheckGeoFence([FromBody] GeoFenceCheckRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _service.CheckGeoFenceAsync(request, cancellationToken);
+        if (result == null) return NotFound(new ErrorResponse { ErrorCode = "OUT_OF_BOUNDS", ErrorMessage = "User is not within any active geofence." });
+        return Ok(new ApiResponse<GeoFenceResponse>(result, "User is within a valid geofence."));
+    }
 }
+
 
 

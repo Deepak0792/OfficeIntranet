@@ -1,4 +1,5 @@
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using System.Collections.Generic;
 using SdxCore.Common.Models;
 using System.Threading;
@@ -8,11 +9,11 @@ namespace SdxCore.Time.Domain.Interfaces.Services;
 
 public interface IOfficeLocationService
 {
-    Task<IEnumerable<OfficeLocationDto>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<OfficeLocationDto?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<OfficeLocationDto> CreateAsync(CreateOfficeLocationDto dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateOfficeLocationDto dto, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<OfficeLocationResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<OfficeLocationResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<OfficeLocationResponse> CreateAsync(CreateOfficeLocationRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(short id, UpdateOfficeLocationRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

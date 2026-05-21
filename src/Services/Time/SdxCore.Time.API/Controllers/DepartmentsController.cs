@@ -3,7 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs;
+using SdxCore.Time.Domain.DTOs.Request;
+using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Services;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ public class DepartmentsController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DepartmentDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DepartmentResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -36,7 +37,7 @@ public class DepartmentsController : ControllerBase
         try
         {
             var result = await _departmentService.GetAllAsync(cancellationToken);
-            return Ok(new ApiResponse<IEnumerable<DepartmentDto>>(result, "Successfully fetched Departments."));
+            return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Departments."));
         }
         catch (Exception ex)
         {
@@ -50,7 +51,7 @@ public class DepartmentsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<DepartmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<DepartmentResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
@@ -60,7 +61,7 @@ public class DepartmentsController : ControllerBase
             var result = await _departmentService.GetByIdAsync(id, cancellationToken);
             if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
             
-            return Ok(new ApiResponse<DepartmentDto>(result));
+            return Ok(new ApiResponse<DepartmentResponse>(result, "Successfully fetched Department."));
         }
         catch (Exception ex)
         {
@@ -74,17 +75,17 @@ public class DepartmentsController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<DepartmentDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<DepartmentResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Create([FromBody] CreateDepartmentDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CreateDepartmentRequest dto, CancellationToken cancellationToken)
     {
         try
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             
             var result = await _departmentService.CreateAsync(dto, cancellationToken);
-            var response = new ApiResponse<DepartmentDto>(result, "Department created successfully.");
+            var response = new ApiResponse<DepartmentResponse>(result, "Department created successfully.");
             
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
         }
@@ -104,7 +105,7 @@ public class DepartmentsController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateDepartmentDto dto, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(short id, [FromBody] UpdateDepartmentRequest dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -126,22 +127,26 @@ public class DepartmentsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Delete(short id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var deleted = await _departmentService.DeleteAsync(id, cancellationToken);
-            if (!deleted) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var updated = await _departmentService.ToggleStatusAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
             
-            return Ok(new ApiResponse<bool>(true, "Department deleted successfully."));
+            var statusStr = request.IsActive ? "activated" : "deactivated";
+            return Ok(new ApiResponse<bool>(true, $"Department {statusStr} successfully."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while deleting department with ID {Id}", id);
+            _logger.LogError(ex, "Error occurred while toggling status for department with ID {Id}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
                 ErrorCode = "DEPARTMENT_ERROR",
@@ -149,6 +154,48 @@ public class DepartmentsController : ControllerBase
             });
         }
     }
+
+    [HttpGet("tree")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DepartmentResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTree(CancellationToken cancellationToken)
+    {
+        var result = await _departmentService.GetTreeAsync(cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Department list."));
+    }
+
+    [HttpGet("{id}/children")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DepartmentResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetChildren(short id, CancellationToken cancellationToken)
+    {
+        var result = await _departmentService.GetChildrenAsync(id, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Department list."));
+    }
+
+    [HttpGet("{id}/ancestors")]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<DepartmentResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAncestors(short id, CancellationToken cancellationToken)
+    {
+        var result = await _departmentService.GetAncestorsAsync(id, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Department list."));
+    }
+
+    [HttpPatch("{id}/parent")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateParent(short id, [FromBody] UpdateParentRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var updated = await _departmentService.UpdateParentAsync(id, request, cancellationToken);
+            if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
+            return Ok(new ApiResponse<bool>(true, "Department parent updated successfully."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErrorResponse { ErrorCode = "INVALID_PARENT", ErrorMessage = ex.Message });
+        }
+    }
 }
+
 
 
