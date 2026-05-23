@@ -40,7 +40,7 @@ public sealed class GatewayOnlyAttribute : Attribute, IAsyncActionFilter
                 var errorResponse = new ErrorResponse
                 {
                     ErrorCode = "FORBIDDEN",
-                    ErrorMessage = "This endpoint is only accessible by the Gateway"
+                    ErrorMessage = "Access denied. This endpoint is only accessible through the API Gateway."
                 };
 
                 context.Result = new ObjectResult(errorResponse)

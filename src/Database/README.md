@@ -1,148 +1,53 @@
-# SdxCore Database - Deployment Script Generation
+# SdxCore Database & Schema Architecture
 
-This directory contains PowerShell scripts for generating SQL deployment scripts for the SdxCore database.
+The SdxCore ecosystem utilizes a **Multi-Schema Database Architecture**. Rather than deploying a physical SQL Server database for every single microservice (which introduces heavy cross-database transaction latency and orchestration complexity), the system uses **SQL Schemas** to logically isolate data domains within a single centralized database (`SdxCore DB`).
 
-## Scripts
+> **Note**: The `Identity.API` is the only exception to this rule. It uses a completely separate physical database (`SdxCoreIdentity`) to guarantee the highest level of security isolation for credential hashes and OAuth tokens.
 
-| Script | Description |
-|--------|-------------|
-| `Build-All.ps1` | Master script that generates both Full and Delta SQL scripts |
-| `Generate-FullScript.ps1` | Generates the complete deployment script (all schema + data) |
-| `Generate-DeltaScript.ps1` | Generates incremental delta script (only sprint changes) |
+---
 
-## Prerequisites
+## 🏛️ Schema to Microservice Mapping
 
-- PowerShell 5.1 or later
-- SQL Server (optional - only needed for full DACPAC build)
-- Visual Studio/SSDT (optional - only needed for DACPAC build)
+Each schema in this database represents a strict **Bounded Context**. In our microservices architecture, a single schema maps directly to a specific microservice's Entity Framework Core `DbContext`. 
 
-## Usage
+**Microservices are strictly forbidden from querying tables outside of their designated schema.** Cross-domain data needs must be resolved via Gateway-routed HTTP calls or asynchronous event messaging.
 
-### Option 1: Build-All.ps1 (Recommended)
+### Core Schemas
 
-Generates both Full and Delta scripts in one command:
+| Schema | Purpose / Domain | Corresponding Microservice (Future/Current) |
+| :--- | :--- | :--- |
+| **`[dbo]` / `[migration]`** | Database deployment state, EF Core `__EFMigrationsHistory`, and SSDT sprint execution logs. | *(Infrastructure)* |
+| **`[shared]`** | Global configurations, application-wide enums, and centralized lookups (e.g., States, Currencies). | `Shared.API` |
+| **`[time]`** | Organizational hierarchies (Regions, Departments), Geofences, and Biometric Device configurations. | `Time.API` |
+| **`[auth]`** | Application-level RBAC (Role-Based Access Control) mapping, feature toggles, and UI permissions (distinct from Identity JWT generation). | `Identity.API` (Integration) |
 
-```powershell
-.\Build-All.ps1
-```
+### Human Resources & Workforce Schemas
 
-With custom settings:
+| Schema | Purpose / Domain | Corresponding Microservice (Future/Current) |
+| :--- | :--- | :--- |
+| **`[employee]`** | Employee master data, personal profiles, job history, and employment status. | `Employee.API` |
+| **`[attendance]`** | Shift scheduling, rosters, physical check-ins/outs, and calculated timesheets. | `Attendance.API` |
+| **`[hr]`** | Leave management, performance reviews, onboarding/offboarding workflows, and compliance. | `HR.API` |
+| **`[payroll]`** | Salary structures, tax calculations, deductions, benefits, and payslip generation. | `Payroll.API` |
+| **`[expense]`** | Employee expense claims, receipt attachments, and budget tracking. | `Expense.API` |
 
-```powershell
-.\Build-All.ps1 -TargetServer "prod-server" -TargetDatabase "SdxCore_Prod" -OutputPath ".\Release"
-```
+### Cross-Cutting & Utility Schemas
 
-**Parameters:**
-- `-Configuration` - Build config (Debug/Release). Default: Release
-- `-TargetServer` - SQL Server name. Default: localhost
-- `-TargetDatabase` - Database name. Default: SdxCore
-- `-OutputPath` - Output directory. Default: .\DeploymentScripts
-- `-SkipBuild` - Skip DACPAC build (use existing)
-- `-SkipFullScript` - Skip full script generation
-- `-SkipDeltaScripts` - Skip delta script generation
+| Schema | Purpose / Domain | Corresponding Microservice (Future/Current) |
+| :--- | :--- | :--- |
+| **`[workflow]`** | Multi-stage approval engine. Defines routing rules, escalation matrices, and generic approval requests. | `Workflow.API` |
+| **`[helpdesk]`** | Internal IT/HR ticketing, SLAs, issue tracking, and resolution threads. | `Helpdesk.API` |
+| **`[survey]`** | Employee engagement, eNPS, custom questionnaires, and feedback loops. | `Survey.API` |
+| **`[event]`** | Outbox pattern tables, system-wide notifications, and webhook delivery logs. | `Notification.API` |
+| **`[audit]`** | Deep forensic tracking. Stores `BulkOperationLogs`, data export tracking, and cross-cutting auditable events. | *(Observability/Admin)* |
 
-### Option 2: Generate-FullScript.ps1
+---
 
-Generates the complete deployment script:
+## 🔒 Design Constraints & Guidelines
 
-```powershell
-.\Generate-FullScript.ps1
-```
+If you are developing a new feature or microservice, you must adhere to the following database rules:
 
-With custom output path:
-
-```powershell
-.\Generate-FullScript.ps1 -OutputPath ".\CustomOutput"
-```
-
-**Parameters:**
-- `-OutputPath` - Output directory. Default: .\DeploymentScripts
-- `-IncludeComments` - Include commented sprints. Default: $true
-
-### Option 3: Generate-DeltaScript.ps1
-
-Generates the incremental delta script:
-
-```powershell
-.\Generate-DeltaScript.ps1
-```
-
-With existing full script:
-
-```powershell
-.\Generate-DeltaScript.ps1 -SkipFullScript
-```
-
-**Parameters:**
-- `-OutputPath` - Output directory. Default: .\DeploymentScripts
-- `-IncludeBase` - Include Base migration in delta. Default: $false
-- `-SkipFullScript` - Use existing Full.sql instead of regenerating
-
-## Output Files
-
-After execution, the following files are generated in the `DeploymentScripts` folder:
-
-| File | Description | Size |
-|------|-------------|------|
-| `SdxCore.Database.Full.sql` | Complete deployment script with all schema and data | ~919 KB |
-| `SdxCore.Database.Delta.sql` | Incremental delta script (sprint changes only) | ~2 KB |
-
-## Metadata
-
-Each generated SQL file includes a metadata header:
-
-```sql
-/*
- * ============================================================================
- * FILE: SdxCore.Database.Full.sql
- * ============================================================================
- * Generated: 2026-05-16 17:23:23 UTC
- * Source: _include.sql (all includes resolved)
- * Database: SdxCore
- * ============================================================================
- */
-```
-
-## Project Structure
-
-```
-src/Database/
-├── _include.sql              # Main entry point
-├── Build-All.ps1              # Master build script
-├── Generate-FullScript.ps1    # Full script generator
-├── Generate-DeltaScript.ps1  # Delta script generator
-├── DeploymentScripts/        # Output directory
-│   ├── SdxCore.Database.Full.sql
-│   └── SdxCore.Database.Delta.sql
-├── Base/                     # Base schema migration
-├── Sprint01/                 # Sprint 01 incremental changes
-└── Sprint02/                 # Sprint 02 incremental changes (commented)
-```
-
-## Examples
-
-### Generate both scripts with default settings
-
-```powershell
-```Use this command to build database
-cd d:\Office\SdxCore\src\Database
-.\Build-All.ps1 -SkipBuild
-```
-
-### Generate only full script
-
-```powershell
-.\Generate-FullScript.ps1 -OutputPath ".\MyOutput"
-```
-
-### Generate delta from existing full script
-
-```powershell
-.\Generate-DeltaScript.ps1 -SkipFullScript
-```
-
-## Notes
-
-- The `-SkipBuild` flag is recommended if MSBuild/Visual Studio is not installed, as the full DACPAC build is optional for SQL script generation.
-- Delta script extracts content between `--Start of Delta Sprint` and `--End of Delta Sprint` markers from the full script.
-- Both active and commented sprints are included in the output.
+1. **Strict Schema Isolation**: The `Time.API` microservice's `TimeDbContext` is configured with `modelBuilder.HasDefaultSchema("time");`. It cannot include `DbSet<Employee>`. If Time needs Employee data, it must make an API request or consume an event.
+2. **No Foreign Keys Across Schemas**: Because schemas represent microservice boundaries that might eventually be split into separate physical databases, **foreign keys across schemas are highly discouraged**. Use soft-references (e.g., storing an `int EmployeeId` in the `[attendance].[Timesheet]` table without a hard SQL constraint to `[employee].[Employees]`).
+3. **Automated Auditing**: All business tables across all schemas must include the standard SdxCore audit columns (`CreatedAt`, `CreatedBy`, `LastUpdatedAt`, `LastUpdatedBy`, `IsActive`). These are managed automatically by the `BaseRepository` in C#.
+4. **Deployments**: This database is deployed using the custom PowerShell SSDT generator. Do not run manual `ALTER` scripts on production. Ensure your changes are tracked in the appropriate Sprint folder. (See `BuildREADME.md`).

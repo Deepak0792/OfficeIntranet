@@ -325,6 +325,62 @@ CREATE TABLE employee.BiometricEmployeeMapping (
 );
 GO
 
+-- EMPLOYEE ADDRESS
+-- Purpose: Stores multiple address records per employee (permanent, current, emergency, etc.)
+-- Dependencies: employee.Employee, time.Country, time.Region, shared.StatusLookup
+-- ADDRESS TYPE must exist in shared.StatusLookup under group 'ADDRESS_TYPE'
+-- Expected StatusCodes: PERMANENT, CURRENT, MAILING, EMERGENCY, WORK
+
+CREATE TABLE employee.EmployeeAddress (
+    Id                  INT             PRIMARY KEY IDENTITY(1,1),
+    EmployeeId          INT             NOT NULL,
+    AddressType         NVARCHAR(50)    NOT NULL,
+    AddressTypeGroup    AS CAST('ADDRESS_TYPE' AS NVARCHAR(50)) PERSISTED,
+    AddressLine1        NVARCHAR(500)   NOT NULL,
+    AddressLine2        NVARCHAR(500)   NULL,
+    Landmark            NVARCHAR(300)   NULL,
+    City                NVARCHAR(100)   NOT NULL,
+    StateProvince       NVARCHAR(100)   NULL,
+    PostalCode          NVARCHAR(20)    NULL,
+    CountryId           SMALLINT        NOT NULL,
+    RegionId            SMALLINT        NULL,
+    IsPrimary           BIT             NOT NULL DEFAULT 0,
+    WorkflowInstanceId      INT          NULL,
+    IsVerified          BIT             NOT NULL DEFAULT 0,
+    VerifiedByEmployeeId INT            NULL,
+    VerifiedAt          DATETIME2       NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
+
+    CONSTRAINT FK_EmployeeAddress_Employee
+        FOREIGN KEY (EmployeeId)
+        REFERENCES employee.Employee(Id),
+
+    CONSTRAINT FK_EmployeeAddress_Country
+        FOREIGN KEY (CountryId)
+        REFERENCES time.Country(Id),
+
+    CONSTRAINT FK_EmployeeAddress_Region
+        FOREIGN KEY (RegionId)
+        REFERENCES time.Region(Id),
+
+    CONSTRAINT FK_EmployeeAddress_VerifiedBy
+        FOREIGN KEY (VerifiedByEmployeeId)
+        REFERENCES employee.Employee(Id),
+    
+    CONSTRAINT FK_EmployeeAddress_WorkflowInstance
+        FOREIGN KEY (WorkflowInstanceId)
+        REFERENCES workflow.WorkflowInstance(Id),
+
+    CONSTRAINT FK_EmployeeAddress_AddressType
+        FOREIGN KEY (AddressType, AddressTypeGroup)
+        REFERENCES shared.StatusLookup (StatusCode, StatusGroup)
+);
+GO
+
 -- INDEXES - employee Schema
 CREATE INDEX IX_Employee_Email             ON employee.Employee (Email);
 CREATE INDEX IX_Employee_DisplayName       ON employee.Employee (DisplayName);
@@ -363,8 +419,17 @@ CREATE INDEX IX_EmployeeTeam_Team          ON employee.EmployeeTeam (TeamId);
 
 CREATE INDEX IX_BiometricEmployeeMapping_Employee ON employee.BiometricEmployeeMapping (EmployeeId, BiometricDeviceId);
 
+CREATE INDEX IX_EmployeeAddress_Employee    ON employee.EmployeeAddress (EmployeeId);
+CREATE INDEX IX_EmployeeAddress_Country     ON employee.EmployeeAddress (CountryId);
+CREATE INDEX IX_EmployeeAddress_Region      ON employee.EmployeeAddress (RegionId);
+CREATE INDEX IX_EmployeeAddress_AddressType ON employee.EmployeeAddress (AddressType);
 GO
 
+-- Partial unique index: only one IsPrimary = 1 per employee
+CREATE UNIQUE INDEX UIX_EmployeeAddress_PrimaryPerEmployee
+    ON employee.EmployeeAddress (EmployeeId)
+    WHERE IsPrimary = 1 AND IsActive = 1;
+GO
 
 -- VIEW - Employee Full Profile (for joins)
 CREATE OR ALTER VIEW employee.vw_EmployeeFullProfile AS
@@ -374,6 +439,7 @@ SELECT
     e.FirstName,
     e.LastName,
     e.DisplayName,
+    e.ProfilePhotoUrl,
     e.Email,
     e.MobileNumber,
     e.DateOfJoining,
