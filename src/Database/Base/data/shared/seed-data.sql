@@ -929,5 +929,15 @@ BEGIN
 END
 GO
 
+INSERT INTO shared.StatusLookup
+    (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal, IsActive)
+VALUES
+    ('PERMANENT',  'ADDRESS_TYPE', 'Permanent Address',  'Permanent or home address registered with the organization. Used for official correspondence and background verification.', 1, 0, 1),
+    ('CURRENT',    'ADDRESS_TYPE', 'Current Address',    'Current residential address where the employee is presently staying. May differ from permanent address.',               2, 0, 1),
+    ('MAILING',    'ADDRESS_TYPE', 'Mailing Address',    'Preferred postal or mailing address for sending documents, letters, and physical communications.',                       3, 0, 1),
+    ('EMERGENCY',  'ADDRESS_TYPE', 'Emergency Address',  'Address of the emergency contact person. Used when the employee cannot be reached directly.',                           4, 0, 1),
+    ('WORK',       'ADDRESS_TYPE', 'Work Address',       'On-site or client work location address. Used when an employee is deployed at a location different from their office.',  5, 0, 1);
+GO
+
 PRINT 'Shared schema StatusLookup seed data inserted successfully.';
 GO

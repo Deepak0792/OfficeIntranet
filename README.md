@@ -1,283 +1,253 @@
-# SdxCore Authentication Module
+# SdxCore Microservices Ecosystem
 
-A comprehensive, pluggable authentication module for C# .NET Core applications with microservices architecture. Supports multiple authentication protocols through a unified provider abstraction pattern.
+SdxCore is a modern, scalable, and highly cohesive microservices architecture built on **.NET 9.0**. It follows strict Clean Architecture principles, utilizing a centralized YARP Gateway, dynamic pluggable authentication, and a standardized boilerplate for rapid service development.
 
-## Architecture Overview
+## 🏛️ Architecture Overview
 
-The solution follows Clean Architecture principles with clear separation of concerns:
+The SdxCore ecosystem is designed around a reverse-proxy gateway pattern with clearly isolated doain boundaries for individual microservices.
+
+```text
+                                                                            Client Request 
+                                                                                │
+                                                                                ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   SdxCore.Gateway.API (YARP)      │──► Validates JWT locally (or delegates)                                                                 │
+│                                   Injects X-User-Id & X-Roles     │──► Handles external rate-limiting                                                                       │
+└────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                 │ Proxy Forwarding (Header-Based Context Propagation)
+       ┌────────────────────────┬────────────────┴───┬─────────────────────┬────────────────────┬────────────────────┬────────────────────┬─────────────────┐ 
+       ▼                        ▼                    ▼                     ▼                    ▼                    ▼                    ▼                 ▼
+┌──────────────┐        ┌──────────────┐    ┌────────────────┐   ┌────────────────┐    ┌────────────────┐   ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ Identity.API │        │   Time.API   │    │  Employee.API  │   │   Shared.API   │    │     HR.API     │   │  Payroll.API    │ │ Attendance.API  │ │   Workflow.API  │     ....Future Microservices can be added here in future
+└──────────────┘        └──────────────┘    └────────────────┘   └────────────────┘    └────────────────┘   └─────────────────┘ └─────────────────┘ └─────────────────┘
+       │                        │              │                          │                    │                   │                     │                     │                        
+       ▼                        ▼              ▼                          ▼                    ▼                   ▼                     ▼                     ▼
+┌─────────────────┐     ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│   SQL Server    │     │                                                                 SQL Server                                                                          │
+├─────────────────┤     ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ SdxIdentity     │     │                                        SdxCore Database Schema microservices wise                                                                   │
+|   Database      |     |                                                        │── [shared].*                                                                               │
+|                 |     |                                                        │── [time].*                                                                                 │
+└─────────────────┘     |                                                        │── [workflow].*                                                                             │
+                        |                                                        │── [employee].*                                                                             │
+                        |                                                        │── [payroll].*                                                                              │
+                        |                                                        │── [hr].*                                                                                   │
+                        |                                                        |── [event].*                                                                                │
+                        |                                                        ├── [helpdesk].*                                                                             │
+                        |                                                        ├── [attendance].*                                                                           │
+                        |                                                        └── [survey].*                                                                               │
+                        |                                                        ├── [auth].*                                                                                 │
+                        └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
 
 ```
-Client → SdxCore.Gateway (YARP) → SdxCore.Identity.API → Application → Domain
-                                                                        ↑
-                                                                   Persistence
-```
 
-### Project Structure
+### Layered Clean Architecture (Per Service)
+Every downstream microservice is built using a strict 4-layer clean architecture:
+1. **API**: Presentation layer (Controllers, Middleware, `[GatewayOnly]` constraints).
+2. **Application**: Business logic, Services, DTO mapping (`Request`/`Response`), and Validation.
+3. **Domain**: Core entities, Enums, Exceptions, and Repository Interfaces.
+4. **Persistence**: EF Core DbContext, Migrations, and generic `BaseRepository` implementations.
 
-```
-SdxCore.sln
+---
+
+## 🏗️ Project Structure & Dependencies
+
+```text
+SdxCore/
 ├── src/
 │   ├── Gateway/
-│   │   └── SdxCore.Gateway.API          # YARP reverse proxy (entry point)
+│   │   └── SdxCore.Gateway.API          # YARP reverse proxy & Auth interception
 │   ├── Services/
-│   │   └── Identity/
-│   │       ├── SdxCore.Identity.API     # Web API controllers and middleware
-│   │       ├── SdxCore.Identity.Application  # Business logic and services
-│   │       ├── SdxCore.Identity.Domain  # Domain entities and interfaces
-│   │       └── SdxCore.Identity.Persistence  # EF Core and SQL Server
-│   └── BuildingBlocks/                  # Shared libraries (future use)
-│       ├── SdxCore.SharedKernel
-│       ├── SdxCore.Common
-│       └── SdxCore.Contracts
-├── tests/
-│   └── Identity.Tests/                  # Unit, integration, and property tests
+│   │   ├── Identity/                    # Manages Auth, Users, Roles, JWTs
+│   │   │   ├── SdxCore.Identity.API
+│   │   │   ├── SdxCore.Identity.Application
+│   │   │   ├── SdxCore.Identity.Domain
+│   │   │   └── SdxCore.Identity.Persistence
+│   │   ├── Shared/ 
+│   │   │   ├── SdxCore.Shared.API
+│   │   │   ├── SdxCore.Shared.Application
+│   │   │   ├── SdxCore.Shared.Domain
+│   │   │   └── SdxCore.Shared.Persistence
+│   │   ├── Time/                        # Domain service (Regions, Biometrics, GeoFences)
+│   │   │   ├── SdxCore.Time.API
+│   │   │   ├── SdxCore.Time.Application
+│   │   │   ├── SdxCore.Time.Domain
+│   │   │   └── SdxCore.Time.Persistence
+│   │   ├── Workflow. 
+│   │   │   ├── SdxCore.Workflow.API
+│   │   │   ├── SdxCore.Workflow.Application
+│   │   │   ├── SdxCore.Workflow.Domain
+│   │   │   └── SdxCore.Workflow.Persistence
+│   │   ├── Employee. 
+│   │   │   ├── SdxCore.Employee.API
+│   │   │   ├── SdxCore.Employee.Application
+│   │   │   ├── SdxCore.Employee.Domain
+│   │   │   └── SdxCore.Employee.Persistence
+│   │   ├── HR.
+│   │   │   ├── SdxCore.HR.API
+│   │   │   ├── SdxCore.HR.Application
+│   │   │   ├── SdxCore.HR.Domain
+│   │   │   └── SdxCore.HR.Persistence
+│   │   ├── Payroll.
+│   │   │   ├── SdxCore.Payroll.API
+│   │   │   ├── SdxCore.Payroll.Application
+│   │   │   ├── SdxCore.Payroll.Domain
+│   │   │   └── SdxCore.Payroll.Persistence
+│   │   ├── Attendance. 
+│   │   │   ├── SdxCore.Attendance.API
+│   │   │   ├── SdxCore.Attendance.Application
+│   │   │   ├── SdxCore.Attendance.Domain
+│   │   │   └── SdxCore.Attendance.Persistence
+│   │   ├── Survey. 
+│   │       ├── SdxCore.Survey.API
+│   │       ├── SdxCore.Survey.Application
+│   │       ├── SdxCore.Survey.Domain
+│   │       └── SdxCore.Survey.Persistence  
+│   └── BuildingBlocks/                  # Shared libraries referenced by services
+│       ├── SdxCore.Common               # Base models (ApiResponse, RequestContext, BaseEntity)
+│       ├── SdxCore.Contracts            # Event/Message Bus Contracts (Future)
+│       └── SdxCore.SharedKernel         # Core abstractions
+├── src/Database/
+│   └── SdxCore.Database                 # SSDT Project & PowerShell Migration Scripts
+├── tests/                               # Unit and Integration Tests
+│   ├── Identity.Tests/                 
+│   ├── Time.Tests/
+│   ├── Employee.Tests/
+│   ├── HR.Tests/
+│   ├── Payroll.Tests/
+│   ├── Attendance.Tests/
+│   ├── Survey.Tests/
+│   ├── Gateway.Tests/
+│   ├── Common.Tests/
+│   ├── Contracts.Tests/
+│   ├── SharedKernel.Tests/
+│   └── Database.Tests/
+│   
 └── docker/
-    └── docker-compose.yml               # Container orchestration
+    └── docker-compose.yml              # Local SQL Server orchestration
+                                        # Redis
+                                        # Elasticsearch
+                                        # RabbitMQ 
 ```
 
-## Supported Authentication Protocols
+---
 
-- **InHouse**: Built-in username/password with SQL Server storage
-- **SAML 2.0**: Enterprise SSO with assertion validation
-- **OAuth 2.0**: Authorization code flow with PKCE support
-- **OpenID Connect**: ID token validation
-- **JWT**: Bearer token validation
-- **LDAP**: Active Directory and LDAP server authentication
+## ⚙️ Core Implementation Details
 
-## Configuration Requirements
+### 1. Pluggable Authentication Module (Identity Service)
+The Identity service supports dynamic, configuration-driven authentication protocols:
+- **InHouse**: SQL Server-backed username/password authentication (Argon2id hashing).
+- **SAML 2.0 / OAuth 2.0 / OIDC / LDAP**: Enterprise SSO integrations.
+*Configuration dictates which provider is injected at runtime in `Program.cs`.*
 
-### Gateway (SdxCore.Gateway.API)
+### 2. Delegated Authentication & The `[GatewayOnly]` Attribute
+Downstream services (like `Time.API`) are **oblivious to JWTs**. 
+- The Gateway intercepts the request, validates the JWT, and enriches the downstream HTTP headers with `X-User-Id`, `X-Roles`, etc.
+- Downstream endpoints are protected by a `[GatewayOnly]` attribute, a security filter that rejects direct external requests, ensuring all traffic funnels through the enriched YARP Gateway context.
+- Inside the services, the `IRequestContext` is automatically populated with the user details from these headers.
 
-**appsettings.json:**
-```json
-{
-  "ReverseProxy": {
-    "Routes": {
-      "identity-route": {
-        "ClusterId": "identity-cluster",
-        "Match": { "Path": "/api/auth/{**catch-all}" }
-      }
-    },
-    "Clusters": {
-      "identity-cluster": {
-        "Destinations": {
-          "identity-api": { "Address": "https://localhost:5001" }
-        }
-      }
-    }
-  }
-}
-```
+### 3. Generic Repository & Audit Trails
+The Persistence layer heavily utilizes a `BaseRepository<TEntity, TKey>`.
+- Automatically injects `CreatedAt`, `CreatedBy`, `LastUpdatedAt`, and `LastUpdatedBy` using the `IRequestContext` via reflection during EF Core `SaveChanges`.
+- Standardizes CRUD (GetById, GetAllPagedAsync, FindAsync, Add, Update).
 
-### Identity API (SdxCore.Identity.API)
+### 4. Global Soft Delete Pattern
+Hard deletes are strictly prohibited across the ecosystem.
+- `DELETE` HTTP verbs are replaced with `HttpPatch("{id}/status")`.
+- Services implement a `ToggleStatusAsync` method mutating the `IsActive` boolean flag on the base entity.
 
-**Required Configuration Sections:**
+### 5. DTO Architecture Standardization
+Strict suffixing conventions map Domain Entities to external representations:
+- **Requests**: `Create{Entity}Request`, `Update{Entity}Request`
+- **Responses**: `{Entity}Response` (E.g., `RegionResponse`)
+- **Envelopes**: All API responses are wrapped in `ApiResponse<T>` or `PagedResponse<T>` to maintain strict frontend contract normalization.
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=SdxCoreIdentity;Trusted_Connection=true;TrustServerCertificate=true;"
-  },
-  "Authentication": {
-    "Protocol": "InHouse",
-    "Issuer": "SdxCore.Identity",
-    "Audience": "SdxCore.API",
-    "TokenLifetime": "01:00:00",
-    "MaxFailedAttempts": 5,
-    "LockoutDuration": "00:15:00",
-    "SigningKeyPath": "keys/signing-key.json"
-  }
-}
-```
+---
 
-**Protocol-Specific Sections:**
-
-- **SAML**: `"Saml": { "IdpMetadataUrl": "...", "ServiceProviderEntityId": "..." }`
-- **OAuth**: `"OAuth": { "ClientId": "...", "ClientSecret": "...", "AuthorityUrl": "..." }`
-- **OIDC**: `"Oidc": { "Authority": "...", "ClientId": "...", "ClientSecret": "..." }`
-- **LDAP**: `"Ldap": { "Server": "ldaps://...", "BaseDn": "...", "BindDn": "..." }`
-
-## Running Locally
+## 🚀 Setup Instructions
 
 ### Prerequisites
+- **.NET 9.0 SDK**
+- **SQL Server** (LocalDB, Docker, or full instance)
+- **Docker** (optional, for rapid local database spinning)
 
-- .NET 9.0 SDK
-- SQL Server (LocalDB, Docker, or full instance)
-- Docker (optional, for containerized SQL Server)
+### 1. Start Local Databases
+The ecosystem utilizes a multi-schema approach. The `Identity` service gets its own isolated database, while all other downstream microservices (like `Time`) share a central database but isolate their tables using SQL Schemas (e.g., `[time].[Regions]`). 
 
-### Step 1: Start SQL Server
-
-**Option A: Docker**
+You can spin up an instance using the provided Docker compose file:
 ```bash
 cd docker
 docker-compose up sql-server -d
 ```
 
-**Option B: LocalDB**
+### 2. Database Migrations
+SdxCore utilizes EF Core alongside SSDT PowerShell scripts for generating strict `Full.sql` and `Delta.sql` sprint-based artifacts.
+To generate your local databases via EF Core:
 ```bash
-# Update connection string in appsettings.Development.json to use LocalDB
+# Update Identity Database
+dotnet ef database update --project src/Services/Identity/SdxCore.Identity.Persistence --startup-project src/Services/Identity/SdxCore.Identity.API
+
+# Update Time Database
+dotnet ef database update --project src/Services/Time/SdxCore.Time.Persistence --startup-project src/Services/Time/SdxCore.Time.API
 ```
 
-### Step 2: Run Database Migrations
+### 3. Run the Microservices
 
-```bash
-dotnet ef database update \
-  --project src/Services/Identity/SdxCore.Identity.Persistence \
-  --startup-project src/Services/Identity/SdxCore.Identity.API
-```
+You must start the Identity Service, the Time Service, and the Gateway.
 
-### Step 3: Start Identity API
-
+**Terminal 1 (Identity Service):**
 ```bash
 dotnet run --project src/Services/Identity/SdxCore.Identity.API
 # Runs on https://localhost:5001
 ```
 
-### Step 4: Start Gateway
+**Terminal 2 (Time Service):**
+```bash
+dotnet run --project src/Services/Time/SdxCore.Time.API
+# Runs on https://localhost:5002
+```
 
+**Terminal 3 (Gateway):**
 ```bash
 dotnet run --project src/Gateway/SdxCore.Gateway.API
 # Runs on https://localhost:5000
 ```
 
-### Step 5: Test Authentication
-
+### 4. Testing the Flow
+Generate a token from the Identity service, then query the Time service through the Gateway:
 ```bash
-# Create a test user (InHouse protocol)
+# 1. Login
 curl -X POST https://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "password": "TestPassword123!"}'
+  -d '{"username": "admin", "password": "Password123!"}'
+
+# 2. Query Time Service (Via Gateway)
+curl -X GET https://localhost:5000/api/v1/regions \
+  -H "Authorization: Bearer <YOUR_TOKEN_HERE>"
 ```
 
-## Switching Authentication Protocols
+---
 
-Change the protocol by updating `appsettings.json`:
-
-```json
-{
-  "Authentication": {
-    "Protocol": "Saml"  // Change to: InHouse, Saml, OAuth, Oidc, Jwt, Ldap
-  }
-}
-```
-
-**Important**: You must register the corresponding provider in `Program.cs`:
-
-```csharp
-var protocol = builder.Configuration["Authentication:Protocol"];
-switch (protocol?.ToLowerInvariant())
-{
-    case "inhouse":
-        builder.Services.AddInHouseProvider();
-        break;
-    case "saml":
-        builder.Services.AddSamlProvider(builder.Configuration);
-        break;
-    // ... other protocols
-}
-```
-
-## Docker Compose Usage
-
-### Full Stack Deployment
-
-```bash
-cd docker
-cp .env.example .env
-# Edit .env with your configuration
-docker-compose up -d
-```
-
-**Services:**
-- **sql-server**: SQL Server 2022 database
-- **identity-api**: Identity service API
-- **gateway**: YARP reverse proxy gateway
-
-### Development with External Database
-
-```bash
-# Start only SQL Server
-docker-compose up sql-server -d
-
-# Run APIs locally for debugging
-dotnet run --project src/Services/Identity/SdxCore.Identity.API
-dotnet run --project src/Gateway/SdxCore.Gateway.API
-```
-
-## Testing
+## 🧪 Testing
 
 ### Run All Tests
-
 ```bash
 dotnet test tests/Identity.Tests/
 ```
 
-### Test Categories
+### Categories
+- **Unit Tests**: Isolated domain and application logic.
+- **Integration Tests**: In-memory database endpoint testing.
+- **Property Tests**: FsCheck validations for authentication algorithms.
 
-- **Unit Tests**: Individual component testing
-- **Integration Tests**: API endpoints with test database
-- **Property Tests**: FsCheck-based correctness validation
-- **End-to-End Tests**: Full Gateway → API → Database flow
+---
 
-## Security Features
+## 🛠️ Contributing & Development Standards
 
-- **Argon2id Password Hashing**: Industry-standard with configurable parameters
-- **JWT Token Management**: RS256/HS256 signing with revocation support
-- **Account Lockout**: Configurable failed attempt thresholds
-- **Audit Logging**: All authentication attempts logged to SQL Server
-- **LDAPS Enforcement**: Encrypted LDAP connections by default
-- **User Enumeration Prevention**: Generic error messages
-
-## Configuration Validation
-
-The system enforces explicit configuration:
-
-- **No Default Protocols**: Must specify `Authentication:Protocol`
-- **Provider Registration**: Must register the configured provider
-- **Configuration Exceptions**: Clear error messages for missing/invalid config
-- **Environment Overrides**: Support for Development/Production settings
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Authentication protocol not configured"**
-   - Add `"Authentication:Protocol"` to appsettings.json
-
-2. **"Provider not registered"**
-   - Register the provider in Program.cs startup
-
-3. **Database connection errors**
-   - Verify connection string and SQL Server availability
-   - Run migrations: `dotnet ef database update`
-
-4. **Token validation failures**
-   - Check signing key configuration
-   - Verify token expiry settings
-
-### Logs
-
-Enable detailed logging in appsettings.json:
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "SdxCore.Identity": "Debug",
-      "Microsoft.EntityFrameworkCore": "Information"
-    }
-  }
-}
-```
-
-## Contributing
-
-1. Follow Clean Architecture principles
-2. Add property tests for new algorithms
-3. Update integration tests for new endpoints
-4. Document configuration requirements
-5. Maintain SOLID principles compliance
-
-## License
-
-[Your License Here]
+When extending SdxCore or adding a new microservice, adhere to the following ecosystem laws:
+1. **No direct database access in the API layer**. Always route through Application Services -> Domain Interfaces -> Persistence Repositories.
+2. **Never hard-delete records**. Always implement `PATCH /status` and utilize the `IsActive` flag.
+3. **Data Types**: System Identifiers mapping to `SMALLINT` in SQL Server must use `short` in C#. System Identifiers mapping to `INT` must use `int`. (e.g. BiometricDevice uses `int`).
+4. **Service-to-Service Auth**: Downstream APIs should not implement JWT logic. Decorate controllers with `[GatewayOnly]` and trust the Gateway's internal API Key and Header enrichment. 
+5. **Standardized Responses**: Always return data wrapped in `ApiResponse<T>` or `PagedResponse<T>` with a descriptive success message.
