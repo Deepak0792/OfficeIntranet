@@ -183,11 +183,11 @@ CREATE TABLE attendance.LeaveBalance (
     Encashed        DECIMAL(10,2)   NOT NULL DEFAULT 0,
     CarryForward    DECIMAL(10,2)   NOT NULL DEFAULT 0,
     ClosingBalance  AS (OpeningBalance + Allocated + CarryForward - Availed - Encashed),
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_LeaveBalance_Employee
         FOREIGN KEY (EmployeeId)
@@ -208,11 +208,11 @@ CREATE TABLE attendance.CompOffType (
     CompOffTypeCode NVARCHAR(100)   NOT NULL UNIQUE,
     CompOffTypeName NVARCHAR(200)   NOT NULL,
     ExpiryDays      SMALLINT             NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL
 );
 GO
 
@@ -399,11 +399,11 @@ CREATE TABLE attendance.RotationShift (
     RotationCode    NVARCHAR(100)   NOT NULL UNIQUE,
     RotationName    NVARCHAR(200)   NOT NULL,
     CycleLengthDays INT             NOT NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL
 );
 GO
 
@@ -415,11 +415,11 @@ CREATE TABLE attendance.RotationShiftDetail (
     ShiftId         SMALLINT  NULL,
     DurationDays    SMALLINT     NOT NULL,
     IsOffDay        BIT     NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_RotationDetail_Rotation
         FOREIGN KEY (RotationShiftId)
@@ -508,11 +508,11 @@ CREATE TABLE attendance.HolidayCalendar (
     CalendarName    NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
     IsDefault       BIT             NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL
 );
 GO
 
@@ -593,11 +593,11 @@ CREATE TABLE attendance.WorkWeekPolicy (
     PolicyName      NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
     IsDefault       BIT             NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL
 );
 GO
 
@@ -609,11 +609,11 @@ CREATE TABLE attendance.WorkWeekPolicyDay (
     IsWorkingDay            BIT     NOT NULL,
     StandardWorkingMinutes  SMALLINT     NULL,
     IsHalfDay               BIT     NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_WorkWeekPolicyDay_Policy
         FOREIGN KEY (WorkWeekPolicyId)

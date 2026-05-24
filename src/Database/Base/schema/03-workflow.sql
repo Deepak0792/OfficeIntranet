@@ -239,6 +239,7 @@ CREATE TABLE workflow.WorkflowInstance (
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CompletedAt             DATETIME2       NULL,
     CompletedBy             INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1
 
     CONSTRAINT FK_WorkflowInstance_Definition
         FOREIGN KEY (WorkflowDefinitionId)
