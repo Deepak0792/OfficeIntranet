@@ -72,14 +72,20 @@ CREATE TABLE shared.OutboxMessages
     [Payload] NVARCHAR(MAX) NOT NULL,
     [Exchange] NVARCHAR(200) NOT NULL,
     [RoutingKey] NVARCHAR(200) NOT NULL,
-    [Status] NVARCHAR(50) NOT NULL
-        CONSTRAINT [DF_OutboxMessages_Status] DEFAULT ('Pending'),
+    -- Lookup-based status
+    [Status] NVARCHAR(50) NOT NULL,
+    [StatusGroup] NVARCHAR(50) NOT NULL
+        CONSTRAINT [DF_OutboxMessages_StatusGroup] DEFAULT ('OUTBOX_STATUS'),
+    [IsActive] BIT NOT NULL
+        CONSTRAINT [DF_OutboxMessages_IsActive] DEFAULT (1),
+    [CreatedAt] DATETIME2 NOT NULL
+        CONSTRAINT [DF_OutboxMessages_CreatedAt] DEFAULT GETUTCDATE(),
+    [CreatedBy] INT NULL,
 
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    [LastUpdatedAt] DATETIME2 NOT NULL
+        CONSTRAINT [DF_OutboxMessages_LastUpdatedAt] DEFAULT GETUTCDATE(),
+
+    [LastUpdatedBy] INT NULL,
 
     [PublishedAt] DATETIME2 NULL,
 
@@ -89,7 +95,11 @@ CREATE TABLE shared.OutboxMessages
     [ErrorMessage] NVARCHAR(MAX) NULL,
 
     CONSTRAINT [PK_OutboxMessages]
-        PRIMARY KEY CLUSTERED ([Id] ASC)
+        PRIMARY KEY CLUSTERED ([Id] ASC),
+
+    CONSTRAINT FK_OutboxMessages_Status
+        FOREIGN KEY (Status, StatusGroup)
+        REFERENCES shared.StatusLookup (StatusCode, StatusGroup)
 );
 GO
 

@@ -50,104 +50,125 @@ BEGIN
 END
 GO
 
+
 -- ============================================================
--- SECTION 1: WORKFLOW MODULES
+-- 1. WORKFLOW MODULES
+--    One row per business entity that participates in approvals.
 -- ============================================================
 
-INSERT INTO workflow.WorkflowModule (ModuleCode, ModuleName, EntityName)
-SELECT v.ModuleCode, v.ModuleName, v.EntityName
-FROM (VALUES
-    ('LEAVE',                   'Leave Management',              'LeaveRequest'),
-    ('ATTENDANCE_REG',          'Attendance Regularization',     'AttendanceRegularization'),
-    ('SHIFT_SWAP',              'Shift Swap',                    'ShiftSwapRequest'),
-    ('OVERTIME',                'Overtime Authorization',        'AttendanceRecord'),
-    ('COMPOFF',                 'Comp-Off Redemption',           'CompOffBalance'),
-    ('ONCALL',                  'On-Call Duty',                  'EmployeeShiftRoster'),
-    ('TRAINING_LEAVE',          'Training & Conference Leave',   'LeaveRequest'),
-    ('DOC_VERIFICATION',        'Document Verification',         'EmployeeDocument'),
-    ('PAYROLL_CORRECTION',      'Payroll Attendance Correction', 'PayrollAttendanceSummary'),
-    ('EXPENSE_REIMBURSEMENT',   'Expense & Reimbursement',       'ExpenseClaim')
-) AS v(ModuleCode, ModuleName, EntityName)
-WHERE NOT EXISTS (
-    SELECT 1 FROM workflow.WorkflowModule wm WHERE wm.ModuleCode = v.ModuleCode
-);
+SET IDENTITY_INSERT [workflow].[WorkflowModule] ON;
 GO
 
--- ============================================================
--- SECTION 2: WORKFLOW DEFINITIONS
--- ============================================================
+INSERT [workflow].[WorkflowModule]
+    ([Id], [ModuleCode], [ModuleName], [schema], [EntityName], [IsActive], [CreatedAt], [CreatedBy], [LastUpdatedAt], [LastUpdatedBy])
+VALUES
+    -- Attendance domain
+    (1,   N'LEAVE_REQUEST',              N'Leave Management',               N'attendance', N'LeaveRequest',               1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL),
+    (2,   N'ATTENDANCE_REGULARIZATION',  N'Attendance Regularization',      N'attendance', N'AttendanceRegularization',    1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL),
+    (3,   N'SHIFT_SWAP_REQUEST',         N'Shift Swap',                     N'attendance', N'ShiftSwapRequest',            1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL),
+    (5,   N'COMP_OFF_REDEMPTION',        N'Comp-Off Redemption',            N'attendance', N'CompOffBalance',              1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL),
 
-INSERT INTO workflow.WorkflowDefinition
-    (WorkflowModuleId, WorkflowCode, WorkflowName, VersionNo, Description)
-SELECT
-    (SELECT Id FROM workflow.WorkflowModule WHERE ModuleCode = v.ModuleCode),
-    v.WorkflowCode, v.WorkflowName, v.VersionNo, v.Description
-FROM (VALUES
-    ('LEAVE',               'WF-LEAVE-STD-V1',      'Standard Leave Approval',                   1, 'Three-level approval for all standard leave types.'),
-    ('LEAVE',               'WF-LEAVE-EMRG-V1',     'Emergency Leave Fast-Track Approval',       1, 'Single-step fast-track approval for emergency leave requests.'),
-    ('ATTENDANCE_REG',      'WF-ATTREG-STD-V1',     'Attendance Regularization Approval',        1, 'Two-level approval for attendance correction requests.'),
-    ('SHIFT_SWAP',          'WF-SHIFTSWAP-V1',      'Shift Swap Approval',                       1, 'Two-level approval for shift swap requests.'),
-    ('OVERTIME',            'WF-OT-V1',             'Overtime Authorization',                    1, 'Two-level approval for overtime worked.'),
-    ('COMPOFF',             'WF-COMPOFF-V1',        'Comp-Off Redemption Approval',              1, 'Single-step approval by Reporting Manager.'),
-    ('ONCALL',              'WF-ONCALL-V1',         'On-Call Duty Approval',                     1, 'Two-level approval for on-call duty assignments.'),
-    ('TRAINING_LEAVE',      'WF-TRAINLEAVE-V1',     'Training & Conference Leave Approval',      1, 'Three-level approval for training programs.'),
-    ('DOC_VERIFICATION',    'WF-DOCVERIFY-V1',      'Employee Document Verification',            1, 'Single-step HR Manager verification workflow.'),
-    ('PAYROLL_CORRECTION',  'WF-PAYROLLCORR-V1',    'Payroll Attendance Correction Approval',    1, 'Two-level approval for payroll attendance corrections.')
-) AS v(ModuleCode, WorkflowCode, WorkflowName, VersionNo, Description)
-WHERE NOT EXISTS (
-    SELECT 1 FROM workflow.WorkflowDefinition wd WHERE wd.WorkflowCode = v.WorkflowCode
-);
+    -- Employee domain
+    (8,   N'DOCUMENT_VERIFICATION',      N'Document Verification',          N'employee',   N'EmployeeDocument',            1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL),
+    (102, N'ADDRESS_VERIFICATION',       N'Employee Address Verification',  N'employee',   N'EmployeeAddress',             1, CAST(N'2026-05-27T17:04:30.3000000' AS DateTime2), NULL, CAST(N'2026-05-27T17:04:30.3000000' AS DateTime2), NULL),
+
+    -- Payroll domain
+    (9,   N'PAYROLL_CORRECTION',         N'Payroll Attendance Correction',  N'payroll',    N'PayrollAttendanceSummary',    1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL),
+    (10,  N'EXPENSE_REIMBURSEMENT',      N'Expense & Reimbursement',        N'payroll',    N'ExpenseClaim',                1, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.7633333' AS DateTime2), NULL);
+
+SET IDENTITY_INSERT [workflow].[WorkflowModule] OFF;
 GO
 
+
 -- ============================================================
--- SECTION 3: WORKFLOW STEPS
+-- 2. WORKFLOW DEFINITIONS
+--    One row per named workflow variant within a module.
+--    A module can have multiple definitions (e.g. standard vs fast-track).
 -- ============================================================
 
-INSERT INTO workflow.WorkflowStep
-    (WorkflowDefinitionId, StepNo, StepName, WorkflowStepType,
-     IsFinalStep, AllowDelegation, EscalationAfterHours)
-SELECT
-    (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
-    v.StepNo, v.StepName, v.StepTypeCode,
-    v.IsFinalStep, v.AllowDelegation, v.EscalationAfterHours
-FROM (VALUES
-    -- WF-LEAVE-STD-V1
-    ('WF-LEAVE-STD-V1',     1, 'Reporting Manager Approval',           'APPROVAL', 0, 1, 24),
-    ('WF-LEAVE-STD-V1',     2, 'Department Head Approval',             'APPROVAL', 0, 1, 48),
-    ('WF-LEAVE-STD-V1',     3, 'HR Manager Final Approval',            'APPROVAL', 1, 0, 72),
-    -- WF-LEAVE-EMRG-V1
-    ('WF-LEAVE-EMRG-V1',    1, 'Reporting Manager Emergency Approval', 'APPROVAL', 1, 1,  2),
-    -- WF-ATTREG-STD-V1
-    ('WF-ATTREG-STD-V1',    1, 'Reporting Manager Review',             'REVIEW',   0, 1, 24),
-    ('WF-ATTREG-STD-V1',    2, 'HR Manager Approval',                  'APPROVAL', 1, 0, 48),
-    -- WF-SHIFTSWAP-V1
-    ('WF-SHIFTSWAP-V1',     1, 'Ward In-Charge Approval',              'APPROVAL', 0, 1, 12),
-    ('WF-SHIFTSWAP-V1',     2, 'Scheduling Coordinator Approval',      'APPROVAL', 1, 0, 24),
-    -- WF-OT-V1
-    ('WF-OT-V1',            1, 'Shift Supervisor Review',              'REVIEW',   0, 1, 24),
-    ('WF-OT-V1',            2, 'Department Head Approval',             'APPROVAL', 1, 0, 48),
-    -- WF-COMPOFF-V1
-    ('WF-COMPOFF-V1',       1, 'Reporting Manager Approval',           'APPROVAL', 1, 1, 24),
-    -- WF-ONCALL-V1
-    ('WF-ONCALL-V1',        1, 'Department Head Confirmation',         'APPROVAL', 0, 1, 12),
-    ('WF-ONCALL-V1',        2, 'Chief Medical Officer Authorization',  'APPROVAL', 1, 0, 24),
-    -- WF-TRAINLEAVE-V1
-    ('WF-TRAINLEAVE-V1',    1, 'Department Head Approval',             'APPROVAL', 0, 1, 48),
-    ('WF-TRAINLEAVE-V1',    2, 'HR Manager Review',                    'REVIEW',   0, 1, 48),
-    ('WF-TRAINLEAVE-V1',    3, 'Finance Manager Cost Approval',        'APPROVAL', 1, 0, 72),
-    -- WF-DOCVERIFY-V1
-    ('WF-DOCVERIFY-V1',     1, 'HR Manager Document Verification',     'APPROVAL', 1, 0, 72),
-    -- WF-PAYROLLCORR-V1
-    ('WF-PAYROLLCORR-V1',   1, 'HR Manager Review',                    'REVIEW',   0, 0, 24),
-    ('WF-PAYROLLCORR-V1',   2, 'Finance Manager Authorization',        'APPROVAL', 1, 0, 48)
-) AS v(WorkflowCode, StepNo, StepName, StepTypeCode, IsFinalStep, AllowDelegation, EscalationAfterHours)
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM   workflow.WorkflowStep        ws
-    JOIN   workflow.WorkflowDefinition  wd ON wd.Id = ws.WorkflowDefinitionId
-    WHERE  wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
-);
+SET IDENTITY_INSERT [workflow].[WorkflowDefinition] ON;
 GO
+
+INSERT [workflow].[WorkflowDefinition]
+    ([Id], [WorkflowModuleId], [WorkflowCode], [WorkflowName], [VersionNo], [Description], [IsActive], [CreatedAt], [CreatedBy], [LastUpdatedAt], [LastUpdatedBy])
+VALUES
+    -- Leave Request (Module 1)
+    (1,   1,  N'WF_LEAVE_STD_V1',           N'Standard Leave Approval',                  1, N'Three-level approval for all standard leave types.',            1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+    (2,   1,  N'WF_LEAVE_EMRGENCY_V1',      N'Emergency Leave Fast-Track Approval',       1, N'Single-step fast-track approval for emergency leave requests.', 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+    (8,   1,  N'WF_TRAINING_LEAVE_V1',      N'Training & Conference Leave Approval',      1, N'Three-level approval for training programs.',                   1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+
+    -- Attendance Regularization (Module 2)
+    (3,   2,  N'WF_ATTENDANCE_REG_STD_V1',  N'Attendance Regularization Approval',        1, N'Two-level approval for attendance correction requests.',        1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+
+    -- Shift Swap (Module 3)
+    (4,   3,  N'WF_SHIFT_SWAP_REQUEST_V1',  N'Shift Swap Approval',                       1, N'Two-level approval for shift swap requests.',                   1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+
+    -- Comp-Off Redemption (Module 5)
+    (6,   5,  N'WF_COMP_OFF_REQUEST_V1',    N'Comp-Off Redemption Approval',              1, N'Single-step approval by Reporting Manager.',                    1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+
+    -- Document Verification (Module 8)
+    (9,   8,  N'WF_DOCUMENT_VERIFY_V1',     N'Employee Document Verification',            1, N'Single-step HR Manager verification workflow.',                 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+
+    -- Payroll Correction (Module 9)
+    (10,  9,  N'WF_PAYROLL_CORRECTION_V1',  N'Payroll Attendance Correction Approval',    1, N'Two-level approval for payroll attendance corrections.',        1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1, CAST(N'2026-05-21T10:42:36.7766667' AS DateTime2), 1),
+
+    -- Address Verification (Module 102)
+    (103, 102, N'WF_ADDRESS_VERIFICATION_V1', N'Employee Address Approval',               1, N'Single-step HR Manager verification workflow.',                 1, CAST(N'2026-05-27T17:17:17.1333333' AS DateTime2), 1, CAST(N'2026-05-27T17:17:17.1333333' AS DateTime2), 1);
+
+SET IDENTITY_INSERT [workflow].[WorkflowDefinition] OFF;
+GO
+
+
+-- ============================================================
+-- 3. WORKFLOW STEPS
+--    Ordered steps within each definition.
+--    IsFinalStep = 1 marks the last approver in the chain.
+--    EscalationAfterHours = auto-escalate SLA per step.
+-- ============================================================
+
+SET IDENTITY_INSERT [workflow].[WorkflowStep] ON;
+GO
+
+INSERT [workflow].[WorkflowStep]
+    ([Id], [WorkflowDefinitionId], [StepNo], [StepName], [WorkflowStepType], [IsFinalStep], [AllowDelegation], [EscalationAfterHours], [IsActive], [CreatedAt], [CreatedBy], [LastUpdatedAt], [LastUpdatedBy])
+VALUES
+    -- ── WF_LEAVE_STD_V1 (Id: 1) — 3 steps ──────────────────────────
+    (1,  1,  1, N'Reporting Manager Approval',         N'APPROVAL', 0, 1, 24, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (2,  1,  2, N'Department Head Approval',           N'APPROVAL', 0, 1, 48, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (3,  1,  3, N'HR Manager Final Approval',          N'APPROVAL', 1, 0, 72, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_LEAVE_EMRGENCY_V1 (Id: 2) — 1 step (fast-track) ─────────
+    (4,  2,  1, N'Reporting Manager Emergency Approval', N'APPROVAL', 1, 1,  2, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_ATTENDANCE_REG_STD_V1 (Id: 3) — 2 steps ─────────────────
+    (5,  3,  1, N'Reporting Manager Review',           N'REVIEW',   0, 1, 24, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (6,  3,  2, N'HR Manager Approval',                N'APPROVAL', 1, 0, 48, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_SHIFT_SWAP_REQUEST_V1 (Id: 4) — 2 steps ──────────────────
+    (7,  4,  1, N'Ward In-Charge Approval',            N'APPROVAL', 0, 1, 12, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (8,  4,  2, N'Scheduling Coordinator Approval',   N'APPROVAL', 1, 0, 24, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_COMP_OFF_REQUEST_V1 (Id: 6) — 1 step ─────────────────────
+    (11, 6,  1, N'Reporting Manager Approval',         N'APPROVAL', 1, 1, 24, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_TRAINING_LEAVE_V1 (Id: 8) — 3 steps ──────────────────────
+    (14, 8,  1, N'Department Head Approval',           N'APPROVAL', 0, 1, 48, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (15, 8,  2, N'HR Manager Review',                  N'REVIEW',   0, 1, 48, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (16, 8,  3, N'Finance Manager Cost Approval',      N'APPROVAL', 1, 0, 72, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_DOCUMENT_VERIFY_V1 (Id: 9) — 1 step ──────────────────────
+    (17, 9,  1, N'HR Manager Document Verification',  N'APPROVAL', 1, 0, 72, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_PAYROLL_CORRECTION_V1 (Id: 10) — 2 steps ─────────────────
+    (18, 10, 1, N'HR Manager Review',                  N'REVIEW',   0, 0, 24, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+    (19, 10, 2, N'Finance Manager Authorization',      N'APPROVAL', 1, 0, 48, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL),
+
+    -- ── WF_ADDRESS_VERIFICATION_V1 (Id: 103) — 1 step ───────────────
+    (104, 103, 1, N'HR Manager Review',                N'APPROVAL', 1, 1, 48, 1, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8000000' AS DateTime2), NULL);
+
+SET IDENTITY_INSERT [workflow].[WorkflowStep] OFF;
+GO
+
 
 -- ============================================================
 -- SECTION 4: WORKFLOW STEP APPROVERS
@@ -171,112 +192,49 @@ GO
 --     No designation map needed - resolves to exact employee.
 -- ============================================================
 
-INSERT INTO workflow.WorkflowStepApprover
-    (WorkflowStepId, WorkflowApproverType, ScopeTypeId, ScopeReferenceId, PriorityOrder, IsMandatory)
-SELECT
-    -- Resolve WorkflowStepId from workflow code + step number
-    (
-        SELECT ws.Id
-        FROM   workflow.WorkflowStep       ws
-        JOIN   workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
-        WHERE  wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
-    ),
-    v.ApproverType,
-    -- ScopeTypeId: resolve from ScopeCode, NULL for context-resolved types
-    CASE
-        WHEN v.ScopeCode IS NULL THEN NULL
-        ELSE (SELECT Id FROM time.ScopeType WHERE ScopeCode = v.ScopeCode)
-    END,
-    -- ScopeReferenceId: resolve based on scope level
-    CASE
-        WHEN v.ScopeCode IS NULL                THEN NULL   -- REPORTING_MANAGER / SKIP_MANAGER
-        WHEN v.ScopeCode = 'DEPARTMENT'
-         AND v.ScopeRefCode IS NULL             THEN NULL   -- Contextual dept (initiator's own)
-        WHEN v.ScopeCode = 'DEPARTMENT'
-         AND v.ScopeRefCode IS NOT NULL
-             THEN (SELECT Id FROM time.Department WHERE DepartmentCode = v.ScopeRefCode)
-        WHEN v.ScopeCode = 'EMPLOYEE'
-             THEN (SELECT Id FROM employee.Employee WHERE EmployeeCode = v.ScopeRefCode)
-        ELSE NULL
-    END,
-    v.PriorityOrder,
-    v.IsMandatory
-
-FROM (VALUES
-
---  WorkflowCode            StepNo  ApproverType            ScopeCode       ScopeRefCode    Pri  Mandatory
---  
---  WF-LEAVE-STD-V1
---  Step 1: Reporting Manager - always contextual, no scope
-    ('WF-LEAVE-STD-V1',     1,  'REPORTING_MANAGER',    NULL,           NULL,           1,   1),
---  Step 2: Department Head - DESIGNATION in initiator's own department (contextual)
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',          'DEPARTMENT',   NULL,           1,   1),
---  Step 3: HR Manager - DESIGNATION fixed to HR department
-    ('WF-LEAVE-STD-V1',     3,  'DESIGNATION',          'DEPARTMENT',   'HR',           1,   1),
-
---  WF-LEAVE-EMRG-V1
---  Step 1: Reporting Manager - contextual fast-track
-    ('WF-LEAVE-EMRG-V1',    1,  'REPORTING_MANAGER',    NULL,           NULL,           1,   1),
-
---  WF-ATTREG-STD-V1
---  Step 1: Reporting Manager - contextual
-    ('WF-ATTREG-STD-V1',    1,  'REPORTING_MANAGER',    NULL,           NULL,           1,   1),
---  Step 2: HR Manager - fixed to HR department
-    ('WF-ATTREG-STD-V1',    2,  'DESIGNATION',          'DEPARTMENT',   'HR',           1,   1),
-
---  WF-SHIFTSWAP-V1
---  Step 1: Ward In-Charge - DESIGNATION in initiator's own department (contextual)
---          Qualifying designation: SRNURSE (Senior Staff Nurse acts as Ward In-Charge)
-    ('WF-SHIFTSWAP-V1',     1,  'DESIGNATION',          'DEPARTMENT',   NULL,           1,   1),
---  Step 2: Scheduling Coordinator - DESIGNATION fixed to OPERATIONS department
-    ('WF-SHIFTSWAP-V1',     2,  'DESIGNATION',          'DEPARTMENT',   'OPERATIONS',   1,   1),
-
---  WF-OT-V1
---  Step 1: Shift Supervisor - DESIGNATION in initiator's own department (contextual)
---          Qualifying designation: SRNURSE or equivalent senior in dept
-    ('WF-OT-V1',            1,  'DESIGNATION',          'DEPARTMENT',   NULL,           1,   1),
---  Step 2: Department Head - DESIGNATION in initiator's own department (contextual)
-    ('WF-OT-V1',            2,  'DESIGNATION',          'DEPARTMENT',   NULL,           1,   1),
-
---  WF-COMPOFF-V1
---  Step 1: Reporting Manager - contextual
-    ('WF-COMPOFF-V1',       1,  'REPORTING_MANAGER',    NULL,           NULL,           1,   1),
-
---  WF-ONCALL-V1
---  Step 1: Department Head - DESIGNATION in initiator's own department (contextual)
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',          'DEPARTMENT',   NULL,           1,   1),
---  Step 2: Chief Medical Officer - fixed EMPLOYEE (always the same person)
-    ('WF-ONCALL-V1',        2,  'EMPLOYEE',             'EMPLOYEE',     'EMP-CMO-001',  1,   1),
-
---  WF-TRAINLEAVE-V1
---  Step 1: Department Head - DESIGNATION in initiator's own department (contextual)
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',          'DEPARTMENT',   NULL,           1,   1),
---  Step 2: HR Manager - fixed to HR department
-    ('WF-TRAINLEAVE-V1',    2,  'DESIGNATION',          'DEPARTMENT',   'HR',           1,   1),
---  Step 3: Finance Manager - fixed to FINANCE department
-    ('WF-TRAINLEAVE-V1',    3,  'DESIGNATION',          'DEPARTMENT',   'FINANCE',      1,   1),
-
---  WF-DOCVERIFY-V1
---  Step 1: HR Manager - fixed to HR department
-    ('WF-DOCVERIFY-V1',     1,  'DESIGNATION',          'DEPARTMENT',   'HR',           1,   1),
-
---  WF-PAYROLLCORR-V1
---  Step 1: HR Manager - fixed to HR department
-    ('WF-PAYROLLCORR-V1',   1,  'DESIGNATION',          'DEPARTMENT',   'HR',           1,   1),
---  Step 2: Finance Manager - fixed to FINANCE department
-    ('WF-PAYROLLCORR-V1',   2,  'DESIGNATION',          'DEPARTMENT',   'FINANCE',      1,   1)
-
-) AS v(WorkflowCode, StepNo, ApproverType, ScopeCode, ScopeRefCode, PriorityOrder, IsMandatory)
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM   workflow.WorkflowStepApprover    wsa
-    JOIN   workflow.WorkflowStep            ws  ON ws.Id  = wsa.WorkflowStepId
-    JOIN   workflow.WorkflowDefinition      wd  ON wd.Id  = ws.WorkflowDefinitionId
-    WHERE  wd.WorkflowCode          = v.WorkflowCode
-      AND  ws.StepNo                = v.StepNo
-      AND  wsa.WorkflowApproverType = v.ApproverType
-);
+SET IDENTITY_INSERT [workflow].[WorkflowStepApprover] ON;
 GO
+
+INSERT [workflow].[WorkflowStepApprover]
+    ([Id], [WorkflowStepId], [WorkflowApproverType], [ScopeTypeId], [ScopeReferenceId], [PriorityOrder], [IsMandatory], [IsActive], [CreatedAt], [CreatedBy], [LastUpdatedAt], [LastUpdatedBy])
+VALUES
+    -- WF_LEAVE_STD_V1
+    (1,  1,  N'REPORTING_MANAGER', NULL, NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: Reporting Manager
+    (2,  2,  N'DESIGNATION',       5,    NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 2: HOD (multi-designation, see Section 5)
+    (3,  3,  N'DESIGNATION',       5,    7,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 3: HR Manager (DesignationId 7)
+
+    -- WF_LEAVE_EMRGENCY_V1
+    (4,  4,  N'REPORTING_MANAGER', NULL, NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: Reporting Manager
+
+    -- WF_ATTENDANCE_REG_STD_V1
+    (5,  5,  N'REPORTING_MANAGER', NULL, NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: Reporting Manager
+    (6,  6,  N'DESIGNATION',       5,    7,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 2: HR Manager (DesignationId 7)
+
+    -- WF_SHIFT_SWAP_REQUEST_V1
+    (7,  7,  N'DESIGNATION',       5,    NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: Ward In-Charge
+    (8,  8,  N'DESIGNATION',       5,    10,   1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 2: Scheduling Coordinator (DesignationId 10)
+
+    -- WF_COMP_OFF_REQUEST_V1
+    (11, 11, N'REPORTING_MANAGER', NULL, NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: Reporting Manager
+
+    -- WF_TRAINING_LEAVE_V1
+    (14, 14, N'DESIGNATION',       5,    NULL, 1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: HOD (multi-designation, see Section 5)
+    (15, 15, N'DESIGNATION',       5,    7,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 2: HR Manager (DesignationId 7)
+    (16, 16, N'DESIGNATION',       5,    9,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 3: Finance Manager (DesignationId 9)
+
+    -- WF_DOCUMENT_VERIFY_V1
+    (17, 17, N'DESIGNATION',       5,    7,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: HR Manager (DesignationId 7)
+
+    -- WF_PAYROLL_CORRECTION_V1
+    (18, 18, N'DESIGNATION',       5,    7,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 1: HR Manager (DesignationId 7)
+    (19, 19, N'DESIGNATION',       5,    9,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL),  -- Step 2: Finance Manager (DesignationId 9)
+
+    -- WF_ADDRESS_VERIFICATION_V1
+    (102, 104, N'DESIGNATION',     5,    7,    1, 1, 1, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8366667' AS DateTime2), NULL);  -- Step 1: HR Manager (DesignationId 7)
+
+SET IDENTITY_INSERT [workflow].[WorkflowStepApprover] OFF;
+GO
+
 
 -- ============================================================
 -- SECTION 4b: WORKFLOW STEP APPROVER DESIGNATION MAP  - NEW
@@ -294,129 +252,73 @@ GO
 --   Shift Supervisor (OT S1) - SRNURSE, SRSURGEON, SRPHARM (senior per dept)
 -- ============================================================
 
-INSERT INTO workflow.WorkflowStepApproverDesignation (WorkflowStepApproverId, DesignationId)
-SELECT
-    -- Resolve WorkflowStepApproverId
-    (
-        SELECT wsa.Id
-        FROM   workflow.WorkflowStepApprover    wsa
-        JOIN   workflow.WorkflowStep            ws  ON ws.Id  = wsa.WorkflowStepId
-        JOIN   workflow.WorkflowDefinition      wd  ON wd.Id  = ws.WorkflowDefinitionId
-        WHERE  wd.WorkflowCode          = v.WorkflowCode
-          AND  ws.StepNo                = v.StepNo
-          AND  wsa.WorkflowApproverType = v.ApproverType
-    ),
-    (SELECT Id FROM time.Designation WHERE DesignationCode = v.DesignationCode)
-
-FROM (VALUES
-
---  WorkflowCode            StepNo  ApproverType    DesignationCode     Notes
---  
---  WF-LEAVE-STD-V1 Step 2: Dept Head - all dept-head-level designations
---  Engine picks whichever one is active in the initiator's resolved department
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'CONSULTANT'),      -- Clinical Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'CHFNURSE'),        -- Nursing Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'CHIEFPHARM'),      -- Pharmacy Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'RADIOLOGIST'),     -- Diagnostics/Radiology Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'PATHOLOGIST'),     -- Pathology Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'HOPADMIN'),        -- Admin Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'HRMANAGER'),       -- HR Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'ITMANAGER'),       -- IT Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'FINMANAGER'),      -- Finance Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'OPSMGR'),          -- Operations Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'EMERPHYSICIAN'),   -- Emergency Dept Head
-    ('WF-LEAVE-STD-V1',     2,  'DESIGNATION',  'SRSURGEON'),       -- Surgery Dept Head
-
---  WF-LEAVE-STD-V1 Step 3: HR Manager - only HRMANAGER designation, always HR dept
-    ('WF-LEAVE-STD-V1',     3,  'DESIGNATION',  'HRMANAGER'),
-
---  WF-ATTREG-STD-V1 Step 2: HR Manager - only HRMANAGER designation, always HR dept
-    ('WF-ATTREG-STD-V1',    2,  'DESIGNATION',  'HRMANAGER'),
-
---  WF-SHIFTSWAP-V1 Step 1: Ward In-Charge - SRNURSE acts as in-charge for shift swaps
-    ('WF-SHIFTSWAP-V1',     1,  'DESIGNATION',  'SRNURSE'),
-
---  WF-SHIFTSWAP-V1 Step 2: Scheduling Coordinator - Operations Manager handles scheduling
-    ('WF-SHIFTSWAP-V1',     2,  'DESIGNATION',  'OPSMGR'),
-
---  WF-OT-V1 Step 1: Shift Supervisor - senior-level person in submitter's department
-    ('WF-OT-V1',            1,  'DESIGNATION',  'SRNURSE'),         -- Nursing / ICU
-    ('WF-OT-V1',            1,  'DESIGNATION',  'SRSURGEON'),       -- Surgery
-    ('WF-OT-V1',            1,  'DESIGNATION',  'SRPHARM'),         -- Pharmacy
-    ('WF-OT-V1',            1,  'DESIGNATION',  'RESIDENTDR'),      -- Clinical departments
-    ('WF-OT-V1',            1,  'DESIGNATION',  'EMERPHYSICIAN'),   -- Emergency
-
---  WF-OT-V1 Step 2: Department Head - same set as leave dept head map
-    ('WF-OT-V1',            2,  'DESIGNATION',  'CONSULTANT'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'CHFNURSE'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'CHIEFPHARM'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'RADIOLOGIST'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'PATHOLOGIST'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'HOPADMIN'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'HRMANAGER'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'ITMANAGER'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'FINMANAGER'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'OPSMGR'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'EMERPHYSICIAN'),
-    ('WF-OT-V1',            2,  'DESIGNATION',  'SRSURGEON'),
-
---  WF-ONCALL-V1 Step 1: Department Head - same full set
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'CONSULTANT'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'CHFNURSE'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'CHIEFPHARM'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'RADIOLOGIST'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'PATHOLOGIST'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'HOPADMIN'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'HRMANAGER'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'ITMANAGER'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'FINMANAGER'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'OPSMGR'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'EMERPHYSICIAN'),
-    ('WF-ONCALL-V1',        1,  'DESIGNATION',  'SRSURGEON'),
-
---  WF-TRAINLEAVE-V1 Step 1: Department Head - same full set
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'CONSULTANT'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'CHFNURSE'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'CHIEFPHARM'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'RADIOLOGIST'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'PATHOLOGIST'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'HOPADMIN'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'HRMANAGER'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'ITMANAGER'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'FINMANAGER'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'OPSMGR'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'EMERPHYSICIAN'),
-    ('WF-TRAINLEAVE-V1',    1,  'DESIGNATION',  'SRSURGEON'),
-
---  WF-TRAINLEAVE-V1 Step 2: HR Manager - only HRMANAGER, fixed HR dept
-    ('WF-TRAINLEAVE-V1',    2,  'DESIGNATION',  'HRMANAGER'),
-
---  WF-TRAINLEAVE-V1 Step 3: Finance Manager - only FINMANAGER, fixed FINANCE dept
-    ('WF-TRAINLEAVE-V1',    3,  'DESIGNATION',  'FINMANAGER'),
-
---  WF-DOCVERIFY-V1 Step 1: HR Manager - only HRMANAGER, fixed HR dept
-    ('WF-DOCVERIFY-V1',     1,  'DESIGNATION',  'HRMANAGER'),
-
---  WF-PAYROLLCORR-V1 Step 1: HR Manager - only HRMANAGER, fixed HR dept
-    ('WF-PAYROLLCORR-V1',   1,  'DESIGNATION',  'HRMANAGER'),
-
---  WF-PAYROLLCORR-V1 Step 2: Finance Manager - only FINMANAGER, fixed FINANCE dept
-    ('WF-PAYROLLCORR-V1',   2,  'DESIGNATION',  'FINMANAGER')
-
-) AS v(WorkflowCode, StepNo, ApproverType, DesignationCode)
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM   workflow.WorkflowStepApproverDesignation wsad
-    JOIN   workflow.WorkflowStepApprover            wsa ON wsa.Id = wsad.WorkflowStepApproverId
-    JOIN   workflow.WorkflowStep                    ws  ON ws.Id  = wsa.WorkflowStepId
-    JOIN   workflow.WorkflowDefinition              wd  ON wd.Id  = ws.WorkflowDefinitionId
-    JOIN   time.Designation                         d   ON d.Id   = wsad.DesignationId
-    WHERE  wd.WorkflowCode          = v.WorkflowCode
-      AND  ws.StepNo                = v.StepNo
-      AND  wsa.WorkflowApproverType = v.ApproverType
-      AND  d.DesignationCode        = v.DesignationCode
-);
+SET IDENTITY_INSERT [workflow].[WorkflowStepApproverDesignation] ON;
 GO
+
+INSERT [workflow].[WorkflowStepApproverDesignation]
+    ([Id], [WorkflowStepApproverId], [DesignationId], [IsActive], [CreatedAt], [CreatedBy], [LastUpdatedAt], [LastUpdatedBy])
+VALUES
+    -- Approver 2 — HOD on WF_LEAVE_STD_V1 Step 2 (all department head designations)
+    (1,  2,  4,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (2,  2,  7,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (3,  2,  11, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (4,  2,  14, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (5,  2,  16, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (6,  2,  18, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (7,  2,  21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (8,  2,  24, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (9,  2,  27, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (10, 2,  29, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (11, 2,  31, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (12, 2,  3,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 3  — HR Manager on WF_LEAVE_STD_V1 Step 3
+    (13, 3,  21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 6  — HR Manager on WF_ATTENDANCE_REG_STD_V1 Step 2
+    (14, 6,  21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 7  — Ward In-Charge on WF_SHIFT_SWAP_REQUEST_V1 Step 1
+    (15, 7,  8,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 8  — Scheduling Coordinator on WF_SHIFT_SWAP_REQUEST_V1 Step 2
+    (16, 8,  29, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 14 — HOD on WF_TRAINING_LEAVE_V1 Step 1 (mirrors Approver 2 designation set)
+    (46, 14, 4,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (47, 14, 7,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (48, 14, 11, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (49, 14, 14, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (50, 14, 16, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (51, 14, 18, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (52, 14, 21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (53, 14, 24, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (54, 14, 27, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (55, 14, 29, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (56, 14, 31, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+    (57, 14, 3,  1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 15 — HR Manager on WF_TRAINING_LEAVE_V1 Step 2
+    (58, 15, 21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 16 — Finance Manager on WF_TRAINING_LEAVE_V1 Step 3
+    (59, 16, 27, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 17 — HR Manager on WF_DOCUMENT_VERIFY_V1 Step 1
+    (60, 17, 21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 18 — HR Manager on WF_PAYROLL_CORRECTION_V1 Step 1
+    (61, 18, 21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 19 — Finance Manager on WF_PAYROLL_CORRECTION_V1 Step 2
+    (62, 19, 27, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL),
+
+    -- Approver 102 — HR Manager on WF_ADDRESS_VERIFICATION_V1 Step 1
+    (102, 102, 21, 1, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.8866667' AS DateTime2), NULL);
+
+SET IDENTITY_INSERT [workflow].[WorkflowStepApproverDesignation] OFF;
+GO
+
 
 -- ============================================================
 -- SECTION 5: WORKFLOW ASSIGNMENTS
@@ -430,151 +332,63 @@ GO
 --   DEPARTMENT   - resolved from time.Department.DepartmentCode
 -- ============================================================
 
-INSERT INTO workflow.WorkflowAssignment
-    (WorkflowDefinitionId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, EffectiveTo, PriorityOrder)
-SELECT
-    (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
-    (SELECT Id FROM time.ScopeType WHERE ScopeCode = v.ScopeCode),
-    CASE v.ScopeCode
-        WHEN 'GLOBAL'           THEN 1
-        WHEN 'LEGAL_ENTITY'     THEN 1
-        WHEN 'OFFICE'           THEN (SELECT Id FROM time.OfficeLocation WHERE LocationCode   = v.ScopeRefCode)
-        WHEN 'DEPARTMENT'       THEN (SELECT Id FROM time.Department     WHERE DepartmentCode = v.ScopeRefCode)
-    END,
-    v.EffectiveFrom,
-    v.EffectiveTo,
-    v.PriorityOrder
-
-FROM (VALUES
-
---  WorkflowCode            ScopeCode       ScopeRefCode    EffectiveFrom   EffectiveTo  Pri
---  Notes
---------------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------------
---  Standard Leave: applies globally to all employees
-    ('WF-LEAVE-STD-V1',     'GLOBAL',       NULL,           '2024-01-01',   NULL,        10),
---  Emergency Leave: applies globally, higher priority than standard (lower number = higher priority)
-    ('WF-LEAVE-EMRG-V1',    'GLOBAL',       NULL,           '2024-01-01',   NULL,         5),
---  Attendance Regularization: global
-    ('WF-ATTREG-STD-V1',    'GLOBAL',       NULL,           '2024-01-01',   NULL,        10),
---  Shift Swap: assigned per office location (Hyderabad and Chennai have separate ops)
-    ('WF-SHIFTSWAP-V1',     'OFFICE',       'LOC-HYD-01',   '2024-01-01',   NULL,        10),
-    ('WF-SHIFTSWAP-V1',     'OFFICE',       'LOC-CHN-01',   '2024-01-01',   NULL,        10),
---  Overtime: scoped to departments with shift-based work only
-    ('WF-OT-V1',            'DEPARTMENT',   'ICU',          '2024-01-01',   NULL,        10),
-    ('WF-OT-V1',            'DEPARTMENT',   'EMERGENCY',    '2024-01-01',   NULL,        10),
-    ('WF-OT-V1',            'DEPARTMENT',   'SURGERY',      '2024-01-01',   NULL,        10),
---  Comp-Off: global
-    ('WF-COMPOFF-V1',       'GLOBAL',       NULL,           '2024-01-01',   NULL,        10),
---  On-Call: only departments that require on-call coverage
-    ('WF-ONCALL-V1',        'DEPARTMENT',   'ICU',          '2024-01-01',   NULL,        10),
-    ('WF-ONCALL-V1',        'DEPARTMENT',   'EMERGENCY',    '2024-01-01',   NULL,        10),
-    ('WF-ONCALL-V1',        'DEPARTMENT',   'SURGERY',      '2024-01-01',   NULL,        10),
-    ('WF-ONCALL-V1',        'DEPARTMENT',   'RADIOLOGY',    '2024-01-01',   NULL,        10),
---  Training Leave: global
-    ('WF-TRAINLEAVE-V1',    'GLOBAL',       NULL,           '2024-01-01',   NULL,        10),
---  Document Verification: global
-    ('WF-DOCVERIFY-V1',     'GLOBAL',       NULL,           '2024-01-01',   NULL,        10),
---  Payroll Correction: legal entity level (controlled centrally by Finance)
-    ('WF-PAYROLLCORR-V1',   'LEGAL_ENTITY', NULL,           '2024-01-01',   NULL,        10)
-
-) AS v(WorkflowCode, ScopeCode, ScopeRefCode, EffectiveFrom, EffectiveTo, PriorityOrder)
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM   workflow.WorkflowAssignment  wa
-    JOIN   workflow.WorkflowDefinition  wd  ON wd.Id = wa.WorkflowDefinitionId
-    JOIN   time.ScopeType               st  ON st.Id = wa.ScopeTypeId
-    WHERE  wd.WorkflowCode  = v.WorkflowCode
-      AND  st.ScopeCode     = v.ScopeCode
-      AND  wa.ScopeReferenceId = CASE v.ScopeCode
-               WHEN 'GLOBAL'       THEN 1
-               WHEN 'LEGAL_ENTITY' THEN 1
-               WHEN 'OFFICE'       THEN (SELECT Id FROM time.OfficeLocation WHERE LocationCode   = v.ScopeRefCode)
-               WHEN 'DEPARTMENT'   THEN (SELECT Id FROM time.Department     WHERE DepartmentCode = v.ScopeRefCode)
-           END
-);
+SET IDENTITY_INSERT [workflow].[WorkflowAssignment] ON;
 GO
 
--- ============================================================
--- SECTION 6: WORKFLOW INSTANCES
--- One row per submitted transaction.
--- CurrentWorkflowStepId = NULL for terminal-status instances.
--- ============================================================
+INSERT [workflow].[WorkflowAssignment]
+    ([Id], [WorkflowDefinitionId], [ScopeTypeId], [ScopeReferenceId], [EffectiveFrom], [EffectiveTo], [PriorityOrder], [IsActive], [CreatedAt], [CreatedBy], [LastUpdatedAt], [LastUpdatedBy])
+VALUES
+    -- Global assignments (ScopeTypeId 1, ScopeReferenceId 1)
+    (1,   1,   1, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_LEAVE_STD_V1
+    (2,   2,   1, 1, CAST(N'2024-01-01' AS Date), NULL,  5, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_LEAVE_EMRGENCY_V1       (priority 5 = higher precedence)
+    (3,   3,   1, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_ATTENDANCE_REG_STD_V1
+    (9,   6,   1, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_COMP_OFF_REQUEST_V1
+    (14,  8,   1, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_TRAINING_LEAVE_V1
+    (15,  9,   1, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_DOCUMENT_VERIFY_V1
+    (102, 103, 1, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_ADDRESS_VERIFICATION_V1
 
-INSERT INTO workflow.WorkflowInstance
-    (WorkflowDefinitionId, WorkflowModuleId, ReferenceTransactionId,
-     CurrentWorkflowStepId, WorkflowStatus, CreatedBy, CreatedAt, CompletedAt)
-SELECT
-    (SELECT Id FROM workflow.WorkflowDefinition WHERE WorkflowCode = v.WorkflowCode),
-    (SELECT Id FROM workflow.WorkflowModule     WHERE ModuleCode   = v.ModuleCode),
-    v.ReferenceTransactionId,
-    CASE
-        WHEN v.CurrentStepNo IS NULL THEN NULL
-        ELSE (
-            SELECT ws.Id
-            FROM   workflow.WorkflowStep       ws
-            JOIN   workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
-            WHERE  wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.CurrentStepNo
-        )
-    END,
-    v.StatusCode,
-    v.InitiatedBy,
-    v.InitiatedAt,
-    v.CompletedAt
+    -- Department-scoped assignments (ScopeTypeId 4)
+    (4,   4,   4, 6, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_SHIFT_SWAP_REQUEST_V1 → Dept 6
+    (5,   4,   4, 5, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL),  -- WF_SHIFT_SWAP_REQUEST_V1 → Dept 5
 
-FROM (VALUES
+    -- Legal Entity-scoped assignment (ScopeTypeId 3)
+    (16,  10,  3, 1, CAST(N'2024-01-01' AS Date), NULL, 10, 1, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL, CAST(N'2026-05-21T10:42:36.9100000' AS DateTime2), NULL);  -- WF_PAYROLL_CORRECTION_V1
 
---  WorkflowCode            ModuleCode          RefTxId  CurrStep  Status          InitBy  InitiatedAt                     CompletedAt
---  Description
----------------------------------------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------------------------------------
-    ('WF-LEAVE-STD-V1',    'LEAVE',              101,     2,        'IN_PROGRESS',  5,  '2025-04-28 09:15:00', NULL),
---  Inst 1:  Staff Nurse Casual Leave - awaiting Dept Head (Step 2)
-
-    ('WF-LEAVE-EMRG-V1',   'LEAVE',              102,     NULL,     'APPROVED',     8,  '2025-04-29 06:45:00', '2025-04-29 08:10:00'),
---  Inst 2:  ICU Resident Emergency Leave - single-step, fully approved
-
-    ('WF-ATTREG-STD-V1',   'ATTENDANCE_REG',     201,     1,        'PENDING',      12, '2025-04-30 10:00:00', NULL),
---  Inst 3:  Radiology Technician missed punch regularization - awaiting RM (Step 1)
-
-    ('WF-SHIFTSWAP-V1',    'SHIFT_SWAP',         301,     2,        'IN_PROGRESS',  9,  '2025-04-27 14:30:00', NULL),
---  Inst 4:  Pharmacy shift swap - Step 1 done, awaiting Scheduling Coordinator (Step 2)
-
-    ('WF-OT-V1',           'OVERTIME',           401,     NULL,     'APPROVED',     6,  '2025-04-26 22:00:00', '2025-04-27 09:00:00'),
---  Inst 5:  Emergency Dept nurse overtime - both steps approved
-
-    ('WF-COMPOFF-V1',      'COMPOFF',            501,     1,        'PENDING',      14, '2025-05-01 08:00:00', NULL),
---  Inst 6:  Lab Technician comp-off redemption - awaiting RM (Step 1)
-
-    ('WF-ONCALL-V1',       'ONCALL',             601,     2,        'IN_PROGRESS',  7,  '2025-04-25 11:00:00', NULL),
---  Inst 7:  Surgery specialist on-call - Dept Head done, awaiting CMO (Step 2)
-
-    ('WF-TRAINLEAVE-V1',   'TRAINING_LEAVE',     701,     NULL,     'REJECTED',     10, '2025-04-20 09:00:00', '2025-04-23 16:45:00'),
---  Inst 8:  CME Conference leave - rejected by Finance at Step 3
-
-    ('WF-DOCVERIFY-V1',    'DOC_VERIFICATION',   801,     NULL,     'APPROVED',     3,  '2025-04-15 10:30:00', '2025-04-16 14:00:00'),
---  Inst 9:  Nursing License renewal - HR verified and approved
-
-    ('WF-PAYROLLCORR-V1',  'PAYROLL_CORRECTION', 901,     2,        'IN_PROGRESS',  1,  '2025-05-02 09:00:00', NULL),
---  Inst 10: April payroll correction - HR reviewed, awaiting Finance (Step 2)
-
-    ('WF-LEAVE-STD-V1',    'LEAVE',              103,     NULL,     'APPROVED',     16, '2025-04-10 08:00:00', '2025-04-14 17:00:00'),
---  Inst 11: Admin Officer Earned Leave - all 3 steps approved
-
-    ('WF-SHIFTSWAP-V1',    'SHIFT_SWAP',         302,     NULL,     'CANCELLED',    11, '2025-04-22 13:00:00', '2025-04-22 15:30:00'),
---  Inst 12: Shift swap cancelled by requester before Step 1 approval
-
-    ('WF-OT-V1',           'OVERTIME',           402,     2,        'IN_PROGRESS',  4,  '2025-04-30 23:00:00', NULL),
---  Inst 13: ICU Senior Nurse OT - Supervisor reviewed, awaiting Dept Head (Step 2)
-
-    ('WF-ATTREG-STD-V1',   'ATTENDANCE_REG',     202,     NULL,     'REJECTED',     17, '2025-04-18 09:00:00', '2025-04-19 11:00:00'),
---  Inst 14: Attendance regularization - returned for clarification then rejected
-
-    ('WF-ONCALL-V1',       'ONCALL',             602,     NULL,     'APPROVED',     13, '2025-04-12 10:00:00', '2025-04-13 09:30:00')
---  Inst 15: Radiology on-call duty - both steps approved
-
-) AS v(WorkflowCode, ModuleCode, ReferenceTransactionId, CurrentStepNo, StatusCode, InitiatedBy, InitiatedAt, CompletedAt);
+SET IDENTITY_INSERT [workflow].[WorkflowAssignment] OFF;
 GO
+
+
+-- ============================================================
+-- 7. WORKFLOW INSTANCES
+--    Runtime records — one per submitted transaction.
+--    WorkflowStatus: PENDING | IN_PROGRESS | APPROVED | REJECTED | CANCELLED
+-- ============================================================
+
+SET IDENTITY_INSERT [workflow].[WorkflowInstance] ON;
+GO
+
+INSERT [workflow].[WorkflowInstance]
+    ([Id], [WorkflowDefinitionId], [WorkflowModuleId], [ReferenceTransactionId], [CurrentWorkflowStepId], [WorkflowStatus], [CreatedBy], [CreatedAt], [CompletedAt], [CompletedBy])
+VALUES
+    -- Active / in-progress instances
+    (1,  1,  1, 101, 2,    N'IN_PROGRESS', 5,  CAST(N'2025-04-28T09:15:00.0000000' AS DateTime2), NULL,                                         NULL),  -- Leave: at HOD step
+    (3,  3,  2, 201, 5,    N'PENDING',     12, CAST(N'2025-04-30T10:00:00.0000000' AS DateTime2), NULL,                                         NULL),  -- Attendance Reg: awaiting manager
+    (4,  4,  3, 301, 8,    N'IN_PROGRESS', 9,  CAST(N'2025-04-27T14:30:00.0000000' AS DateTime2), NULL,                                         NULL),  -- Shift Swap: at coordinator step
+    (6,  6,  5, 501, 11,   N'PENDING',     14, CAST(N'2025-05-01T08:00:00.0000000' AS DateTime2), NULL,                                         NULL),  -- Comp-Off: awaiting manager
+    (10, 10, 9, 901, 19,   N'IN_PROGRESS', 1,  CAST(N'2025-05-02T09:00:00.0000000' AS DateTime2), NULL,                                         NULL),  -- Payroll Correction: at finance step
+
+    -- Completed instances
+    (2,  2,  1, 102, NULL, N'APPROVED',    8,  CAST(N'2025-04-29T06:45:00.0000000' AS DateTime2), CAST(N'2025-04-29T08:10:00.0000000' AS DateTime2), NULL),  -- Emergency Leave: fast-track approved
+    (9,  9,  8, 801, NULL, N'APPROVED',    3,  CAST(N'2025-04-15T10:30:00.0000000' AS DateTime2), CAST(N'2025-04-16T14:00:00.0000000' AS DateTime2), NULL),  -- Document Verification: approved
+    (11, 1,  1, 103, NULL, N'APPROVED',    16, CAST(N'2025-04-10T08:00:00.0000000' AS DateTime2), CAST(N'2025-04-14T17:00:00.0000000' AS DateTime2), NULL),  -- Leave (full 3-step): approved
+
+    -- Terminated instances
+    (12, 4,  3, 302, NULL, N'CANCELLED',   11, CAST(N'2025-04-22T13:00:00.0000000' AS DateTime2), CAST(N'2025-04-22T15:30:00.0000000' AS DateTime2), NULL),  -- Shift Swap: cancelled by requester
+    (14, 3,  2, 202, NULL, N'REJECTED',    17, CAST(N'2025-04-18T09:00:00.0000000' AS DateTime2), CAST(N'2025-04-19T11:00:00.0000000' AS DateTime2), NULL);  -- Attendance Reg: rejected (no proof)
+
+SET IDENTITY_INSERT [workflow].[WorkflowInstance] OFF;
+GO
+
 
 -- ============================================================
 -- SECTION 7: WORKFLOW ACTION HISTORY
@@ -591,119 +405,109 @@ GO
 --      (seeded in WORKFLOW_ACTION_TYPE above).
 -- ============================================================
 
-INSERT INTO workflow.WorkflowActionHistory
-    (WorkflowInstanceId, WorkflowTaskId, WorkflowStepId, WorkflowActionType,
-     ActionBy, ActionAt, Remarks, FromWorkflowStatus, ToWorkflowStatus)
-SELECT
-    -- Resolve WorkflowInstanceId
-    (
-        SELECT wi.Id
-        FROM   workflow.WorkflowInstance   wi
-        JOIN   workflow.WorkflowDefinition wd ON wd.Id = wi.WorkflowDefinitionId
-        JOIN   workflow.WorkflowModule     wm ON wm.Id = wi.WorkflowModuleId
-        WHERE  wd.WorkflowCode           = v.WorkflowCode
-          AND  wm.ModuleCode             = v.ModuleCode
-          AND  wi.ReferenceTransactionId = v.ReferenceTransactionId
-    ),
-    NULL,   -- WorkflowTaskId: tasks not seeded individually
-    -- Resolve WorkflowStepId (NULL for system-level actions like CANCEL)
-    CASE
-        WHEN v.StepNo IS NULL THEN NULL
-        ELSE (
-            SELECT ws.Id
-            FROM   workflow.WorkflowStep       ws
-            JOIN   workflow.WorkflowDefinition wd ON wd.Id = ws.WorkflowDefinitionId
-            WHERE  wd.WorkflowCode = v.WorkflowCode AND ws.StepNo = v.StepNo
-        )
-    END,
-    v.ActionCode,
-    v.ActionBy,
-    v.ActionAt,
-    v.Remarks,
-    v.FromStatusCode,
-    v.ToStatusCode
-
-FROM (VALUES
-
---  WorkflowCode            ModuleCode              RefTxId  StepNo  ActionCode                  By   ActionAt                        Remarks                                                                                         FromStatus      ToStatus
---  
-------------------------------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------------------------------
---   Instance 1: Staff Nurse Casual Leave 
-    ('WF-LEAVE-STD-V1',    'LEAVE',                 101,  1, 'SUBMIT',                      5,  '2025-04-28 09:15:00', 'Leave request submitted for 3 days Casual Leave.',                                         NULL,           'PENDING'),
-    ('WF-LEAVE-STD-V1',    'LEAVE',                 101,  1, 'APPROVE',                     2,  '2025-04-28 11:30:00', 'Approved. Ward coverage confirmed for the period.',                                         'PENDING',      'IN_PROGRESS'),
---  Currently at Step 2 - no further history yet
-
---   Instance 2: ICU Resident Emergency Leave ----------------------------------------------------------------------------------------
-    ('WF-LEAVE-EMRG-V1',   'LEAVE',                 102,  1, 'SUBMIT',                      8,  '2025-04-29 06:45:00', 'Family medical emergency. Requesting immediate leave.',                                      NULL,           'PENDING'),
-    ('WF-LEAVE-EMRG-V1',   'LEAVE',                 102,  1, 'APPROVE',                     2,  '2025-04-29 08:10:00', 'Approved on humanitarian grounds. Cover arranged.',                                          'PENDING',      'APPROVED'),
-
---   Instance 3: Radiology Technician attendance regularization -----------------------------------------------------------------------
-    ('WF-ATTREG-STD-V1',   'ATTENDANCE_REG',         201,  1, 'SUBMIT',                     12, '2025-04-30 10:00:00', 'Biometric reader malfunction on 29-Apr. Requesting correction.',                             NULL,           'PENDING'),
---  Currently at Step 1 - no further history yet
-
---   Instance 4: Pharmacy Shift Swap --------------------------------------------------------------------------------------------------
-    ('WF-SHIFTSWAP-V1',    'SHIFT_SWAP',             301,  1, 'SUBMIT',                      9,  '2025-04-27 14:30:00', 'Requesting swap with Emp #11 for 02-May morning shift.',                                    NULL,           'PENDING'),
-    ('WF-SHIFTSWAP-V1',    'SHIFT_SWAP',             301,  1, 'APPROVE',                     2,  '2025-04-27 16:00:00', 'Operationally feasible. Both employees trained for the shift.',                              'PENDING',      'IN_PROGRESS'),
---  Currently at Step 2 - no further history yet
-
---   Instance 5: Emergency Dept nurse overtime -----------------------------------------------------------------------------------------
-    ('WF-OT-V1',           'OVERTIME',               401,  1, 'SUBMIT',                      6,  '2025-04-26 22:00:00', 'Stayed 3 hours extra due to patient influx in Emergency.',                                  NULL,           'PENDING'),
-    ('WF-OT-V1',           'OVERTIME',               401,  1, 'APPROVE',                     3,  '2025-04-27 08:00:00', 'Verified against attendance log. OT of 180 minutes confirmed.',                              'PENDING',      'IN_PROGRESS'),
-    ('WF-OT-V1',           'OVERTIME',               401,  2, 'APPROVE',                     7,  '2025-04-27 09:00:00', 'Authorized. OT credit approved for April payroll.',                                          'IN_PROGRESS',  'APPROVED'),
-
---   Instance 6: Lab Technician comp-off -----------------------------------------------------------------------------------------------
-    ('WF-COMPOFF-V1',      'COMPOFF',                501,  1, 'SUBMIT',                     14, '2025-05-01 08:00:00', 'Applying comp-off earned on 27-Apr (holiday working).',                                      NULL,           'PENDING'),
---  Currently at Step 1 - no further history yet
-
---   Instance 7: Surgery on-call duty 
-    ('WF-ONCALL-V1',       'ONCALL',                 601,  1, 'SUBMIT',                      7,  '2025-04-25 11:00:00', 'On-call duty required for elective surgeries on 02-May.',                                   NULL,           'PENDING'),
-    ('WF-ONCALL-V1',       'ONCALL',                 601,  1, 'APPROVE',                     7,  '2025-04-25 13:30:00', 'Confirmed by Surgery HOD. Specialist availability verified.',                                'PENDING',      'IN_PROGRESS'),
---  Currently at Step 2 (CMO) - no further history yet
-
---   Instance 8: Training & Conference Leave - Finance rejected -------------------------------------------------------------------------
-    ('WF-TRAINLEAVE-V1',   'TRAINING_LEAVE',         701,  1, 'SUBMIT',                     10, '2025-04-20 09:00:00', 'CME conference in Mumbai. Registration fee Rs. 18,000.',                                     NULL,           'PENDING'),
-    ('WF-TRAINLEAVE-V1',   'TRAINING_LEAVE',         701,  1, 'APPROVE',                     7,  '2025-04-21 10:00:00', 'Conference is relevant. Department supports attendance.',                                    'PENDING',      'IN_PROGRESS'),
-    ('WF-TRAINLEAVE-V1',   'TRAINING_LEAVE',         701,  2, 'APPROVE',                     1,  '2025-04-22 09:30:00', 'HR approved leave days. Forwarding to Finance for cost authorization.',                      'IN_PROGRESS',  'IN_PROGRESS'),
-    ('WF-TRAINLEAVE-V1',   'TRAINING_LEAVE',         701,  3, 'REJECT',                     15, '2025-04-23 16:45:00', 'Budget exhausted for Q1 training. Cannot approve funding. Employee may attend at personal cost.', 'IN_PROGRESS', 'REJECTED'),
-
---   Instance 9: Nursing License document verification ----------------------------------------------------------------------------------
-    ('WF-DOCVERIFY-V1',    'DOC_VERIFICATION',       801,  1, 'SUBMIT',                      3,  '2025-04-15 10:30:00', 'Nursing Council License renewed. Uploading updated document.',                               NULL,           'PENDING'),
-    ('WF-DOCVERIFY-V1',    'DOC_VERIFICATION',       801,  1, 'APPROVE',                     1,  '2025-04-16 14:00:00', 'Document verified. License valid until 2027-03-31.',                                         'PENDING',      'APPROVED'),
-
---   Instance 10: Payroll attendance correction 
-    ('WF-PAYROLLCORR-V1',  'PAYROLL_CORRECTION',     901,  1, 'SUBMIT',                      1,  '2025-05-02 09:00:00', 'Correcting 2 absent days erroneously marked for Emp #12 in April. Attendance logs attached.',  NULL,           'PENDING'),
-    ('WF-PAYROLLCORR-V1',  'PAYROLL_CORRECTION',     901,  1, 'APPROVE',                     1,  '2025-05-02 09:30:00', 'HR review complete. Logs verified. Forwarding to Finance.',                                   'PENDING',      'IN_PROGRESS'),
---  Currently at Step 2 (Finance) - no further history yet
-
---   Instance 11: Admin Officer Earned Leave - full 3-step trail -------------------------------------------------------------------------
-    ('WF-LEAVE-STD-V1',    'LEAVE',                  103,  1, 'SUBMIT',                     16, '2025-04-10 08:00:00', 'Earned leave for 5 days. Pre-planned annual vacation.',                                      NULL,           'PENDING'),
-    ('WF-LEAVE-STD-V1',    'LEAVE',                  103,  1, 'APPROVE',                     2,  '2025-04-10 11:00:00', 'Approved. Handover document submitted.',                                                      'PENDING',      'IN_PROGRESS'),
-    ('WF-LEAVE-STD-V1',    'LEAVE',                  103,  2, 'APPROVE',                     7,  '2025-04-11 10:00:00', 'Approved by Dept Head. Leave balance confirmed.',                                             'IN_PROGRESS',  'IN_PROGRESS'),
-    ('WF-LEAVE-STD-V1',    'LEAVE',                  103,  3, 'APPROVE',                     1,  '2025-04-14 17:00:00', 'HR final approval. Leave recorded in system.',                                                'IN_PROGRESS',  'APPROVED'),
-
---   Instance 12: Shift Swap cancelled before approval -----------------------------------------------------------------------------------
-    ('WF-SHIFTSWAP-V1',    'SHIFT_SWAP',             302,  1, 'SUBMIT',                     11, '2025-04-22 13:00:00', 'Requesting shift swap with Emp #9 for 25-Apr.',                                              NULL,           'PENDING'),
-    ('WF-SHIFTSWAP-V1',    'SHIFT_SWAP',             302,  NULL, 'CANCEL',                  11, '2025-04-22 15:30:00', 'Swap no longer needed. Other arrangements made. Cancelling request.',                         'PENDING',      'CANCELLED'),
---  StepNo=NULL for CANCEL: system-level action, not tied to a specific step
-
---   Instance 13: ICU Senior Nurse OT - Supervisor verified, Dept Head pending ------------------------------------------------------------
-    ('WF-OT-V1',           'OVERTIME',               402,  1, 'SUBMIT',                      4,  '2025-04-30 23:00:00', 'Extended shift in ICU due to critical patient monitoring.',                                  NULL,           'PENDING'),
-    ('WF-OT-V1',           'OVERTIME',               402,  1, 'APPROVE',                     3,  '2025-05-01 07:30:00', 'Verified. ICU log confirms 210 minutes overtime.',                                           'PENDING',      'IN_PROGRESS'),
---  Currently at Step 2 - no further history yet
-
---   Instance 14: Attendance regularization - returned then rejected ----------------------------------------------------------------------
-    ('WF-ATTREG-STD-V1',   'ATTENDANCE_REG',         202,  1, 'SUBMIT',                     17, '2025-04-18 09:00:00', 'Requesting regularization for 17-Apr. Was working from home.',                               NULL,           'PENDING'),
-    ('WF-ATTREG-STD-V1',   'ATTENDANCE_REG',         202,  1, 'RETURN',                     2,  '2025-04-18 14:00:00', 'No WFH approval on record for 17-Apr. Please provide prior approval proof.',                 'PENDING',      'IN_PROGRESS'),
-    ('WF-ATTREG-STD-V1',   'ATTENDANCE_REG',         202,  2, 'REJECT',                      1,  '2025-04-19 11:00:00', 'Regularization rejected. No valid supporting documentation provided.',                       'IN_PROGRESS',  'REJECTED'),
-
---   Instance 15: Radiology on-call - full 2-step approval trail --------------------------------------------------------------------------
-    ('WF-ONCALL-V1',       'ONCALL',                 602,  1, 'SUBMIT',                     13, '2025-04-12 10:00:00', 'On-call duty for CT scan emergencies on 14-Apr.',                                            NULL,           'PENDING'),
-    ('WF-ONCALL-V1',       'ONCALL',                 602,  1, 'APPROVE',                     7,  '2025-04-12 12:00:00', 'Radiology HOD confirmed. Technician is qualified.',                                          'PENDING',      'IN_PROGRESS'),
-    ('WF-ONCALL-V1',       'ONCALL',                 602,  2, 'APPROVE',                     2,  '2025-04-13 09:30:00', 'CMO approved. On-call duty authorized.',                                                      'IN_PROGRESS',  'APPROVED')
-
-) AS v(WorkflowCode, ModuleCode, ReferenceTransactionId, StepNo, ActionCode, ActionBy, ActionAt, Remarks, FromStatusCode, ToStatusCode);
+SET IDENTITY_INSERT [workflow].[WorkflowActionHistory] ON;
 GO
+
+INSERT [workflow].[WorkflowActionHistory]
+    ([Id], [WorkflowInstanceId], [WorkflowTaskId], [WorkflowStepId], [WorkflowActionType], [Remarks], [FromWorkflowStatus], [ToWorkflowStatus], [IsActive], [ActionBy], [ActionAt])
+VALUES
+    -- ── Instance 1: Standard Leave (IN_PROGRESS at HOD) ─────────────
+    (1,  1,  NULL, 1,    N'SUBMIT',  N'Leave request submitted for 3 days Casual Leave.',           NULL,          N'PENDING',     1, 5,  CAST(N'2025-04-28T09:15:00.0000000' AS DateTime2)),
+    (2,  1,  NULL, 1,    N'APPROVE', N'Approved. Ward coverage confirmed for the period.',           N'PENDING',    N'IN_PROGRESS', 1, 2,  CAST(N'2025-04-28T11:30:00.0000000' AS DateTime2)),
+
+    -- ── Instance 2: Emergency Leave (APPROVED) ───────────────────────
+    (3,  2,  NULL, 4,    N'SUBMIT',  N'Family medical emergency. Requesting immediate leave.',       NULL,          N'PENDING',     1, 8,  CAST(N'2025-04-29T06:45:00.0000000' AS DateTime2)),
+    (4,  2,  NULL, 4,    N'APPROVE', N'Approved on humanitarian grounds. Cover arranged.',          N'PENDING',    N'APPROVED',    1, 2,  CAST(N'2025-04-29T08:10:00.0000000' AS DateTime2)),
+
+    -- ── Instance 3: Attendance Regularization (PENDING) ─────────────
+    (5,  3,  NULL, 5,    N'SUBMIT',  N'Biometric reader malfunction on 29-Apr. Requesting correction.', NULL,      N'PENDING',     1, 12, CAST(N'2025-04-30T10:00:00.0000000' AS DateTime2)),
+
+    -- ── Instance 4: Shift Swap (IN_PROGRESS at coordinator) ─────────
+    (6,  4,  NULL, 7,    N'SUBMIT',  N'Requesting swap with Emp #11 for 02-May morning shift.',     NULL,          N'PENDING',     1, 9,  CAST(N'2025-04-27T14:30:00.0000000' AS DateTime2)),
+    (7,  4,  NULL, 7,    N'APPROVE', N'Operationally feasible. Both employees trained for the shift.', N'PENDING', N'IN_PROGRESS', 1, 2,  CAST(N'2025-04-27T16:00:00.0000000' AS DateTime2)),
+
+    -- ── Instance 6: Comp-Off Redemption (PENDING) ───────────────────
+    (11, 6,  NULL, 11,   N'SUBMIT',  N'Applying comp-off earned on 27-Apr (holiday working).',      NULL,          N'PENDING',     1, 14, CAST(N'2025-05-01T08:00:00.0000000' AS DateTime2)),
+
+    -- ── Instance 9: Document Verification (APPROVED) ────────────────
+    (18, 9,  NULL, 17,   N'SUBMIT',  N'Nursing Council License renewed. Uploading updated document.', NULL,        N'PENDING',     1, 3,  CAST(N'2025-04-15T10:30:00.0000000' AS DateTime2)),
+    (19, 9,  NULL, 17,   N'APPROVE', N'Document verified. License valid until 2027-03-31.',          N'PENDING',   N'APPROVED',    1, 1,  CAST(N'2025-04-16T14:00:00.0000000' AS DateTime2)),
+
+    -- ── Instance 10: Payroll Correction (IN_PROGRESS at finance) ────
+    (20, 10, NULL, 18,   N'SUBMIT',  N'Correcting 2 absent days erroneously marked for Emp #12 in April. Attendance logs attached.', NULL, N'PENDING',     1, 1, CAST(N'2025-05-02T09:00:00.0000000' AS DateTime2)),
+    (21, 10, NULL, 18,   N'APPROVE', N'HR review complete. Logs verified. Forwarding to Finance.',   N'PENDING',   N'IN_PROGRESS', 1, 1,  CAST(N'2025-05-02T09:30:00.0000000' AS DateTime2)),
+
+    -- ── Instance 11: Standard Leave — full 3-step (APPROVED) ────────
+    (22, 11, NULL, 1,    N'SUBMIT',  N'Earned leave for 5 days. Pre-planned annual vacation.',       NULL,          N'PENDING',     1, 16, CAST(N'2025-04-10T08:00:00.0000000' AS DateTime2)),
+    (23, 11, NULL, 1,    N'APPROVE', N'Approved. Handover document submitted.',                      N'PENDING',    N'IN_PROGRESS', 1, 2,  CAST(N'2025-04-10T11:00:00.0000000' AS DateTime2)),
+    (24, 11, NULL, 2,    N'APPROVE', N'Approved by Dept Head. Leave balance confirmed.',              N'IN_PROGRESS',N'IN_PROGRESS', 1, 7,  CAST(N'2025-04-11T10:00:00.0000000' AS DateTime2)),
+    (25, 11, NULL, 3,    N'APPROVE', N'HR final approval. Leave recorded in system.',                 N'IN_PROGRESS',N'APPROVED',    1, 1,  CAST(N'2025-04-14T17:00:00.0000000' AS DateTime2)),
+
+    -- ── Instance 12: Shift Swap (CANCELLED by requester) ────────────
+    (26, 12, NULL, 7,    N'SUBMIT',  N'Requesting shift swap with Emp #9 for 25-Apr.',               NULL,          N'PENDING',     1, 11, CAST(N'2025-04-22T13:00:00.0000000' AS DateTime2)),
+    (27, 12, NULL, NULL, N'CANCEL',  N'Swap no longer needed. Other arrangements made. Cancelling request.', N'PENDING', N'CANCELLED', 1, 11, CAST(N'2025-04-22T15:30:00.0000000' AS DateTime2)),
+
+    -- ── Instance 14: Attendance Regularization (REJECTED) ───────────
+    (30, 14, NULL, 5,    N'SUBMIT',  N'Requesting regularization for 17-Apr. Was working from home.', NULL,         N'PENDING',     1, 17, CAST(N'2025-04-18T09:00:00.0000000' AS DateTime2)),
+    (31, 14, NULL, 5,    N'RETURN',  N'No WFH approval on record for 17-Apr. Please provide prior approval proof.', N'PENDING', N'IN_PROGRESS', 1, 2, CAST(N'2025-04-18T14:00:00.0000000' AS DateTime2)),
+    (32, 14, NULL, 6,    N'REJECT',  N'Regularization rejected. No valid supporting documentation provided.', N'IN_PROGRESS', N'REJECTED', 1, 1, CAST(N'2025-04-19T11:00:00.0000000' AS DateTime2));
+
+SET IDENTITY_INSERT [workflow].[WorkflowActionHistory] OFF;
+GO
+
+
+-- ============================================================
+-- VERIFICATION QUERIES
+-- Run after execution to confirm data integrity.
+-- ============================================================
+
+-- Workflow summary: modules → definitions → step count
+SELECT
+    wm.ModuleCode,
+    wm.ModuleName,
+    wd.WorkflowCode,
+    wd.WorkflowName,
+    wd.VersionNo,
+    COUNT(ws.Id)        AS TotalSteps,
+    MAX(ws.StepNo)      AS LastStepNo
+FROM       [workflow].[WorkflowModule]     wm
+JOIN       [workflow].[WorkflowDefinition] wd ON wd.WorkflowModuleId = wm.Id
+LEFT JOIN  [workflow].[WorkflowStep]       ws ON ws.WorkflowDefinitionId = wd.Id
+WHERE wm.IsActive = 1
+GROUP BY wm.ModuleCode, wm.ModuleName, wd.WorkflowCode, wd.WorkflowName, wd.VersionNo
+ORDER BY wm.ModuleCode, wd.WorkflowCode;
+
+-- Step-level detail with approver resolution
+SELECT
+    wm.ModuleCode,
+    wd.WorkflowCode,
+    ws.StepNo,
+    ws.StepName,
+    ws.WorkflowStepType,
+    ws.IsFinalStep,
+    ws.AllowDelegation,
+    ws.EscalationAfterHours,
+    wsa.WorkflowApproverType,
+    wsa.ScopeReferenceId        AS ApproverDesignationId
+FROM       [workflow].[WorkflowModule]     wm
+JOIN       [workflow].[WorkflowDefinition] wd  ON wd.WorkflowModuleId    = wm.Id
+JOIN       [workflow].[WorkflowStep]       ws  ON ws.WorkflowDefinitionId = wd.Id
+LEFT JOIN  [workflow].[WorkflowStepApprover] wsa ON wsa.WorkflowStepId   = ws.Id
+WHERE wm.IsActive = 1
+ORDER BY wm.ModuleCode, wd.WorkflowCode, ws.StepNo;
+
+-- Instance status summary
+SELECT
+    wm.ModuleName,
+    wd.WorkflowCode,
+    wi.WorkflowStatus,
+    COUNT(*)            AS InstanceCount
+FROM       [workflow].[WorkflowInstance]   wi
+JOIN       [workflow].[WorkflowDefinition] wd ON wd.Id = wi.WorkflowDefinitionId
+JOIN       [workflow].[WorkflowModule]     wm ON wm.Id = wi.WorkflowModuleId
+GROUP BY wm.ModuleName, wd.WorkflowCode, wi.WorkflowStatus
+ORDER BY wm.ModuleName, wi.WorkflowStatus;
+
 
 PRINT 'Workflow seed data inserted successfully.';
 GO

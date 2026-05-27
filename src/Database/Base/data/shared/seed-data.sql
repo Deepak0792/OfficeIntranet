@@ -939,5 +939,14 @@ VALUES
     ('WORK',       'ADDRESS_TYPE', 'Work Address',       'On-site or client work location address. Used when an employee is deployed at a location different from their office.',  5, 0, 1);
 GO
 
+INSERT INTO shared.StatusLookup
+    (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal, IsActive)
+VALUES
+    ('PENDING',       'OUTBOX_STATUS', 'Pending',        'Message is created and waiting to be processed/published.', 1, 0, 1),
+    ('PUBLISHED',     'OUTBOX_STATUS', 'Published',      'Message has been successfully published to the exchange.',   2, 1, 1),
+    ('RETRYING',      'OUTBOX_STATUS', 'Retrying',       'Message processing failed but will be retried.',             3, 0, 1),
+    ('DEAD_LETTERED', 'OUTBOX_STATUS', 'Dead Lettered',  'Message moved to dead-letter queue after max retries.',      4, 1, 1);
+GO
+
 PRINT 'Shared schema StatusLookup seed data inserted successfully.';
 GO
