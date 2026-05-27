@@ -21,6 +21,116 @@ services:
       retries: 5
       start_period: 30s
 
+  identity-sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sdxcore-identity-sql-server
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SQL_SA_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "1435:1433"
+    volumes:
+      - identity-sql-server-data:/var/opt/mssql
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${SQL_SA_PASSWORD}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: sdxcore-redis
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: sdxcore-elasticsearch
+    environment:
+      - node.name=sdxcore-es01
+      - cluster.name=sdxcore-cluster
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "${ES_PORT:-9200}:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.0
+    container_name: sdxcore-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=sdxcore-kibana
+    ports:
+      - "${ES_KIBANA_PORT:-5601}:5601"
+    networks:
+      - sdxcore-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: sdxcore-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-sdxcore}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-sdxcore_secret}
+      RABBITMQ_DEFAULT_VHOST: sdxcore
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
   identity-api:
     build:
       context: ..
@@ -29,7 +139,12 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=http://+:80
-      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCoreIdentity;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__DefaultConnection=Server=identity-sql-server;Database=SdxCoreIdentity;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Redis__ConnectionString=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__VirtualHost=sdxcore
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-sdxcore}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-sdxcore_secret}
       - Authentication__Protocol=${AUTH_PROTOCOL:-InHouse}
       - Authentication__Issuer=${AUTH_ISSUER:-http://localhost:5001}
       - Authentication__Audience=${AUTH_AUDIENCE:-myapp-api}
@@ -42,7 +157,11 @@ services:
     ports:
       - "5001:80"
     depends_on:
-      sql-server:
+      identity-sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - sdxcore-network
@@ -90,10 +209,19 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - Redis__ConnectionString=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__VirtualHost=sdxcore
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-sdxcore}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-sdxcore_secret}
     ports:
       - "5002:80"
     depends_on:
       sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - sdxcore-network
@@ -114,10 +242,26 @@ services:
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - Redis__ConnectionString=redis:6379
+      - Elasticsearch__Url=http://elasticsearch:9200
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__VirtualHost=sdxcore
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-sdxcore}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-sdxcore_secret}
+      - FileStorage__ProviderType=${FILE_STORAGE_PROVIDER}
+      - FileStorage__SharedFileSystem__RootPath=${FILE_STORAGE_ROOT}
+      - FileStorage__SharedFileSystem__Environment=${FILE_STORAGE_ENV}
+      - FileStorage__SharedFileSystem__Tenant=${FILE_STORAGE_TENANT}
     ports:
       - "5003:80"
+    volumes:
+      - sdxcore-files:/mnt/sdxcore-files
     depends_on:
       sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - sdxcore-network
@@ -131,6 +275,20 @@ services:
 volumes:
   sql-server-data:
     driver: local
+  identity-sql-server-data:
+    driver: local
+  redis-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  sdxcore-files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/sdxcore-files
 
 networks:
   sdxcore-network:

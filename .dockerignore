@@ -39,9 +39,7 @@ docs/
 .kiro/
 
 # Environment files
-.env
-.env.*
-!.env.example
+
 
 # Logs
 *.log
