@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,5 +12,6 @@
   <ItemGroup>
     <ProjectReference Include="..\SdxCore.Time.Domain\SdxCore.Time.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.SharedKernel\SdxCore.SharedKernel.csproj" />
   </ItemGroup>
 </Project>

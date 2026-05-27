@@ -1,3 +1,4 @@
+using SdxCore.Common.Caching;
 using SdxCore.Time.Domain.DTOs.Request;
 using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
@@ -16,23 +17,35 @@ namespace SdxCore.Time.Application.Services;
 public class ScopeTypeService : IScopeTypeService 
 {
     private readonly IScopeTypeRepository _repository;
+    private readonly ICacheService _cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder;
     
-    public ScopeTypeService(IScopeTypeRepository repository) 
+    public ScopeTypeService(IScopeTypeRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder) 
     {
         _repository = repository;
+        _cacheService = cacheService;
+        _cacheKeyBuilder = cacheKeyBuilder;
     }
     
             public async Task<IEnumerable<ScopeTypeResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<ScopeType, ScopeTypeResponse>(e));
+        var cacheKey = _cacheKeyBuilder.BuildKey("scopetype", "all");
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.GetAllAsync(ct);
+            return entities.Select(e => SimpleMapper.Map<ScopeType, ScopeTypeResponse>(e));
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<ScopeTypeResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return null;
-        return SimpleMapper.Map<ScopeType, ScopeTypeResponse>(entity);
+        var cacheKey = _cacheKeyBuilder.BuildKey("scopetype", id.ToString());
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entity = await _repository.GetByIdAsync(id, ct);
+            if (entity == null) return null;
+            return SimpleMapper.Map<ScopeType, ScopeTypeResponse>(entity);
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<ScopeTypeResponse> CreateAsync(CreateScopeTypeRequest dto, CancellationToken cancellationToken = default) 

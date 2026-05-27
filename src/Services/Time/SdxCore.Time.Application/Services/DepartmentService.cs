@@ -1,3 +1,4 @@
+using SdxCore.Common.Caching;
 using SdxCore.Time.Domain.DTOs.Request;
 using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Domain.Entities;
@@ -16,26 +17,38 @@ namespace SdxCore.Time.Application.Services;
 public class DepartmentService : IDepartmentService 
 {
     private readonly IDepartmentRepository _repository;
+    private readonly ICacheService _cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder;
     
-    public DepartmentService(IDepartmentRepository repository) 
+    public DepartmentService(IDepartmentRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder) 
     {
         _repository = repository;
+        _cacheService = cacheService;
+        _cacheKeyBuilder = cacheKeyBuilder;
     }
     
             public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
+        var cacheKey = _cacheKeyBuilder.BuildKey("department", "all");
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.GetAllAsync(ct);
+            return entities.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<DepartmentResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
-        var d = await _repository.GetByIdAsync(id, cancellationToken);
-        if (d == null) return null;
-        return new DepartmentResponse {
-            Id = d.Id, DepartmentCode = d.DepartmentCode, DepartmentName = d.DepartmentName,
-            ParentDepartmentId = d.ParentDepartmentId, Description = d.Description, IsActive = d.IsActive
-        };
+        var cacheKey = _cacheKeyBuilder.BuildKey("department", id.ToString());
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var d = await _repository.GetByIdAsync(id, ct);
+            if (d == null) return null;
+            return new DepartmentResponse {
+                Id = d.Id, DepartmentCode = d.DepartmentCode, DepartmentName = d.DepartmentName,
+                ParentDepartmentId = d.ParentDepartmentId, Description = d.Description, IsActive = d.IsActive
+            };
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<DepartmentResponse> CreateAsync(CreateDepartmentRequest dto, CancellationToken cancellationToken = default) 

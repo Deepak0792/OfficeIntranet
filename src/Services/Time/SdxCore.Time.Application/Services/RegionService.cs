@@ -1,3 +1,4 @@
+using SdxCore.Common.Caching;
 using SdxCore.Time.Domain.DTOs.Request;
 using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
@@ -16,23 +17,35 @@ namespace SdxCore.Time.Application.Services;
 public class RegionService : IRegionService 
 {
     private readonly IRegionRepository _repository;
+    private readonly ICacheService _cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder;
     
-    public RegionService(IRegionRepository repository) 
+    public RegionService(IRegionRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder) 
     {
         _repository = repository;
+        _cacheService = cacheService;
+        _cacheKeyBuilder = cacheKeyBuilder;
     }
     
             public async Task<IEnumerable<RegionResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<Region, RegionResponse>(e));
+        var cacheKey = _cacheKeyBuilder.BuildKey("region", "all");
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.GetAllAsync(ct);
+            return entities.Select(e => SimpleMapper.Map<Region, RegionResponse>(e));
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<RegionResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return null;
-        return SimpleMapper.Map<Region, RegionResponse>(entity);
+        var cacheKey = _cacheKeyBuilder.BuildKey("region", id.ToString());
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entity = await _repository.GetByIdAsync(id, ct);
+            if (entity == null) return null;
+            return SimpleMapper.Map<Region, RegionResponse>(entity);
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<RegionResponse> CreateAsync(CreateRegionRequest dto, CancellationToken cancellationToken = default) 

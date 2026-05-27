@@ -1,4 +1,4 @@
-using SdxCore.Identity.Application.Extensions;
+using SdxCore.Common.Extensions;
 using SdxCore.Shared.Application.Extensions;
 using SdxCore.Shared.Persistence.Extensions;
 

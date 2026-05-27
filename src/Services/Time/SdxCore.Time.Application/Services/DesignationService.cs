@@ -1,3 +1,4 @@
+using SdxCore.Common.Caching;
 using SdxCore.Time.Domain.DTOs.Request;
 using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
@@ -16,23 +17,35 @@ namespace SdxCore.Time.Application.Services;
 public class DesignationService : IDesignationService 
 {
     private readonly IDesignationRepository _repository;
+    private readonly ICacheService _cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder;
     
-    public DesignationService(IDesignationRepository repository) 
+    public DesignationService(IDesignationRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder) 
     {
         _repository = repository;
+        _cacheService = cacheService;
+        _cacheKeyBuilder = cacheKeyBuilder;
     }
     
             public async Task<IEnumerable<DesignationResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<Designation, DesignationResponse>(e));
+        var cacheKey = _cacheKeyBuilder.BuildKey("designation", "all");
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.GetAllAsync(ct);
+            return entities.Select(e => SimpleMapper.Map<Designation, DesignationResponse>(e));
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<DesignationResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return null;
-        return SimpleMapper.Map<Designation, DesignationResponse>(entity);
+        var cacheKey = _cacheKeyBuilder.BuildKey("designation", id.ToString());
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entity = await _repository.GetByIdAsync(id, ct);
+            if (entity == null) return null;
+            return SimpleMapper.Map<Designation, DesignationResponse>(entity);
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<DesignationResponse> CreateAsync(CreateDesignationRequest dto, CancellationToken cancellationToken = default) 

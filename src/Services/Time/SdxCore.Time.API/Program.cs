@@ -1,4 +1,5 @@
-using SdxCore.Identity.Application.Extensions;
+using SdxCore.Common.Extensions;
+using SdxCore.Time.API.BackgroundServices;
 using SdxCore.Time.Application.Extensions;
 using SdxCore.Time.Persistence.Extensions;
 
@@ -18,6 +19,14 @@ builder.Services.AddSwaggerGen();
 
 // Register the common layer
 builder.Services.AddSdxCoreCommon(builder.Configuration);
+
+// Register Caching and Messaging
+builder.Services.AddSdxCaching(builder.Configuration);
+builder.Services.AddSdxMessaging(builder.Configuration);
+
+// Register Background Services
+builder.Services.AddHostedService<OutboxPollingBackgroundService>();
+builder.Services.AddHostedService<CacheInvalidationBackgroundService>();
 
 // Register the persistence and application layers
 builder.Services.AddTimePersistence(builder.Configuration);

@@ -1,3 +1,4 @@
+using SdxCore.Common.Caching;
 using SdxCore.Time.Domain.DTOs.Request;
 using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
@@ -16,23 +17,35 @@ namespace SdxCore.Time.Application.Services;
 public class GeoFenceService : IGeoFenceService 
 {
     private readonly IGeoFenceRepository _repository;
+    private readonly ICacheService _cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder;
     
-    public GeoFenceService(IGeoFenceRepository repository) 
+    public GeoFenceService(IGeoFenceRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder) 
     {
         _repository = repository;
+        _cacheService = cacheService;
+        _cacheKeyBuilder = cacheKeyBuilder;
     }
     
             public async Task<IEnumerable<GeoFenceResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<GeoFence, GeoFenceResponse>(e));
+        var cacheKey = _cacheKeyBuilder.BuildKey("geofence", "all");
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.GetAllAsync(ct);
+            return entities.Select(e => SimpleMapper.Map<GeoFence, GeoFenceResponse>(e));
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<GeoFenceResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return null;
-        return SimpleMapper.Map<GeoFence, GeoFenceResponse>(entity);
+        var cacheKey = _cacheKeyBuilder.BuildKey("geofence", id.ToString());
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entity = await _repository.GetByIdAsync(id, ct);
+            if (entity == null) return null;
+            return SimpleMapper.Map<GeoFence, GeoFenceResponse>(entity);
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<GeoFenceResponse> CreateAsync(CreateGeoFenceRequest dto, CancellationToken cancellationToken = default) 
