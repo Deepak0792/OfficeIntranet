@@ -381,6 +381,35 @@ CREATE TABLE employee.EmployeeAddress (
 );
 GO
 
+CREATE TABLE employee.OutboxMessages
+(
+    [Id] UNIQUEIDENTIFIER NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Id] DEFAULT NEWSEQUENTIALID(),
+    [EventType] NVARCHAR(500) NOT NULL,
+    [Payload] NVARCHAR(MAX) NOT NULL,
+    [Exchange] NVARCHAR(200) NOT NULL,
+    [RoutingKey] NVARCHAR(200) NOT NULL,
+    [Status] NVARCHAR(50) NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Status] DEFAULT ('Pending'),
+
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
+
+    [PublishedAt] DATETIME2 NULL,
+
+    [RetryCount] INT NOT NULL
+        CONSTRAINT [DF_OutboxMessages_RetryCount] DEFAULT (0),
+
+    [ErrorMessage] NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_OutboxMessages]
+        PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+GO
+
 -- INDEXES - employee Schema
 CREATE INDEX IX_Employee_Email             ON employee.Employee (Email);
 CREATE INDEX IX_Employee_DisplayName       ON employee.Employee (DisplayName);
@@ -423,6 +452,16 @@ CREATE INDEX IX_EmployeeAddress_Employee    ON employee.EmployeeAddress (Employe
 CREATE INDEX IX_EmployeeAddress_Country     ON employee.EmployeeAddress (CountryId);
 CREATE INDEX IX_EmployeeAddress_Region      ON employee.EmployeeAddress (RegionId);
 CREATE INDEX IX_EmployeeAddress_AddressType ON employee.EmployeeAddress (AddressType);
+
+-- Fast lookup for pending messages to publish
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_CreatedAt] ON [employee].[OutboxMessages] ([Status] ASC, [CreatedAt] ASC) INCLUDE ([Exchange], [RoutingKey], [RetryCount]);
+-- Efficient retry processing
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_RetryCount] ON [employee].[OutboxMessages] ([Status] ASC, [RetryCount] ASC) INCLUDE ([CreatedAt]);
+-- Query published history efficiently
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_PublishedAt] ON [employee].[OutboxMessages] ([PublishedAt] ASC) WHERE [PublishedAt] IS NOT NULL;
+CREATE UNIQUE NONCLUSTERED INDEX [UX_OutboxMessages_Id_Status] ON [employee].[OutboxMessages] ([Id], [Status]);
+
+
 GO
 
 -- Partial unique index: only one IsPrimary = 1 per employee

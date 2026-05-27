@@ -64,6 +64,35 @@ CREATE TABLE shared.LookupDefinition
 );
 GO
 
+CREATE TABLE shared.OutboxMessages
+(
+    [Id] UNIQUEIDENTIFIER NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Id] DEFAULT NEWSEQUENTIALID(),
+    [EventType] NVARCHAR(500) NOT NULL,
+    [Payload] NVARCHAR(MAX) NOT NULL,
+    [Exchange] NVARCHAR(200) NOT NULL,
+    [RoutingKey] NVARCHAR(200) NOT NULL,
+    [Status] NVARCHAR(50) NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Status] DEFAULT ('Pending'),
+
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
+
+    [PublishedAt] DATETIME2 NULL,
+
+    [RetryCount] INT NOT NULL
+        CONSTRAINT [DF_OutboxMessages_RetryCount] DEFAULT (0),
+
+    [ErrorMessage] NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_OutboxMessages]
+        PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+GO
+
 -- ============================================================
 -- LOOKUP DEFINITIONS : FEEDBACK_STATUS
 --shared.GetLookup  'FEEDBACK_STATUS'
@@ -98,4 +127,13 @@ BEGIN
 
 END
 GO
+-- Fast lookup for pending messages to publish
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_CreatedAt] ON [shared].[OutboxMessages] ([Status] ASC, [CreatedAt] ASC) INCLUDE ([Exchange], [RoutingKey], [RetryCount]);
+-- Efficient retry processing
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_RetryCount] ON [shared].[OutboxMessages] ([Status] ASC, [RetryCount] ASC) INCLUDE ([CreatedAt]);
+-- Query published history efficiently
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_PublishedAt] ON [shared].[OutboxMessages] ([PublishedAt] ASC) WHERE [PublishedAt] IS NOT NULL;
+CREATE UNIQUE NONCLUSTERED INDEX [UX_OutboxMessages_Id_Status] ON [shared].[OutboxMessages] ([Id], [Status]);
+GO
+
 PRINT 'Shared schema created successfully';

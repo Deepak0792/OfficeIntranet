@@ -749,6 +749,43 @@ CREATE TABLE attendance.WorkWeekPolicyAssignment (
 );
 GO
 
+
+-- ==========================================================
+-- MESSAGE QUEUE (RABBITMQ PUBLISHING)
+-- ==========================================================
+
+-- OUTBOXMESSAGES (Renamed to avoid conflict with other schemas)
+-- Using hr. namespace as this is HR-related data
+CREATE TABLE [attendance].[OutboxMessages]
+(
+    [Id] UNIQUEIDENTIFIER NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Id] DEFAULT NEWSEQUENTIALID(),
+    [EventType] NVARCHAR(500) NOT NULL,
+    [Payload] NVARCHAR(MAX) NOT NULL,
+    [Exchange] NVARCHAR(200) NOT NULL,
+    [RoutingKey] NVARCHAR(200) NOT NULL,
+    [Status] NVARCHAR(50) NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Status] DEFAULT ('Pending'),
+
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
+
+    [PublishedAt] DATETIME2 NULL,
+
+    [RetryCount] INT NOT NULL
+        CONSTRAINT [DF_OutboxMessages_RetryCount] DEFAULT (0),
+
+    [ErrorMessage] NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_OutboxMessages]
+        PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+GO
+
+
 -- INDEXES - attendance Schema
 CREATE INDEX IX_AttendanceRecord_EmployeeId ON attendance.AttendanceRecord(EmployeeId);
 CREATE INDEX IX_AttendanceRecord_AttendanceDate ON attendance.AttendanceRecord(AttendanceDate);
@@ -802,6 +839,15 @@ CREATE INDEX IX_Holiday_Date                      ON attendance.Holiday (Holiday
 CREATE INDEX IX_Holiday_Calendar                 ON attendance.Holiday (HolidayCalendarId);
 
 CREATE INDEX IX_HolidayAssignment_Scope         ON attendance.HolidayCalendarAssignment (ScopeTypeId, ScopeReferenceId);
+
+-- Fast lookup for pending messages to publish
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_CreatedAt] ON [attendance].[OutboxMessages] ([Status] ASC, [CreatedAt] ASC) INCLUDE ([Exchange], [RoutingKey], [RetryCount]);
+-- Efficient retry processing
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_RetryCount] ON [attendance].[OutboxMessages] ([Status] ASC, [RetryCount] ASC) INCLUDE ([CreatedAt]);
+-- Query published history efficiently
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_PublishedAt] ON [attendance].[OutboxMessages] ([PublishedAt] ASC) WHERE [PublishedAt] IS NOT NULL;
+CREATE UNIQUE NONCLUSTERED INDEX [UX_OutboxMessages_Id_Status] ON [attendance].[OutboxMessages] ([Id], [Status]);
+
 
 PRINT 'Attendance schema created successfully';
 

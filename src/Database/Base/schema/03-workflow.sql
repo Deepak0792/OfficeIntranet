@@ -368,6 +368,36 @@ CREATE TABLE workflow.WorkflowActionHistory (
 );
 GO
 
+CREATE TABLE workflow.OutboxMessages
+(
+    [Id] UNIQUEIDENTIFIER NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Id] DEFAULT NEWSEQUENTIALID(),
+    [EventType] NVARCHAR(500) NOT NULL,
+    [Payload] NVARCHAR(MAX) NOT NULL,
+    [Exchange] NVARCHAR(200) NOT NULL,
+    [RoutingKey] NVARCHAR(200) NOT NULL,
+    [Status] NVARCHAR(50) NOT NULL
+        CONSTRAINT [DF_OutboxMessages_Status] DEFAULT ('Pending'),
+
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
+
+    [PublishedAt] DATETIME2 NULL,
+
+    [RetryCount] INT NOT NULL
+        CONSTRAINT [DF_OutboxMessages_RetryCount] DEFAULT (0),
+
+    [ErrorMessage] NVARCHAR(MAX) NULL,
+
+    CONSTRAINT [PK_OutboxMessages]
+        PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+GO
+
+
 -- ============================================================
 -- INDEXES
 -- ============================================================
@@ -413,6 +443,14 @@ CREATE INDEX IX_WorkflowActionHistory_Task
 -- WorkflowStep: step ordering within a definition
 CREATE INDEX IX_WorkflowStep_Definition_StepNo
     ON workflow.WorkflowStep (WorkflowDefinitionId, StepNo);
+
+-- Fast lookup for pending messages to publish
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_CreatedAt] ON [workflow].[OutboxMessages] ([Status] ASC, [CreatedAt] ASC) INCLUDE ([Exchange], [RoutingKey], [RetryCount]);
+-- Efficient retry processing
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_RetryCount] ON [workflow].[OutboxMessages] ([Status] ASC, [RetryCount] ASC) INCLUDE ([CreatedAt]);
+-- Query published history efficiently
+CREATE NONCLUSTERED INDEX [IX_OutboxMessages_PublishedAt] ON [workflow].[OutboxMessages] ([PublishedAt] ASC) WHERE [PublishedAt] IS NOT NULL;
+CREATE UNIQUE NONCLUSTERED INDEX [UX_OutboxMessages_Id_Status] ON [workflow].[OutboxMessages] ([Id], [Status]);
 
 GO
 
