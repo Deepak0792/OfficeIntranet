@@ -29,38 +29,88 @@ CREATE TABLE attendance.AttendanceStatus (
 );
 GO
 
--- ATTENDANCE RECORD
-CREATE TABLE attendance.AttendanceRecord (
-    Id                      INT      PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              INT      NOT NULL,
-    AttendanceDate          DATE        NOT NULL,
-    ShiftId                 SMALLINT      NULL,
-    AttendanceStatusId      SMALLINT      NULL,
-    CheckInTime             DATETIME2   NULL,
-    CheckOutTime            DATETIME2   NULL,
-    LateByMinutes           SMALLINT         NULL,
-    EarlyExitMinutes        SMALLINT         NULL,
-    WorkedMinutes           SMALLINT         NULL,
-    OvertimeMinutes         SMALLINT         NULL,
-    IsManualEntry           BIT         NOT NULL DEFAULT 0,
-    Remarks                 NVARCHAR(1000) NULL,
-    ApprovedBy              INT      NULL,
-    ApprovedAt              DATETIME2   NULL,
-    IsActive                BIT         NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT         NULL,
-    LastUpdatedAt           DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT         NULL,
 
-    CONSTRAINT FK_Attendance_Employee
+CREATE TABLE attendance.WorkSession (
+    Id                      BIGINT PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT             NOT NULL,
+    EmployeeShiftId         BIGINT          NULL,
+    SessionDate             DATE            NOT NULL,
+    CheckInTime             DATETIME2       NOT NULL,
+    CheckOutTime            DATETIME2       NULL,
+    WorkedMinutes           INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
+
+    CONSTRAINT FK_WorkSession_Employee
         FOREIGN KEY (EmployeeId)
         REFERENCES employee.Employee(Id),
 
-    CONSTRAINT FK_Attendance_Status
-        FOREIGN KEY (AttendanceStatusId)
-        REFERENCES attendance.AttendanceStatus(Id),
+    CONSTRAINT FK_WorkSession_EmployeeShift
+        FOREIGN KEY (EmployeeShiftId)
+        REFERENCES attendance.EmployeeShift(Id)
+);
+GO
 
-    CONSTRAINT UQ_Attendance
+PRINT 'Creating AttendanceRecord...';
+
+CREATE TABLE attendance.AttendanceRecord (
+    Id                                  BIGINT PRIMARY KEY IDENTITY(1,1),
+    EmployeeId                          INT                 NOT NULL,
+    EmployeeShiftId                     BIGINT              NULL,
+    WorkSessionId                       BIGINT              NULL,
+    AttendanceDate                      DATE                NOT NULL,
+    ShiftId                             SMALLINT            NULL,
+    AttendanceStatus                    NVARCHAR(50)        NULL,
+    AttendanceStatusGroup               AS CAST('ATTENDANCE_STATUS' AS NVARCHAR(50)) PERSISTED,
+    CheckInTime                         DATETIME2           NULL,
+    CheckOutTime                        DATETIME2           NULL,
+    LateByMinutes                       SMALLINT            NULL,
+    EarlyExitMinutes                    SMALLINT            NULL,
+    WorkedMinutes                       SMALLINT            NULL,
+    BreakMinutes                        SMALLINT            NOT NULL DEFAULT 0,
+    OvertimeMinutes                     SMALLINT            NOT NULL DEFAULT 0,
+    IsNightShift                        BIT                 NOT NULL DEFAULT 0,
+    IsCrossDayAttendance                BIT                 NOT NULL DEFAULT 0,
+    IsWeeklyOff                         BIT                 NOT NULL DEFAULT 0,
+    IsHoliday                           BIT                 NOT NULL DEFAULT 0,
+    IsOnLeave                           BIT                 NOT NULL DEFAULT 0,
+    IsManualEntry                       BIT                 NOT NULL DEFAULT 0,
+    IsAutoProcessed                     BIT                 NOT NULL DEFAULT 1,
+    IsAttendanceLocked                  BIT                 NOT NULL DEFAULT 0,
+
+    Remarks                             NVARCHAR(1000)      NULL,
+    ApprovedBy                          INT                 NULL,
+    ApprovedAt                          DATETIME2           NULL,
+    IsActive                            BIT                 NOT NULL DEFAULT 1,
+    CreatedAt                           DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                           INT                 NULL,
+    LastUpdatedAt                       DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                       INT                 NULL,
+
+    CONSTRAINT FK_AttendanceRecord_Employee
+        FOREIGN KEY (EmployeeId)
+        REFERENCES employee.Employee(Id),
+
+    CONSTRAINT FK_AttendanceRecord_EmployeeShift
+        FOREIGN KEY (EmployeeShiftId)
+        REFERENCES attendance.EmployeeShift(Id),
+
+    CONSTRAINT FK_AttendanceRecord_WorkSession
+        FOREIGN KEY (WorkSessionId)
+        REFERENCES attendance.WorkSession(Id),
+
+    CONSTRAINT FK_AttendanceRecord_Shift
+        FOREIGN KEY (ShiftId)
+        REFERENCES attendance.Shift(Id),
+
+    CONSTRAINT FK_AttendanceRecord_Status
+        FOREIGN KEY (AttendanceStatus, AttendanceStatusGroup)
+        REFERENCES shared.StatusLookup(StatusCode, StatusGroup),
+
+    CONSTRAINT UQ_AttendanceRecord
         UNIQUE (EmployeeId, AttendanceDate)
 );
 GO
@@ -298,6 +348,8 @@ CREATE TABLE attendance.Shift (
     GraceOutMinutes         SMALLINT             NOT NULL DEFAULT 0,
     MinimumWorkingMinutes   SMALLINT             NULL,
     MaximumWorkingMinutes   SMALLINT             NULL,
+    AttendanceFinalizeBufferMinutes     SMALLINT        NOT NULL DEFAULT 240,
+    MaxAllowedCheckoutDelayMinutes      SMALLINT        NULL,
     IsNightShift            BIT             NOT NULL DEFAULT 0,
     CrossesMidnight         BIT             NOT NULL DEFAULT 0,
     IsFlexible              BIT             NOT NULL DEFAULT 0,
@@ -437,6 +489,7 @@ CREATE TABLE attendance.RotationShiftAssignment (
     RotationShiftId     SMALLINT  NOT NULL,
     ScopeTypeId         SMALLINT  NOT NULL,
     ScopeReferenceId    INT  NOT NULL,
+    RotationOffsetDays INT NOT NULL DEFAULT 0,
     RotationStartDate   DATE    NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
@@ -455,6 +508,21 @@ CREATE TABLE attendance.RotationShiftAssignment (
         REFERENCES time.ScopeType(Id)
 );
 GO
+
+ALTER TABLE attendance.RotationShiftDetail
+ADD CONSTRAINT CK_RotationShiftDetail_OffDayShift
+CHECK (
+    (IsOffDay = 1 AND ShiftId IS NULL)
+    OR
+    (IsOffDay = 0 AND ShiftId IS NOT NULL)
+);
+GO
+
+ALTER TABLE attendance.RotationShiftDetail
+ADD CONSTRAINT UQ_RotationShiftDetail_Sequence
+UNIQUE (RotationShiftId, SequenceNo);
+GO
+
 
 -- EMPLOYEE SHIFT ROSTER
 CREATE TABLE attendance.EmployeeShiftRoster (
@@ -487,6 +555,38 @@ CREATE TABLE attendance.EmployeeShiftRoster (
     CONSTRAINT UQ_EmployeeRoster
         UNIQUE (EmployeeId, RosterDate)
 );
+GO
+
+CREATE TABLE attendance.EmployeeRosterGenerationTracker (
+    Id                      INT PRIMARY KEY IDENTITY(1,1),
+    EmployeeId              INT             NOT NULL,
+    RosterYear              SMALLINT        NOT NULL,
+    RosterMonth             TINYINT         NOT NULL,
+    GenerationType          NVARCHAR(30)    NOT NULL,
+    GenerationTypeGroup     AS CAST('ROSTER_GENERATION_TYPE' AS NVARCHAR(50)) PERSISTED,
+    GeneratedFromDate       DATE            NOT NULL,
+    GeneratedToDate         DATE            NOT NULL,
+    LastGeneratedAt         DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsLocked                BIT             NOT NULL DEFAULT 0,
+    Remarks                 NVARCHAR(500)   NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
+
+    CONSTRAINT FK_EmployeeRosterGenerationTracker_Employee
+        FOREIGN KEY (EmployeeId)
+        REFERENCES employee.Employee(Id),
+
+    CONSTRAINT FK_EmployeeRosterGenerationTracker_GenerationType
+        FOREIGN KEY (GenerationType, GenerationTypeGroup)
+        REFERENCES shared.StatusLookup (StatusCode, StatusGroup),
+
+    CONSTRAINT UQ_EmployeeRosterGenerationTracker
+        UNIQUE (EmployeeId, RosterYear, RosterMonth, GenerationType)
+);
+
 GO
 
 -- Add FKs for ShiftSwapRequest to Roster
@@ -650,9 +750,11 @@ CREATE TABLE attendance.WorkWeekPolicyAssignment (
 GO
 
 -- INDEXES - attendance Schema
-CREATE INDEX IX_AttendanceRecord_Employee_Date ON attendance.AttendanceRecord (EmployeeId, AttendanceDate);
-CREATE INDEX IX_AttendanceRecord_Shift         ON attendance.AttendanceRecord (ShiftId);
-CREATE INDEX IX_AttendanceRecord_Status        ON attendance.AttendanceRecord (AttendanceStatusId);
+CREATE INDEX IX_AttendanceRecord_EmployeeId ON attendance.AttendanceRecord(EmployeeId);
+CREATE INDEX IX_AttendanceRecord_AttendanceDate ON attendance.AttendanceRecord(AttendanceDate);
+CREATE INDEX IX_AttendanceRecord_ShiftId ON attendance.AttendanceRecord(ShiftId);
+CREATE INDEX IX_AttendanceRecord_Status ON attendance.AttendanceRecord(AttendanceStatus);
+CREATE INDEX IX_AttendanceRecord_Employee_Date ON attendance.AttendanceRecord(EmployeeId, AttendanceDate);
 
 CREATE INDEX IX_AttendanceLog_Employee_Time   ON attendance.AttendanceLog (EmployeeId, PunchTime);
 
@@ -702,4 +804,5 @@ CREATE INDEX IX_Holiday_Calendar                 ON attendance.Holiday (HolidayC
 CREATE INDEX IX_HolidayAssignment_Scope         ON attendance.HolidayCalendarAssignment (ScopeTypeId, ScopeReferenceId);
 
 PRINT 'Attendance schema created successfully';
+
 GO

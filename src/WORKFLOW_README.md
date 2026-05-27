@@ -16,13 +16,16 @@
 12. [Workflow Lifecycle & Status Transitions](#workflow-lifecycle--status-transitions)
 13. [Indexes Reference](#indexes-reference)
 14. [Seed Data Reference](#seed-data-reference)
-15. [Design Decisions & Changelog](#design-decisions--changelog)
+15. [Supported Business Modules](#supported-business-modules)
+16. [Cross-Microservice Integration](#cross-microservice-integration)
+17. [Docker Compose Integration](#docker-compose-integration)
+18. [Design Decisions & Changelog](#design-decisions--changelog)
 
 ---
 
 ## Overview
 
-This is a **configurable, multi-step approval workflow engine** built on SQL Server. It is designed to support any business module (Leave, Expense, Hiring, Procurement, etc.) with a shared, reusable schema.
+This is a **configurable, multi-step approval workflow engine** built on SQL Server. It is designed to support any business module (Leave, Expense, Attendance Regularization, Shift Swap, Hiring, Procurement, etc.) with a shared, reusable schema.
 
 **Core capabilities:**
 
@@ -32,6 +35,7 @@ This is a **configurable, multi-step approval workflow engine** built on SQL Ser
 - Track every state transition and action in an immutable audit log
 - Support delegation, escalation, and multi-approver steps
 - No approver logic is hardcoded — everything is data-driven
+- Single engine serves all modules — Leave, Attendance, Shift Swap, Expense, Hiring, and any future module
 
 ---
 
@@ -97,7 +101,7 @@ Represents a business module that owns one or more workflows.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
+| `Id` | SMALLINT | Primary key |
 | `ModuleCode` | NVARCHAR(100) | Unique code e.g. `LEAVE`, `EXPENSE`, `HIRING` |
 | `ModuleName` | NVARCHAR(200) | Display name |
 | `EntityName` | NVARCHAR(100) | Logical entity the module tracks e.g. `LeaveRequest` |
@@ -107,23 +111,26 @@ Represents a business module that owns one or more workflows.
 
 ```sql
 INSERT INTO workflow.WorkflowModule (ModuleCode, ModuleName, EntityName) VALUES
-('LEAVE',   'Leave Management',   'LeaveRequest'),
-('EXPENSE', 'Expense Management', 'ExpenseRequest');
+('LEAVE',                   'Leave Management',                'LeaveRequest'),
+('EXPENSE',                 'Expense Management',              'ExpenseRequest'),
+('ATTENDANCE_REGULARIZATION','Attendance Regularization',      'AttendanceRegularization'),
+('SHIFT_SWAP',              'Shift Swap',                      'ShiftSwapRequest'),
+('COMP_OFF',                'Compensatory Off',                'CompOffBalance');
 ```
 
 ---
 
 ### `workflow.WorkflowDefinition`
 
-A versioned workflow template. Multiple definitions can exist per module (e.g. different workflows for different leave types).
+A versioned workflow template. Multiple definitions can exist per module.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowModuleId` | BIGINT | FK → WorkflowModule |
+| `Id` | SMALLINT | Primary key |
+| `WorkflowModuleId` | SMALLINT | FK → WorkflowModule |
 | `WorkflowCode` | NVARCHAR(100) | Unique code e.g. `LEAVE_APPROVAL_V1` |
 | `WorkflowName` | NVARCHAR(200) | Display name |
-| `VersionNo` | INT | Version number, default 1 |
+| `VersionNo` | SMALLINT | Version number, default 1 |
 | `Description` | NVARCHAR(1000) | Optional description |
 | `IsActive` | BIT | Only one active definition per module should be active at a time |
 
@@ -131,27 +138,30 @@ A versioned workflow template. Multiple definitions can exist per module (e.g. d
 
 ```sql
 INSERT INTO workflow.WorkflowDefinition (WorkflowModuleId, WorkflowCode, WorkflowName, VersionNo) VALUES
-(1, 'LEAVE_APPROVAL_V1',   'Leave Approval Workflow',   1),
-(2, 'EXPENSE_APPROVAL_V1', 'Expense Approval Workflow',  1);
+(1, 'LEAVE_APPROVAL_V1',           'Leave Approval Workflow',              1),
+(2, 'EXPENSE_APPROVAL_V1',         'Expense Approval Workflow',            1),
+(3, 'ATTENDANCE_REG_APPROVAL_V1',  'Attendance Regularization Workflow',   1),
+(4, 'SHIFT_SWAP_APPROVAL_V1',      'Shift Swap Approval Workflow',         1),
+(5, 'COMP_OFF_APPROVAL_V1',        'Compensatory Off Approval Workflow',   1);
 ```
 
 ---
 
 ### `workflow.WorkflowStep`
 
-Ordered steps within a workflow definition. Each step has a type, escalation policy, and delegation flag.
+Ordered steps within a workflow definition.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowDefinitionId` | BIGINT | FK → WorkflowDefinition |
-| `StepNo` | INT | Execution order. Unique per definition |
+| `Id` | SMALLINT | Primary key |
+| `WorkflowDefinitionId` | SMALLINT | FK → WorkflowDefinition |
+| `StepNo` | SMALLINT | Execution order. Unique per definition |
 | `StepName` | NVARCHAR(200) | Display name |
 | `WorkflowStepType` | NVARCHAR(50) | FK → StatusLookup (group: `WORKFLOW_STEP_TYPE`) |
-| `WorkflowStepTypeGroup` | computed | Always `'WORKFLOW_STEP_TYPE'` — backs composite FK |
+| `WorkflowStepTypeGroup` | computed | Always `'WORKFLOW_STEP_TYPE'` |
 | `IsFinalStep` | BIT | When approved, closes the workflow instance |
 | `AllowDelegation` | BIT | Whether approver may delegate this step |
-| `EscalationAfterHours` | INT | Auto-escalate task if not acted within N hours. NULL = no escalation |
+| `EscalationAfterHours` | INT | Auto-escalate if not acted within N hours. NULL = no escalation |
 | `IsActive` | BIT | Soft delete flag |
 
 **Step Types** (`WORKFLOW_STEP_TYPE`):
@@ -161,42 +171,54 @@ Ordered steps within a workflow definition. Each step has a type, escalation pol
 | `APPROVAL` | Requires explicit Approve or Reject action |
 | `REVIEW` | Review only, cannot reject |
 | `NOTIFICATION` | Informational, auto-completes |
-| `FYI` | For Your Information, no action required |
+| `AUTO_APPROVAL` | System auto-approves, no human action needed |
 
 **Example — Leave Approval (3 steps):**
 
 ```sql
--- Step 1: Reporting Manager approval
 INSERT INTO workflow.WorkflowStep
     (WorkflowDefinitionId, StepNo, StepName, WorkflowStepType, IsFinalStep, EscalationAfterHours)
-VALUES (1, 1, 'Reporting Manager Approval', 'APPROVAL', 0, 24);
+VALUES
+(1, 1, 'Reporting Manager Approval', 'APPROVAL', 0, 24),
+(1, 2, 'Department Head Approval',   'APPROVAL', 0, 48),
+(1, 3, 'HR Manager Approval',        'APPROVAL', 1, 48);
+```
 
--- Step 2: Department Head approval
-INSERT INTO workflow.WorkflowStep
-    (WorkflowDefinitionId, StepNo, StepName, WorkflowStepType, IsFinalStep, EscalationAfterHours)
-VALUES (1, 2, 'Department Head Approval', 'APPROVAL', 0, 48);
+**Example — Attendance Regularization (2 steps):**
 
--- Step 3: HR Manager approval (final)
+```sql
 INSERT INTO workflow.WorkflowStep
     (WorkflowDefinitionId, StepNo, StepName, WorkflowStepType, IsFinalStep, EscalationAfterHours)
-VALUES (1, 3, 'HR Manager Approval', 'APPROVAL', 1, 48);
+VALUES
+(3, 1, 'Reporting Manager Approval', 'APPROVAL', 0, 24),
+(3, 2, 'HR Notification',            'NOTIFICATION', 1, NULL);
+```
+
+**Example — Shift Swap (1 step — peer acceptance + manager approval):**
+
+```sql
+INSERT INTO workflow.WorkflowStep
+    (WorkflowDefinitionId, StepNo, StepName, WorkflowStepType, IsFinalStep, EscalationAfterHours)
+VALUES
+(4, 1, 'Target Employee Acceptance', 'APPROVAL', 0, 12),
+(4, 2, 'Reporting Manager Approval', 'APPROVAL', 1, 24);
 ```
 
 ---
 
 ### `workflow.WorkflowStepApprover`
 
-Defines the **rule** for resolving who approves a given step. This is not a person — it is a resolution instruction the engine evaluates at runtime.
+Defines the **rule** for resolving who approves a given step at runtime.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowStepId` | BIGINT | FK → WorkflowStep |
+| `Id` | SMALLINT | Primary key |
+| `WorkflowStepId` | SMALLINT | FK → WorkflowStep |
 | `WorkflowApproverType` | NVARCHAR(50) | FK → StatusLookup (group: `WORKFLOW_APPROVER_TYPE`) |
 | `WorkflowApproverTypeGroup` | computed | Always `'WORKFLOW_APPROVER_TYPE'` |
-| `ScopeTypeId` | BIGINT | FK → time.ScopeType. NULL = contextual (derives from initiator) |
-| `ScopeReferenceId` | BIGINT | Entity ID at the given scope level. NULL = initiator's own scope |
-| `PriorityOrder` | INT | When multiple approvers exist, order of assignment |
+| `ScopeTypeId` | SMALLINT | FK → time.ScopeType. NULL = contextual |
+| `ScopeReferenceId` | SMALLINT | Entity ID at the given scope level. NULL = initiator's own scope |
+| `PriorityOrder` | SMALLINT | When multiple approvers exist, order of assignment |
 | `IsMandatory` | BIT | Whether all mandatory approvers must approve before advancing |
 | `IsActive` | BIT | Soft delete flag |
 
@@ -204,27 +226,24 @@ Defines the **rule** for resolving who approves a given step. This is not a pers
 
 | Code | Meaning | Scope Required |
 |------|---------|----------------|
-| `REPORTING_MANAGER` | Direct manager of the initiator | NULL / NULL — always contextual |
-| `SKIP_MANAGER` | Manager's manager (2 levels up) | NULL / NULL — always contextual |
-| `DESIGNATION` | Holder of a specific designation in a scope | ScopeTypeId required; ScopeReferenceId optional |
-| `ROLE` | Holder of a specific role in a scope | ScopeTypeId required; ScopeReferenceId optional |
+| `REPORTING_MANAGER` | Direct manager of the initiator | NULL / NULL |
+| `SKIP_MANAGER` | Manager's manager (2 levels up) | NULL / NULL |
+| `DESIGNATION` | Holder of a specific designation in a scope | ScopeTypeId required |
+| `ROLE` | Holder of a specific role in a scope | ScopeTypeId required |
 | `EMPLOYEE` | A fixed, named employee | ScopeTypeId = EMPLOYEE, ScopeReferenceId = Employee.Id |
 
 ---
 
 ### `workflow.WorkflowStepApproverDesignation`
 
-Maps a `WorkflowStepApprover` rule to one or more qualifying designations. Required when `WorkflowApproverType = 'DESIGNATION'`.
-
-Without this table the engine cannot determine which designation counts as "Department Head" for Step 2 — that logic would need to be hardcoded in the application.
+Maps a `WorkflowStepApprover` rule to one or more qualifying designations.
+Required when `WorkflowApproverType = 'DESIGNATION'`.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowStepApproverId` | BIGINT | FK → WorkflowStepApprover |
-| `DesignationId` | BIGINT | FK → time.Designation |
-
-A single step approver rule can accept **multiple designations** — for example, Step 2 ("Department Head") may accept `CONSULTANT` in Clinical, `HRMANAGER` in HR, and `FINMANAGER` in Finance. The engine matches whichever designation is held by an active employee in the resolved department.
+| `Id` | SMALLINT | Primary key |
+| `WorkflowStepApproverId` | SMALLINT | FK → WorkflowStepApprover |
+| `DesignationId` | SMALLINT | FK → time.Designation |
 
 ---
 
@@ -232,46 +251,28 @@ A single step approver rule can accept **multiple designations** — for example
 
 ### `workflow.WorkflowAssignment`
 
-Maps a workflow definition to an org scope for **routing**. Answers the question: *"Which workflow template should be triggered when a transaction is submitted by someone in scope X?"*
-
-This scope is for routing only, not for approver resolution.
+Maps a workflow definition to an org scope for routing.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowDefinitionId` | BIGINT | FK → WorkflowDefinition |
-| `ScopeTypeId` | BIGINT | FK → time.ScopeType (routing scope level) |
-| `ScopeReferenceId` | BIGINT | Entity ID at that scope (e.g. Department ID) |
+| `Id` | SMALLINT | Primary key |
+| `WorkflowDefinitionId` | SMALLINT | FK → WorkflowDefinition |
+| `ScopeTypeId` | SMALLINT | FK → time.ScopeType (routing scope level) |
+| `ScopeReferenceId` | SMALLINT | Entity ID at that scope |
 | `EffectiveFrom` | DATE | Date from which this assignment is active |
 | `EffectiveTo` | DATE | NULL = still active |
-| `PriorityOrder` | INT | When multiple assignments match, lower number wins |
+| `PriorityOrder` | SMALLINT | Lower number wins when multiple assignments match |
 | `IsActive` | BIT | Soft delete flag |
 
-**Example — Assign Leave workflow to all departments:**
+**Example — Assign Leave workflow globally:**
 
 ```sql
--- Assign to GLOBAL scope = applies to everyone
 INSERT INTO workflow.WorkflowAssignment
     (WorkflowDefinitionId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, PriorityOrder)
 VALUES
-    (1,  -- LEAVE_APPROVAL_V1
+    (1,
      (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'GLOBAL'),
-     1,   -- Global entity reference
-     '2025-01-01', 1);
-```
-
-**Example — Override for a specific department:**
-
-```sql
--- Cardiology gets a different (stricter) leave workflow
-INSERT INTO workflow.WorkflowAssignment
-    (WorkflowDefinitionId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, PriorityOrder)
-VALUES
-    (5,  -- LEAVE_CLINICAL_V1 (stricter version)
-     (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'DEPARTMENT'),
-     (SELECT Id FROM time.Department WHERE DepartmentCode = 'CARDIOLOGY'),
-     '2025-01-01', 2);
--- Higher PriorityOrder = more specific = wins over GLOBAL assignment
+     1, '2025-01-01', 1);
 ```
 
 ---
@@ -280,20 +281,21 @@ VALUES
 
 ### `workflow.WorkflowInstance`
 
-One row per submitted transaction. Tracks the current step and overall status of the workflow.
+One row per submitted transaction.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowDefinitionId` | BIGINT | The template this instance follows |
-| `WorkflowModuleId` | BIGINT | The module that owns this instance |
-| `ReferenceTransactionId` | BIGINT | PK of the originating record (e.g. LeaveRequest.Id) |
-| `CurrentWorkflowStepId` | BIGINT | Active step. NULL when completed or cancelled |
+| `Id` | INT | Primary key |
+| `WorkflowDefinitionId` | SMALLINT | The template this instance follows |
+| `WorkflowModuleId` | SMALLINT | The module that owns this instance |
+| `ReferenceTransactionId` | INT | PK of the originating record (e.g. LeaveRequest.Id) |
+| `CurrentWorkflowStepId` | SMALLINT | Active step. NULL when completed or cancelled |
 | `WorkflowStatus` | NVARCHAR(50) | FK → StatusLookup (group: `WORKFLOW_STATUS`) |
 | `WorkflowStatusGroup` | computed | Always `'WORKFLOW_STATUS'` |
-| `InitiatedBy` | BIGINT | FK → employee.Employee |
-| `InitiatedAt` | DATETIME2 | Submission timestamp |
+| `CreatedBy` | INT | FK → employee.Employee (initiator) |
+| `CreatedAt` | DATETIME2 | Submission timestamp |
 | `CompletedAt` | DATETIME2 | NULL until workflow reaches terminal status |
+| `CompletedBy` | INT | FK → employee.Employee |
 
 **Workflow Status values** (`WORKFLOW_STATUS`):
 
@@ -311,43 +313,34 @@ One row per submitted transaction. Tracks the current step and overall status of
 
 ### `workflow.WorkflowTask`
 
-One row per resolved approver per step. This is the **actionable inbox item** that appears in an approver's task list.
-
-`WorkflowStepApprover` defines the rule → `WorkflowTask` is the concrete instance of that rule for one specific workflow execution.
+One row per resolved approver per step — the actionable inbox item.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowInstanceId` | BIGINT | FK → WorkflowInstance |
-| `WorkflowStepId` | BIGINT | FK → WorkflowStep |
-| `WorkflowStepApproverId` | BIGINT | The rule that generated this task |
-| `AssignedToEmployeeId` | BIGINT | The resolved, actual approver |
-| `DelegatedFromEmployeeId` | BIGINT | Set when task was delegated from another employee |
+| `Id` | INT | Primary key |
+| `WorkflowInstanceId` | INT | FK → WorkflowInstance |
+| `WorkflowStepId` | SMALLINT | FK → WorkflowStep |
+| `WorkflowStepApproverId` | SMALLINT | The rule that generated this task |
+| `AssignedToEmployeeId` | INT | The resolved, actual approver |
+| `DelegatedFromEmployeeId` | INT | Set when task was delegated |
 | `TaskStatus` | NVARCHAR(50) | FK → StatusLookup (group: `WORKFLOW_TASK_STATUS`) |
 | `TaskStatusGroup` | computed | Always `'WORKFLOW_TASK_STATUS'` |
 | `AssignedAt` | DATETIME2 | When task was created |
-| `DueAt` | DATETIME2 | Deadline computed from step `EscalationAfterHours` |
+| `DueAt` | DATETIME2 | Deadline from step `EscalationAfterHours` |
 | `ActionAt` | DATETIME2 | When the approver acted |
+| `ActionBy` | INT | Employee who performed the action |
 | `Remarks` | NVARCHAR(2000) | Approver's comments |
-| `ParentWorkflowTaskId` | BIGINT | Self-FK. Set when this is a delegated child task |
+| `ParentWorkflowTaskId` | INT | Self-FK. Set when this is a delegated child task |
 
 **Task Status values** (`WORKFLOW_TASK_STATUS`):
 
 | Code | Terminal | Description |
 |------|----------|-------------|
 | `PENDING` | No | Awaiting approver action |
-| `COMPLETED` | **Yes** | Approver acted (Approved or Rejected) |
-| `DELEGATED` | **Yes** | Approver delegated — new task created for delegate |
-| `CANCELLED` | **Yes** | Task voided (e.g. workflow withdrawn) |
-| `ESCALATED` | No | Past due, escalated to next level |
-
-**Delegation chain example:**
-
-```
-WorkflowTask Id=10  AssignedTo=EmpA  Status=DELEGATED  ParentTaskId=NULL
-WorkflowTask Id=11  AssignedTo=EmpB  Status=PENDING    ParentTaskId=10
-                    DelegatedFrom=EmpA
-```
+| `COMPLETED` | **Yes** | Approver acted |
+| `DELEGATED` | **Yes** | Delegated — new task created |
+| `CANCELLED` | **Yes** | Task voided |
+| `ESCALATED` | No | Past due, escalated |
 
 ---
 
@@ -355,44 +348,43 @@ WorkflowTask Id=11  AssignedTo=EmpB  Status=PENDING    ParentTaskId=10
 
 ### `workflow.WorkflowActionHistory`
 
-Immutable, append-only log of every action taken against a workflow instance. Never updated, only inserted.
+Immutable, append-only log. Never updated, only inserted.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `Id` | BIGINT | Primary key |
-| `WorkflowInstanceId` | BIGINT | FK → WorkflowInstance |
-| `WorkflowTaskId` | BIGINT | FK → WorkflowTask. NULL for system-generated actions |
-| `WorkflowStepId` | BIGINT | The step at which the action occurred |
+| `Id` | INT | Primary key |
+| `WorkflowInstanceId` | INT | FK → WorkflowInstance |
+| `WorkflowTaskId` | INT | FK → WorkflowTask. NULL for system actions |
+| `WorkflowStepId` | SMALLINT | The step at which the action occurred |
 | `WorkflowActionType` | NVARCHAR(50) | FK → StatusLookup (group: `WORKFLOW_ACTION_TYPE`) |
 | `WorkflowActionTypeGroup` | computed | Always `'WORKFLOW_ACTION_TYPE'` |
-| `ActionBy` | BIGINT | FK → employee.Employee |
+| `ActionBy` | INT | FK → employee.Employee |
 | `ActionAt` | DATETIME2 | Timestamp |
-| `Remarks` | NVARCHAR(2000) | Approver's comments |
+| `Remarks` | NVARCHAR(2000) | Comments |
 | `FromWorkflowStatus` | NVARCHAR(50) | Status before the action |
-| `FromWorkflowStatusGroup` | computed | Always `'WORKFLOW_STATUS'` — backs FK independently |
+| `FromWorkflowStatusGroup` | computed | Always `'WORKFLOW_STATUS'` |
 | `ToWorkflowStatus` | NVARCHAR(50) | Status after the action |
-| `ToWorkflowStatusGroup` | computed | Always `'WORKFLOW_STATUS'` — backs FK independently |
+| `ToWorkflowStatusGroup` | computed | Always `'WORKFLOW_STATUS'` |
 
-> **Note on dual computed columns:** `FromWorkflowStatusGroup` and `ToWorkflowStatusGroup` are separate computed columns (not shared) because SQL Server cannot bind two composite foreign keys using the same computed column with different leading columns. Each computed column independently backs its own FK into `shared.StatusLookup`.
+> **Note:** `FromWorkflowStatusGroup` and `ToWorkflowStatusGroup` are separate computed columns because SQL Server cannot bind two composite foreign keys using the same computed column with different leading columns.
 
 **Action Types** (`WORKFLOW_ACTION_TYPE`):
 
 | Code | Description |
 |------|-------------|
-| `SUBMIT` | Transaction submitted by initiator |
+| `SUBMIT` | Transaction submitted |
 | `APPROVE` | Step approved |
 | `REJECT` | Step rejected |
-| `DELEGATE` | Task delegated to another employee |
-| `ESCALATE` | Task auto-escalated after due time |
+| `DELEGATE` | Task delegated |
+| `ESCALATE` | Task auto-escalated |
 | `CANCEL` | Workflow cancelled |
 | `WITHDRAW` | Withdrawn by initiator |
 | `REASSIGN` | Task manually reassigned by admin |
+| `RETURN` | Returned for clarification |
 
 ---
 
 ## Scope Resolution
-
-The engine uses a 7-level org hierarchy from `time.ScopeType` to resolve approvers. No new scope types are needed beyond what is already seeded.
 
 | HierarchyLevel | ScopeCode | Meaning |
 |----------------|-----------|---------|
@@ -408,8 +400,6 @@ The engine uses a 7-level org hierarchy from `time.ScopeType` to resolve approve
 
 **Contextual scope** — `ScopeReferenceId = NULL`
 
-The engine resolves the scope from the initiator's own org data at runtime.
-
 ```
 ScopeTypeId  = DEPARTMENT scope type id
 ScopeReferenceId = NULL
@@ -418,17 +408,13 @@ ScopeReferenceId = NULL
 
 **Fixed scope** — `ScopeReferenceId = <actual id>`
 
-The engine always routes to the same org unit regardless of who submits.
-
 ```
 ScopeTypeId  = DEPARTMENT scope type id
 ScopeReferenceId = <HR department id>
-→ Engine uses: ScopeReferenceId directly — always HR
+→ Engine always routes to HR regardless of initiator
 ```
 
 ### `REPORTING_MANAGER` and `SKIP_MANAGER` — No Scope Needed
-
-These approver types are always `NULL / NULL`. The engine resolves them by traversing `employee.Employee.ReportingManagerId` directly — no scope lookup is needed.
 
 ```
 REPORTING_MANAGER → Employee[initiator].ReportingManagerId
@@ -438,8 +424,6 @@ SKIP_MANAGER      → Employee[Employee[initiator].ReportingManagerId].Reporting
 ---
 
 ## Approver Resolution — How It Works
-
-At runtime, when a `WorkflowInstance` advances to a step, the engine executes this logic:
 
 ```
 FOR EACH WorkflowStepApprover rule on the current step:
@@ -474,197 +458,43 @@ FOR EACH WorkflowStepApprover rule on the current step:
 
 ```
 Initiator: Dr. Priya (EmpId=201)
-  Designation : JRRESIDENT (Junior Resident)
+  Designation : JRRESIDENT
   Department  : CARDIOLOGY
-  Reporting Manager: Dr. Arjun (EmpId=101, RESIDENTDR, CARDIOLOGY)
+  Manager     : Dr. Arjun (EmpId=101, RESIDENTDR, CARDIOLOGY)
 
 Dept Head of CARDIOLOGY: Dr. Meera (EmpId=55, CONSULTANT, CARDIOLOGY)
 HR Manager             : Ms. Kavya (EmpId=301, HRMANAGER, HR)
 Finance Manager        : Mr. Ravi  (EmpId=401, FINMANAGER, FINANCE)
 ```
 
----
-
-### Step 1 — Configure WorkflowStepApprover Rules
-
-```sql
--- ── LEAVE WORKFLOW ──────────────────────────────────────────
-
--- Step 1: Reporting Manager (contextual — no scope)
-INSERT INTO workflow.WorkflowStepApprover
-    (WorkflowStepId, WorkflowApproverType, ScopeTypeId, ScopeReferenceId)
-VALUES (@LeaveStep1Id, 'REPORTING_MANAGER', NULL, NULL);
-
--- Step 2: Department Head of initiator's own department
-INSERT INTO workflow.WorkflowStepApprover
-    (WorkflowStepId, WorkflowApproverType, ScopeTypeId, ScopeReferenceId)
-VALUES (@LeaveStep2Id, 'DESIGNATION',
-        (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'DEPARTMENT'),
-        NULL);  -- NULL = use initiator's department at runtime
-
--- Map qualifying designations for Step 2 (anyone who can be a Dept Head)
-INSERT INTO workflow.WorkflowStepApproverDesignation (WorkflowStepApproverId, DesignationId)
-SELECT @LeaveStep2ApproverId, Id FROM time.Designation
-WHERE DesignationCode IN ('CONSULTANT','CHFNURSE','CHIEFPHARM','HOPADMIN',
-                          'HRMANAGER','ITMANAGER','FINMANAGER','OPSMGR');
-
--- Step 3: HR Manager — fixed to HR department regardless of initiator
-INSERT INTO workflow.WorkflowStepApprover
-    (WorkflowStepId, WorkflowApproverType, ScopeTypeId, ScopeReferenceId)
-VALUES (@LeaveStep3Id, 'DESIGNATION',
-        (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'DEPARTMENT'),
-        (SELECT Id FROM time.Department WHERE DepartmentCode = 'HR'));
-
-INSERT INTO workflow.WorkflowStepApproverDesignation (WorkflowStepApproverId, DesignationId)
-VALUES (@LeaveStep3ApproverId,
-        (SELECT Id FROM time.Designation WHERE DesignationCode = 'HRMANAGER'));
-
-
--- ── EXPENSE WORKFLOW ────────────────────────────────────────
-
--- Steps 1 & 2: identical pattern to Leave (different StepIds, same logic)
-
--- Step 3: Finance Manager — fixed to FINANCE department
-INSERT INTO workflow.WorkflowStepApprover
-    (WorkflowStepId, WorkflowApproverType, ScopeTypeId, ScopeReferenceId)
-VALUES (@ExpenseStep3Id, 'DESIGNATION',
-        (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'DEPARTMENT'),
-        (SELECT Id FROM time.Department WHERE DepartmentCode = 'FINANCE'));
-
-INSERT INTO workflow.WorkflowStepApproverDesignation (WorkflowStepApproverId, DesignationId)
-VALUES (@ExpenseStep3ApproverId,
-        (SELECT Id FROM time.Designation WHERE DesignationCode = 'FINMANAGER'));
-```
-
----
-
-### Step 2 — Dr. Priya Submits a Leave Request
-
-```sql
--- 1. Create workflow instance
-INSERT INTO workflow.WorkflowInstance
-    (WorkflowDefinitionId, WorkflowModuleId, ReferenceTransactionId,
-     CurrentWorkflowStepId, WorkflowStatus, InitiatedBy)
-VALUES (1, 1, @LeaveRequestId, @LeaveStep1Id, 'PENDING', 201);
-
--- 2. Engine resolves Step 1 approver: REPORTING_MANAGER → EmpId=101 (Dr. Arjun)
-INSERT INTO workflow.WorkflowTask
-    (WorkflowInstanceId, WorkflowStepId, WorkflowStepApproverId,
-     AssignedToEmployeeId, TaskStatus, DueAt)
-VALUES (@InstanceId, @LeaveStep1Id, @Step1ApproverId,
-        101, 'PENDING', DATEADD(HOUR, 24, GETUTCDATE()));
-
--- 3. Log the submission
-INSERT INTO workflow.WorkflowActionHistory
-    (WorkflowInstanceId, WorkflowStepId, WorkflowActionType,
-     ActionBy, FromWorkflowStatus, ToWorkflowStatus)
-VALUES (@InstanceId, @LeaveStep1Id, 'SUBMIT', 201, 'DRAFT', 'PENDING');
-```
-
----
-
-### Step 3 — Dr. Arjun Approves (Step 1 → Step 2)
-
-```sql
--- 1. Complete Step 1 task
-UPDATE workflow.WorkflowTask
-SET    TaskStatus = 'COMPLETED', ActionAt = GETUTCDATE(), Remarks = 'Approved'
-WHERE  Id = @Task1Id;
-
--- 2. Advance instance to Step 2
-UPDATE workflow.WorkflowInstance
-SET    CurrentWorkflowStepId = @LeaveStep2Id, WorkflowStatus = 'IN_PROGRESS'
-WHERE  Id = @InstanceId;
-
--- 3. Engine resolves Step 2: DESIGNATION + initiator's dept (CARDIOLOGY)
---    Finds Dr. Meera (EmpId=55, CONSULTANT in CARDIOLOGY)
-INSERT INTO workflow.WorkflowTask
-    (WorkflowInstanceId, WorkflowStepId, WorkflowStepApproverId,
-     AssignedToEmployeeId, TaskStatus, DueAt)
-VALUES (@InstanceId, @LeaveStep2Id, @Step2ApproverId,
-        55, 'PENDING', DATEADD(HOUR, 48, GETUTCDATE()));
-
--- 4. Log the action
-INSERT INTO workflow.WorkflowActionHistory
-    (WorkflowInstanceId, WorkflowTaskId, WorkflowStepId, WorkflowActionType,
-     ActionBy, FromWorkflowStatus, ToWorkflowStatus)
-VALUES (@InstanceId, @Task1Id, @LeaveStep1Id, 'APPROVE', 101, 'PENDING', 'IN_PROGRESS');
-```
-
----
-
-### Step 4 — Dr. Meera Approves (Step 2 → Step 3)
-
-Engine resolves Step 3: DESIGNATION + **fixed** DEPARTMENT=HR → Ms. Kavya (EmpId=301).
-
-Note: the scope here ignores the initiator's department entirely. Whether Dr. Priya is in Cardiology, Oncology, or Surgery — Step 3 always routes to HR.
-
----
-
-### Step 5 — Ms. Kavya Approves (Final Step)
-
-```sql
--- 1. Complete Step 3 task
-UPDATE workflow.WorkflowTask
-SET    TaskStatus = 'COMPLETED', ActionAt = GETUTCDATE()
-WHERE  Id = @Task3Id;
-
--- 2. Close the workflow instance (IsFinalStep = 1)
-UPDATE workflow.WorkflowInstance
-SET    CurrentWorkflowStepId = NULL,
-       WorkflowStatus = 'APPROVED',
-       CompletedAt = GETUTCDATE()
-WHERE  Id = @InstanceId;
-
--- 3. Log final approval
-INSERT INTO workflow.WorkflowActionHistory
-    (WorkflowInstanceId, WorkflowTaskId, WorkflowStepId, WorkflowActionType,
-     ActionBy, FromWorkflowStatus, ToWorkflowStatus)
-VALUES (@InstanceId, @Task3Id, @LeaveStep3Id, 'APPROVE', 301, 'IN_PROGRESS', 'APPROVED');
-```
-
----
-
 ### Resolution Comparison — Same Initiator, Two Workflows
 
 | Step | Leave Workflow | Expense Workflow |
 |------|---------------|-----------------|
-| Step 1 | Dr. Arjun (EmpId=101) — Reporting Manager | Dr. Arjun (EmpId=101) — same rule |
-| Step 2 | Dr. Meera (EmpId=55) — Dept Head, Cardiology | Dr. Meera (EmpId=55) — same rule |
-| Step 3 | Ms. Kavya (EmpId=301) — HR Manager, HR Dept | Mr. Ravi (EmpId=401) — Finance Manager, Finance Dept |
+| Step 1 | Dr. Arjun (EmpId=101) — Reporting Manager | Dr. Arjun — same rule |
+| Step 2 | Dr. Meera (EmpId=55) — Dept Head, Cardiology | Dr. Meera — same rule |
+| Step 3 | Ms. Kavya (EmpId=301) — HR Manager, HR Dept | Mr. Ravi (EmpId=401) — Finance Manager |
 
-Steps 1 and 2 share identical configuration across both workflows. Only Step 3 differs by pointing to a different fixed department.
+Steps 1 and 2 share identical configuration. Only Step 3 differs by pointing to a different fixed department.
 
 ---
 
 ## Runtime Resolution Query
 
-Standard resolution query for `DESIGNATION` type approvers. Run by the engine when advancing to a step.
-
 ```sql
--- Parameters:
---   @WorkflowStepApproverId  BIGINT  -- The rule being resolved
---   @InitiatorEmployeeId     BIGINT  -- Who submitted the transaction
-
 SELECT      e.Id                AS ResolvedEmployeeId,
-            e.EmployeeName      AS ResolvedEmployeeName,
+            e.DisplayName       AS ResolvedEmployeeName,
             d.DesignationCode   AS ResolvedDesignation,
             dept.DepartmentCode AS ResolvedDepartment
 FROM        employee.Employee                           e
-JOIN        time.Designation                            d
-                ON  d.Id = e.DesignationId
-JOIN        time.Department                             dept
-                ON  dept.Id = e.DepartmentId
-JOIN        workflow.WorkflowStepApproverDesignation    wsad
-                ON  wsad.DesignationId = d.Id
-JOIN        workflow.WorkflowStepApprover               wsa
-                ON  wsa.Id = wsad.WorkflowStepApproverId
+JOIN        time.Designation                            d   ON d.Id = e.DesignationId
+JOIN        time.Department                             dept ON dept.Id = e.DepartmentId
+JOIN        workflow.WorkflowStepApproverDesignation    wsad ON wsad.DesignationId = d.Id
+JOIN        workflow.WorkflowStepApprover               wsa  ON wsa.Id = wsad.WorkflowStepApproverId
 WHERE       wsa.Id = @WorkflowStepApproverId
 AND         e.DepartmentId = CASE
-                -- NULL ScopeReferenceId = contextual (initiator's department)
                 WHEN wsa.ScopeReferenceId IS NULL
                 THEN (SELECT DepartmentId FROM employee.Employee WHERE Id = @InitiatorEmployeeId)
-                -- Non-NULL = fixed department, ignore initiator
                 ELSE wsa.ScopeReferenceId
             END
 AND         e.IsActive = 1;
@@ -699,13 +529,13 @@ AND         e.IsActive = 1;
   Cancel (admin / system) → CANCELLED  (from any non-terminal state)
 ```
 
-**Task lifecycle within a step:**
+**Task lifecycle:**
 
 ```
 PENDING ──► COMPLETED  (approver acts)
-        ──► DELEGATED  (approver delegates → new task created for delegate)
-        ──► ESCALATED  (DueAt passed, no action)
-        ──► CANCELLED  (workflow withdrawn/cancelled before action)
+        ──► DELEGATED  (approver delegates → new task created)
+        ──► ESCALATED  (DueAt passed)
+        ──► CANCELLED  (workflow withdrawn/cancelled)
 ```
 
 ---
@@ -718,7 +548,7 @@ PENDING ──► COMPLETED  (approver acts)
 | `IX_WorkflowStepApprover_Step` | WorkflowStepApprover | WorkflowStepId | Load rules for a step |
 | `IX_WorkflowStepApprover_Scope` | WorkflowStepApprover | ScopeTypeId, ScopeReferenceId | Scope-based rule filtering |
 | `IX_WorkflowInstance_Module_Transaction` | WorkflowInstance | WorkflowModuleId, ReferenceTransactionId | Find instance for a transaction |
-| `IX_WorkflowInstance_InitiatedBy` | WorkflowInstance | InitiatedBy | My submissions list |
+| `IX_WorkflowInstance_CreatedBy` | WorkflowInstance | CreatedBy | My submissions list |
 | `IX_WorkflowInstance_CurrentStep` | WorkflowInstance | CurrentWorkflowStepId | Active step lookup |
 | `IX_WorkflowTask_AssignedTo_Status` | WorkflowTask | AssignedToEmployeeId, TaskStatus | **Approver inbox — most frequent query** |
 | `IX_WorkflowTask_Instance` | WorkflowTask | WorkflowInstanceId | All tasks for an instance |
@@ -733,12 +563,12 @@ PENDING ──► COMPLETED  (approver acts)
 
 ### `WORKFLOW_STEP_TYPE`
 
-| StatusCode | Label |
-|------------|-------|
-| `APPROVAL` | Approval Step |
-| `REVIEW` | Review Step |
-| `NOTIFICATION` | Notification Step |
-| `FYI` | For Your Information |
+| StatusCode | Label | IsTerminal |
+|------------|-------|-----------|
+| `APPROVAL` | Approval Step | 0 |
+| `REVIEW` | Review Step | 0 |
+| `NOTIFICATION` | Notification Step | 0 |
+| `AUTO_APPROVAL` | Auto Approval | 0 |
 
 ### `WORKFLOW_APPROVER_TYPE`
 
@@ -774,6 +604,7 @@ PENDING ──► COMPLETED  (approver acts)
 | `CANCEL` | Cancelled |
 | `WITHDRAW` | Withdrawn |
 | `REASSIGN` | Reassigned |
+| `RETURN` | Return for Clarification |
 
 ### `WORKFLOW_TASK_STATUS`
 
@@ -785,6 +616,153 @@ PENDING ──► COMPLETED  (approver acts)
 | `CANCELLED` | Cancelled | **Yes** |
 | `ESCALATED` | Escalated | No |
 
+### `WorkflowModule` Seed — Supported Business Modules
+
+| ModuleCode | ModuleName | EntityName |
+|------------|-----------|-----------|
+| `LEAVE` | Leave Management | LeaveRequest |
+| `EXPENSE` | Expense Management | ExpenseRequest |
+| `ATTENDANCE_REGULARIZATION` | Attendance Regularization | AttendanceRegularization |
+| `SHIFT_SWAP` | Shift Swap | ShiftSwapRequest |
+| `COMP_OFF` | Compensatory Off | CompOffBalance |
+| `HIRING` | Hiring & Recruitment | JobApplication |
+| `ONBOARDING` | Employee Onboarding | OnboardingTask |
+| `EXIT` | Exit Management | ExitRequest |
+
+---
+
+## Supported Business Modules
+
+The workflow engine is module-agnostic. Any business transaction that requires approval routes through the same engine. The owning microservice submits a `WorkflowInstance` and polls for status changes.
+
+### How a Module Integrates
+
+1. **Design time** — Admin creates a `WorkflowDefinition` + `WorkflowStep` + `WorkflowStepApprover` records for the module.
+2. **Assignment** — Admin assigns the definition to an org scope via `WorkflowAssignment`.
+3. **Submission** — The owning service (e.g. Attendance.API) inserts a `WorkflowInstance` with `WorkflowModuleId` and `ReferenceTransactionId` pointing to the originating record.
+4. **Execution** — The Workflow engine resolves approvers, creates `WorkflowTask` rows, and manages transitions.
+5. **Notification** — On each state change, the engine publishes a RabbitMQ event `workflow.instance.status_changed` with the module code and reference ID.
+6. **Callback** — The owning service consumes the event and updates its own record's status (e.g. `LeaveRequest.LeaveStatus = APPROVED`).
+
+### Module → Status Field Mapping
+
+| WorkflowModule | Owning Service | Status Column Updated on Completion |
+|----------------|---------------|-------------------------------------|
+| `LEAVE` | Attendance.API | `attendance.LeaveRequest.LeaveStatus` |
+| `ATTENDANCE_REGULARIZATION` | Attendance.API | `attendance.AttendanceRegularization.RegularizationStatus` |
+| `SHIFT_SWAP` | Attendance.API | `attendance.ShiftSwapRequest.ShiftSwapStatus` |
+| `COMP_OFF` | Attendance.API | `attendance.CompOffBalance.WorkflowInstanceId` |
+| `EXPENSE` | HR/Finance.API | `expense.ExpenseClaim.ClaimStatus` |
+| `HIRING` | HR.API | `hr.JobApplication.ApplicationStatus` |
+
+---
+
+## Cross-Microservice Integration
+
+```
+Attendance.API / HR.API / Payroll.API
+        │
+        │  POST /api/v1/workflow/instances
+        │  { moduleCode, referenceTransactionId, initiatedByEmployeeId }
+        ▼
+Workflow.API
+        │
+        │  Resolves approvers → creates WorkflowTasks
+        │  Publishes: workflow.instance.status_changed (RabbitMQ)
+        ▼
+RabbitMQ Exchange: sdxcore.events
+        │
+        ├── Queue: sdxcore.attendance.workflow.callback
+        │         → Attendance consumer updates LeaveRequest / Regularization / ShiftSwap status
+        │
+        ├── Queue: sdxcore.hr.workflow.callback
+        │         → HR consumer updates OnboardingTask / ExitRequest status
+        │
+        └── Queue: sdxcore.notification.workflow.send
+                  → Notification consumer sends email/push to approver and initiator
+```
+
+**Event payload published on status change:**
+
+```json
+{
+  "eventType": "workflow.instance.status_changed",
+  "workflowInstanceId": 1042,
+  "workflowModuleCode": "LEAVE",
+  "referenceTransactionId": 501,
+  "previousStatus": "IN_PROGRESS",
+  "newStatus": "APPROVED",
+  "completedAt": "2025-11-14T10:22:00Z",
+  "actionByEmployeeId": 301
+}
+```
+
+---
+
+## Docker Compose Integration
+
+### Add `workflow-api` to `docker-compose.yml`
+
+```yaml
+  workflow-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Workflow/SdxCore.Workflow.API/Dockerfile
+    container_name: sdxcore-workflow-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - Redis__ConnectionString=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__VirtualHost=sdxcore
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "${WORKFLOW_PORT:-5005}:80"
+    networks:
+      - sdxcore-network
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+```
+
+### Add to Gateway YARP cluster environment variables
+
+```yaml
+- ReverseProxy__Clusters__workflow-cluster__Destinations__workflow-api__Address=http://workflow-api:80
+```
+
+### Add to `.env.example`
+
+```dotenv
+WORKFLOW_PORT=5005
+```
+
+### EF Core Migration
+
+```bash
+dotnet ef migrations add InitialWorkflow \
+  --project src/Services/Workflow/SdxCore.Workflow.Persistence \
+  --startup-project src/Services/Workflow/SdxCore.Workflow.API
+
+dotnet ef database update \
+  --project src/Services/Workflow/SdxCore.Workflow.Persistence \
+  --startup-project src/Services/Workflow/SdxCore.Workflow.API
+```
+
 ---
 
 ## Design Decisions & Changelog
@@ -792,27 +770,35 @@ PENDING ──► COMPLETED  (approver acts)
 ### v1 → v2
 
 **ScopeType moved from `WorkflowAssignment` to `WorkflowStepApprover`**
-
-In v1, `ScopeType` sat at the `WorkflowAssignment` (definition) level, meaning all steps in a workflow shared the same scope. This made it impossible for Step 1 to resolve from a department and Step 3 to always route to HR. Moving scope to `WorkflowStepApprover` gives each step its own independent resolution context.
+Each step now resolves approvers from its own independent scope. This allows Step 1 to route from the initiator's department and Step 3 to always route to HR.
 
 **`WorkflowTask` table added**
-
-`WorkflowStepApprover` defines who *should* approve (a rule). There was no table for the concrete, actionable task created when that rule is evaluated for a specific submission. `WorkflowTask` fills this gap — it is what powers the approver inbox.
+`WorkflowStepApprover` defines who *should* approve. `WorkflowTask` is the concrete inbox item created when that rule is evaluated for a specific submission.
 
 **`WorkflowActionHistory` dual FK collision fixed**
-
-The original schema had a single `WorkflowStatusGroup` computed column referenced by both `FromWorkflowStatus` and `ToWorkflowStatus` composite FKs. SQL Server cannot bind two composite FKs using the same computed column with different leading columns. Split into `FromWorkflowStatusGroup` and `ToWorkflowStatusGroup` — two independent computed columns.
+Split `WorkflowStatusGroup` into `FromWorkflowStatusGroup` and `ToWorkflowStatusGroup` — two independent computed columns to satisfy two separate composite FKs.
 
 ### v2 → v3
 
 **`WorkflowStepApprover.ApproverReferenceId` removed**
-
-`EMPLOYEE` is already a `ScopeType` at `HierarchyLevel = 7`. A fixed approver is expressed as `ScopeTypeId = EMPLOYEE scope id`, `ScopeReferenceId = employee.Id` — the same resolution path as every other scope type. A dedicated `ApproverReferenceId` column would create two divergent paths for the same concept and require the engine to check which one to use.
+`EMPLOYEE` is a first-class `ScopeType` at `HierarchyLevel = 7`. Fixed approvers use `ScopeTypeId = EMPLOYEE`, `ScopeReferenceId = employee.Id` — the same resolution path as all other scope types.
 
 **`WorkflowStepApproverDesignation` added**
-
-Without this table, the engine had no data-driven way to know which designation qualifies as "Department Head" for a given step. The mapping table makes this configurable per step rather than hardcoded in application logic.
+Makes qualifying designations per step configurable via data rather than hardcoded logic.
 
 **Seed inserts corrected**
+`StatusName` → `Label` (matches `shared.StatusLookup` schema).
 
-Column name corrected from `StatusName` (v2) to `Label` (matches `shared.StatusLookup` schema). Inserts moved from comment block to live executable SQL. `IsTerminal` populated meaningfully for all status groups.
+### v3 → v4
+
+**Multi-module support formalized**
+`WorkflowModule` seed extended to cover `ATTENDANCE_REGULARIZATION`, `SHIFT_SWAP`, `COMP_OFF`, `HIRING`, `ONBOARDING`, and `EXIT`.
+
+**`AUTO_APPROVAL` step type added**
+Replaces the `FYI` type from v1/v2 — system auto-completes without human action. Used for HR notification steps.
+
+**`RETURN` action type added**
+Allows approvers to return a request to the initiator for clarification without full rejection.
+
+**Cross-microservice integration pattern documented**
+RabbitMQ event `workflow.instance.status_changed` standardized as the callback mechanism for all owning microservices.

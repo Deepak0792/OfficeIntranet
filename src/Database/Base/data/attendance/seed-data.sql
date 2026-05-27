@@ -170,23 +170,23 @@ INSERT INTO attendance.WorkWeekPolicyAssignment (WorkWeekPolicyId, ScopeTypeId, 
 -- SHIFT MANAGEMENT
 
 PRINT 'Inserting Shift...';
-INSERT INTO attendance.Shift (ShiftCode, ShiftName, StartTime, EndTime, BreakDurationMinutes, GraceInMinutes, GraceOutMinutes, MinimumWorkingMinutes, MaximumWorkingMinutes, IsNightShift, CrossesMidnight, IsFlexible, AllowOvertime) VALUES
+INSERT INTO attendance.Shift (ShiftCode, ShiftName, StartTime, EndTime, BreakDurationMinutes, GraceInMinutes, GraceOutMinutes, MinimumWorkingMinutes, MaximumWorkingMinutes, AttendanceFinalizeBufferMinutes, MaxAllowedCheckoutDelayMinutes, IsNightShift, CrossesMidnight, IsFlexible, AllowOvertime) VALUES
 -- General / Admin shift - IST 9:00-18:00 (standard Indian office hours)
-('SHF-GEN',     'General Shift (9AM-6PM)',          '09:00', '18:00', 60, 15, 15, 420, 540, 0, 0, 0, 1),
--- Clinical morning shift - 7:00-15:00
-('SHF-MORN',    'Morning Shift (7AM-3PM)',           '07:00', '15:00', 30, 10, 10, 450, 480, 0, 0, 0, 1),
--- Clinical afternoon/evening shift - 14:00-22:00
-('SHF-AFT',     'Afternoon Shift (2PM-10PM)',        '14:00', '22:00', 30, 10, 10, 450, 480, 0, 0, 0, 1),
--- Night shift - 22:00-06:00 (crosses midnight)
-('SHF-NIGHT',   'Night Shift (10PM-6AM)',            '22:00', '06:00', 30, 10, 10, 450, 480, 1, 1, 0, 1),
+('SHF-GEN',     'General Shift (9AM-6PM)',          '09:00', '18:00', 60, 15, 15, 420, 540, 240, 120, 0, 0, 0, 1),
+-- Clinical morning shift - 08:00-14:00
+('SHF-MORN',    'Morning Shift (8AM-2PM)',           '08:00', '14:00', 30, 10, 10, 330, 360, 240, 120, 0, 0, 0, 1),
+-- Clinical afternoon/evening shift - 14:00-20:00
+('SHF-AFT',     'Afternoon Shift (2PM-8PM)',        '14:00', '20:00', 30, 10, 10, 330, 360, 240, 120, 0, 0, 0, 1),
+-- Night shift - 20:00-08:00 (crosses midnight)
+('SHF-NIGHT',   'Night Shift (8PM-8AM)',            '20:00', '08:00', 60, 10, 10, 660, 720, 240, 120, 1, 1, 0, 1),
 -- Emergency 12-hour Day - 08:00-20:00
-('SHF-EMER-D',  'Emergency Day Shift (8AM-8PM)',     '08:00', '20:00', 60, 10, 10, 660, 720, 0, 0, 0, 1),
+('SHF-EMER-D',  'Emergency Day Shift (8AM-8PM)',     '08:00', '20:00', 60, 10, 10, 660, 720, 240, 120, 0, 0, 0, 1),
 -- Emergency 12-hour Night - 20:00-08:00
-('SHF-EMER-N',  'Emergency Night Shift (8PM-8AM)',   '20:00', '08:00', 60, 10, 10, 660, 720, 1, 1, 0, 1),
+('SHF-EMER-N',  'Emergency Night Shift (8PM-8AM)',   '20:00', '08:00', 60, 10, 10, 660, 720, 240, 120, 1, 1, 0, 1),
 -- OPD Shift - 10:00-17:00 (Outpatient Departments)
-('SHF-OPD',     'OPD Shift (10AM-5PM)',              '10:00', '17:00', 30, 15, 15, 360, 420, 0, 0, 0, 0),
+('SHF-OPD',     'OPD Shift (10AM-5PM)',              '10:00', '17:00', 30, 15, 15, 360, 420, 240, 120, 0, 0, 0, 1),
 -- Flexible IT/Admin - 10:00-19:00
-('SHF-FLEX',    'Flexible Shift (10AM-7PM)',         '10:00', '19:00', 60, 30, 30, 420, 540, 0, 0, 1, 1);
+('SHF-FLEX',    'Flexible Shift (10AM-7PM)',         '10:00', '19:00', 60, 30, 30, 420, 540, 240, 120, 1, 1, 0, 1);
 
 
 PRINT 'Inserting ShiftSwapStatus...';
@@ -248,16 +248,25 @@ INSERT INTO attendance.ShiftAssignment (ShiftId, ScopeTypeId, ScopeReferenceId, 
 
 PRINT 'Inserting RotationShift...';
 INSERT INTO attendance.RotationShift (RotationCode, RotationName, CycleLengthDays) VALUES
-('ROT-NURSING-3SHIFT',  'Nursing 3-Shift Rotation (21 days)',   21),
+('ROT-NURSING-3SHIFT',  'Nursing 3-Shift Rotation (19 days)',   19),
 ('ROT-EMER-12HR',       'Emergency 12-Hour 2-Shift Rotation',   6);
 
-
 PRINT 'Inserting RotationShiftDetail...';
--- Nursing: 7 days Morning - 7 days Afternoon - 7 days Night
-INSERT INTO attendance.RotationShiftDetail (RotationShiftId, SequenceNo, ShiftId, DurationDays, IsOffDay) VALUES
-((SELECT Id FROM attendance.RotationShift WHERE RotationCode='ROT-NURSING-3SHIFT'), 1, (SELECT Id FROM attendance.Shift WHERE ShiftCode='SHF-MORN'),  7, 0),
-((SELECT Id FROM attendance.RotationShift WHERE RotationCode='ROT-NURSING-3SHIFT'), 2, (SELECT Id FROM attendance.Shift WHERE ShiftCode='SHF-AFT'),   7, 0),
-((SELECT Id FROM attendance.RotationShift WHERE RotationCode='ROT-NURSING-3SHIFT'), 3, (SELECT Id FROM attendance.Shift WHERE ShiftCode='SHF-NIGHT'), 7, 0);
+-- 5 Days Morning, 1 Day Off
+-- 5 Days Afternoon, 1 Day Off
+-- 5 Days Night, 2 Days Off
+-- Total = 19 Days
+INSERT INTO attendance.RotationShiftDetail (RotationShiftId, SequenceNo, ShiftId, DurationDays, IsOffDay)
+VALUES
+-- 5 days morning, 1 day off
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), 1, (SELECT Id FROM attendance.Shift WHERE ShiftCode = 'SHF-MORN'), 5, 0 ),
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), 2, NULL, 1, 1),
+-- 5 days afternoon, 1 day off
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), 3, (SELECT Id FROM attendance.Shift WHERE ShiftCode = 'SHF-AFT'), 5, 0 ),
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), 4, NULL, 1, 1),
+-- 5 days night, 1 day off
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), 5, (SELECT Id FROM attendance.Shift WHERE ShiftCode = 'SHF-NIGHT'), 5, 0 ),
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), 6, NULL, 2, 1);
 
 -- Emergency: 2 days Day - 1 off - 2 days Night - 1 off
 INSERT INTO attendance.RotationShiftDetail (RotationShiftId, SequenceNo, ShiftId, DurationDays, IsOffDay) VALUES
@@ -269,20 +278,37 @@ INSERT INTO attendance.RotationShiftDetail (RotationShiftId, SequenceNo, ShiftId
 
 PRINT 'Inserting RotationShiftAssignment...';
 -- Nursing dept - 3-shift rotation
-INSERT INTO attendance.RotationShiftAssignment (RotationShiftId, ScopeTypeId, ScopeReferenceId, RotationStartDate, EffectiveFrom) VALUES
-((SELECT Id FROM attendance.RotationShift WHERE RotationCode='ROT-NURSING-3SHIFT'),
- (SELECT Id FROM time.ScopeType WHERE ScopeCode='DEPARTMENT'), (SELECT Id FROM time.Department WHERE DepartmentCode='NURSING'),   '2024-01-01', '2024-01-01'),
-((SELECT Id FROM attendance.RotationShift WHERE RotationCode='ROT-NURSING-3SHIFT'),
- (SELECT Id FROM time.ScopeType WHERE ScopeCode='DEPARTMENT'), (SELECT Id FROM time.Department WHERE DepartmentCode='ICU'),       '2024-01-01', '2024-01-01');
+INSERT INTO attendance.RotationShiftAssignment (RotationShiftId, ScopeTypeId, ScopeReferenceId, RotationStartDate, EffectiveFrom, RotationOffsetDays)
+VALUES
+-- nursing department
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'DEPARTMENT'), (SELECT Id FROM time.Department WHERE DepartmentCode = 'NURSING'), '2024-01-01', '2024-01-01', 0),
+-- icu department
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'DEPARTMENT'), (SELECT Id FROM time.Department WHERE DepartmentCode = 'ICU'), '2024-01-01', '2024-01-01', 0);
 
 -- Emergency dept - 12-hr rotation
 INSERT INTO attendance.RotationShiftAssignment (RotationShiftId, ScopeTypeId, ScopeReferenceId, RotationStartDate, EffectiveFrom) VALUES
 ((SELECT Id FROM attendance.RotationShift WHERE RotationCode='ROT-EMER-12HR'),
  (SELECT Id FROM time.ScopeType WHERE ScopeCode='DEPARTMENT'), (SELECT Id FROM time.Department WHERE DepartmentCode='EMERGENCY'), '2024-01-01', '2024-01-01');
 
+-- EMPLOYEE-SPECIFIC STAGGERED ROTATIONS
+-- This prevents all nurses from being OFF
+-- on the same day.
+-- Example for 9 nurses:
+-- EMP001 → Offset 0
+-- EMP002 → Offset 2
+-- EMP003 → Offset 4
+-- EMP004 → Offset 6
+-- etc.
+-- Example Employee Overrides
+INSERT INTO attendance.RotationShiftAssignment
+(RotationShiftId, ScopeTypeId, ScopeReferenceId, RotationStartDate, EffectiveFrom, RotationOffsetDays)
+VALUES ((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'EMPLOYEE'), (SELECT Id FROM employee.Employee WHERE EmployeeCode = 'EMP010'), '2024-01-01', '2024-01-01', 0),
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'EMPLOYEE'), (SELECT Id FROM employee.Employee
+WHERE EmployeeCode = 'EMP011'), '2024-01-01', '2024-01-01', 3),
+((SELECT Id FROM attendance.RotationShift WHERE RotationCode = 'ROT-NURSING-3SHIFT'), (SELECT Id FROM time.ScopeType WHERE ScopeCode = 'EMPLOYEE'), (SELECT Id FROM employee.Employee WHERE EmployeeCode = 'EMP012'), '2024-01-01', '2024-01-01', 6);
+
 
 -- EMPLOYEE ROSTER (Sample - April 2025)
-
 PRINT 'Inserting EmployeeShiftRoster (sample for 2025-04-01 to 2025-04-03)...';
 INSERT INTO attendance.EmployeeShiftRoster (EmployeeId, RosterDate, ShiftId, IsOffDay, IsHoliday, PlannedStartTime, PlannedEndTime) VALUES
 -- EMP001 CMO - General shift
@@ -302,6 +328,12 @@ INSERT INTO attendance.EmployeeShiftRoster (EmployeeId, RosterDate, ShiftId, IsO
 ((SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005'), '2025-04-02', (SELECT Id FROM attendance.Shift WHERE ShiftCode='SHF-GEN'),  0, 0, '2025-04-02 09:00:00', '2025-04-02 18:00:00'),
 ((SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP005'), '2025-04-03', (SELECT Id FROM attendance.Shift WHERE ShiftCode='SHF-GEN'),  0, 0, '2025-04-03 09:00:00', '2025-04-03 18:00:00');
 
+
+PRINT 'Inserting Roster Generation Types...';
+INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal) VALUES
+('MONTHLY', 'ROSTER_GENERATION_TYPE', 'Monthly', 'Roster generated for complete month', 1, 0),
+('WEEKLY',  'ROSTER_GENERATION_TYPE', 'Weekly',  'Roster generated for weekly duration', 2, 0),
+('ADHOC',   'ROSTER_GENERATION_TYPE', 'Adhoc',   'Roster generated manually for specific employees or dates', 3, 0);
 
 -- HOLIDAY MANAGEMENT
 
@@ -391,17 +423,17 @@ INSERT INTO attendance.HolidayCalendarAssignment (HolidayCalendarId, ScopeTypeId
 
 PRINT 'Inserting AttendanceStatus...';
 INSERT INTO attendance.AttendanceStatus (StatusCode, StatusName, IsPresent, IsAbsent, IsPaid, CountsAsWorkingDay, DisplayOrder, IsSystemStatus) VALUES
-('PRESENT',     'Present',                      1, 0, 1, 1, 1, 1),
-('ABSENT',      'Absent',                       0, 1, 0, 0, 2, 1),
-('ON_LEAVE',    'On Approved Leave',            0, 0, 1, 0, 3, 1),
-('WFH',         'Work From Home',               1, 0, 1, 1, 4, 1),
-('HALF_DAY',    'Half Day Present',             1, 0, 1, 1, 5, 1),
-('LATE',        'Late Arrival',                 1, 0, 1, 1, 6, 1),
-('HOLIDAY',     'Public Holiday',               0, 0, 1, 0, 7, 1),
-('WEEKEND',     'Weekend / Off Day',            0, 0, 0, 0, 8, 1),
-('ON_DUTY',     'On Official Duty',             1, 0, 1, 1, 9, 1),
-('COMP_OFF',    'Compensatory Off',             0, 0, 1, 0, 10, 1),
-('REGULARIZED', 'Attendance Regularized',       1, 0, 1, 1, 11, 1);
+('PRESENT',         'Present',                              1, 0, 1, 1, 1, 1),
+('ABSENT',          'Absent',                               0, 1, 0, 0, 2, 1),
+('ON_LEAVE',        'On Approved Leave',                    0, 0, 1, 0, 3, 1),
+('WORK_FROM_HOME',  'Work From Home',                       1, 0, 1, 1, 4, 1),
+('HALF_DAY',        'Half Day Present',                     1, 0, 1, 1, 5, 1),
+('LATE',            'Late Arrival',                         1, 0, 1, 1, 6, 1),
+('HOLIDAY',         'Public Holiday',                       0, 0, 1, 0, 7, 1),
+('WEEKEND',         'Weekend / Off Day',                    0, 0, 0, 0, 8, 1),
+('ON_DUTY',         'On Official Duty',                     1, 0, 1, 1, 9, 1),
+('COMP_OFF',        'Compensatory Off',                     0, 0, 1, 0, 10, 1),
+('REGULARIZED',     'Attendance Regularized',               1, 0, 1, 1, 11, 1);
 
 PRINT 'Inserting AttendanceRecord (processed attendance)...';
 INSERT INTO attendance.AttendanceRecord (EmployeeId, AttendanceDate, ShiftId, AttendanceStatusId, CheckInTime, CheckOutTime, LateByMinutes, EarlyExitMinutes, WorkedMinutes, OvertimeMinutes, IsManualEntry) VALUES
