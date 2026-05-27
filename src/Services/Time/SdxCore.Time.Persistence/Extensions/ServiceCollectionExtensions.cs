@@ -11,7 +11,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTimePersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<TimeDbContext>(options =>
+        services.AddSingleton<SdxCore.Common.Outbox.OutboxSaveChangesInterceptor>();
+
+        services.AddDbContext<TimeDbContext>((sp, options) =>
         {
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
@@ -22,6 +24,9 @@ public static class ServiceCollectionExtensions
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorNumbersToAdd: null);
                 });
+            
+            var outboxInterceptor = sp.GetRequiredService<SdxCore.Common.Outbox.OutboxSaveChangesInterceptor>();
+            options.AddInterceptors(outboxInterceptor);
         });
 
         // Register Repositories
@@ -36,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICountryRepository, CountryRepository>();
         services.AddScoped<ITimeZoneMasterRepository, TimeZoneMasterRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<SdxCore.Common.Outbox.IOutboxRepository, OutboxRepository>();
 
         return services;
     }

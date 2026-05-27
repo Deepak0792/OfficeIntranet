@@ -1,0 +1,6 @@
+@SdxCore.File.API_HostAddress = http://localhost:5270
+
+GET {{SdxCore.File.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

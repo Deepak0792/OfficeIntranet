@@ -21,6 +21,57 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    container_name: sdxcore-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: sdxcore-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+    container_name: sdxcore-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   identity-api:
     build:
       context: ..
@@ -37,7 +88,6 @@ services:
       - Authentication__MaxFailedAttempts=${AUTH_MAX_FAILED_ATTEMPTS:-5}
       - Authentication__LockoutDuration=${AUTH_LOCKOUT_DURATION:-00:15:00}
       - Authentication__SigningKeyPath=${AUTH_SIGNING_KEY_PATH:-/app/dev-signing-key.pem}
-      # - Authentication__SigningKey=${AUTH_SIGNING_KEY}
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5001:80"
@@ -64,6 +114,11 @@ services:
       - ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address=http://identity-api:80
       - ReverseProxy__Clusters__shared-cluster__Destinations__shared-api__Address=http://shared-api:80
       - ReverseProxy__Clusters__time-cluster__Destinations__time-api__Address=http://time-api:80
+      - ReverseProxy__Clusters__employee-cluster__Destinations__employee-api__Address=http://employee-api:80
+      - ReverseProxy__Clusters__workflow-cluster__Destinations__workflow-api__Address=http://workflow-api:80
+      - ReverseProxy__Clusters__attendance-cluster__Destinations__attendance-api__Address=http://attendance-api:80
+      - ReverseProxy__Clusters__notification-cluster__Destinations__notification-api__Address=http://notification-api:80
+      - ReverseProxy__Clusters__file-cluster__Destinations__file-api__Address=http://file-api:80
       - Authentication__IdentityServiceUrl=http://identity-api:80
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
@@ -113,12 +168,181 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5003:80"
     depends_on:
       sql-server:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  employee-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Employee/SdxCore.Employee.API/Dockerfile
+    container_name: sdxcore-employee-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      - ConnectionStrings__Elasticsearch=http://elasticsearch:9200
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+    ports:
+      - "5004:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  workflow-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Workflow/SdxCore.Workflow.API/Dockerfile
+    container_name: sdxcore-workflow-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+    ports:
+      - "5005:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  attendance-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Attendance/SdxCore.Attendance.API/Dockerfile
+    container_name: sdxcore-attendance-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+    ports:
+      - "5006:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  attendance-processor:
+    build:
+      context: ..
+      dockerfile: src/Services/Attendance/SdxCore.Attendance.Processor/Dockerfile
+    container_name: sdxcore-attendance-processor
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+
+  notification-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Notification/SdxCore.Notification.API/Dockerfile
+    container_name: sdxcore-notification-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__RabbitMQ=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+    ports:
+      - "5007:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  file-api:
+    build:
+      context: ..
+      dockerfile: src/Services/File/SdxCore.File.API/Dockerfile
+    container_name: sdxcore-file-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - FileStorage__Provider=SharedFileSystem
+      - FileStorage__SharedFileSystem__BasePath=/mnt/sdxcore-files
+    ports:
+      - "5008:80"
+    volumes:
+      - sdxcore-files:/mnt/sdxcore-files
     networks:
       - sdxcore-network
     healthcheck:
@@ -130,6 +354,10 @@ services:
 
 volumes:
   sql-server-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  sdxcore-files:
     driver: local
 
 networks:

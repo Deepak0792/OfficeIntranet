@@ -1,0 +1,57 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "sdx_autocomplete": {
+          "type": "custom",
+          "tokenizer": "autocomplete_tokenizer",
+          "filter": ["lowercase"]
+        },
+        "sdx_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase"]
+        }
+      },
+      "tokenizer": {
+        "autocomplete_tokenizer": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 20,
+          "token_chars": ["letter", "digit"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "integer" },
+      "employeeCode": { "type": "keyword" },
+      "firstName": { 
+        "type": "text",
+        "analyzer": "sdx_autocomplete",
+        "search_analyzer": "sdx_search",
+        "fields": {
+          "keyword": { "type": "keyword" }
+        }
+      },
+      "lastName": {
+        "type": "text",
+        "analyzer": "sdx_autocomplete",
+        "search_analyzer": "sdx_search",
+        "fields": {
+          "keyword": { "type": "keyword" }
+        }
+      },
+      "email": { "type": "keyword" },
+      "department": { "type": "keyword" },
+      "designation": { "type": "keyword" },
+      "managerId": { "type": "integer" },
+      "skills": { "type": "keyword" },
+      "isActive": { "type": "boolean" },
+      "joinedDate": { "type": "date" }
+    }
+  }
+}

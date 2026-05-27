@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SdxCore.Time.Domain.Entities;
+using SdxCore.Common.Outbox;
 
 namespace SdxCore.Time.Persistence.Data;
 
@@ -18,6 +19,7 @@ public class TimeDbContext : DbContext
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
     public DbSet<GeoFence> GeoFences => Set<GeoFence>();
     public DbSet<BiometricDevice> BiometricDevices => Set<BiometricDevice>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

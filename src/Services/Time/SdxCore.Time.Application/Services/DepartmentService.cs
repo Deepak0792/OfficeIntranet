@@ -1,6 +1,7 @@
 using SdxCore.Time.Domain.DTOs.Request;
 using SdxCore.Time.Domain.DTOs.Response;
 using SdxCore.Time.Domain.Entities;
+using SdxCore.Time.Domain.Events;
 using SdxCore.Time.Domain.Interfaces.Services;
 using SdxCore.Time.Domain.Interfaces.Repositories;
 using System;
@@ -16,26 +17,45 @@ namespace SdxCore.Time.Application.Services;
 public class DepartmentService : IDepartmentService 
 {
     private readonly IDepartmentRepository _repository;
+    private readonly SdxCore.Common.Caching.ICacheService _cache;
+    private const string CachePrefix = "Department_";
     
-    public DepartmentService(IDepartmentRepository repository) 
+    public DepartmentService(IDepartmentRepository repository, SdxCore.Common.Caching.ICacheService cache) 
     {
         _repository = repository;
+        _cache = cache;
     }
     
-            public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
+    public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
     {
-        var entities = await _repository.GetAllAsync(cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
+        return await _cache.GetOrSetAsync(
+            $"{CachePrefix}All",
+            async (ct) => 
+            {
+                var entities = await _repository.GetAllAsync(ct);
+                return entities.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e)).ToList();
+            },
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromHours(2),
+            cancellationToken);
     }
 
     public async Task<DepartmentResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
     {
-        var d = await _repository.GetByIdAsync(id, cancellationToken);
-        if (d == null) return null;
-        return new DepartmentResponse {
-            Id = d.Id, DepartmentCode = d.DepartmentCode, DepartmentName = d.DepartmentName,
-            ParentDepartmentId = d.ParentDepartmentId, Description = d.Description, IsActive = d.IsActive
-        };
+        return await _cache.GetOrSetAsync(
+            $"{CachePrefix}{id}",
+            async (ct) => 
+            {
+                var d = await _repository.GetByIdAsync(id, ct);
+                if (d == null) return null;
+                return new DepartmentResponse {
+                    Id = d.Id, DepartmentCode = d.DepartmentCode, DepartmentName = d.DepartmentName,
+                    ParentDepartmentId = d.ParentDepartmentId, Description = d.Description, IsActive = d.IsActive
+                };
+            },
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromHours(2),
+            cancellationToken);
     }
     
     public async Task<DepartmentResponse> CreateAsync(CreateDepartmentRequest dto, CancellationToken cancellationToken = default) 
@@ -45,8 +65,13 @@ public class DepartmentService : IDepartmentService
             ParentDepartmentId = dto.ParentDepartmentId, Description = dto.Description,
             IsActive = true, CreatedAt = DateTime.UtcNow
         };
+        
+        entity.AddDomainEvent(new DepartmentCreatedEvent { DepartmentId = entity.Id, DepartmentCode = entity.DepartmentCode });
+        
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
+        
+        await _cache.RemoveByPrefixAsync(CachePrefix, cancellationToken);
         
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
@@ -61,8 +86,12 @@ public class DepartmentService : IDepartmentService
         entity.ParentDepartmentId = dto.ParentDepartmentId;
         entity.Description = dto.Description;
         
+        entity.AddDomainEvent(new DepartmentUpdatedEvent { DepartmentId = entity.Id });
+        
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
+        
+        await _cache.RemoveByPrefixAsync(CachePrefix, cancellationToken);
         return true;
     }
     
@@ -72,31 +101,37 @@ public class DepartmentService : IDepartmentService
         if (entity == null) return false;
         
         entity.IsActive = request.IsActive;
+        
+        entity.AddDomainEvent(new DepartmentUpdatedEvent { DepartmentId = entity.Id });
+        
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
+        
+        await _cache.RemoveByPrefixAsync(CachePrefix, cancellationToken);
         return true;
     }
 
     public async Task<IEnumerable<DepartmentResponse>> GetTreeAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var allActive = await _repository.FindAsync(x => x.IsActive, cancellationToken);
-            var dtos = allActive.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e)).ToList();
-
-            var lookup = dtos.ToLookup(x => x.ParentDepartmentId);
-            foreach (var dto in dtos)
+        return await _cache.GetOrSetAsync(
+            $"{CachePrefix}Tree",
+            async (ct) => 
             {
-                var children = lookup[dto.Id].ToList();
-                if (children.Any()) dto.Children = children;
-            }
+                var allActive = await _repository.FindAsync(x => x.IsActive, ct);
+                var dtos = allActive.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e)).ToList();
 
-            return lookup[null].ToList();
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
+                var lookup = dtos.ToLookup(x => x.ParentDepartmentId);
+                foreach (var dto in dtos)
+                {
+                    var children = lookup[dto.Id].ToList();
+                    if (children.Any()) dto.Children = children;
+                }
+
+                return lookup[null].ToList();
+            },
+            TimeSpan.FromMinutes(30),
+            TimeSpan.FromHours(2),
+            cancellationToken);
     }
 
     public async Task<IEnumerable<DepartmentResponse>> GetChildrenAsync(short id, CancellationToken cancellationToken = default)
@@ -133,8 +168,13 @@ public class DepartmentService : IDepartmentService
         if (request.ParentId == id) throw new InvalidOperationException("A department cannot be its own parent.");
         
         entity.ParentDepartmentId = request.ParentId;
+        
+        entity.AddDomainEvent(new DepartmentUpdatedEvent { DepartmentId = entity.Id });
+        
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
+        
+        await _cache.RemoveByPrefixAsync(CachePrefix, cancellationToken);
         return true;
     }
 }

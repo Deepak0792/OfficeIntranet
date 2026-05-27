@@ -1,4 +1,4 @@
-using SdxCore.Identity.Application.Extensions;
+using SdxCore.Common.Extensions;
 using SdxCore.Time.Application.Extensions;
 using SdxCore.Time.Persistence.Extensions;
 
@@ -19,10 +19,20 @@ builder.Services.AddSwaggerGen();
 // Register the common layer
 builder.Services.AddSdxCoreCommon(builder.Configuration);
 
+// Register Caching
+builder.Services.AddSdxCoreCaching(builder.Configuration);
+
+// Register Outbox & Quartz
+builder.Services.AddSingleton<SdxCore.Common.Outbox.IEventPublisher, SdxCore.Common.Outbox.RabbitMqEventPublisher>();
+builder.Services.AddHostedService<SdxCore.Common.Outbox.OutboxProcessorJob>();
+builder.Services.AddSdxCoreQuartz(builder.Configuration);
+
+// Register Consumers
+builder.Services.AddHostedService<SdxCore.Time.API.BackgroundServices.CacheInvalidationConsumer>();
+
 // Register the persistence and application layers
 builder.Services.AddTimePersistence(builder.Configuration);
 builder.Services.AddTimeServicesApplication();
-
 
 var app = builder.Build();
 
@@ -42,16 +52,5 @@ app.MapControllers();
 
 app.Run();
 
-
 // Make Program class accessible for integration tests
 public partial class Program { }
-
-
-
-
-
-
-
-
-
-
