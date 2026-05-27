@@ -88,6 +88,11 @@ CREATE TABLE audit.AuditEvent (
 
     -- Checksum for tamper detection (populated by the audit service, not the application)
     RowChecksum             NVARCHAR(64)    NULL,                   -- SHA-256 of canonical row fields
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_AuditEvent PRIMARY KEY (Id)
 );
@@ -104,7 +109,11 @@ CREATE TABLE audit.AuditEventTag (
     AuditEventId    INT          NOT NULL,
     TagKey          NVARCHAR(200)   NOT NULL,
     TagValue        NVARCHAR(1000)  NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT PK_AuditEventTag PRIMARY KEY (Id),
 
@@ -151,6 +160,11 @@ CREATE TABLE audit.EntityChangeLog (
 
     -- Temporal
     ChangedAt           DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_EntityChangeLog PRIMARY KEY (Id),
 
@@ -181,6 +195,11 @@ CREATE TABLE audit.FieldAuditLog (
 
     -- Masking (for confidential fields)
     IsMaskedInLog           BIT             NOT NULL DEFAULT 0, -- when 1, OldValue/NewValue are replaced with [MASKED]
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_FieldAuditLog PRIMARY KEY (Id),
 
@@ -222,6 +241,11 @@ CREATE TABLE audit.ApiRequestLog (
 
     -- Timing
     ReceivedAt          DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_ApiRequestLog PRIMARY KEY (Id),
 
@@ -258,6 +282,11 @@ CREATE TABLE audit.ApiResponseLog (
     -- Timing
     RespondedAt         DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     DurationMs          INT             NULL,                   -- total request-to-response milliseconds
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_ApiResponseLog PRIMARY KEY (Id),
 
@@ -303,6 +332,11 @@ CREATE TABLE audit.IntegrationMessageLog (
     -- Timing
     MessageTimestampUtc     DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     DurationMs              INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_IntegrationMessageLog PRIMARY KEY (Id),
 
@@ -355,6 +389,11 @@ CREATE TABLE audit.WorkflowAuditLog (
     -- Timing
     TransitionTimestampUtc      DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     TimeSpentInPreviousStepMs   INT          NULL,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                   INT             NULL,
+    LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy               INT             NULL,
 
     CONSTRAINT PK_WorkflowAuditLog PRIMARY KEY (Id),
 
@@ -387,6 +426,11 @@ CREATE TABLE audit.ApprovalDecisionLog (
     -- Timing
     DecisionTimestampUtc    DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     TimeToDecideMs          INT          NULL,               -- time from step assignment to decision
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_ApprovalDecisionLog PRIMARY KEY (Id),
 
@@ -436,6 +480,11 @@ CREATE TABLE audit.BulkOperationLog (
     StartedAt               DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     CompletedAt             DATETIME2(7)    NULL,
     DurationMs              INT          NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_BulkOperationLog PRIMARY KEY (Id),
 
@@ -469,6 +518,11 @@ CREATE TABLE audit.BulkOperationItemLog (
 
     -- Change linkage (set when ItemStatus = SUCCESS and a change was persisted)
     EntityChangeLogId       INT          NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_BulkOperationItemLog PRIMARY KEY (Id),
 
@@ -516,6 +570,11 @@ CREATE TABLE audit.ConfigChangeLog (
 
     -- Timing
     ChangedAt           DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_ConfigChangeLog PRIMARY KEY (Id),
 
@@ -569,6 +628,11 @@ CREATE TABLE audit.ScheduledJobLog (
     RetryAttempt            INT             NOT NULL DEFAULT 0,
     MaxRetries              INT             NULL,
     NextRetryAt             DATETIME2(7)    NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_ScheduledJobLog PRIMARY KEY (Id),
 
@@ -622,6 +686,11 @@ CREATE TABLE audit.NotificationLog (
     SentAt                  DATETIME2(7)    NULL,
     DeliveredAt             DATETIME2(7)    NULL,
     RetryCount              INT             NOT NULL DEFAULT 0,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_NotificationLog PRIMARY KEY (Id),
 
@@ -671,6 +740,11 @@ CREATE TABLE audit.DataExportLog (
     RequestedAt             DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     GeneratedAt             DATETIME2(7)    NULL,
     DownloadedAt            DATETIME2(7)    NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_DataExportLog PRIMARY KEY (Id),
 
@@ -713,6 +787,11 @@ CREATE TABLE audit.SensitiveDataAccessLog (
 
     -- Timing
     AccessedAt              DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_SensitiveDataAccessLog PRIMARY KEY (Id),
 
@@ -759,6 +838,11 @@ CREATE TABLE audit.ImpersonationLog (
     StartedAt                   DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     EndedAt                     DATETIME2(7)    NULL,
     DurationSeconds             AS (DATEDIFF(SECOND, StartedAt, EndedAt)),
+    IsActive                    BIT             NOT NULL DEFAULT 1,
+    CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                   INT             NULL,
+    LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy               INT             NULL,    
 
     CONSTRAINT PK_ImpersonationLog PRIMARY KEY (Id),
 
@@ -807,7 +891,12 @@ CREATE TABLE audit.ConsentAuditLog (
     -- Timing
     ConsentTimestampUtc     DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     ExpiresAt               DATETIME2(7)    NULL,
-
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
+    
     CONSTRAINT PK_ConsentAuditLog PRIMARY KEY (Id),
 
     CONSTRAINT FK_CAL_AuditEvent

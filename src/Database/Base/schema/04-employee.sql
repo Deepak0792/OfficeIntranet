@@ -81,11 +81,11 @@ CREATE TABLE employee.EmployeeDepartment (
     AllocationPercentage    DECIMAL(5,2)    NULL,
     StartDate               DATE            NULL,
     EndDate                 DATE            NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_EmployeeDepartment_Employee
         FOREIGN KEY (EmployeeId)
@@ -105,11 +105,11 @@ CREATE TABLE employee.EmployeeLocation (
     IsPrimaryLocation   BIT     NOT NULL DEFAULT 1,
     StartDate           DATE    NULL,
     EndDate             DATE    NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_EmployeeLocation_Employee
         FOREIGN KEY (EmployeeId)
@@ -132,11 +132,11 @@ CREATE TABLE employee.EmployeeRelationship (
     IsPrimaryRelationship   BIT     NOT NULL DEFAULT 0,
     EffectiveFrom           DATE    NULL,
     EffectiveTo             DATE    NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_ER_ParentEmployee
         FOREIGN KEY (ParentEmployeeId)
@@ -164,11 +164,11 @@ CREATE TABLE employee.EmployeeContact (
     ContactTypeGroup    AS CAST('CONTACT_TYPE' AS NVARCHAR(50)) PERSISTED,
     ContactValue        NVARCHAR(500)   NOT NULL,
     IsPrimary           BIT             NOT NULL DEFAULT 0,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_EmployeeContact_Employee
         FOREIGN KEY (EmployeeId)
@@ -200,11 +200,11 @@ CREATE TABLE employee.EmployeeDocument (
     VerifiedByEmployeeId    INT          NULL,
     VerifiedAt              DATETIME2       NULL,
     WorkflowInstanceId      INT          NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_EmployeeDocument_Employee
         FOREIGN KEY (EmployeeId)
@@ -247,11 +247,11 @@ CREATE TABLE employee.EmployeeSkill (
     YearsOfExperience   DECIMAL(5,2)    NULL,
     IsPrimarySkill      BIT             NOT NULL DEFAULT 0,
     LastUsedDate        DATE            NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_EmployeeSkill_Employee
         FOREIGN KEY (EmployeeId)
@@ -287,11 +287,11 @@ CREATE TABLE employee.EmployeeTeam (
     AllocationPercentage    DECIMAL(5,2)    NULL,
     StartDate               DATE            NULL,
     EndDate                 DATE            NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_EmployeeTeam_Employee
         FOREIGN KEY (EmployeeId)
@@ -309,11 +309,11 @@ CREATE TABLE employee.BiometricEmployeeMapping (
     EmployeeId          INT          NOT NULL,
     BiometricDeviceId   INT          NOT NULL,
     DeviceEmployeeCode  NVARCHAR(100)   NOT NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_BiometricEmployeeMapping_Employee
         FOREIGN KEY (EmployeeId)

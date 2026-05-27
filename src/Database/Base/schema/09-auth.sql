@@ -51,15 +51,15 @@ GO
 --      Examples: Attendance, Payroll, HR, Helpdesk
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.BusinessModule (
-    Id              SMALLINT          NOT NULL IDENTITY(1,1),
-    ModuleCode      NVARCHAR(50)    NOT NULL,
-    ModuleName      NVARCHAR(200)   NOT NULL,
-    Description     NVARCHAR(500)   NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
-    UpdatedAt       DATETIME2       NULL,
-    UpdatedBy       INT          NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    ModuleCode          NVARCHAR(50)    NOT NULL,
+    ModuleName          NVARCHAR(200)   NOT NULL,
+    Description         NVARCHAR(500)   NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_BusinessModule     PRIMARY KEY (Id),
     CONSTRAINT UQ_BusinessModule_Code UNIQUE      (ModuleCode)
@@ -82,9 +82,9 @@ CREATE TABLE auth.BusinessEntity (
     Description         NVARCHAR(500)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
-    UpdatedAt           DATETIME2       NULL,
-    UpdatedBy           INT          NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_BusinessEntity       PRIMARY KEY (Id),
     CONSTRAINT UQ_BusinessEntity_Name  UNIQUE      (EntityName),
@@ -102,12 +102,14 @@ GO
 --      Examples: VIEW, CREATE, UPDATE, DELETE, APPROVE, REJECT, EXPORT
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.EntityAction (
-    Id              SMALLINT          NOT NULL IDENTITY(1,1),
-    ActionCode      NVARCHAR(50)    NOT NULL,
-    ActionGroup     AS CAST('PERMISSION_ACTION' AS NVARCHAR(50)) PERSISTED,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    ActionCode          NVARCHAR(50)    NOT NULL,
+    ActionGroup         AS CAST('PERMISSION_ACTION' AS NVARCHAR(50)) PERSISTED,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_EntityAction      PRIMARY KEY (Id),
     CONSTRAINT UQ_EntityAction_Code UNIQUE      (ActionCode),
@@ -142,9 +144,9 @@ CREATE TABLE auth.Permission (
     Description             NVARCHAR(500)   NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT          NOT NULL,
-    UpdatedAt               DATETIME2       NULL,
-    UpdatedBy               INT          NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_Permission           PRIMARY KEY (Id),
     CONSTRAINT UQ_Permission_Code      UNIQUE      (PermissionCode),
@@ -175,16 +177,16 @@ GO
 -- 3.1  Role
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.Role (
-    Id              SMALLINT          NOT NULL IDENTITY(1,1),
-    RoleCode        NVARCHAR(100)   NOT NULL,
-    RoleName        NVARCHAR(200)   NOT NULL,
-    Description     NVARCHAR(500)   NULL,
-    IsSystemRole    BIT             NOT NULL DEFAULT 0,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
-    UpdatedAt       DATETIME2       NULL,
-    UpdatedBy       INT          NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    RoleCode            NVARCHAR(100)   NOT NULL,
+    RoleName            NVARCHAR(200)   NOT NULL,
+    Description         NVARCHAR(500)   NULL,
+    IsSystemRole        BIT             NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_Role       PRIMARY KEY (Id),
     CONSTRAINT UQ_Role_Code  UNIQUE      (RoleCode)
@@ -203,9 +205,9 @@ CREATE TABLE auth.RoleGroup (
     Description     NVARCHAR(500)   NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
-    UpdatedAt       DATETIME2       NULL,
-    UpdatedBy       INT          NULL,
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT PK_RoleGroup       PRIMARY KEY (Id),
     CONSTRAINT UQ_RoleGroup_Code  UNIQUE      (RoleGroupCode)
@@ -217,12 +219,14 @@ GO
 --      Many-to-many: which roles are included in a RoleGroup.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RoleGroupRole (
-    Id          INT      NOT NULL IDENTITY(1,1),
-    RoleGroupId SMALLINT      NOT NULL,
-    RoleId      SMALLINT      NOT NULL,
-    IsActive    BIT         NOT NULL DEFAULT 1,
-    CreatedAt   DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy   INT      NOT NULL,
+    Id                  INT      NOT NULL IDENTITY(1,1),
+    RoleGroupId         SMALLINT      NOT NULL,
+    RoleId              SMALLINT      NOT NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_RoleGroupRole     PRIMARY KEY (Id),
     CONSTRAINT UQ_RoleGroupRole     UNIQUE      (RoleGroupId, RoleId),
@@ -241,16 +245,16 @@ GO
 --      DENY always wins at evaluation time.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.RolePermission (
-    Id              INT          NOT NULL IDENTITY(1,1),
-    RoleId          SMALLINT          NOT NULL,
-    PermissionId    SMALLINT          NOT NULL,
-    Effect          NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',   -- AUTH_EFFECT
-    EffectGroup     AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
-    UpdatedAt       DATETIME2       NULL,
-    UpdatedBy       INT          NULL,
+    Id                  INT          NOT NULL IDENTITY(1,1),
+    RoleId              SMALLINT          NOT NULL,
+    PermissionId        SMALLINT          NOT NULL,
+    Effect              NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',   -- AUTH_EFFECT
+    EffectGroup         AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_RolePermission    PRIMARY KEY (Id),
     CONSTRAINT UQ_RolePermission    UNIQUE      (RoleId, PermissionId),
@@ -289,11 +293,11 @@ CREATE TABLE auth.EmployeeRoleGroup (
     EffectiveFrom       DATE        NOT NULL DEFAULT CAST(GETUTCDATE() AS DATE),
     EffectiveTo         DATE        NULL,
     AssignedBy          INT      NOT NULL,
-    IsActive            BIT         NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT      NOT NULL,
-    UpdatedAt           DATETIME2   NULL,
-    UpdatedBy           INT      NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_EmployeeRoleGroup PRIMARY KEY (Id),
 
@@ -340,9 +344,9 @@ CREATE TABLE auth.RecordAccessPolicy (
     Description         NVARCHAR(500)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
-    UpdatedAt           DATETIME2       NULL,
-    UpdatedBy           INT          NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_RecordAccessPolicy    PRIMARY KEY (Id),
     CONSTRAINT UQ_RecordAccessPolicy    UNIQUE      (RoleId, BusinessEntityId),
@@ -374,9 +378,11 @@ CREATE TABLE auth.RecordAccessScope (
     RecordAccessPolicyId    INT      NOT NULL,
     ScopeTypeId             SMALLINT      NOT NULL,    -- time.ScopeType
     ScopeReferenceId        INT      NULL,         -- PK of the scoped entity; NULL = all
-    IsActive                BIT         NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT      NOT NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_RecordAccessScope PRIMARY KEY (Id),
 
@@ -419,9 +425,9 @@ CREATE TABLE auth.ConfidentialField (
     SensitivityLevel    TINYINT         NOT NULL DEFAULT 1,  -- 1 (low) … 5 (critical)
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
-    UpdatedAt           DATETIME2       NULL,
-    UpdatedBy           INT          NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_ConfidentialField         PRIMARY KEY (Id),
     CONSTRAINT UQ_ConfidentialField         UNIQUE      (EntityName, FieldName),
@@ -451,9 +457,9 @@ CREATE TABLE auth.ConfidentialAccessPolicy (
     EffectGroup             AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT          NOT NULL,
-    UpdatedAt               DATETIME2       NULL,
-    UpdatedBy               INT          NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_ConfidentialAccessPolicy PRIMARY KEY (Id),
 
@@ -494,9 +500,9 @@ CREATE TABLE auth.UIResource (
     ParentUIResourceId  SMALLINT          NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
-    UpdatedAt           DATETIME2       NULL,
-    UpdatedBy           INT          NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_UIResource        PRIMARY KEY (Id),
     CONSTRAINT UQ_UIResource_Key    UNIQUE      (ResourceKey),
@@ -514,16 +520,16 @@ GO
 --      Maps a Role to a UIResource (ALLOW / DENY visibility).
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.UIPermission (
-    Id              SMALLINT          NOT NULL IDENTITY(1,1),
-    RoleId          SMALLINT          NOT NULL,
-    UIResourceId    SMALLINT          NOT NULL,
-    Effect          NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
-    EffectGroup     AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
-    UpdatedAt       DATETIME2       NULL,
-    UpdatedBy       INT          NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    RoleId              SMALLINT          NOT NULL,
+    UIResourceId        SMALLINT          NOT NULL,
+    Effect              NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
+    EffectGroup         AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_UIPermission  PRIMARY KEY (Id),
     CONSTRAINT UQ_UIPermission  UNIQUE      (RoleId, UIResourceId),
@@ -554,9 +560,9 @@ CREATE TABLE auth.APIResource (
     ServiceName         NVARCHAR(100)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
-    UpdatedAt           DATETIME2       NULL,
-    UpdatedBy           INT          NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_APIResource       PRIMARY KEY (Id),
     CONSTRAINT UQ_APIResource_Key   UNIQUE      (RoutePath, HttpMethod),
@@ -575,16 +581,16 @@ GO
 --      Maps a Role to an APIResource (ALLOW / DENY).
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE auth.APIPermission (
-    Id              SMALLINT          NOT NULL IDENTITY(1,1),
-    RoleId          SMALLINT          NOT NULL,
-    APIResourceId   SMALLINT          NOT NULL,
-    Effect          NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
-    EffectGroup     AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT          NOT NULL,
-    UpdatedAt       DATETIME2       NULL,
-    UpdatedBy       INT          NULL,
+    Id                  SMALLINT          NOT NULL IDENTITY(1,1),
+    RoleId              SMALLINT          NOT NULL,
+    APIResourceId       SMALLINT          NOT NULL,
+    Effect              NVARCHAR(50)    NOT NULL DEFAULT 'ALLOW',
+    EffectGroup         AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_APIPermission PRIMARY KEY (Id),
     CONSTRAINT UQ_APIPermission UNIQUE      (RoleId, APIResourceId),
@@ -621,9 +627,9 @@ CREATE TABLE auth.WorkflowPermission (
     EffectGroup             AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT          NOT NULL,
-    UpdatedAt               DATETIME2       NULL,
-    UpdatedBy               INT          NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT PK_WorkflowPermission PRIMARY KEY (Id),
     CONSTRAINT UQ_WorkflowPermission UNIQUE      (WorkflowStepId, RoleId, EntityActionId),
@@ -707,12 +713,11 @@ CREATE TABLE auth.DelegatedAccess (
     RevokedAt           DATETIME2       NULL,
     RevokedBy           INT          NULL,
     RevokeReason        NVARCHAR(500)   NULL,
-
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
-    UpdatedAt           DATETIME2       NULL,
-    UpdatedBy           INT          NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_DelegatedAccess PRIMARY KEY (Id),
 
@@ -758,7 +763,9 @@ CREATE TABLE auth.DelegatedAccessPermission (
     EffectGroup         AS CAST('AUTH_EFFECT' AS NVARCHAR(50)) PERSISTED,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT          NOT NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT PK_DelegatedAccessPermission   PRIMARY KEY (Id),
     CONSTRAINT UQ_DelegatedAccessPermission   UNIQUE      (DelegatedAccessId, PermissionId),

@@ -19,6 +19,9 @@ CREATE TABLE helpdesk.TicketCategory (
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_TicketCategory_Parent
         FOREIGN KEY (ParentCategoryId)
@@ -34,6 +37,9 @@ CREATE TABLE helpdesk.SupportGroup (
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_SupportGroup_Department
         FOREIGN KEY (DepartmentId)
@@ -50,6 +56,10 @@ CREATE TABLE helpdesk.AssetCategory (
     IsTrackable         BIT             NOT NULL DEFAULT 1,
     IsConsumable        BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_AssetCategory_Parent
         FOREIGN KEY (ParentCategoryId)
@@ -67,7 +77,10 @@ CREATE TABLE helpdesk.Vendor (
     WebsiteUrl          NVARCHAR(500)   NULL,
     Address             NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE()
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL
 );
 GO
 
@@ -97,7 +110,9 @@ CREATE TABLE helpdesk.Ticket (
     ReopenedCount                   SMALLINT             NOT NULL DEFAULT 0,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                       DATETIME2       NULL,
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_Ticket_Requester
         FOREIGN KEY (RequesterEmployeeId)
@@ -139,7 +154,11 @@ CREATE TABLE helpdesk.TicketComment (
     CommentedBy         INT          NOT NULL,
     CommentText         NVARCHAR(MAX)   NOT NULL,
     IsInternalComment   BIT             NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_TicketComment_Ticket
         FOREIGN KEY (TicketId)
@@ -162,6 +181,11 @@ CREATE TABLE helpdesk.TicketAttachment (
     FileSizeInBytes     INT          NULL,
     FileUrl             NVARCHAR(1000)  NOT NULL,
     UploadedAt          DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_TicketAttachment_Ticket
         FOREIGN KEY (TicketId)
@@ -185,6 +209,9 @@ CREATE TABLE helpdesk.SlaPolicy (
     EscalationTimeMinutes           SMALLINT             NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_SlaPolicy_Priority
         FOREIGN KEY (TicketPriorityCode, TicketPriorityGroup)
@@ -204,7 +231,11 @@ CREATE TABLE helpdesk.TicketSlaTracking (
     IsResolutionBreached            BIT             NOT NULL DEFAULT 0,
     BreachRemarks                   NVARCHAR(1000)  NULL,
     LastEvaluatedAt                 DATETIME2       NULL,
+    IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_TicketSlaTracking_Ticket
         FOREIGN KEY (TicketId)
@@ -247,7 +278,9 @@ CREATE TABLE helpdesk.Asset (
     NextAuditDate                   DATE            NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                       DATETIME2       NULL,
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_Asset_Category
         FOREIGN KEY (AssetCategoryId)
@@ -281,8 +314,11 @@ CREATE TABLE helpdesk.AssetAssignment (
     ReturnedDate                    DATETIME2       NULL,
     ReturnCondition                 NVARCHAR(500)   NULL,
     Remarks                         NVARCHAR(1000)  NULL,
-    IsActiveAssignment              BIT             NOT NULL DEFAULT 1,
+    IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_AssetAssignment_Asset
         FOREIGN KEY (AssetId)
@@ -308,7 +344,11 @@ CREATE TABLE helpdesk.AssetMaintenance (
     Description                     NVARCHAR(1000)  NULL,
     NextMaintenanceDate             DATE            NULL,
     CreatedByEmployeeId             INT          NULL,
+    IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_AssetMaintenance_Asset
         FOREIGN KEY (AssetId)
@@ -336,6 +376,9 @@ CREATE TABLE helpdesk.SoftwareProduct (
     Description                         NVARCHAR(1000)  NULL,
     IsActive                            BIT             NOT NULL DEFAULT 1,
     CreatedAt                           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                           INT             NULL,
+    LastUpdatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                       INT             NULL,
 
     CONSTRAINT FK_SoftwareProduct_Vendor
         FOREIGN KEY (VendorId)
@@ -361,6 +404,9 @@ CREATE TABLE helpdesk.SoftwareLicense (
     Remarks                         NVARCHAR(1000)  NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       INT             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   INT             NULL,
 
     CONSTRAINT FK_SoftwareLicense_Product
         FOREIGN KEY (SoftwareProductId)
@@ -379,8 +425,12 @@ CREATE TABLE helpdesk.SoftwareInstallation (
     InstalledByEmployeeId          INT          NULL,
     InstalledDate                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     UninstalledDate                 DATETIME2       NULL,
-    IsActive                        BIT             NOT NULL DEFAULT 1,
     Remarks                         NVARCHAR(1000)  NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_SoftwareInstallation_License
         FOREIGN KEY (SoftwareLicenseId)

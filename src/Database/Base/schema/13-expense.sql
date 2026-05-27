@@ -73,13 +73,16 @@ CREATE TABLE expense.ExpenseCategory (
 GO
 
 CREATE TABLE expense.ExpenseSubCategory (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
-    CategoryId      INT          NOT NULL,
-    SubCategoryCode NVARCHAR(100)   NOT NULL,
-    SubCategoryName NVARCHAR(200)   NOT NULL,
-    Description     NVARCHAR(1000)  NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    CategoryId              INT          NOT NULL,
+    SubCategoryCode         NVARCHAR(100)   NOT NULL,
+    SubCategoryName         NVARCHAR(200)   NOT NULL,
+    Description             NVARCHAR(1000)  NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_ExpenseSubCategory_Category
         FOREIGN KEY (CategoryId)
@@ -111,6 +114,9 @@ CREATE TABLE expense.ExpensePolicy (
     EffectiveTo         DATE            NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ExpensePolicy_PolicyGroup
         FOREIGN KEY (PolicyGroup, PolicyGroupLookup)
@@ -127,14 +133,17 @@ CREATE TABLE expense.ExpensePolicy (
 GO
 
 CREATE TABLE expense.ExpensePolicyRule (
-    Id          INT          PRIMARY KEY IDENTITY(1,1),
-    PolicyId    INT          NOT NULL,
-    RuleCode    NVARCHAR(100)   NOT NULL,
-    RuleName    NVARCHAR(200)   NOT NULL,
-    RuleType    NVARCHAR(100)   NOT NULL,
-    RuleValue   NVARCHAR(1000)  NOT NULL,
-    IsActive    BIT             NOT NULL DEFAULT 1,
-    CreatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    PolicyId                INT          NOT NULL,
+    RuleCode                NVARCHAR(100)   NOT NULL,
+    RuleName                NVARCHAR(200)   NOT NULL,
+    RuleType                NVARCHAR(100)   NOT NULL,
+    RuleValue               NVARCHAR(1000)  NOT NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_ExpensePolicyRule_Policy
         FOREIGN KEY (PolicyId)
@@ -165,8 +174,11 @@ CREATE TABLE expense.TravelRequest (
     TravelRequestStatus     NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     TravelRequestStatusGroup AS CAST('TRAVEL_REQUEST_STATUS' AS NVARCHAR(50)) PERSISTED,
     WorkflowInstanceId      INT          NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_TravelRequest_Employee
         FOREIGN KEY (EmployeeId)
@@ -203,8 +215,11 @@ CREATE TABLE expense.ExpenseAdvance (
     AdvanceStatus       NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     AdvanceStatusGroup  AS CAST('ADVANCE_REQUEST_STATUS' AS NVARCHAR(50)) PERSISTED,
     WorkflowInstanceId  INT          NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt           DATETIME2       NULL,
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ExpenseAdvance_Employee
         FOREIGN KEY (EmployeeId)
@@ -244,8 +259,11 @@ CREATE TABLE expense.AssetReimbursement (
     AssetReimbursementStatus    NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     AssetReimbursementStatusGroup AS CAST('ASSET_REIMBURSEMENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     WorkflowInstanceId          INT          NULL,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    CreatedBy                   INT             NULL,
+    LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy               INT             NULL,
 
     CONSTRAINT FK_AssetReimbursement_Employee
         FOREIGN KEY (EmployeeId)
@@ -289,8 +307,11 @@ CREATE TABLE expense.ExpenseClaim (
     ApprovedAt                  DATETIME2       NULL,
     PaidAt                      DATETIME2       NULL,
     ClosedAt                    DATETIME2       NULL,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    CreatedBy                   INT             NULL,
+    LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy               INT             NULL,
 
     CONSTRAINT FK_ExpenseClaim_Employee
         FOREIGN KEY (EmployeeId)
@@ -341,8 +362,11 @@ CREATE TABLE expense.ExpenseClaimItem (
     PolicyValidationStatus      NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     PolicyValidationStatusGroup AS CAST('POLICY_VALIDATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     PolicyValidationMessage     NVARCHAR(2000)  NULL,
+    IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt                   DATETIME2       NULL,
+    CreatedBy                   INT             NULL,
+    LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy               INT             NULL,
 
     CONSTRAINT FK_ExpenseClaimItem_ExpenseClaim
         FOREIGN KEY (ExpenseClaimId)
@@ -374,6 +398,10 @@ CREATE TABLE expense.ExpenseAttachment (
     UploadedAt          DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsRequired          BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ExpenseAttachment_ExpenseClaim
         FOREIGN KEY (ExpenseClaimId)
@@ -413,8 +441,11 @@ CREATE TABLE expense.ExpenseReimbursement (
     TransactionStatusGroup  AS CAST('TRANSACTION_STATUS' AS NVARCHAR(50)) PERSISTED,
     ScheduledPaymentDate    DATE            NULL,
     PaidDate                DATE            NULL,
+    IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    UpdatedAt               DATETIME2       NULL,
+    CreatedBy               INT             NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           INT             NULL,
 
     CONSTRAINT FK_ExpenseReimbursement_Employee
         FOREIGN KEY (EmployeeId)
@@ -474,6 +505,11 @@ CREATE TABLE expense.ExpenseApproval (
     ActionBy            INT          NOT NULL,
     ActionAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     Remarks             NVARCHAR(2000)  NULL,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           INT             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       INT             NULL,
 
     CONSTRAINT FK_ExpenseApproval_WorkflowInstance
         FOREIGN KEY (WorkflowInstanceId)
@@ -511,6 +547,11 @@ CREATE TABLE expense.ExpenseAuditLog (
     EventAt         DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     Details         NVARCHAR(MAX)   NULL,
     SourceSystem    NVARCHAR(200)   NULL,
+    IsActive        BIT             NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy       INT             NULL,
+    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy   INT             NULL,
 
     CONSTRAINT FK_ExpenseAuditLog_EventType
         FOREIGN KEY (EventType, EventTypeGroup)
