@@ -1,15 +1,13 @@
-using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SdxCore.Common.Interfaces.Contexts;
+using SdxCore.Common.Security;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Exceptions;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
-using SdxCore.Identity.Domain.Interfaces.Security;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Application.Providers;
 
@@ -20,7 +18,6 @@ namespace SdxCore.Identity.Application.Providers;
 public sealed class InHouseProvider : IInHouseProvider
 {
     private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly IConfiguration _configuration;
 
     private readonly ILogger<InHouseProvider> _logger;
@@ -42,12 +39,10 @@ public sealed class InHouseProvider : IInHouseProvider
     /// <param name="logger">Logger instance.</param>
     public InHouseProvider(
         IUserRepository userRepository,
-        IPasswordHasher passwordHasher,
         IConfiguration configuration,
         ILogger<InHouseProvider> logger)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -89,7 +84,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // 4. Verify password hash (Argon2id)
-        bool passwordValid = _passwordHasher.Verify(request.Password, user.PasswordHash);
+        bool passwordValid = PasswordHasher.Verify(request.Password, user.PasswordHash);
 
         if (!passwordValid)
         {
@@ -155,7 +150,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // Hash password
-        string passwordHash = _passwordHasher.Hash(request.Password);
+        string passwordHash = PasswordHasher.Hash(request.Password);
 
         // Create User with defaults
         var user = new User
@@ -199,7 +194,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // Verify current password
-        bool currentPasswordValid = _passwordHasher.Verify(request.CurrentPassword, user.PasswordHash);
+        bool currentPasswordValid = PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash);
         if (!currentPasswordValid)
         {
             _logger.LogWarning("Invalid current password for employee: {EmployeeId}", request.EmployeeId);
@@ -207,7 +202,7 @@ public sealed class InHouseProvider : IInHouseProvider
         }
 
         // Hash new password
-        string newPasswordHash = _passwordHasher.Hash(request.NewPassword);
+        string newPasswordHash = PasswordHasher.Hash(request.NewPassword);
 
         // Update password in database
         await _userRepository.UpdatePasswordHashAsync(request.EmployeeId, newPasswordHash, ct);

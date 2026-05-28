@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.API.Middleware;
 using SdxCore.Common.Extensions;
 using SdxCore.Identity.Persistence.Extensions;
+using SdxCore.Identity.Application.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

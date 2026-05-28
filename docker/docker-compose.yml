@@ -156,6 +156,8 @@ services:
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5001:80"
+    volumes:
+      - sdxcore-files:/mnt/sdxcore-files
     depends_on:
       identity-sql-server:
         condition: service_healthy
@@ -183,10 +185,13 @@ services:
       - ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address=http://identity-api:80
       - ReverseProxy__Clusters__shared-cluster__Destinations__shared-api__Address=http://shared-api:80
       - ReverseProxy__Clusters__time-cluster__Destinations__time-api__Address=http://time-api:80
+      - ReverseProxy__Clusters__file-cluster__Destinations__file-api__Address=http://file-api:80
       - Authentication__IdentityServiceUrl=http://identity-api:80
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
       - "5000:80"
+    volumes:
+      - sdxcore-files:/mnt/sdxcore-files
     depends_on:
       identity-api:
         condition: service_healthy
@@ -263,6 +268,32 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  file-api:
+    build:
+      context: ..
+      dockerfile: src/Services/File/SdxCore.File.API/Dockerfile
+    container_name: sdxcore-file-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - FileStorage__ProviderType=${FILE_STORAGE_PROVIDER:-SharedFileSystem}
+      - FileStorage__SharedFileSystem__RootPath=${FILE_STORAGE_ROOT:-/mnt/sdxcore-files}
+      - FileStorage__SharedFileSystem__Environment=${FILE_STORAGE_ENV:-development}
+      - FileStorage__SharedFileSystem__Tenant=${FILE_STORAGE_TENANT:-sdxcore}
+    ports:
+      - "5004:80"
+    volumes:
+      - sdxcore-files:/mnt/sdxcore-files
     networks:
       - sdxcore-network
     healthcheck:

@@ -1,4 +1,5 @@
 using SdxCore.Common.Interfaces.Contexts;
+using SdxCore.Common.Security;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
@@ -17,7 +18,6 @@ public class RefreshTokenService : IRefreshTokenService
     private readonly IRequestContext _requestContext;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenFactory _tokenFactory;
 
     public RefreshTokenService(
@@ -25,14 +25,12 @@ public class RefreshTokenService : IRefreshTokenService
         IRequestContext requestContext,
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
-        IPasswordHasher passwordHasher,
         ITokenFactory tokenFactory)
     {
-        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(requestContext)); ;
-        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext)); ;
-        _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository)); ;
-        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository)); ;
-        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher)); ;
+        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(requestContext));
+        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
+        _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory)); ;
     }
 
@@ -149,7 +147,7 @@ public class RefreshTokenService : IRefreshTokenService
         var entity = new RefreshToken
         {
             EmployeeId = employeeId,
-            HashToken = _passwordHasher.HashToken(rawRefreshToken),
+            HashToken = PasswordHasher.HashToken(rawRefreshToken),
             CreatedBy = employeeId,
             LastUpdatedBy = employeeId,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
@@ -180,7 +178,7 @@ public class RefreshTokenService : IRefreshTokenService
     /// <returns></returns>
     private async Task<RefreshToken?> ValidateAsync(string refreshToken, CancellationToken ct = default)
     {
-        var hash = _passwordHasher.HashToken(refreshToken);
+        var hash = PasswordHasher.HashToken(refreshToken);
 
         if (hash is null)
             return null;
@@ -215,7 +213,7 @@ public class RefreshTokenService : IRefreshTokenService
     {
         existingToken.RevokedAt = DateTime.UtcNow;
         existingToken.RevokedByIp = ipAddress;
-        existingToken.ReplacedByHashToken = _passwordHasher.HashToken(rawRefreshToken);
+        existingToken.ReplacedByHashToken = PasswordHasher.HashToken(rawRefreshToken);
 
         _refreshTokenRepository.Update(existingToken);
         await _refreshTokenRepository.SaveChangesAsync(ct);
@@ -230,7 +228,7 @@ public class RefreshTokenService : IRefreshTokenService
     /// <returns></returns>
     public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
     {
-        var hash = _passwordHasher.HashToken(refreshToken);
+        var hash = PasswordHasher.HashToken(refreshToken);
 
         var token = await _refreshTokenRepository.GetByHashAsync(hash, ct);
 

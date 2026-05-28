@@ -1,9 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Common.Contexts;
-using SdxCore.Common.Interfaces.Contexts;
-using SdxCore.Identity.Application.Services;
+using SdxCore.Common.Security;
 using SdxCore.Identity.Application.Security;
+using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Domain.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Security;
 using SdxCore.Identity.Domain.Interfaces.Services;
@@ -62,10 +61,6 @@ public static class ServiceCollectionExtensions
         // Register IAuditLogger as scoped (per-request lifetime)
         // Requirement 12.5: IAuditLogger registered as scoped service
         services.AddScoped<IAuditLogger, AuditLogger>();
-
-        // Register IPasswordHasher as singleton (stateless service)
-        // Requirement 12.5: IPasswordHasher registered
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         return services;
     }

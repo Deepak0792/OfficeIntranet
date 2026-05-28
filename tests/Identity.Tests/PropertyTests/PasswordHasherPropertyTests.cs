@@ -3,6 +3,7 @@ using FsCheck.Xunit;
 using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.Interfaces.Security;
+using SdxCore.Common.Security;
 
 namespace SdxCore.Identity.Tests.PropertyTests;
 
@@ -12,13 +13,6 @@ namespace SdxCore.Identity.Tests.PropertyTests;
 /// </summary>
 public class PasswordHasherPropertyTests
 {
-    private readonly IPasswordHasher _passwordHasher;
-
-    public PasswordHasherPropertyTests()
-    {
-        _passwordHasher = new PasswordHasher();
-    }
-
     /// <summary>
     /// Property 1: Hash verification consistency
     /// **Validates: Requirements 8.1, 8.2, 8.3**
@@ -35,8 +29,8 @@ public class PasswordHasherPropertyTests
         string pwd = password.Get;
 
         // Act
-        string hash = _passwordHasher.Hash(pwd);
-        bool isValid = _passwordHasher.Verify(pwd, hash);
+        string hash = PasswordHasher.Hash(pwd);
+        bool isValid = PasswordHasher.Verify(pwd, hash);
 
         // Assert
         Assert.True(isValid, $"Verify(password, Hash(password)) should return true for password: {pwd.Substring(0, Math.Min(10, pwd.Length))}...");
@@ -58,8 +52,8 @@ public class PasswordHasherPropertyTests
         string pwd = password.Get;
 
         // Act
-        string hash1 = _passwordHasher.Hash(pwd);
-        string hash2 = _passwordHasher.Hash(pwd);
+        string hash1 = PasswordHasher.Hash(pwd);
+        string hash2 = PasswordHasher.Hash(pwd);
 
         // Assert
         Assert.NotEqual(hash1, hash2);
