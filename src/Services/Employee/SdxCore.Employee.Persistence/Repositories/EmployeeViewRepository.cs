@@ -1,0 +1,46 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using SdxCore.Employee.Domain.Entities;
+using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Persistence.Data;
+
+namespace SdxCore.Employee.Persistence.Repositories;
+
+public class EmployeeViewRepository : IEmployeeViewRepository
+{
+    private readonly EmployeeDbContext _dbContext;
+
+    public EmployeeViewRepository(EmployeeDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<EmployeeFullProfile?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.EmployeeFullProfiles
+            .FirstOrDefaultAsync(e => e.EmployeeId == id, cancellationToken);
+    }
+
+    public async Task<IEnumerable<EmployeeFullProfile>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.EmployeeFullProfiles.AsNoTracking().ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IEnumerable<EmployeeFullProfile> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.EmployeeFullProfiles.AsNoTracking();
+        var count = await query.CountAsync(cancellationToken);
+        var items = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return (items, count);
+    }
+
+    public async Task<IEnumerable<EmployeeFullProfile>> FindAsync(Expression<Func<EmployeeFullProfile, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.EmployeeFullProfiles.AsNoTracking().Where(predicate).ToListAsync(cancellationToken);
+    }
+}

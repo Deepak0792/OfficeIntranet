@@ -186,6 +186,7 @@ services:
       - ReverseProxy__Clusters__shared-cluster__Destinations__shared-api__Address=http://shared-api:80
       - ReverseProxy__Clusters__time-cluster__Destinations__time-api__Address=http://time-api:80
       - ReverseProxy__Clusters__file-cluster__Destinations__file-api__Address=http://file-api:80
+      - ReverseProxy__Clusters__employee-cluster__Destinations__employee-api__Address=http://employee-api:80
       - Authentication__IdentityServiceUrl=http://identity-api:80
       - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
     ports:
@@ -294,6 +295,39 @@ services:
       - "5004:80"
     volumes:
       - sdxcore-files:/mnt/sdxcore-files
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  employee-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Employee/SdxCore.Employee.API/Dockerfile
+    container_name: sdxcore-employee-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - Redis__ConnectionString=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__VirtualHost=sdxcore
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-sdxcore}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-sdxcore_secret}
+    ports:
+      - "5005:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - sdxcore-network
     healthcheck:
