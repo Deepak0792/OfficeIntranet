@@ -1,4 +1,4 @@
-using SdxCore.Shared.Domain.Interfaces.Services;
+using SdxCore.Shared.Application.Interfaces.Services;
 using SdxCore.Shared.Domain.Interfaces.Repositories;
 using SdxCore.Shared.Domain.Entities;
 

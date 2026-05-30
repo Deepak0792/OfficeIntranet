@@ -6,8 +6,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
-using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Application.Interfaces;
+using SdxCore.Identity.Application.Interfaces.Providers;
 
 namespace SdxCore.Identity.Application.Providers;
 

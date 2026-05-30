@@ -1,16 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
-using SdxCore.Time.Domain.DTOs.Request;
-using SdxCore.Time.Domain.DTOs.Response;
-using SdxCore.Time.Application.Services;
-using SdxCore.Time.Domain.Interfaces.Services;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using System;
+using SdxCore.Time.Application.DTOs.Request;
+using SdxCore.Time.Application.DTOs.Response;
+using SdxCore.Time.Application.Interfaces.Services;
 
 namespace SdxCore.Time.API.Controllers;
 

@@ -2,7 +2,7 @@ using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
-using SdxCore.Identity.Domain.Interfaces.Services;
+using SdxCore.Identity.Application.Interfaces.Services;
 
 namespace SdxCore.Identity.Application.Services;
 

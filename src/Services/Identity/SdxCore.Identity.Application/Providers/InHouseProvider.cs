@@ -4,8 +4,8 @@ using SdxCore.Common.Security;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Application.Interfaces;
+using SdxCore.Identity.Application.Interfaces.Providers;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 using System.Security.Claims;
 

@@ -1,5 +1,3 @@
-using SdxCore.Identity.Domain.Enums;
-
 namespace SdxCore.Identity.Domain.Entities;
 
 /// <summary>
@@ -22,7 +20,7 @@ public sealed record AuditEvent
     /// <summary>
     /// Authentication protocol used for this attempt.
     /// </summary>
-    public required AuthProtocol Protocol { get; init; }
+    public required string Protocol { get; init; }
 
     /// <summary>
     /// User identifier if available. May be null for failed attempts where user was not found.

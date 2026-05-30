@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Shared.Application.Services;
-using SdxCore.Shared.Domain.Interfaces.Services;
+using SdxCore.Shared.Application.Interfaces.Services;
 
 namespace SdxCore.Shared.Application.Extensions;
 

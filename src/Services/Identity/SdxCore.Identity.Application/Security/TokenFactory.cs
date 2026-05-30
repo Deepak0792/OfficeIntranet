@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using SdxCore.Identity.Domain.DTOs;
-using SdxCore.Identity.Domain.Interfaces.Security;
+using SdxCore.Identity.Application.Interfaces.Security;
 
 namespace SdxCore.Identity.Application.Security;
 

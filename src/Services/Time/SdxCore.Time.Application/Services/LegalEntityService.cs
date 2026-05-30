@@ -1,16 +1,10 @@
 using SdxCore.Common.Caching;
-using SdxCore.Time.Domain.DTOs.Request;
-using SdxCore.Time.Domain.DTOs.Response;
+using SdxCore.Time.Application.DTOs.Request;
+using SdxCore.Time.Application.DTOs.Response;
 using SdxCore.Time.Application.Helpers;
+using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
-using SdxCore.Time.Domain.Interfaces.Services;
 using SdxCore.Time.Domain.Interfaces.Repositories;
-using System;
-using SdxCore.Common.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SdxCore.Time.Application.Services;
 

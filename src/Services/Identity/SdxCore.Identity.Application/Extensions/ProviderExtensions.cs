@@ -2,8 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Domain.DTOs;
-using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Interfaces.Providers;
+using SdxCore.Identity.Application.Interfaces;
+using SdxCore.Identity.Application.Interfaces.Providers;
 using SdxCore.Identity.Application.Providers;
 
 namespace SdxCore.Identity.Application.Extensions;

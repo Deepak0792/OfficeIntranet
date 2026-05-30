@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Time.Application.Services;
 using SdxCore.Time.Domain.Interfaces.Repositories;
-using SdxCore.Time.Domain.Interfaces.Services;
+using SdxCore.Time.Application.Interfaces.Services;
 
 namespace SdxCore.Time.Application.Extensions;
 

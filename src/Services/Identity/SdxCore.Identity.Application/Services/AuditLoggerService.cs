@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Interfaces.Services;
+using SdxCore.Identity.Application.Interfaces.Services;
 
 namespace SdxCore.Identity.Application.Services;
 public sealed class AuditLoggerService : IAuditLoggerService
@@ -28,7 +28,7 @@ public sealed class AuditLoggerService : IAuditLoggerService
             AuditEvent auditEvent = new AuditEvent
             {
                 EventType = auditEventRequest.EventType,
-                Protocol = auditEventRequest.Protocol,
+                Protocol = auditEventRequest.Protocol.ToString(),
                 EmployeeId = auditEventRequest.EmployeeId,
                 Username = auditEventRequest.Username,
                 IpAddress = _requestContext.IpAddress,

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Enums;
 
 namespace SdxCore.Identity.Persistence.Configurations;
 

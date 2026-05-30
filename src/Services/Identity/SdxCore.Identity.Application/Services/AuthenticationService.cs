@@ -3,11 +3,11 @@ using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
-using SdxCore.Identity.Domain.Enums;
-using SdxCore.Identity.Domain.Exceptions;
-using SdxCore.Identity.Domain.Interfaces.Providers;
-using SdxCore.Identity.Domain.Interfaces.Security;
-using SdxCore.Identity.Domain.Interfaces.Services;
+using SdxCore.Identity.Application.Interfaces;
+using SdxCore.Identity.Application.Exceptions;
+using SdxCore.Identity.Application.Interfaces.Providers;
+using SdxCore.Identity.Application.Interfaces.Security;
+using SdxCore.Identity.Application.Interfaces.Services;
 using System.Security.Claims;
 
 namespace SdxCore.Identity.Application.Services;
