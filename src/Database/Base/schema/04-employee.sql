@@ -494,18 +494,18 @@ SELECT
     e.DateOfJoining,
     e.EmploymentType,
     e.IsActive,
-    d.Id                                     AS DepartmentId,
-    d.DepartmentName,
+    d.Id                                     AS PrimaryDepartmentId,
+    d.DepartmentName						 AS PrimaryDepartmentName,
     dg.Id                                    AS DesignationId,
     dg.DesignationName,
     dg.Grade,
-    loc.Id                                   AS LocationId,
-    loc.LocationName,
-    loc.City,
+    loc.Id                                   AS PrimaryLocationId,
+    loc.LocationName						 AS PrimaryLocationName,
+    loc.City								 AS PrimaryLocationCity,
     le.LegalEntityId                         AS PrimaryLegalEntityId,
     ler.EntityName                           AS PrimaryLegalEntityName,
-    mgr.Id                                   AS ManagerId,
-    mgr.DisplayName                          AS ManagerName
+    mgr.Id                                   AS DirectManagerId,
+    mgr.DisplayName                          AS DirectManagerName
 FROM employee.Employee e
 LEFT JOIN employee.EmployeeDepartment ed ON ed.EmployeeId = e.Id AND ed.IsPrimaryDepartment = 1 AND ed.IsActive = 1
 LEFT JOIN time.Department d ON d.Id = ed.DepartmentId

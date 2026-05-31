@@ -46,8 +46,8 @@ public class EmployeeService : IEmployeeService
                 ProfilePhotoUrl = e.ProfilePhotoUrl,
                 Email = e.Email,
                 DesignationName = e.DesignationName,
-                DepartmentName = e.DepartmentName,
-                LocationName = e.LocationName,
+                DepartmentName = e.PrimaryDepartmentName,
+                LocationName = e.PrimaryLocationName,
                 IsActive = e.IsActive
             }).ToList();
 
@@ -76,18 +76,18 @@ public class EmployeeService : IEmployeeService
                 DateOfJoining = profile.DateOfJoining,
                 EmploymentType = profile.EmploymentType,
                 IsActive = profile.IsActive,
-                DepartmentId = profile.DepartmentId,
-                DepartmentName = profile.DepartmentName,
+                DepartmentId = profile.PrimaryDepartmentId,
+                DepartmentName = profile.PrimaryDepartmentName,
                 DesignationId = profile.DesignationId,
                 DesignationName = profile.DesignationName,
                 Grade = profile.Grade,
-                LocationId = profile.LocationId,
-                LocationName = profile.LocationName,
-                City = profile.City,
+                LocationId = profile.PrimaryLocationId,
+                LocationName = profile.PrimaryLocationName,
+                City = profile.PrimaryLocationCity,
                 PrimaryLegalEntityId = profile.PrimaryLegalEntityId,
                 PrimaryLegalEntityName = profile.PrimaryLegalEntityName,
-                ManagerId = profile.ManagerId,
-                ManagerName = profile.ManagerName
+                ManagerId = profile.DirectManagerId,
+                ManagerName = profile.DirectManagerName
             };
         }, CacheOptions.Default, cancellationToken);
     }
@@ -128,8 +128,8 @@ public class EmployeeService : IEmployeeService
             ProfilePhotoUrl = e.ProfilePhotoUrl,
             Email = e.Email,
             DesignationName = e.DesignationName,
-            DepartmentName = e.DepartmentName,
-            LocationName = e.LocationName,
+            DepartmentName = e.PrimaryDepartmentName,
+            LocationName = e.PrimaryLocationName,
             IsActive = e.IsActive
         }).ToList();
 
@@ -149,8 +149,8 @@ public class EmployeeService : IEmployeeService
             ProfilePhotoUrl = profile.ProfilePhotoUrl,
             Email = profile.Email,
             DesignationName = profile.DesignationName,
-            DepartmentName = profile.DepartmentName,
-            LocationName = profile.LocationName,
+            DepartmentName = profile.PrimaryDepartmentName,
+            LocationName = profile.PrimaryLocationName,
             IsActive = profile.IsActive
         };
     }
