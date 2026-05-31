@@ -4,10 +4,11 @@ namespace SdxCore.Common.Helpers;
 
 public static class PropertyMapper
 {
-    public static TDest? Map<TSource, TDest>(TSource source)
+    public static TDest Map<TSource, TDest>(TSource source)
     {
-        if (source == null) return default;
-        var dest = (TDest)System.Activator.CreateInstance(typeof(TDest))!;
+        ArgumentNullException.ThrowIfNull(source);
+
+        var dest = (TDest)System.Activator.CreateInstance<TDest>()!;
         MapProperties(source, dest);
         return dest;
     }

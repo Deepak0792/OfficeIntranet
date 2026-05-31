@@ -8,20 +8,20 @@ using SdxCore.Time.Domain.Interfaces.Repositories;
 
 namespace SdxCore.Time.Application.Services;
 
-public class RegionService : IRegionService 
+public class RegionService : IRegionService
 {
     private readonly IRegionRepository _repository;
     private readonly ICacheService _cacheService;
     private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    
-    public RegionService(IRegionRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder) 
+
+    public RegionService(IRegionRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder)
     {
         _repository = repository;
         _cacheService = cacheService;
         _cacheKeyBuilder = cacheKeyBuilder;
     }
-    
-            public async Task<IEnumerable<RegionResponse>> GetAllAsync(CancellationToken cancellationToken = default) 
+
+    public async Task<IEnumerable<RegionResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey("region", "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -31,7 +31,7 @@ public class RegionService : IRegionService
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<RegionResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default) 
+    public async Task<RegionResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey("region", id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -41,36 +41,36 @@ public class RegionService : IRegionService
             return PropertyMapper.Map<Region, RegionResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
-    
-    public async Task<RegionResponse> CreateAsync(CreateRegionRequest dto, CancellationToken cancellationToken = default) 
+
+    public async Task<RegionResponse> CreateAsync(CreateRegionRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateRegionRequest, Region>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
-        
+
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
-    
-    public async Task<bool> UpdateAsync(short id, UpdateRegionRequest dto, CancellationToken cancellationToken = default) 
+
+    public async Task<bool> UpdateAsync(short id, UpdateRegionRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
-        
+
         PropertyMapper.MapProperties(dto, entity);
-        
+
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
     }
-    
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default) 
+
+    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
-        
+
         entity.IsActive = request.IsActive;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -87,14 +87,14 @@ public class RegionService : IRegionService
     {
         var allActive = await _repository.FindAsync(x => x.IsActive, cancellationToken);
         var dtos = allActive.Select(e => PropertyMapper.Map<Region, RegionResponse>(e)).ToList();
-        
+
         var lookup = dtos.ToLookup(x => x.ParentRegionId);
         foreach (var dto in dtos)
         {
             var children = lookup[dto.Id].ToList();
             if (children.Any()) dto.Children = children;
         }
-        
+
         return lookup[null].ToList();
     }
 
@@ -108,19 +108,19 @@ public class RegionService : IRegionService
     {
         var ancestors = new List<RegionResponse>();
         var currentId = id;
-        
+
         while (true)
         {
             var entity = await _repository.GetByIdAsync(currentId, cancellationToken);
             if (entity == null || entity.ParentRegionId == null) break;
-            
+
             var parent = await _repository.GetByIdAsync(entity.ParentRegionId.Value, cancellationToken);
             if (parent == null || !parent.IsActive) break;
-            
+
             ancestors.Add(PropertyMapper.Map<Region, RegionResponse>(parent));
             currentId = parent.Id;
         }
-        
+
         return ancestors;
     }
 
@@ -128,10 +128,10 @@ public class RegionService : IRegionService
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
-        
+
         // Basic circular dependency check can be added here
         if (request.ParentId == id) throw new InvalidOperationException("A region cannot be its own parent.");
-        
+
         entity.ParentRegionId = request.ParentId;
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
