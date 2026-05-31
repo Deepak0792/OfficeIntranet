@@ -18,7 +18,7 @@ public class CacheInvalidationBackgroundService : BackgroundService
     private readonly IConnection _connection;
     private readonly IRabbitMqTopologyConfigurator _topologyConfigurator;
     private readonly ILogger<CacheInvalidationBackgroundService> _logger;
-    private IModel _channel;
+    private IModel? _channel = null;
     private readonly string _queueName = "cache.time.invalidate";
 
     public CacheInvalidationBackgroundService(
@@ -47,8 +47,8 @@ public class CacheInvalidationBackgroundService : BackgroundService
         {
             var body = ea.Body.ToArray();
             var payload = Encoding.UTF8.GetString(body);
-            
-            string eventType = null;
+
+            string? eventType = null;
             if (ea.BasicProperties.Headers != null && ea.BasicProperties.Headers.TryGetValue("EventType", out var headerObj))
             {
                 var bytes = headerObj as byte[];
@@ -72,7 +72,7 @@ public class CacheInvalidationBackgroundService : BackgroundService
         return Task.CompletedTask;
     }
 
-    private async Task ProcessInvalidationAsync(string eventType, string payload, CancellationToken cancellationToken)
+    private async Task ProcessInvalidationAsync(string? eventType, string payload, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(eventType))
         {
@@ -95,7 +95,7 @@ public class CacheInvalidationBackgroundService : BackgroundService
         var pattern = cacheKeyBuilder.BuildPattern(entityName, "*");
 
         _logger.LogInformation("Invalidating cache for Entity: {EntityName} using Pattern: {Pattern}", entityName, pattern);
-        
+
         await cacheService.RemoveByPatternAsync(pattern, cancellationToken);
     }
 

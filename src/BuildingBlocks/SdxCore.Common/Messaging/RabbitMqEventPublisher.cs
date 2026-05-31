@@ -20,13 +20,13 @@ public class RabbitMqEventPublisher : IEventPublisher
         _config = options.Value;
     }
 
-    public Task PublishAsync<T>(T @event, string routingKey, IDictionary<string, object> headers = null, CancellationToken cancellationToken = default) where T : class
+    public Task PublishAsync<T>(T @event, string routingKey, IDictionary<string, object>? headers = null, CancellationToken cancellationToken = default) where T : class
     {
         var payload = JsonSerializer.Serialize(@event);
         return PublishRawAsync(payload, routingKey, headers, cancellationToken);
     }
 
-    public Task PublishRawAsync(string payload, string routingKey, IDictionary<string, object> headers = null, CancellationToken cancellationToken = default)
+    public Task PublishRawAsync(string payload, string routingKey, IDictionary<string, object>? headers = null, CancellationToken cancellationToken = default)
     {
         var body = Encoding.UTF8.GetBytes(payload);
 

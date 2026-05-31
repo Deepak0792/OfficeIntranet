@@ -10,7 +10,7 @@ public class RequestContext : IRequestContext
         _http = http;
     }
 
-    private HttpContext Http => _http.HttpContext;
+    private HttpContext? Http => _http.HttpContext;
 
     public bool IsAuthenticated =>
         !string.IsNullOrEmpty(Http?.Request?.Headers["X-User-Id"]);
