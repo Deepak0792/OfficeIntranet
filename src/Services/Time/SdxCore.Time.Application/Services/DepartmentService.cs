@@ -1,7 +1,7 @@
 using SdxCore.Common.Caching;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Helpers;
+using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -27,7 +27,7 @@ public class DepartmentService : IDepartmentService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
+            return entities.Select(e => PropertyMapper.Map<Department, DepartmentResponse>(e));
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -89,7 +89,7 @@ public class DepartmentService : IDepartmentService
         try
         {
             var allActive = await _repository.FindAsync(x => x.IsActive, cancellationToken);
-            var dtos = allActive.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e)).ToList();
+            var dtos = allActive.Select(e => PropertyMapper.Map<Department, DepartmentResponse>(e)).ToList();
 
             var lookup = dtos.ToLookup(x => x.ParentDepartmentId);
             foreach (var dto in dtos)
@@ -109,7 +109,7 @@ public class DepartmentService : IDepartmentService
     public async Task<IEnumerable<DepartmentResponse>> GetChildrenAsync(short id, CancellationToken cancellationToken = default)
     {
         var children = await _repository.FindAsync(x => x.ParentDepartmentId == id && x.IsActive, cancellationToken);
-        return children.Select(e => SimpleMapper.Map<Department, DepartmentResponse>(e));
+        return children.Select(e => PropertyMapper.Map<Department, DepartmentResponse>(e));
     }
 
     public async Task<IEnumerable<DepartmentResponse>> GetAncestorsAsync(short id, CancellationToken cancellationToken = default)
@@ -125,7 +125,7 @@ public class DepartmentService : IDepartmentService
             var parent = await _repository.GetByIdAsync(entity.ParentDepartmentId.Value, cancellationToken);
             if (parent == null || !parent.IsActive) break;
             
-            ancestors.Add(SimpleMapper.Map<Department, DepartmentResponse>(parent));
+            ancestors.Add(PropertyMapper.Map<Department, DepartmentResponse>(parent));
             currentId = parent.Id;
         }
         

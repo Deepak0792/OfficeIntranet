@@ -1,8 +1,8 @@
 using System.Linq;
 
-namespace SdxCore.Time.Application.Helpers;
+namespace SdxCore.Common.Helpers;
 
-public static class SimpleMapper
+public static class PropertyMapper
 {
     public static TDest? Map<TSource, TDest>(TSource source)
     {

@@ -1,7 +1,7 @@
 using SdxCore.Common.Caching;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Helpers;
+using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -27,7 +27,7 @@ public class GeoFenceService : IGeoFenceService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => SimpleMapper.Map<GeoFence, GeoFenceResponse>(e));
+            return entities.Select(e => PropertyMapper.Map<GeoFence, GeoFenceResponse>(e));
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -38,13 +38,13 @@ public class GeoFenceService : IGeoFenceService
         {
             var entity = await _repository.GetByIdAsync(id, ct);
             if (entity == null) return null;
-            return SimpleMapper.Map<GeoFence, GeoFenceResponse>(entity);
+            return PropertyMapper.Map<GeoFence, GeoFenceResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<GeoFenceResponse> CreateAsync(CreateGeoFenceRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateGeoFenceRequest, GeoFence>(dto);
+        var entity = PropertyMapper.Map<CreateGeoFenceRequest, GeoFence>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -59,7 +59,7 @@ public class GeoFenceService : IGeoFenceService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        SimpleMapper.MapProperties(dto, entity);
+        PropertyMapper.MapProperties(dto, entity);
         
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -88,7 +88,7 @@ public class GeoFenceService : IGeoFenceService
             Math.Abs(x.Longitude - request.Longitude) < 0.01m);
             
         if (matched == null) return null;
-        return SimpleMapper.Map<GeoFence, GeoFenceResponse>(matched);
+        return PropertyMapper.Map<GeoFence, GeoFenceResponse>(matched);
     }
 }
 

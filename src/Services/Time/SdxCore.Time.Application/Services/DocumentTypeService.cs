@@ -1,7 +1,7 @@
 using SdxCore.Common.Caching;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Helpers;
+using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -27,7 +27,7 @@ public class DocumentTypeService : IDocumentTypeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => SimpleMapper.Map<DocumentType, DocumentTypeResponse>(e));
+            return entities.Select(e => PropertyMapper.Map<DocumentType, DocumentTypeResponse>(e));
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -38,13 +38,13 @@ public class DocumentTypeService : IDocumentTypeService
         {
             var entity = await _repository.GetByIdAsync(id, ct);
             if (entity == null) return null;
-            return SimpleMapper.Map<DocumentType, DocumentTypeResponse>(entity);
+            return PropertyMapper.Map<DocumentType, DocumentTypeResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<DocumentTypeResponse> CreateAsync(CreateDocumentTypeRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateDocumentTypeRequest, DocumentType>(dto);
+        var entity = PropertyMapper.Map<CreateDocumentTypeRequest, DocumentType>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -59,7 +59,7 @@ public class DocumentTypeService : IDocumentTypeService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        SimpleMapper.MapProperties(dto, entity);
+        PropertyMapper.MapProperties(dto, entity);
         
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);

@@ -1,7 +1,7 @@
 using SdxCore.Common.Caching;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Helpers;
+using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -27,7 +27,7 @@ public class RegionService : IRegionService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => SimpleMapper.Map<Region, RegionResponse>(e));
+            return entities.Select(e => PropertyMapper.Map<Region, RegionResponse>(e));
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -38,13 +38,13 @@ public class RegionService : IRegionService
         {
             var entity = await _repository.GetByIdAsync(id, ct);
             if (entity == null) return null;
-            return SimpleMapper.Map<Region, RegionResponse>(entity);
+            return PropertyMapper.Map<Region, RegionResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<RegionResponse> CreateAsync(CreateRegionRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateRegionRequest, Region>(dto);
+        var entity = PropertyMapper.Map<CreateRegionRequest, Region>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -59,7 +59,7 @@ public class RegionService : IRegionService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        SimpleMapper.MapProperties(dto, entity);
+        PropertyMapper.MapProperties(dto, entity);
         
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -80,13 +80,13 @@ public class RegionService : IRegionService
     public async Task<IEnumerable<RegionResponse>> GetByCountryIdAsync(short countryId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.CountryId == countryId && x.IsActive, cancellationToken);
-        return entities.Select(e => SimpleMapper.Map<Region, RegionResponse>(e));
+        return entities.Select(e => PropertyMapper.Map<Region, RegionResponse>(e));
     }
 
     public async Task<IEnumerable<RegionResponse>> GetTreeAsync(CancellationToken cancellationToken = default)
     {
         var allActive = await _repository.FindAsync(x => x.IsActive, cancellationToken);
-        var dtos = allActive.Select(e => SimpleMapper.Map<Region, RegionResponse>(e)).ToList();
+        var dtos = allActive.Select(e => PropertyMapper.Map<Region, RegionResponse>(e)).ToList();
         
         var lookup = dtos.ToLookup(x => x.ParentRegionId);
         foreach (var dto in dtos)
@@ -101,7 +101,7 @@ public class RegionService : IRegionService
     public async Task<IEnumerable<RegionResponse>> GetChildrenAsync(short id, CancellationToken cancellationToken = default)
     {
         var children = await _repository.FindAsync(x => x.ParentRegionId == id && x.IsActive, cancellationToken);
-        return children.Select(e => SimpleMapper.Map<Region, RegionResponse>(e));
+        return children.Select(e => PropertyMapper.Map<Region, RegionResponse>(e));
     }
 
     public async Task<IEnumerable<RegionResponse>> GetAncestorsAsync(short id, CancellationToken cancellationToken = default)
@@ -117,7 +117,7 @@ public class RegionService : IRegionService
             var parent = await _repository.GetByIdAsync(entity.ParentRegionId.Value, cancellationToken);
             if (parent == null || !parent.IsActive) break;
             
-            ancestors.Add(SimpleMapper.Map<Region, RegionResponse>(parent));
+            ancestors.Add(PropertyMapper.Map<Region, RegionResponse>(parent));
             currentId = parent.Id;
         }
         

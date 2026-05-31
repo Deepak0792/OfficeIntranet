@@ -1,7 +1,7 @@
 using SdxCore.Common.Caching;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Helpers;
+using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -27,7 +27,7 @@ public class ScopeTypeService : IScopeTypeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => SimpleMapper.Map<ScopeType, ScopeTypeResponse>(e));
+            return entities.Select(e => PropertyMapper.Map<ScopeType, ScopeTypeResponse>(e));
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -38,13 +38,13 @@ public class ScopeTypeService : IScopeTypeService
         {
             var entity = await _repository.GetByIdAsync(id, ct);
             if (entity == null) return null;
-            return SimpleMapper.Map<ScopeType, ScopeTypeResponse>(entity);
+            return PropertyMapper.Map<ScopeType, ScopeTypeResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<ScopeTypeResponse> CreateAsync(CreateScopeTypeRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateScopeTypeRequest, ScopeType>(dto);
+        var entity = PropertyMapper.Map<CreateScopeTypeRequest, ScopeType>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -59,7 +59,7 @@ public class ScopeTypeService : IScopeTypeService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        SimpleMapper.MapProperties(dto, entity);
+        PropertyMapper.MapProperties(dto, entity);
         
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);

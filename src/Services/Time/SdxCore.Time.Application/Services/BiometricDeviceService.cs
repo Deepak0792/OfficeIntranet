@@ -2,7 +2,7 @@ using SdxCore.Common.Caching;
 using SdxCore.Common.Models;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Helpers;
+using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Interfaces.Repositories;
@@ -28,7 +28,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, ct);
-            var dtos = result.Items.Select(e => SimpleMapper.Map<BiometricDevice, BiometricDeviceResponse>(e));
+            var dtos = result.Items.Select(e => PropertyMapper.Map<BiometricDevice, BiometricDeviceResponse>(e));
             return new PagedResponse<IEnumerable<BiometricDeviceResponse>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
@@ -40,13 +40,13 @@ public class BiometricDeviceService : IBiometricDeviceService
         {
             var entity = await _repository.GetByIdAsync(id, ct);
             if (entity == null) return null;
-            return SimpleMapper.Map<BiometricDevice, BiometricDeviceResponse>(entity);
+            return PropertyMapper.Map<BiometricDevice, BiometricDeviceResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
     
     public async Task<BiometricDeviceResponse> CreateAsync(CreateBiometricDeviceRequest dto, CancellationToken cancellationToken = default) 
     {
-        var entity = SimpleMapper.Map<CreateBiometricDeviceRequest, BiometricDevice>(dto);
+        var entity = PropertyMapper.Map<CreateBiometricDeviceRequest, BiometricDevice>(dto);
         entity.IsActive = true;
         entity.CreatedAt = DateTime.UtcNow;
         
@@ -61,7 +61,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
         
-        SimpleMapper.MapProperties(dto, entity);
+        PropertyMapper.MapProperties(dto, entity);
         
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
