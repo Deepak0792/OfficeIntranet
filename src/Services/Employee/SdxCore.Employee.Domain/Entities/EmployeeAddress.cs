@@ -20,5 +20,4 @@ public class EmployeeAddress : BaseEntity
     public bool IsVerified { get; set; }
     public int? VerifiedByEmployeeId { get; set; }
     public DateTime? VerifiedAt { get; set; }
-    public bool IsActive { get; set; }
 }

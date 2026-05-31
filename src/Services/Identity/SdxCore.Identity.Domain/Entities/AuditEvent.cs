@@ -20,7 +20,7 @@ public sealed record AuditEvent
     /// <summary>
     /// Authentication protocol used for this attempt.
     /// </summary>
-    public required string Protocol { get; init; }
+    public required string Protocol { get; set; }
 
     /// <summary>
     /// User identifier if available. May be null for failed attempts where user was not found.

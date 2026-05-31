@@ -79,53 +79,57 @@
     <Folder Include="Phase1\Sprint01\attendance\SeedData" />
     <Folder Include="Phase1\Sprint01\attendance\Tables" />
     <Folder Include="Phase1\Sprint01\attendance\Views" />
+    <Folder Include="Base\data\expense" />
   </ItemGroup>
   <ItemGroup>
-    <Build Include="Base\_include.sql" />
-    <Build Include="Base\data\attendance\seed-data.sql" />
-    <Build Include="Base\data\auth\seed-data.sql" />
-    <Build Include="Base\data\employee\seed-data.sql" />
-    <Build Include="Base\data\helpdesk\seed-data.sql" />
-    <Build Include="Base\data\hr\seed-data.sql" />
-    <Build Include="Base\data\payroll\seed-data.sql" />
-    <Build Include="Base\data\shared\seed-data.sql" />
-    <Build Include="Base\data\time\seed-data.sql" />
-    <Build Include="Base\data\workflow\seed-data.sql" />
-    <Build Include="Base\data\_include.sql" />
-    <Build Include="Base\schema\_include.sql" />
-    <Build Include="Base\schema\00-migration.sql" />
-    <Build Include="Base\schema\01-shared.sql" />
-    <Build Include="Base\schema\02-time.sql" />
-    <Build Include="Base\schema\03-workflow.sql" />
-    <Build Include="Base\schema\04-employee.sql" />
-    <Build Include="Base\schema\05-attendance.sql" />
-    <Build Include="Base\schema\06-hr.sql" />
-    <Build Include="Base\schema\07-payroll.sql" />
-    <Build Include="Base\schema\08-helpdesk.sql" />
-    <Build Include="Base\schema\09-auth.sql" />
-    <Build Include="Base\schema\10-event.sql" />
-    <Build Include="Base\schema\11-survey.sql" />
-    <Build Include="Base\schema\12-audit.sql" />
-    <Build Include="Phase1\Sprint01\attendance\_include.sql" />
-    <Build Include="Phase1\Sprint01\_include.sql" />
-    <Build Include="Phase1\_include.sql" />
-    <Build Include="Phase1\Sprint01\attendance\Functions\_include.sql" />
-    <Build Include="Phase1\Sprint01\attendance\Indexes\_include.sql" />
-    <Build Include="Phase1\Sprint01\attendance\Procedures\_include.sql" />
-    <Build Include="Phase1\Sprint01\attendance\SeedData\_include.sql" />
-    <Build Include="Phase1\Sprint01\attendance\Tables\_include.sql" />
-    <Build Include="Phase1\Sprint01\attendance\Views\_include.sql" />
+    <None Include="Base\_include.sql" />
+    <None Include="Base\data\attendance\seed-data.sql" />
+    <None Include="Base\data\auth\seed-data.sql" />
+    <None Include="Base\data\employee\seed-data.sql" />
+    <None Include="Base\data\helpdesk\seed-data.sql" />
+    <None Include="Base\data\hr\seed-data.sql" />
+    <None Include="Base\data\payroll\seed-data.sql" />
+    <None Include="Base\data\shared\seed-data.sql" />
+    <None Include="Base\data\time\seed-data.sql" />
+    <None Include="Base\data\workflow\seed-data.sql" />
+    <None Include="Base\data\_include.sql" />
+    <None Include="Base\schema\_include.sql" />
+    <None Include="Base\schema\00-migration.sql" />
+    <None Include="Base\schema\01-shared.sql" />
+    <None Include="Base\schema\02-time.sql" />
+    <None Include="Base\schema\03-workflow.sql" />
+    <None Include="Base\schema\04-employee.sql" />
+    <None Include="Base\schema\05-attendance.sql" />
+    <None Include="Base\schema\06-hr.sql" />
+    <None Include="Base\schema\07-payroll.sql" />
+    <None Include="Base\schema\08-helpdesk.sql" />
+    <None Include="Base\schema\09-auth.sql" />
+    <None Include="Base\schema\10-event.sql" />
+    <None Include="Base\schema\11-survey.sql" />
+    <None Include="Base\schema\12-audit.sql" />
+    <None Include="Phase1\Sprint01\attendance\_include.sql" />
+    <None Include="Phase1\Sprint01\_include.sql" />
+    <None Include="Phase1\_include.sql" />
+    <None Include="Phase1\Sprint01\attendance\Functions\_include.sql" />
+    <None Include="Phase1\Sprint01\attendance\Indexes\_include.sql" />
+    <None Include="Phase1\Sprint01\attendance\Procedures\_include.sql" />
+    <None Include="Phase1\Sprint01\attendance\SeedData\_include.sql" />
+    <None Include="Phase1\Sprint01\attendance\Tables\_include.sql" />
+    <None Include="Phase1\Sprint01\attendance\Views\_include.sql" />
+    <None Include="Build-All.ps1" />
+    <None Include="BuildREADME.md" />
+    <None Include="Generate-DeltaScript.ps1" />
+    <None Include="Generate-FullScript.ps1" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <PreDeploy Include="_include.sql" />
+    <None Include="_include.sql" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="SdxCore.Database.publish.xml" />
-    <None Include="SdxCore.Database.publish.Local.xml" />
-    <None Include="SdxCore.Database.publish.Dev.xml" />
-    <None Include="SdxCore.Database.publish.Staging.xml" />
-    <None Include="SdxCore.Database.publish.Production.xml" />
-    <None Include="Base\schema\design.md" />
-    <None Include="Base\schema\README.md" />
+    <None Include="Base\schema\13-expense.sql" />
+    <None Include="Base\data\expense\seed-data.sql" />
   </ItemGroup>
+  <PropertyGroup>
+    <PostBuildEvent>powershell -ExecutionPolicy Bypass -File "$(ProjectDir)Build-All.ps1" -SkipBuild -OutputPath "$(ProjectDir)DeploymentScripts"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

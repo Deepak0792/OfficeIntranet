@@ -6,7 +6,7 @@ using SdxCore.Identity.Application.Interfaces;
 using SdxCore.Identity.Application.Exceptions;
 using SdxCore.Identity.Application.Interfaces.Providers;
 
-namespace SdxCore.Identity.Application.Services;
+namespace SdxCore.Identity.Application.Providers;
 
 /// <summary>
 /// Provider registry implementation that maintains and resolves authentication providers.
@@ -80,7 +80,7 @@ public sealed class ProviderRegistry : IProviderRegistry
         }
 
         // 3. Parse protocol name to enum
-        if (!Enum.TryParse<AuthProtocol>(protocolName, ignoreCase: true, out AuthProtocol protocol))
+        if (!Enum.TryParse(protocolName, ignoreCase: true, out AuthProtocol protocol))
         {
             _logger.LogError("Invalid protocol name '{ProtocolName}' in configuration. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap", protocolName);
             throw new ConfigurationException($"Invalid protocol name '{protocolName}' in configuration. Valid values are: InHouse, Saml, OAuth, Oidc, Jwt, Ldap");

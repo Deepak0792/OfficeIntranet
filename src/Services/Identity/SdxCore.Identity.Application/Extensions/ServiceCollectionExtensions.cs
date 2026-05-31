@@ -6,6 +6,7 @@ using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Application.Interfaces.Providers;
 using SdxCore.Identity.Application.Interfaces.Security;
 using SdxCore.Identity.Application.Interfaces.Services;
+using SdxCore.Identity.Application.Providers;
 
 namespace SdxCore.Identity.Application.Extensions;
 
@@ -57,10 +58,6 @@ public static class ServiceCollectionExtensions
         // Register ITokenFactory as singleton (shared signing credentials)
         // Requirement 12.4: ITokenFactory registered as singleton
         services.AddSingleton<ITokenFactory, TokenFactory>();
-
-        // Register IAuditLogger as scoped (per-request lifetime)
-        // Requirement 12.5: IAuditLogger registered as scoped service
-        services.AddScoped<IAuditLogger, AuditLogger>();
 
         return services;
     }

@@ -1,12 +1,13 @@
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
+using SdxCore.Common.Helpers;
 using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Application.Interfaces.Services;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Interfaces.Repositories;
 
-namespace SdxCore.Identity.Application.Services;
+namespace SdxCore.Identity.Application.Providers;
 
 public sealed class AuditLoggerService : IAuditLoggerService, IDisposable
 {
@@ -53,15 +54,8 @@ public sealed class AuditLoggerService : IAuditLoggerService, IDisposable
     {
         try
         {
-            AuditEvent auditEvent = new()
-            {
-                EventType = auditEventRequest.EventType,
-                Protocol = auditEventRequest.Protocol.ToString(),
-                EmployeeId = auditEventRequest.EmployeeId,
-                Username = auditEventRequest.Username,
-                IpAddress = _requestContext.IpAddress,
-                FailureReason = auditEventRequest.FailureReason
-            };
+            var auditEvent = PropertyMapper.Map<AuditEventRequest, AuditEvent>(auditEventRequest);
+            auditEvent.Protocol = auditEventRequest.Protocol.ToString();
 
             if (!_channel.Writer.TryWrite(auditEvent))
             {
