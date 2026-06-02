@@ -1,11 +1,12 @@
-using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 using SdxCore.Employee.Persistence.Data;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Employee.Persistence.Repositories;
 
-public class EmployeeAddressRepository : BaseRepository<EmployeeAddress, int>, IEmployeeAddressRepository
+public class EmployeeAddressRepository : BaseRepository<EmployeeAddress, int, EmployeeDbContext>, IEmployeeAddressRepository
 {
     public EmployeeAddressRepository(EmployeeDbContext dbContext, IRequestContext requestContext) 
         : base(dbContext, requestContext)

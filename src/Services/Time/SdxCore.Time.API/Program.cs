@@ -1,8 +1,9 @@
 using SdxCore.Common.Extensions;
-using SdxCore.Time.API.BackgroundServices;
+using SdxCore.Caching.Extensions;
+using SdxCore.Messaging.Extensions;
 using SdxCore.Time.Application.Extensions;
 using SdxCore.Time.Persistence.Extensions;
-
+using SdxCore.SharedKernel.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -20,13 +21,12 @@ builder.Services.AddSwaggerGen();
 // Register the common layer
 builder.Services.AddSdxCoreCommon(builder.Configuration);
 
+// Register the sharedkernel layer
+builder.Services.AddSdxCoreSharedKernel(builder.Configuration);
+
 // Register Caching and Messaging
 builder.Services.AddSdxCaching(builder.Configuration);
 builder.Services.AddSdxMessaging(builder.Configuration);
-
-// Register Background Services
-builder.Services.AddHostedService<OutboxPollingBackgroundService>();
-builder.Services.AddHostedService<CacheInvalidationBackgroundService>();
 
 // Register the persistence and application layers
 builder.Services.AddTimePersistence(builder.Configuration);

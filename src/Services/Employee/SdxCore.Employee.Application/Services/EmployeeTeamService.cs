@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -30,18 +26,11 @@ public class EmployeeTeamService : IEmployeeTeamService
         foreach (var team in teams)
         {
             var teamMaster = await _teamRepository.GetByIdAsync(team.TeamId, cancellationToken);
-            responses.Add(new EmployeeTeamResponse
-            {
-                Id = team.Id,
-                EmployeeId = team.EmployeeId,
-                TeamId = team.TeamId,
-                TeamName = teamMaster?.TeamName,
-                RoleInTeam = team.RoleInTeam,
-                AllocationPercentage = team.AllocationPercentage,
-                StartDate = team.StartDate,
-                EndDate = team.EndDate,
-                IsActive = team.IsActive
-            });
+
+            var employeeTeam = PropertyMapper.Map<EmployeeTeam, EmployeeTeamResponse>(team);
+            employeeTeam.TeamName = teamMaster?.TeamName;
+
+            responses.Add(employeeTeam);
         }
         return responses;
     }
@@ -53,35 +42,19 @@ public class EmployeeTeamService : IEmployeeTeamService
 
         var teamMaster = await _teamRepository.GetByIdAsync(team.TeamId, cancellationToken);
 
-        return new EmployeeTeamResponse
-        {
-            Id = team.Id,
-            EmployeeId = team.EmployeeId,
-            TeamId = team.TeamId,
-            TeamName = teamMaster?.TeamName,
-            RoleInTeam = team.RoleInTeam,
-            AllocationPercentage = team.AllocationPercentage,
-            StartDate = team.StartDate,
-            EndDate = team.EndDate,
-            IsActive = team.IsActive
-        };
+        var employeeTeam = PropertyMapper.Map<EmployeeTeam, EmployeeTeamResponse>(team);
+        employeeTeam.TeamName = teamMaster?.TeamName;
+
+        return employeeTeam;
     }
 
-    public async Task<EmployeeTeamResponse> AddAsync(int employeeId, AddEmployeeTeamRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeTeamResponse> AddAsync(int employeeId, CreateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
     {
-        var team = new EmployeeTeam
-        {
-            EmployeeId = employeeId,
-            TeamId = request.TeamId,
-            RoleInTeam = request.RoleInTeam,
-            AllocationPercentage = request.AllocationPercentage,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeTeamRequest, EmployeeTeam>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsActive = true;
 
-        var created = await _repository.AddAsync(team, cancellationToken);
+        var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created team");
     }

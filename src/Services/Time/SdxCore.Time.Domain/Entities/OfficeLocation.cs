@@ -1,6 +1,9 @@
-﻿namespace SdxCore.Time.Domain.Entities;
-public class OfficeLocation : BaseEntity {
-    public short Id { get; set; }
+﻿using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
+
+namespace SdxCore.Time.Domain.Entities;
+public class OfficeLocation : BaseAuditEntity<short>, IPublishableEntity
+{
     public short LegalEntityId { get; set; }
     public short CountryId { get; set; }
     public short? RegionId { get; set; }

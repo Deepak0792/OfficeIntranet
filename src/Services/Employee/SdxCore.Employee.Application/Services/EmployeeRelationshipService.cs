@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -23,19 +24,8 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
     public async Task<IEnumerable<EmployeeRelationshipResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.ChildEmployeeId == employeeId, cancellationToken);
-        
-        return entities.Select(e => new EmployeeRelationshipResponse
-        {
-            Id = e.Id,
-            ParentEmployeeId = e.ParentEmployeeId,
-            ChildEmployeeId = e.ChildEmployeeId,
-            RelationshipType = e.RelationshipType,
-            DepartmentId = e.DepartmentId,
-            IsPrimaryRelationship = e.IsPrimaryRelationship,
-            EffectiveFrom = e.EffectiveFrom,
-            EffectiveTo = e.EffectiveTo,
-            IsActive = e.IsActive
-        }).ToList();
+
+        return entities.Select(e => PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(e)).ToList();
     }
 
     public async Task<EmployeeRelationshipResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
@@ -43,36 +33,14 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         var entity = (await _repository.FindAsync(x => x.Id == id && x.ChildEmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeRelationshipResponse
-        {
-            Id = entity.Id,
-            ParentEmployeeId = entity.ParentEmployeeId,
-            ChildEmployeeId = entity.ChildEmployeeId,
-            RelationshipType = entity.RelationshipType,
-            DepartmentId = entity.DepartmentId,
-            IsPrimaryRelationship = entity.IsPrimaryRelationship,
-            EffectiveFrom = entity.EffectiveFrom,
-            EffectiveTo = entity.EffectiveTo,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(entity);
     }
     
     public async Task<IEnumerable<EmployeeRelationshipResponse>> GetDirectReportsAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.ParentEmployeeId == employeeId && x.RelationshipType == "DIRECT_MANAGER" && x.IsActive, cancellationToken);
-        
-        return entities.Select(e => new EmployeeRelationshipResponse
-        {
-            Id = e.Id,
-            ParentEmployeeId = e.ParentEmployeeId,
-            ChildEmployeeId = e.ChildEmployeeId,
-            RelationshipType = e.RelationshipType,
-            DepartmentId = e.DepartmentId,
-            IsPrimaryRelationship = e.IsPrimaryRelationship,
-            EffectiveFrom = e.EffectiveFrom,
-            EffectiveTo = e.EffectiveTo,
-            IsActive = e.IsActive
-        }).ToList();
+
+        return entities.Select(e => PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(e)).ToList();
     }
 
     public async Task<EmployeeRelationshipResponse?> GetManagerAsync(int employeeId, CancellationToken cancellationToken = default)
@@ -80,21 +48,10 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         var entity = (await _repository.FindAsync(x => x.ChildEmployeeId == employeeId && x.RelationshipType == "DIRECT_MANAGER" && x.IsPrimaryRelationship && x.IsActive, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeRelationshipResponse
-        {
-            Id = entity.Id,
-            ParentEmployeeId = entity.ParentEmployeeId,
-            ChildEmployeeId = entity.ChildEmployeeId,
-            RelationshipType = entity.RelationshipType,
-            DepartmentId = entity.DepartmentId,
-            IsPrimaryRelationship = entity.IsPrimaryRelationship,
-            EffectiveFrom = entity.EffectiveFrom,
-            EffectiveTo = entity.EffectiveTo,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(entity);
     }
 
-    public async Task<EmployeeRelationshipResponse> AddAsync(int employeeId, AddEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeRelationshipResponse> AddAsync(int employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
     {
         if (request.ChildEmployeeId == employeeId)
         {
@@ -110,18 +67,9 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
                 _repository.Update(e);
             }
         }
-
-        var entity = new EmployeeRelationship
-        {
-            ParentEmployeeId = employeeId, // The path param {employeeId} is the parent in POST
-            ChildEmployeeId = request.ChildEmployeeId,
-            RelationshipType = request.RelationshipType,
-            DepartmentId = request.DepartmentId,
-            IsPrimaryRelationship = request.IsPrimaryRelationship,
-            EffectiveFrom = request.EffectiveFrom,
-            EffectiveTo = request.EffectiveTo,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeRelationshipRequest, EmployeeRelationship>(request);
+        entity.ParentEmployeeId = employeeId;
+        entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

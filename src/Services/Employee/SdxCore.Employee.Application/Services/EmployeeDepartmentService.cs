@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -23,18 +19,8 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
     public async Task<IEnumerable<EmployeeDepartmentResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
-        
-        return entities.Select(e => new EmployeeDepartmentResponse
-        {
-            Id = e.Id,
-            EmployeeId = e.EmployeeId,
-            DepartmentId = e.DepartmentId,
-            IsPrimaryDepartment = e.IsPrimaryDepartment,
-            AllocationPercentage = e.AllocationPercentage,
-            StartDate = e.StartDate,
-            EndDate = e.EndDate,
-            IsActive = e.IsActive
-        }).ToList();
+
+        return entities.Select(e => PropertyMapper.Map<EmployeeDepartment, EmployeeDepartmentResponse>(e)).ToList();
     }
 
     public async Task<EmployeeDepartmentResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
@@ -42,17 +28,7 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeDepartmentResponse
-        {
-            Id = entity.Id,
-            EmployeeId = entity.EmployeeId,
-            DepartmentId = entity.DepartmentId,
-            IsPrimaryDepartment = entity.IsPrimaryDepartment,
-            AllocationPercentage = entity.AllocationPercentage,
-            StartDate = entity.StartDate,
-            EndDate = entity.EndDate,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeDepartment, EmployeeDepartmentResponse>(entity);
     }
 
     private async Task ValidateAllocationPercentageAsync(int employeeId, int? currentId, decimal? additionalAllocation, CancellationToken cancellationToken)
@@ -70,7 +46,7 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         }
     }
 
-    public async Task<EmployeeDepartmentResponse> AddAsync(int employeeId, AddEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDepartmentResponse> AddAsync(int employeeId, CreateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         await ValidateAllocationPercentageAsync(employeeId, null, request.AllocationPercentage, cancellationToken);
 
@@ -84,16 +60,9 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
             }
         }
 
-        var entity = new EmployeeDepartment
-        {
-            EmployeeId = employeeId,
-            DepartmentId = request.DepartmentId,
-            IsPrimaryDepartment = request.IsPrimaryDepartment,
-            AllocationPercentage = request.AllocationPercentage,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeDepartmentRequest, EmployeeDepartment>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

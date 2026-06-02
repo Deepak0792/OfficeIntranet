@@ -304,7 +304,7 @@ CREATE TABLE employee.EmployeeTeam (
 GO
 
 -- BIOMETRIC EMPLOYEE MAPPING
-CREATE TABLE employee.BiometricEmployeeMapping (
+CREATE TABLE employee.EmployeeBiometricMapping (
     Id                  INT          PRIMARY KEY IDENTITY(1,1),
     EmployeeId          INT          NOT NULL,
     BiometricDeviceId   INT          NOT NULL,
@@ -315,11 +315,11 @@ CREATE TABLE employee.BiometricEmployeeMapping (
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     LastUpdatedBy       INT             NULL,
 
-    CONSTRAINT FK_BiometricEmployeeMapping_Employee
+    CONSTRAINT FK_EmployeeBiometricMapping_Employee
         FOREIGN KEY (EmployeeId)
         REFERENCES employee.Employee(Id),
 
-    CONSTRAINT FK_BiometricEmployeeMapping_Device
+    CONSTRAINT FK_EmployeeBiometricMapping_Device
         FOREIGN KEY (BiometricDeviceId)
         REFERENCES time.BiometricDevice(Id)
 );
@@ -456,7 +456,7 @@ CREATE INDEX IX_EmployeeSkill_Skill        ON employee.EmployeeSkill (SkillId);
 CREATE INDEX IX_EmployeeTeam_Employee      ON employee.EmployeeTeam (EmployeeId);
 CREATE INDEX IX_EmployeeTeam_Team          ON employee.EmployeeTeam (TeamId);
 
-CREATE INDEX IX_BiometricEmployeeMapping_Employee ON employee.BiometricEmployeeMapping (EmployeeId, BiometricDeviceId);
+CREATE INDEX IX_EmployeeBiometricMapping_Employee ON employee.EmployeeBiometricMapping (EmployeeId, BiometricDeviceId);
 
 CREATE INDEX IX_EmployeeAddress_Employee    ON employee.EmployeeAddress (EmployeeId);
 CREATE INDEX IX_EmployeeAddress_Country     ON employee.EmployeeAddress (CountryId);

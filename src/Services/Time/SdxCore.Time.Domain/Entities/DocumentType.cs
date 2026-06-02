@@ -1,6 +1,8 @@
-﻿namespace SdxCore.Time.Domain.Entities;
-public class DocumentType : BaseEntity {
-    public short Id { get; set; }
+﻿using SdxCore.SharedKernel.Entities;
+
+namespace SdxCore.Time.Domain.Entities;
+public class DocumentType : BaseAuditEntity<short>
+{
     public required string DocumentTypeCode { get; set; }
     public required string DocumentTypeName { get; set; }
     public string? Category { get; set; }

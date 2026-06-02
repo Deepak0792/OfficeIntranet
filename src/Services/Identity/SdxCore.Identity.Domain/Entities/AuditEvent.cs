@@ -1,3 +1,5 @@
+using SdxCore.SharedKernel.Entities;
+
 namespace SdxCore.Identity.Domain.Entities;
 
 /// <summary>
@@ -5,13 +7,8 @@ namespace SdxCore.Identity.Domain.Entities;
 /// Records all authentication attempts for compliance and security monitoring.
 /// This is an append-only record - audit events should never be modified or deleted.
 /// </summary>
-public sealed record AuditEvent
+public sealed class AuditEvent : BaseEntity<int>
 {
-    /// <summary>
-    /// Unique identifier for the audit event record.
-    /// </summary>
-    public int Id { get; init; }
-
     /// <summary>
     /// Type of authentication event (e.g., "LOGIN_SUCCESS", "LOGIN_FAILURE").
     /// </summary>

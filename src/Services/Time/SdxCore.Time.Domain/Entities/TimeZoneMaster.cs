@@ -1,6 +1,9 @@
-﻿namespace SdxCore.Time.Domain.Entities;
-public class TimeZoneMaster : BaseEntity {
-    public short Id { get; set; }
+﻿using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
+
+namespace SdxCore.Time.Domain.Entities;
+public class TimeZoneMaster : BaseAuditEntity<short>, IPublishableEntity
+{
     public required string TimeZoneCode { get; set; }
     public required string TimeZoneName { get; set; }
     public required string UtcOffset { get; set; }

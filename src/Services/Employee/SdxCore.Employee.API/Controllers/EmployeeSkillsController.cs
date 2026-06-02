@@ -41,7 +41,7 @@ public class EmployeeSkillsController : SdxControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EmployeeSkillResponse>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Add(int employeeId, [FromBody] AddEmployeeSkillRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeSkillRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

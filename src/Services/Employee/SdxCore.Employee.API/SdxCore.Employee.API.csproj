@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.SharedKernel\SdxCore.SharedKernel.csproj" />
     <ProjectReference Include="..\SdxCore.Employee.Application\SdxCore.Employee.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
   </ItemGroup>

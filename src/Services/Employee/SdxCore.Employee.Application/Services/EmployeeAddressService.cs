@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -23,27 +19,7 @@ public class EmployeeAddressService : IEmployeeAddressService
     public async Task<IEnumerable<EmployeeAddressResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
-        
-        return entities.Select(e => new EmployeeAddressResponse
-        {
-            Id = e.Id,
-            EmployeeId = e.EmployeeId,
-            AddressType = e.AddressType,
-            AddressLine1 = e.AddressLine1,
-            AddressLine2 = e.AddressLine2,
-            Landmark = e.Landmark,
-            City = e.City,
-            StateProvince = e.StateProvince,
-            PostalCode = e.PostalCode,
-            CountryId = e.CountryId,
-            RegionId = e.RegionId,
-            IsPrimary = e.IsPrimary,
-            WorkflowInstanceId = e.WorkflowInstanceId,
-            IsVerified = e.IsVerified,
-            VerifiedByEmployeeId = e.VerifiedByEmployeeId,
-            VerifiedAt = e.VerifiedAt,
-            IsActive = e.IsActive
-        }).ToList();
+        return entities.Select(e => PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(e)).ToList();      
     }
 
     public async Task<EmployeeAddressResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
@@ -51,29 +27,10 @@ public class EmployeeAddressService : IEmployeeAddressService
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeAddressResponse
-        {
-            Id = entity.Id,
-            EmployeeId = entity.EmployeeId,
-            AddressType = entity.AddressType,
-            AddressLine1 = entity.AddressLine1,
-            AddressLine2 = entity.AddressLine2,
-            Landmark = entity.Landmark,
-            City = entity.City,
-            StateProvince = entity.StateProvince,
-            PostalCode = entity.PostalCode,
-            CountryId = entity.CountryId,
-            RegionId = entity.RegionId,
-            IsPrimary = entity.IsPrimary,
-            WorkflowInstanceId = entity.WorkflowInstanceId,
-            IsVerified = entity.IsVerified,
-            VerifiedByEmployeeId = entity.VerifiedByEmployeeId,
-            VerifiedAt = entity.VerifiedAt,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(entity);
     }
 
-    public async Task<EmployeeAddressResponse> AddAsync(int employeeId, AddEmployeeAddressRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeAddressResponse> AddAsync(int employeeId, CreateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimary)
         {
@@ -85,22 +42,10 @@ public class EmployeeAddressService : IEmployeeAddressService
             }
         }
 
-        var entity = new EmployeeAddress
-        {
-            EmployeeId = employeeId,
-            AddressType = request.AddressType,
-            AddressLine1 = request.AddressLine1,
-            AddressLine2 = request.AddressLine2,
-            Landmark = request.Landmark,
-            City = request.City,
-            StateProvince = request.StateProvince,
-            PostalCode = request.PostalCode,
-            CountryId = request.CountryId,
-            RegionId = request.RegionId,
-            IsPrimary = request.IsPrimary,
-            IsVerified = false,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeAddressRequest, EmployeeAddress>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsVerified = false;
+        entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

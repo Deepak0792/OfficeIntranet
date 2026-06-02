@@ -1,9 +1,9 @@
-using SdxCore.Common.Interfaces.Contexts;
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Repositories;
 using SdxCore.Identity.Persistence.Data;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Identity.Persistence.Repositories;
 
@@ -11,15 +11,14 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// Repository implementation for user account data access.
 /// Uses Entity Framework Core to manage User entities in SQL Server.
 /// </summary>
-public class UserRepository : BaseRepository<User>, IUserRepository
+public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUserRepository
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UserRepository"/> class.
     /// </summary>
     /// <param name="context">The database context.</param>
-    public UserRepository(IdentityDbContext context, IRequestContext requestContext) : base(context, requestContext)
-    {
-    }
+    public UserRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+
 
     /// <inheritdoc />
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)

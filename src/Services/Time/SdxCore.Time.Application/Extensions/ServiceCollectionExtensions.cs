@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Time.Application.Services;
-using SdxCore.Time.Domain.Interfaces.Repositories;
+using SdxCore.Time.Application.BackgroundServices;
 using SdxCore.Time.Application.Interfaces.Services;
+using SdxCore.Time.Application.Services;
 
 namespace SdxCore.Time.Application.Extensions;
 
@@ -22,6 +22,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICountryService, CountryService>();
         services.AddScoped<ITimeZoneMasterService, TimeZoneMasterService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
+
+        // Register Background Services
+        services.AddHostedService<OutboxProcessorBackgroundService>();
+        //builder.Services.AddHostedService<CacheInvalidationBackgroundService>();
 
         return services;
     }

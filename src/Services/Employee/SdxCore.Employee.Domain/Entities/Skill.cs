@@ -1,9 +1,10 @@
-namespace SdxCore.Employee.Domain.Entities;
-using System.Collections.Generic;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
 
-public class Skill : BaseEntity
+namespace SdxCore.Employee.Domain.Entities;
+
+public class Skill : BaseAuditEntity<short>, IPublishableEntity
 {
-    public short Id { get; set; }
     public required string SkillName { get; set; }
     public string? SkillCategory { get; set; }
     public string? Description { get; set; }

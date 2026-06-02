@@ -73,6 +73,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.Employee.Domain", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.Employee.Persistence", "src\Services\Employee\SdxCore.Employee.Persistence\SdxCore.Employee.Persistence.csproj", "{2DED7B3A-31EE-4AF3-A76E-734CE04CC93E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.Messaging", "src\BuildingBlocks\SdxCore.Messaging\SdxCore.Messaging.csproj", "{48A0EB40-2554-473E-AC66-5EFE17D252A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SdxCore.Caching", "src\BuildingBlocks\SdxCore.Caching\SdxCore.Caching.csproj", "{22299333-E5C1-4226-9CB6-627D6BE3070B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -181,6 +185,14 @@ Global
 		{2DED7B3A-31EE-4AF3-A76E-734CE04CC93E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2DED7B3A-31EE-4AF3-A76E-734CE04CC93E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2DED7B3A-31EE-4AF3-A76E-734CE04CC93E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48A0EB40-2554-473E-AC66-5EFE17D252A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48A0EB40-2554-473E-AC66-5EFE17D252A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48A0EB40-2554-473E-AC66-5EFE17D252A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48A0EB40-2554-473E-AC66-5EFE17D252A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22299333-E5C1-4226-9CB6-627D6BE3070B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22299333-E5C1-4226-9CB6-627D6BE3070B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22299333-E5C1-4226-9CB6-627D6BE3070B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22299333-E5C1-4226-9CB6-627D6BE3070B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -216,5 +228,7 @@ Global
 		{B768E907-C57A-4C91-A568-7ED7FCA20F04} = {F5BFCD68-8FEB-4E2E-A1D4-1001F27AE699}
 		{8ADD2BAD-3BC6-4721-8287-0491C9420769} = {F5BFCD68-8FEB-4E2E-A1D4-1001F27AE699}
 		{2DED7B3A-31EE-4AF3-A76E-734CE04CC93E} = {F5BFCD68-8FEB-4E2E-A1D4-1001F27AE699}
+		{48A0EB40-2554-473E-AC66-5EFE17D252A1} = {0A832D69-5E1E-4611-A5F3-9A8E4AA38B2F}
+		{22299333-E5C1-4226-9CB6-627D6BE3070B} = {0A832D69-5E1E-4611-A5F3-9A8E4AA38B2F}
 	EndGlobalSection
 EndGlobal

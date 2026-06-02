@@ -3,8 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Identity.Application.Extensions;
 using SdxCore.Identity.Domain.Enums;
 using SdxCore.Identity.Domain.Interfaces.Providers;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
 using SdxCore.Identity.Domain.Interfaces.Security;
+using SdxCore.Identity.Domain.Repositories;
 using System.Reflection.Metadata.Ecma335;
 
 namespace SdxCore.Identity.Tests.UnitTests;

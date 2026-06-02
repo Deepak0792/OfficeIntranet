@@ -1,12 +1,9 @@
-﻿namespace SdxCore.Identity.Domain.Entities;
+﻿using SdxCore.SharedKernel.Entities;
 
-public class RefreshToken
+namespace SdxCore.Identity.Domain.Entities;
+
+public class RefreshToken : BaseEntity<int>
 {
-    /// <summary>
-    /// Unique identifier for the refresh token record.
-    /// </summary>
-    public int Id { get; set; }
-
     /// <summary>
     /// Identifier of the employee this refresh token belongs to.
     /// </summary>

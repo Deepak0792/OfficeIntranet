@@ -64,7 +64,7 @@ public class EmployeeRelationshipsController : SdxControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EmployeeRelationshipResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] AddEmployeeRelationshipRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

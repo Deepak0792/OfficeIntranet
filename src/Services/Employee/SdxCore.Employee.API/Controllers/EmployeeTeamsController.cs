@@ -41,7 +41,7 @@ public class EmployeeTeamsController : SdxControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EmployeeTeamResponse>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Add(int employeeId, [FromBody] AddEmployeeTeamRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeTeamRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

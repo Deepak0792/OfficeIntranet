@@ -1,10 +1,10 @@
-using System;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class EmployeeRelationship : BaseEntity
+public class EmployeeRelationship : BaseAuditEntity<int>, IPublishableEntity
 {
-    public int Id { get; set; }
     public int ParentEmployeeId { get; set; }
     public int ChildEmployeeId { get; set; }
     public string RelationshipType { get; set; } = null!;

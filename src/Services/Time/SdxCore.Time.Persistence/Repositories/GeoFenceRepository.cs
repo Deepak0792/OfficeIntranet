@@ -1,11 +1,13 @@
-using SdxCore.Common.Interfaces.Contexts;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Time.Domain.Entities;
-using SdxCore.Time.Domain.Interfaces.Repositories;
+using SdxCore.Time.Domain.Repositories;
 using SdxCore.Time.Persistence.Data;
+
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class GeoFenceRepository : BaseRepository<GeoFence, short>, IGeoFenceRepository
+public class GeoFenceRepository : BaseRepository<GeoFence, short, TimeDbContext>, IGeoFenceRepository
 {
     public GeoFenceRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
 }

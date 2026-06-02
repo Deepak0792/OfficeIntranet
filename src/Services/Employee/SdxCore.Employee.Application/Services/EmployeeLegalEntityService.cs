@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -23,17 +19,8 @@ public class EmployeeLegalEntityService : IEmployeeLegalEntityService
     public async Task<IEnumerable<EmployeeLegalEntityResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
-        
-        return entities.Select(e => new EmployeeLegalEntityResponse
-        {
-            Id = e.Id,
-            EmployeeId = e.EmployeeId,
-            LegalEntityId = e.LegalEntityId,
-            IsPrimary = e.IsPrimary,
-            StartDate = e.StartDate,
-            EndDate = e.EndDate,
-            IsActive = e.IsActive
-        }).ToList();
+
+        return entities.Select(e => PropertyMapper.Map<EmployeeLegalEntity, EmployeeLegalEntityResponse>(e)).ToList();
     }
 
     public async Task<EmployeeLegalEntityResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
@@ -41,19 +28,10 @@ public class EmployeeLegalEntityService : IEmployeeLegalEntityService
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeLegalEntityResponse
-        {
-            Id = entity.Id,
-            EmployeeId = entity.EmployeeId,
-            LegalEntityId = entity.LegalEntityId,
-            IsPrimary = entity.IsPrimary,
-            StartDate = entity.StartDate,
-            EndDate = entity.EndDate,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeLegalEntity, EmployeeLegalEntityResponse>(entity);
     }
 
-    public async Task<EmployeeLegalEntityResponse> AddAsync(int employeeId, AddEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLegalEntityResponse> AddAsync(int employeeId, CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimary)
         {
@@ -65,20 +43,15 @@ public class EmployeeLegalEntityService : IEmployeeLegalEntityService
             }
         }
 
-        var entity = new EmployeeLegalEntity
-        {
-            EmployeeId = employeeId,
-            LegalEntityId = request.LegalEntityId,
-            IsPrimary = request.IsPrimary,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeLegalEntityRequest, EmployeeLegalEntity>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
+        return await GetByIdAsync(employeeId, created.Id, cancellationToken) 
+            ?? throw new Exception("Failed to retrieve created entity");
     }
 
     public async Task<EmployeeLegalEntityResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default)
@@ -92,7 +65,8 @@ public class EmployeeLegalEntityService : IEmployeeLegalEntityService
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
         
-        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
+        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) 
+            ?? throw new Exception("Failed to retrieve updated entity");
     }
 
     public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)

@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Caching\SdxCore.Caching.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Messaging\SdxCore.Messaging.csproj" />
     <ProjectReference Include="..\SdxCore.Employee.Domain\SdxCore.Employee.Domain.csproj" />
     <ProjectReference Include="..\SdxCore.Employee.Persistence\SdxCore.Employee.Persistence.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />

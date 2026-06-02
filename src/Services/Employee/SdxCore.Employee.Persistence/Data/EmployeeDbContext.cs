@@ -13,12 +13,9 @@ namespace SdxCore.Employee.Persistence.Data;
 
 public class EmployeeDbContext : DbContext
 {
-    private readonly HashSet<string> _publishableEntities;
-
-    public EmployeeDbContext(DbContextOptions<EmployeeDbContext> options, IConfiguration configuration) : base(options)
+    public EmployeeDbContext(DbContextOptions<EmployeeDbContext> options) 
+        : base(options)
     {
-        var configuredEntities = configuration.GetSection("OutboxSettings:PublishableEntities").Get<string[]>() ?? Array.Empty<string>();
-        _publishableEntities = new HashSet<string>(configuredEntities, StringComparer.OrdinalIgnoreCase);
     }
 
     public DbSet<Domain.Entities.Employee> Employees { get; set; } = null!;
@@ -28,7 +25,7 @@ public class EmployeeDbContext : DbContext
     public DbSet<EmployeeSkill> EmployeeSkills { get; set; } = null!;
     public DbSet<Team> Teams { get; set; } = null!;
     public DbSet<EmployeeTeam> EmployeeTeams { get; set; } = null!;
-    public DbSet<BiometricEmployeeMapping> BiometricMappings { get; set; } = null!;
+    public DbSet<EmployeeBiometricMapping> BiometricMappings { get; set; } = null!;
     public DbSet<EmployeeLegalEntity> EmployeeLegalEntities { get; set; } = null!;
     public DbSet<EmployeeDepartment> EmployeeDepartments { get; set; } = null!;
     public DbSet<EmployeeLocation> EmployeeLocations { get; set; } = null!;
@@ -40,7 +37,7 @@ public class EmployeeDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         modelBuilder.HasDefaultSchema("employee");
 
         modelBuilder.Entity<Domain.Entities.Employee>(entity =>
@@ -84,9 +81,9 @@ public class EmployeeDbContext : DbContext
             entity.HasOne(d => d.Team).WithMany(p => p.EmployeeTeams).HasForeignKey(d => d.TeamId);
         });
 
-        modelBuilder.Entity<BiometricEmployeeMapping>(entity =>
+        modelBuilder.Entity<EmployeeBiometricMapping>(entity =>
         {
-            entity.ToTable("BiometricEmployeeMapping");
+            entity.ToTable("EmployeeBiometricMapping");
             entity.HasKey(e => e.Id);
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
@@ -147,44 +144,5 @@ public class EmployeeDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
         });
-    }
-
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        var entries = ChangeTracker.Entries<BaseEntity>()
-            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
-            .Where(e => _publishableEntities.Contains(e.Entity.GetType().Name))
-            .ToList();
-
-        foreach (var entry in entries)
-        {
-            var entityName = entry.Entity.GetType().Name;
-            
-            var action = entry.State switch
-            {
-                EntityState.Added => "Created",
-                EntityState.Modified => !entry.Entity.IsActive ? "SoftDeleted" : "Updated",
-                EntityState.Deleted => "Deleted",
-                _ => "Unknown"
-            };
-
-            var eventType = $"{entityName}{action}";
-            var payload = JsonSerializer.Serialize((object)entry.Entity);
-            var routingKey = $"cache.employee.invalidate";
-
-            var outboxMessage = new OutboxMessage
-            {
-                EventType = eventType,
-                Payload = payload,
-                Exchange = "sdxcore.events",
-                RoutingKey = routingKey,
-                Status = "PENDING",
-                StatusGroup = "OUTBOX_STATUS"
-            };
-
-            OutboxMessages.Add(outboxMessage);
-        }
-
-        return await base.SaveChangesAsync(cancellationToken);
     }
 }

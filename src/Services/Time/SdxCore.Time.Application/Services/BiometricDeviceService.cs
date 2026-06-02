@@ -1,11 +1,11 @@
-using SdxCore.Common.Caching;
+using SdxCore.Caching;
 using SdxCore.Common.Models;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
 using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Interfaces.Services;
 using SdxCore.Time.Domain.Entities;
-using SdxCore.Time.Domain.Interfaces.Repositories;
+using SdxCore.Time.Domain.Repositories;
 
 namespace SdxCore.Time.Application.Services;
 

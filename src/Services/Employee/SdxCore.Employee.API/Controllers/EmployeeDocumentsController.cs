@@ -55,7 +55,7 @@ public class EmployeeDocumentsController : SdxControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EmployeeDocumentResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] AddEmployeeDocumentRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeDocumentRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

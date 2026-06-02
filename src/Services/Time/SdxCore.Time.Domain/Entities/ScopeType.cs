@@ -1,7 +1,8 @@
-﻿namespace SdxCore.Time.Domain.Entities;
-public class ScopeType : BaseEntity
+﻿using SdxCore.SharedKernel.Entities;
+
+namespace SdxCore.Time.Domain.Entities;
+public class ScopeType : BaseAuditEntity<short>
 {
-    public short Id { get; set; }
     public required string ScopeCode { get; set; }
     public required string ScopeName { get; set; }
     public short HierarchyLevel { get; set; }

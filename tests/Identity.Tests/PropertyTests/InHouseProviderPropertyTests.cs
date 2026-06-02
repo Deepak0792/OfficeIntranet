@@ -8,7 +8,7 @@ using SdxCore.Identity.Application.Services;
 using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Repositories;
 
 namespace SdxCore.Identity.Tests.PropertyTests;
 

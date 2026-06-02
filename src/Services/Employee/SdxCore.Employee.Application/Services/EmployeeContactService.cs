@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -23,16 +19,8 @@ public class EmployeeContactService : IEmployeeContactService
     public async Task<IEnumerable<EmployeeContactResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
-        
-        return entities.Select(e => new EmployeeContactResponse
-        {
-            Id = e.Id,
-            EmployeeId = e.EmployeeId,
-            ContactType = e.ContactType,
-            ContactValue = e.ContactValue,
-            IsPrimary = e.IsPrimary,
-            IsActive = e.IsActive
-        }).ToList();
+
+        return entities.Select(e => PropertyMapper.Map<EmployeeContact, EmployeeContactResponse>(e)).ToList();
     }
 
     public async Task<EmployeeContactResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
@@ -40,18 +28,10 @@ public class EmployeeContactService : IEmployeeContactService
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeContactResponse
-        {
-            Id = entity.Id,
-            EmployeeId = entity.EmployeeId,
-            ContactType = entity.ContactType,
-            ContactValue = entity.ContactValue,
-            IsPrimary = entity.IsPrimary,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeContact, EmployeeContactResponse>(entity);
     }
 
-    public async Task<EmployeeContactResponse> AddAsync(int employeeId, AddEmployeeContactRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeContactResponse> AddAsync(int employeeId, CreateEmployeeContactRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimary)
         {
@@ -63,14 +43,9 @@ public class EmployeeContactService : IEmployeeContactService
             }
         }
 
-        var entity = new EmployeeContact
-        {
-            EmployeeId = employeeId,
-            ContactType = request.ContactType,
-            ContactValue = request.ContactValue,
-            IsPrimary = request.IsPrimary,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeContactRequest, EmployeeContact>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

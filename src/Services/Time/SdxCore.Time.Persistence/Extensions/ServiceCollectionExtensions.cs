@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Time.Domain.Interfaces.Repositories;
+using SdxCore.SharedKernel.Persistence;
+using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+using SdxCore.Time.Domain.Repositories;
 using SdxCore.Time.Persistence.Data;
 using SdxCore.Time.Persistence.Repositories;
 
@@ -11,7 +13,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddTimePersistence(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<TimeDbContext>(options =>
+        services.AddSingleton<OutboxSaveChangesInterceptor>();
+
+        services.AddDbContext<TimeDbContext>((sp, options) =>
         {
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
@@ -22,6 +26,7 @@ public static class ServiceCollectionExtensions
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorNumbersToAdd: null);
                 });
+            options.AddInterceptors(sp.GetRequiredService<OutboxSaveChangesInterceptor>());
         });
 
         // Register Repositories
@@ -36,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICountryRepository, CountryRepository>();
         services.AddScoped<ITimeZoneMasterRepository, TimeZoneMasterRepository>();
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+        services.AddScoped<IOutboxRepository, OutboxRepository>();
 
         return services;
     }

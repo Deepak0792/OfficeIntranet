@@ -1,14 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using SdxCore.Common.Caching;
+using SdxCore.Caching;
+using SdxCore.Common.Helpers;
 using SdxCore.Common.Models;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Entities;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -20,7 +17,7 @@ public class EmployeeService : IEmployeeService
     private readonly ICacheKeyBuilder _cacheKeyBuilder;
 
     public EmployeeService(
-        IEmployeeRepository repository, 
+        IEmployeeRepository repository,
         IEmployeeViewRepository viewRepository,
         ICacheService cacheService,
         ICacheKeyBuilder cacheKeyBuilder)
@@ -37,22 +34,13 @@ public class EmployeeService : IEmployeeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var (items, count) = await _viewRepository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, ct);
-            
-            var responses = items.Select(e => new EmployeeSummaryResponse
-            {
-                Id = e.EmployeeId,
-                EmployeeCode = e.EmployeeCode,
-                DisplayName = e.DisplayName ?? $"{e.FirstName} {e.LastName}",
-                ProfilePhotoUrl = e.ProfilePhotoUrl,
-                Email = e.Email,
-                DesignationName = e.DesignationName,
-                DepartmentName = e.PrimaryDepartmentName,
-                LocationName = e.PrimaryLocationName,
-                IsActive = e.IsActive
-            }).ToList();
+
+            var responses = items.Select(e => PropertyMapper.Map<EmployeeFullProfile, EmployeeSummaryResponse>(e)).ToList();
 
             return new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(responses, filter.PageNumber, filter.PageSize, count);
-        }, CacheOptions.Default, cancellationToken) ?? new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(new List<EmployeeSummaryResponse>(), filter.PageNumber, filter.PageSize, 0);
+        }, CacheOptions.Default, cancellationToken)
+            ?? new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(
+                new List<EmployeeSummaryResponse>(), filter.PageNumber, filter.PageSize, 0);
     }
 
     public async Task<EmployeeFullProfileResponse?> GetFullProfileAsync(int id, CancellationToken cancellationToken = default)
@@ -63,32 +51,7 @@ public class EmployeeService : IEmployeeService
             var profile = await _viewRepository.GetByIdAsync(id, ct);
             if (profile == null) return null;
 
-            return new EmployeeFullProfileResponse
-            {
-                EmployeeId = profile.EmployeeId,
-                EmployeeCode = profile.EmployeeCode,
-                FirstName = profile.FirstName,
-                LastName = profile.LastName,
-                DisplayName = profile.DisplayName,
-                ProfilePhotoUrl = profile.ProfilePhotoUrl,
-                Email = profile.Email,
-                MobileNumber = profile.MobileNumber,
-                DateOfJoining = profile.DateOfJoining,
-                EmploymentType = profile.EmploymentType,
-                IsActive = profile.IsActive,
-                DepartmentId = profile.PrimaryDepartmentId,
-                DepartmentName = profile.PrimaryDepartmentName,
-                DesignationId = profile.DesignationId,
-                DesignationName = profile.DesignationName,
-                Grade = profile.Grade,
-                LocationId = profile.PrimaryLocationId,
-                LocationName = profile.PrimaryLocationName,
-                City = profile.PrimaryLocationCity,
-                PrimaryLegalEntityId = profile.PrimaryLegalEntityId,
-                PrimaryLegalEntityName = profile.PrimaryLegalEntityName,
-                ManagerId = profile.DirectManagerId,
-                ManagerName = profile.DirectManagerName
-            };
+            return PropertyMapper.Map<EmployeeFullProfile, EmployeeFullProfileResponse>(profile);
         }, CacheOptions.Default, cancellationToken);
     }
 
@@ -97,8 +60,8 @@ public class EmployeeService : IEmployeeService
         var entities = await _repository.FindAsync(e => e.EmployeeCode == employeeCode, cancellationToken);
         var e = entities.FirstOrDefault();
         if (e == null) return null;
-        
-        return MapToResponse(e);
+
+        return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
     }
 
     public async Task<EmployeeResponse?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
@@ -106,32 +69,21 @@ public class EmployeeService : IEmployeeService
         var entities = await _repository.FindAsync(e => e.Email == email, cancellationToken);
         var e = entities.FirstOrDefault();
         if (e == null) return null;
-        
-        return MapToResponse(e);
+
+        return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
     }
 
     public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> SearchAsync(string query, PaginationFilter filter, CancellationToken cancellationToken = default)
     {
         var (items, count) = await _viewRepository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        
-        var filteredItems = string.IsNullOrWhiteSpace(query) 
-            ? items 
-            : items.Where(x => (x.FirstName != null && x.FirstName.Contains(query, StringComparison.OrdinalIgnoreCase)) || 
+
+        var filteredItems = string.IsNullOrWhiteSpace(query)
+            ? items
+            : items.Where(x => (x.FirstName != null && x.FirstName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                (x.LastName != null && x.LastName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                (x.Email != null && x.Email.Contains(query, StringComparison.OrdinalIgnoreCase)));
 
-        var responses = filteredItems.Select(e => new EmployeeSummaryResponse
-        {
-            Id = e.EmployeeId,
-            EmployeeCode = e.EmployeeCode,
-            DisplayName = e.DisplayName ?? $"{e.FirstName} {e.LastName}",
-            ProfilePhotoUrl = e.ProfilePhotoUrl,
-            Email = e.Email,
-            DesignationName = e.DesignationName,
-            DepartmentName = e.PrimaryDepartmentName,
-            LocationName = e.PrimaryLocationName,
-            IsActive = e.IsActive
-        }).ToList();
+        var responses = filteredItems.Select(e => PropertyMapper.Map<EmployeeFullProfile, EmployeeSummaryResponse>(e)).ToList();
 
         return new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(responses, filter.PageNumber, filter.PageSize, filteredItems.Count());
     }
@@ -140,46 +92,20 @@ public class EmployeeService : IEmployeeService
     {
         var profile = await _viewRepository.GetByIdAsync(id, cancellationToken);
         if (profile == null) return null;
-        
-        return new EmployeeSummaryResponse
-        {
-            Id = profile.EmployeeId,
-            EmployeeCode = profile.EmployeeCode,
-            DisplayName = profile.DisplayName ?? $"{profile.FirstName} {profile.LastName}",
-            ProfilePhotoUrl = profile.ProfilePhotoUrl,
-            Email = profile.Email,
-            DesignationName = profile.DesignationName,
-            DepartmentName = profile.PrimaryDepartmentName,
-            LocationName = profile.PrimaryLocationName,
-            IsActive = profile.IsActive
-        };
+
+        return PropertyMapper.Map<EmployeeFullProfile, EmployeeSummaryResponse>(profile);
     }
 
     public async Task<EmployeeResponse> CreateAsync(CreateEmployeeRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = new Domain.Entities.Employee
-        {
-            EmployeeCode = request.EmployeeCode,
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            DisplayName = request.DisplayName,
-            Email = request.Email,
-            MobileNumber = request.MobileNumber,
-            DesignationId = request.DesignationId,
-            PreferredLanguage = request.PreferredLanguage,
-            PreferredTimeZoneId = request.PreferredTimeZoneId,
-            DateOfJoining = request.DateOfJoining,
-            EmploymentType = request.EmploymentType,
-            AboutMe = request.AboutMe,
-            IsSystemEmployee = request.IsSystemEmployee,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeRequest, Domain.Entities.Employee>(request);
+        entity.IsActive = true;
+        entity.DisplayName = request.DisplayName ?? $"{entity.FirstName} {entity.LastName}";
 
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
-        
-        return MapToResponse(entity);
+
+        return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(entity);
     }
 
     public async Task<bool> UpdateAsync(int id, UpdateEmployeeRequest request, CancellationToken cancellationToken = default)
@@ -196,10 +122,9 @@ public class EmployeeService : IEmployeeService
         entity.PreferredTimeZoneId = request.PreferredTimeZoneId;
         entity.DateOfJoining = request.DateOfJoining;
         entity.EmploymentType = request.EmploymentType;
-        
+
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
-        
 
         return true;
     }
@@ -210,10 +135,10 @@ public class EmployeeService : IEmployeeService
         if (entity == null) return false;
 
         entity.IsActive = request.IsActive;
-        
+
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
 
         return true;
     }
@@ -224,10 +149,10 @@ public class EmployeeService : IEmployeeService
         if (entity == null) return false;
 
         entity.ProfilePhotoUrl = request.ProfilePhotoUrl;
-        
+
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
 
         return true;
     }
@@ -238,38 +163,11 @@ public class EmployeeService : IEmployeeService
         if (entity == null) return false;
 
         entity.AboutMe = request.AboutMe;
-        
+
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
 
         return true;
-    }
-    
-    private EmployeeResponse MapToResponse(Domain.Entities.Employee e)
-    {
-        return new EmployeeResponse
-        {
-            Id = e.Id,
-            EmployeeCode = e.EmployeeCode,
-            FirstName = e.FirstName,
-            LastName = e.LastName,
-            DisplayName = e.DisplayName,
-            Email = e.Email,
-            MobileNumber = e.MobileNumber,
-            DesignationId = e.DesignationId,
-            PreferredLanguage = e.PreferredLanguage,
-            PreferredTimeZoneId = e.PreferredTimeZoneId,
-            DateOfJoining = e.DateOfJoining,
-            EmploymentType = e.EmploymentType,
-            AboutMe = e.AboutMe,
-            ProfilePhotoUrl = e.ProfilePhotoUrl,
-            IsSystemEmployee = e.IsSystemEmployee,
-            IsActive = e.IsActive,
-            CreatedAt = e.CreatedAt,
-            CreatedBy = e.CreatedBy,
-            LastUpdatedAt = e.LastUpdatedAt,
-            LastUpdatedBy = e.LastUpdatedBy
-        };
     }
 }

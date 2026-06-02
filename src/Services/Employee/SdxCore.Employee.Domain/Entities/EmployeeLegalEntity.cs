@@ -1,10 +1,10 @@
-using System;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class EmployeeLegalEntity : BaseEntity
+public class EmployeeLegalEntity : BaseAuditEntity<int>, IPublishableEntity
 {
-    public int Id { get; set; }
     public int EmployeeId { get; set; }
     public short LegalEntityId { get; set; }
     public bool IsPrimary { get; set; }

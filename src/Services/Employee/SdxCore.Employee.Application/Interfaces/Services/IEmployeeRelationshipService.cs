@@ -12,7 +12,7 @@ public interface IEmployeeRelationshipService
     Task<EmployeeRelationshipResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default);
     Task<IEnumerable<EmployeeRelationshipResponse>> GetDirectReportsAsync(int employeeId, CancellationToken cancellationToken = default);
     Task<EmployeeRelationshipResponse?> GetManagerAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeRelationshipResponse> AddAsync(int employeeId, AddEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
+    Task<EmployeeRelationshipResponse> AddAsync(int employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
     Task<EmployeeRelationshipResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
     Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default);
     Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default);

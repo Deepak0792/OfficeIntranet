@@ -1,15 +1,14 @@
-using SdxCore.Common.Interfaces.Contexts;
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Repositories;
 using SdxCore.Identity.Persistence.Data;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Identity.Persistence.Repositories;
-public sealed class RefreshTokenRepository : BaseRepository<RefreshToken>, IRefreshTokenRepository
+public sealed class RefreshTokenRepository : BaseRepository<RefreshToken, int, IdentityDbContext>, IRefreshTokenRepository
 {
-    public RefreshTokenRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext)
-    {
-    }
+    public RefreshTokenRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
 
     /// <summary>
     /// Gets refresh token by hashed value.

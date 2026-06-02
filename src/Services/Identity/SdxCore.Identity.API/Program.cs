@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using SdxCore.Identity.API.Middleware;
 using SdxCore.Common.Extensions;
-using SdxCore.Identity.Persistence.Extensions;
+using SdxCore.Identity.API.Middleware;
 using SdxCore.Identity.Application.Extensions;
+using SdxCore.Identity.Persistence.Extensions;
+using SdxCore.SharedKernel.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +20,9 @@ builder.Services.AddSwaggerGen();
 
 // Register the common layer
 builder.Services.AddSdxCoreCommon(builder.Configuration);
+
+// Register the sharedkernel layer
+builder.Services.AddSdxCoreSharedKernel(builder.Configuration);
 
 // Register the persistence layer (EF Core + SQL Server)
 // Connection string comes from appsettings.json

@@ -15,23 +15,23 @@ namespace SdxCore.Employee.API.Controllers;
 [GatewayOnly]
 public class BiometricMappingsController : SdxControllerBase
 {
-    private readonly IBiometricMappingService _service;
+    private readonly IEmployeeBiometricMappingService _service;
 
-    public BiometricMappingsController(IBiometricMappingService service)
+    public BiometricMappingsController(IEmployeeBiometricMappingService service)
     {
         _service = service;
     }
 
     [HttpGet("api/v1/employees/{employeeId}/biometric-mappings")]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<BiometricMappingResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
-        return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<BiometricMappingResponse>>(result, "Biometric mappings fetched successfully."));
+        return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>(result, "Biometric mappings fetched successfully."));
     }
 
     [HttpGet("api/v1/employees/{employeeId}/biometric-mappings/{id}")]
-    [ProducesResponseType(typeof(ApiResponse<BiometricMappingResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<EmployeeBiometricMappingResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -39,33 +39,33 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpGet("api/v1/biometric-mappings/by-device/{deviceId}")]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<BiometricMappingResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByDeviceId(int deviceId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByDeviceIdAsync(deviceId, cancellationToken);
-        return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<BiometricMappingResponse>>(result, "Biometric mappings fetched successfully."));
+        return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>(result, "Biometric mappings fetched successfully."));
     }
 
     [HttpPost("api/v1/employees/{employeeId}/biometric-mappings")]
-    [ProducesResponseType(typeof(ApiResponse<BiometricMappingResponse>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Add(int employeeId, [FromBody] AddBiometricMappingRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<EmployeeBiometricMappingResponse>), StatusCodes.Status201Created)]
+    public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
         var result = await _service.AddAsync(employeeId, request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { employeeId, id = result.Id }, new ApiResponse<BiometricMappingResponse>(result, "Biometric mapping created successfully."));
+        return CreatedAtAction(nameof(GetById), new { employeeId, id = result.Id }, new ApiResponse<EmployeeBiometricMappingResponse>(result, "Biometric mapping created successfully."));
     }
 
     [HttpPut("api/v1/employees/{employeeId}/biometric-mappings/{id}")]
-    [ProducesResponseType(typeof(ApiResponse<BiometricMappingResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateBiometricMappingRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<EmployeeBiometricMappingResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
         var result = await _service.UpdateAsync(employeeId, id, request, cancellationToken);
-        return Ok(new ApiResponse<BiometricMappingResponse>(result, "Biometric mapping updated successfully."));
+        return Ok(new ApiResponse<EmployeeBiometricMappingResponse>(result, "Biometric mapping updated successfully."));
     }
 
     [HttpPatch("api/v1/employees/{employeeId}/biometric-mappings/{id}/status")]

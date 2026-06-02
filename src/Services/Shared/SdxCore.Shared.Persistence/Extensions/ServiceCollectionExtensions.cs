@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Shared.Domain.Interfaces.Repositories;
+using SdxCore.Shared.Domain.Repositories;
 using SdxCore.Shared.Persistence.Data;
 using SdxCore.Shared.Persistence.Repositories;
 

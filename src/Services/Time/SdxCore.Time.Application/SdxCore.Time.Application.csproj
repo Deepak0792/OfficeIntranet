@@ -5,7 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Caching\SdxCore.Caching.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Messaging\SdxCore.Messaging.csproj" />
     <ProjectReference Include="..\SdxCore.Time.Domain\SdxCore.Time.Domain.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
   </ItemGroup>
 </Project>

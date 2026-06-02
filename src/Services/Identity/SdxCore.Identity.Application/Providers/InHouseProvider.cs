@@ -6,8 +6,8 @@ using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Application.Interfaces;
 using SdxCore.Identity.Application.Interfaces.Providers;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
 using System.Security.Claims;
+using SdxCore.Identity.Domain.Repositories;
 
 namespace SdxCore.Identity.Application.Providers;
 

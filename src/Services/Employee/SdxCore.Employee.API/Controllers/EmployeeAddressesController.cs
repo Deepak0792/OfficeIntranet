@@ -47,7 +47,7 @@ public class EmployeeAddressesController : SdxControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<EmployeeAddressResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] AddEmployeeAddressRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeAddressRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

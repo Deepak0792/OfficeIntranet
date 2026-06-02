@@ -1,13 +1,13 @@
-using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Common.Security;
+using SdxCore.Identity.Application.Exceptions;
+using SdxCore.Identity.Application.Interfaces;
+using SdxCore.Identity.Application.Interfaces.Security;
+using SdxCore.Identity.Application.Interfaces.Services;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Application.Interfaces;
-using SdxCore.Identity.Application.Exceptions;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
-using SdxCore.Identity.Application.Interfaces.Security;
-using SdxCore.Identity.Application.Interfaces.Services;
+using SdxCore.Identity.Domain.Repositories;
+using SdxCore.SharedKernel.Contracts;
 using System.Security.Claims;
 using System.Security.Cryptography;
 

@@ -1,10 +1,10 @@
-using System;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class EmployeeDocument : BaseEntity
+public class EmployeeDocument : BaseAuditEntity<int>
 {
-    public int Id { get; set; }
     public int EmployeeId { get; set; }
     public short DocumentTypeId { get; set; }
     public string? FileName { get; set; }

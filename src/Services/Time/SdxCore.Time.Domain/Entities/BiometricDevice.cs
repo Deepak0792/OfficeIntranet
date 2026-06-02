@@ -1,6 +1,8 @@
+using SdxCore.SharedKernel.Entities;
+
 namespace SdxCore.Time.Domain.Entities;
-public class BiometricDevice : BaseEntity {
-    public int Id { get; set; }
+public class BiometricDevice : BaseAuditEntity<int>
+{
     public required string DeviceCode { get; set; }
     public required string DeviceName { get; set; }
     public string? SerialNumber { get; set; }

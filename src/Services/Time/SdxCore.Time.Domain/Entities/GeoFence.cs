@@ -1,6 +1,8 @@
-﻿namespace SdxCore.Time.Domain.Entities;
-public class GeoFence : BaseEntity {
-    public short Id { get; set; }
+﻿using SdxCore.SharedKernel.Entities;
+
+namespace SdxCore.Time.Domain.Entities;
+public class GeoFence : BaseAuditEntity<short>
+{
     public required string GeoFenceCode { get; set; }
     public required string GeoFenceName { get; set; }
     public decimal Latitude { get; set; }

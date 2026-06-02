@@ -8,7 +8,7 @@ public class EmployeeSummaryResponse
     public string? ProfilePhotoUrl { get; set; }
     public string Email { get; set; } = null!;
     public string? DesignationName { get; set; }
-    public string? DepartmentName { get; set; }
-    public string? LocationName { get; set; }
+    public string? PrimaryDepartmentName { get; set; }
+    public string? PrimaryLocationName { get; set; }
     public bool IsActive { get; set; }
 }

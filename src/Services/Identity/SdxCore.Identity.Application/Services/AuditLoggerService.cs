@@ -1,11 +1,11 @@
-using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 using SdxCore.Common.Helpers;
-using SdxCore.Common.Interfaces.Contexts;
 using SdxCore.Identity.Application.Interfaces.Services;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Interfaces.Repositories;
+using SdxCore.Identity.Domain.Repositories;
+using SdxCore.SharedKernel.Contracts;
+using System.Threading.Channels;
 
 namespace SdxCore.Identity.Application.Providers;
 

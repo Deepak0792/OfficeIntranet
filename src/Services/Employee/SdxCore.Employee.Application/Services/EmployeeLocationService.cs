@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -23,17 +24,8 @@ public class EmployeeLocationService : IEmployeeLocationService
     public async Task<IEnumerable<EmployeeLocationResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
-        
-        return entities.Select(e => new EmployeeLocationResponse
-        {
-            Id = e.Id,
-            EmployeeId = e.EmployeeId,
-            LocationId = e.LocationId,
-            IsPrimaryLocation = e.IsPrimaryLocation,
-            StartDate = e.StartDate,
-            EndDate = e.EndDate,
-            IsActive = e.IsActive
-        }).ToList();
+
+        return entities.Select(e => PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(e)).ToList();
     }
 
     public async Task<EmployeeLocationResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
@@ -41,19 +33,10 @@ public class EmployeeLocationService : IEmployeeLocationService
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
-        return new EmployeeLocationResponse
-        {
-            Id = entity.Id,
-            EmployeeId = entity.EmployeeId,
-            LocationId = entity.LocationId,
-            IsPrimaryLocation = entity.IsPrimaryLocation,
-            StartDate = entity.StartDate,
-            EndDate = entity.EndDate,
-            IsActive = entity.IsActive
-        };
+        return PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(entity);
     }
 
-    public async Task<EmployeeLocationResponse> AddAsync(int employeeId, AddEmployeeLocationRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLocationResponse> AddAsync(int employeeId, CreateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimaryLocation)
         {
@@ -65,15 +48,9 @@ public class EmployeeLocationService : IEmployeeLocationService
             }
         }
 
-        var entity = new EmployeeLocation
-        {
-            EmployeeId = employeeId,
-            LocationId = request.LocationId,
-            IsPrimaryLocation = request.IsPrimaryLocation,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeLocationRequest, EmployeeLocation>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

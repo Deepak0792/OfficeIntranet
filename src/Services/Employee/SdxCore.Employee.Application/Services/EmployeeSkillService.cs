@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Interfaces.Repositories;
+using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -30,18 +26,10 @@ public class EmployeeSkillService : IEmployeeSkillService
         foreach (var skill in skills)
         {
             var skillMaster = await _skillRepository.GetByIdAsync(skill.SkillId, cancellationToken);
-            responses.Add(new EmployeeSkillResponse
-            {
-                Id = skill.Id,
-                EmployeeId = skill.EmployeeId,
-                SkillId = skill.SkillId,
-                SkillName = skillMaster?.SkillName,
-                SkillLevel = skill.SkillLevel,
-                YearsOfExperience = skill.YearsOfExperience,
-                IsPrimarySkill = skill.IsPrimarySkill,
-                LastUsedDate = skill.LastUsedDate,
-                IsActive = skill.IsActive
-            });
+            var employeeSkill = PropertyMapper.Map<EmployeeSkill, EmployeeSkillResponse>(skill);
+            employeeSkill.SkillName = skillMaster?.SkillName;
+
+            responses.Add(employeeSkill);
         }
         return responses;
     }
@@ -52,36 +40,19 @@ public class EmployeeSkillService : IEmployeeSkillService
         if (skill == null) return null;
 
         var skillMaster = await _skillRepository.GetByIdAsync(skill.SkillId, cancellationToken);
+        var employeeSkill = PropertyMapper.Map<EmployeeSkill, EmployeeSkillResponse>(skill);
+        employeeSkill.SkillName = skillMaster?.SkillName;
 
-        return new EmployeeSkillResponse
-        {
-            Id = skill.Id,
-            EmployeeId = skill.EmployeeId,
-            SkillId = skill.SkillId,
-            SkillName = skillMaster?.SkillName,
-            SkillLevel = skill.SkillLevel,
-            YearsOfExperience = skill.YearsOfExperience,
-            IsPrimarySkill = skill.IsPrimarySkill,
-            LastUsedDate = skill.LastUsedDate,
-            IsActive = skill.IsActive
-        };
+        return employeeSkill;
     }
 
-    public async Task<EmployeeSkillResponse> AddAsync(int employeeId, AddEmployeeSkillRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSkillResponse> AddAsync(int employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
     {
-        var skill = new EmployeeSkill
-        {
-            EmployeeId = employeeId,
-            SkillId = request.SkillId,
-            SkillLevel = request.SkillLevel,
-            YearsOfExperience = request.YearsOfExperience,
-            IsPrimarySkill = request.IsPrimarySkill,
-            LastUsedDate = request.LastUsedDate,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var entity = PropertyMapper.Map<CreateEmployeeSkillRequest , EmployeeSkill>(request);
+        entity.EmployeeId = employeeId;
+        entity.IsActive = true;
 
-        var created = await _repository.AddAsync(skill, cancellationToken);
+        var created = await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created skill");
     }
