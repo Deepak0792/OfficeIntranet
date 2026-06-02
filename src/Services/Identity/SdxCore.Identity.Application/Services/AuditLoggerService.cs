@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SdxCore.Common.Helpers;
-using SdxCore.Identity.Application.Interfaces.Services;
+using SdxCore.Identity.Application.Contracts.Services;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Repositories;

@@ -1,9 +1,9 @@
 using SdxCore.Caching;
 using SdxCore.Common.Helpers;
 using SdxCore.Common.Models;
+using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
-using SdxCore.Employee.Application.Interfaces.Services;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 

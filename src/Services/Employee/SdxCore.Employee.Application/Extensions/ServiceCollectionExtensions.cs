@@ -1,6 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Employee.Application.Interfaces.Services;
+using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.Services;
 using SdxCore.Employee.Application.Validators;
 using SdxCore.Employee.Application.DTOs.Request;

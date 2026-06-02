@@ -1,8 +1,8 @@
 using SdxCore.Common.Security;
+using SdxCore.Identity.Application.Contracts.Security;
+using SdxCore.Identity.Application.Contracts.Services;
+using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Application.Exceptions;
-using SdxCore.Identity.Application.Interfaces;
-using SdxCore.Identity.Application.Interfaces.Security;
-using SdxCore.Identity.Application.Interfaces.Services;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;

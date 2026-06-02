@@ -1,10 +1,10 @@
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Application.Interfaces;
+using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Application.Exceptions;
-using SdxCore.Identity.Application.Interfaces.Providers;
+using System.Collections.Concurrent;
 
 namespace SdxCore.Identity.Application.Providers;
 

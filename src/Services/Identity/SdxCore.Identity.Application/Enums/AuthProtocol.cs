@@ -1,4 +1,4 @@
-namespace SdxCore.Identity.Application.Interfaces;
+namespace SdxCore.Identity.Application.Enums;
 
 /// <summary>
 /// Defines the supported authentication protocols.

@@ -1,12 +1,11 @@
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using SdxCore.Identity.Application.Contracts.Security;
 using SdxCore.Identity.Domain.DTOs;
-using SdxCore.Identity.Application.Interfaces.Security;
+using System.Collections.Concurrent;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Application.Security;
 

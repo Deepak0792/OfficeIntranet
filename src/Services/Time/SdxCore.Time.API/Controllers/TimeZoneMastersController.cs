@@ -3,7 +3,7 @@ using SdxCore.Common.Models;
 using SdxCore.Common.Security;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Interfaces.Services;
+using SdxCore.Time.Application.Contracts.Services;
 
 namespace SdxCore.Time.API.Controllers;
 

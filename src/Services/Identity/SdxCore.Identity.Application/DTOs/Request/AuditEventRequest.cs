@@ -1,4 +1,4 @@
-﻿using SdxCore.Identity.Application.Interfaces;
+﻿using SdxCore.Identity.Application.Enums;
 
 namespace SdxCore.Identity.Domain.DTOs.Request;
 

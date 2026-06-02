@@ -4,7 +4,7 @@ using SdxCore.Common.Models;
 using SdxCore.Common.Security;
 using SdxCore.Shared.Application.Services;
 using SdxCore.Shared.Domain.Entities;
-using SdxCore.Shared.Application.Interfaces.Services;
+using SdxCore.Shared.Application.Contracts.Services;
 
 namespace SdxCore.Shared.API.Controllers;
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Time.Application.BackgroundServices;
-using SdxCore.Time.Application.Interfaces.Services;
+using SdxCore.Time.Application.Contracts.Services;
 using SdxCore.Time.Application.Services;
 
 namespace SdxCore.Time.Application.Extensions;

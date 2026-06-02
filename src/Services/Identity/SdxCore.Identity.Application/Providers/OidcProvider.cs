@@ -1,14 +1,14 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
-using SdxCore.Identity.Application.Interfaces;
-using SdxCore.Identity.Application.Interfaces.Providers;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Application.Providers;
 

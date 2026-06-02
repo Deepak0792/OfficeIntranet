@@ -1,12 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Common.Security;
+using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Contracts.Security;
+using SdxCore.Identity.Application.Contracts.Services;
+using SdxCore.Identity.Application.Providers;
 using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Application.Services;
-using SdxCore.Identity.Application.Interfaces.Providers;
-using SdxCore.Identity.Application.Interfaces.Security;
-using SdxCore.Identity.Application.Interfaces.Services;
-using SdxCore.Identity.Application.Providers;
 
 namespace SdxCore.Identity.Application.Extensions;
 

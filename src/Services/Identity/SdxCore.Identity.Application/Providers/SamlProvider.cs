@@ -1,15 +1,14 @@
-using System.Security.Claims;
 using ITfoxtec.Identity.Saml2;
-using ITfoxtec.Identity.Saml2.Schemas;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Application.Interfaces;
-using SdxCore.Identity.Application.Interfaces.Providers;
-using System.Xml;
-using Microsoft.IdentityModel.Tokens.Saml2;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens.Saml2;
+using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
+using System.Security.Claims;
+using System.Xml;
 
 namespace SdxCore.Identity.Application.Providers;
 

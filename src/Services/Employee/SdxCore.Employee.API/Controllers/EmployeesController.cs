@@ -1,15 +1,10 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SdxCore.Common.Controllers;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security;
+using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
-using SdxCore.Employee.Application.Interfaces.Services;
 
 namespace SdxCore.Employee.API.Controllers;
 

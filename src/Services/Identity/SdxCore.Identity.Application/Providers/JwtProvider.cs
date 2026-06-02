@@ -1,10 +1,10 @@
-using System.Security.Claims;
 using Microsoft.Extensions.Logging;
+using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Contracts.Security;
+using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
-using SdxCore.Identity.Application.Interfaces;
-using SdxCore.Identity.Application.Interfaces.Providers;
-using SdxCore.Identity.Application.Interfaces.Security;
+using System.Security.Claims;
 
 namespace SdxCore.Identity.Application.Providers;
 
