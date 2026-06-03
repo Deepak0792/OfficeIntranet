@@ -14,5 +14,5 @@ public class LookupItem
     public string Name { get; set; } = string.Empty;
 
     [JsonPropertyName("displayOrder")]
-    public int DisplayOrder { get; set; }
+    public short DisplayOrder { get; set; }
 }

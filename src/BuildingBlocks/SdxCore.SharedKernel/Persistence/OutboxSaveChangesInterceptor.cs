@@ -11,43 +11,60 @@ namespace SdxCore.SharedKernel.Persistence;
 
 public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
 {
+    private readonly List<(EntityEntry Entry, string Operation)> _pendingEntries = [];
+
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
         var context = eventData.Context;
-
         if (context is null)
             return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        var outboxMessages = BuildOutboxMessages(context);
+        _pendingEntries.Clear();
 
-        if (outboxMessages.Count > 0)
-        {
-            context.Set<OutboxMessage>().AddRange(outboxMessages);
-        }
-
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
-    }
-
-    private static List<OutboxMessage> BuildOutboxMessages(DbContext context)
-    {
-        var outboxMessages = new List<OutboxMessage>();
-
-        var trackedEntries = context.ChangeTracker
+        var entries = context.ChangeTracker
             .Entries()
             .Where(e =>
                 e.Entity is IPublishableEntity &&
                 e.Entity is not OutboxMessage &&
-                (
-                    e.State == EntityState.Added ||
-                    e.State == EntityState.Modified ||
-                    e.State == EntityState.Deleted
-                ))
+                e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .ToList();
 
-        foreach (var entry in trackedEntries)
+        foreach (var entry in entries)
+            _pendingEntries.Add((entry, GetOperation(entry)));
+
+        return base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    public override async ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
+        CancellationToken cancellationToken = default)
+    {
+        var context = eventData.Context;
+        if (context is null || _pendingEntries.Count == 0)
+            return await base.SavedChangesAsync(eventData, result, cancellationToken);
+
+        var outboxMessages = BuildOutboxMessages(_pendingEntries);
+        _pendingEntries.Clear();
+
+        if (outboxMessages.Count > 0)
+        {
+            context.Set<OutboxMessage>().AddRange(outboxMessages);
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        return await base.SavedChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private static List<OutboxMessage> BuildOutboxMessages(
+        List<(EntityEntry Entry, string Operation)> pendingEntries)
+    {
+        var outboxMessages = new List<OutboxMessage>();
+
+        foreach (var (entry, operation) in pendingEntries)
         {
             var entity = entry.Entity;
 
@@ -60,27 +77,22 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
             var integrationEvent = new EntityChangedEvent(
                 Id: entityId.ToString()!,
                 EntityName: entity.GetType().Name,
-                Operation: GetOperation(entry),
+                Operation: operation,
                 OccurredOnUtc: DateTime.UtcNow);
 
             outboxMessages.Add(new OutboxMessage
             {
                 Id = Guid.NewGuid(),
-
-                EventType = typeof(EntityChangedEvent)
-                    .AssemblyQualifiedName!,
-
+                EventType = typeof(EntityChangedEvent).AssemblyQualifiedName!,
                 Payload = JsonSerializer.Serialize(integrationEvent),
-
+                Exchange = "sdxcore.events",
                 Status = "PENDING",
                 StatusGroup = "OUTBOX_STATUS",
-
                 IsActive = true,
                 RetryCount = 0,
-
+                RoutingKey = $"sdxcore.events.{entity.GetType().Name.ToLower()}",
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = SystemUser.SystemUserId,
-
                 LastUpdatedAt = DateTime.UtcNow,
                 LastUpdatedBy = SystemUser.SystemUserId
             });
@@ -94,12 +106,8 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
         return entry.State switch
         {
             EntityState.Added => "Created",
-
-            EntityState.Modified =>
-                IsSoftDeleted(entry) ? "SoftDeleted" : "Updated",
-
+            EntityState.Modified => IsSoftDeleted(entry) ? "SoftDeleted" : "Updated",
             EntityState.Deleted => "Deleted",
-
             _ => throw new InvalidOperationException(
                 $"Unsupported entity state {entry.State}")
         };

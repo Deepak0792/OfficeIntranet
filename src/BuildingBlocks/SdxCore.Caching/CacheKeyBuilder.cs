@@ -26,8 +26,9 @@ public class CacheKeyBuilder : ICacheKeyBuilder
     {
         if (string.IsNullOrWhiteSpace(entity)) throw new ArgumentNullException(nameof(entity));
         if (string.IsNullOrWhiteSpace(identifier)) throw new ArgumentNullException(nameof(identifier));
-        
-        return $"sdxcore:{_environment}:{_serviceName}:{entity.ToLowerInvariant()}:{identifier.ToLowerInvariant()}";
+
+        return $"{_environment}:{entity.ToLowerInvariant()}:{identifier.ToLowerInvariant()}";
+        //return $"sdxcore:{_environment}:{_serviceName}:{entity.ToLowerInvariant()}:{identifier.ToLowerInvariant()}";
     }
 
     public string BuildPattern(string entity, string identifierPattern)
@@ -35,6 +36,6 @@ public class CacheKeyBuilder : ICacheKeyBuilder
         if (string.IsNullOrWhiteSpace(entity)) throw new ArgumentNullException(nameof(entity));
         if (string.IsNullOrWhiteSpace(identifierPattern)) throw new ArgumentNullException(nameof(identifierPattern));
         
-        return $"sdxcore:{_environment}:{_serviceName}:{entity.ToLowerInvariant()}:{identifierPattern.ToLowerInvariant()}";
+        return $"{_environment}:{entity.ToLowerInvariant()}:{identifierPattern.ToLowerInvariant()}";
     }
 }

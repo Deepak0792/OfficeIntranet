@@ -1,13 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using SdxCore.SharedKernel.Entities;
+using SdxCore.SharedKernel.Persistence.Data;
 using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Persistence.Data;
 
-public class TimeDbContext : DbContext
+public class TimeDbContext : SdxDbContext
 {
-    public TimeDbContext(
-        DbContextOptions<TimeDbContext> options)
+    public TimeDbContext(DbContextOptions<TimeDbContext> options)
         : base(options)
     {
     }
@@ -34,9 +34,7 @@ public class TimeDbContext : DbContext
         modelBuilder.Entity<OutboxMessage>(b =>
         {
             b.ToTable("OutboxMessages", "time");
-
             b.HasKey(x => x.Id);
-
             b.Property(x => x.Id)
                 .HasDefaultValueSql("NEWSEQUENTIALID()");
         });
