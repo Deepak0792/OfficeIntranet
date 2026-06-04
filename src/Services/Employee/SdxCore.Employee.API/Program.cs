@@ -1,9 +1,9 @@
+using SdxCore.Caching.Extensions;
 using SdxCore.Common.Extensions;
 using SdxCore.Employee.Application.Extensions;
 using SdxCore.Employee.Persistence.Extensions;
-using SdxCore.Caching.Extensions;
-using SdxCore.Messaging.Extensions;
 using SdxCore.SharedKernel.Extensions;
+using SdxCore.Time.Application.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,13 +25,15 @@ builder.Services.AddSdxCoreCommon(builder.Configuration);
 // Register the sharedkernel layer
 builder.Services.AddSdxCoreSharedKernel(builder.Configuration);
 
-// Register Caching and Messaging
-builder.Services.AddSdxCaching(builder.Configuration);
-builder.Services.AddSdxMessaging(builder.Configuration);
+// Register Caching
+builder.Services.AddSdxCoreCaching(builder.Configuration);
+
+// Register Messaging
+builder.Services.AddSdxCoreEmployeeMessaging(builder.Configuration);
 
 // Register the persistence and application layers
-builder.Services.AddEmployeePersistence(builder.Configuration);
-builder.Services.AddEmployeeApplicationServices();
+builder.Services.AddSdxCoreEmployeePersistence(builder.Configuration);
+builder.Services.AddSdxCoreEmployeeApplicationServices();
 
 var app = builder.Build();
 

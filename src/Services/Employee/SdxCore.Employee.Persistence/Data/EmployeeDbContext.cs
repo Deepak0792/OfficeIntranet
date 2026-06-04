@@ -1,17 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.SharedKernel.Entities;
+using SdxCore.SharedKernel.Persistence.Data;
 
 namespace SdxCore.Employee.Persistence.Data;
 
-public class EmployeeDbContext : DbContext
+public class EmployeeDbContext : SdxDbContext
 {
     public EmployeeDbContext(DbContextOptions<EmployeeDbContext> options) 
         : base(options)

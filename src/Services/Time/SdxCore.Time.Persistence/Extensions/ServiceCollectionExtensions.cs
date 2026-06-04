@@ -11,7 +11,7 @@ namespace SdxCore.Time.Persistence.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddTimePersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSdxCoreTimePersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<OutboxSaveChangesInterceptor>();
 

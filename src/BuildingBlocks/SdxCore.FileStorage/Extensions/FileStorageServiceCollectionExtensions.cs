@@ -9,7 +9,7 @@ using SdxCore.FileStorage.Providers.SharedFileSystem;
 
 public static class FileStorageServiceCollectionExtensions
 {
-    public static IServiceCollection AddFileStorage(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSdxCoreFileStorage(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<FileStorageOptions>(configuration.GetSection("FileStorage"));
 

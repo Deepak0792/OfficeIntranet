@@ -36,7 +36,7 @@ public static class ServiceCollectionExtensions
     /// 
     /// Requirements: 12.1, 12.2, 12.3, 12.4, 12.5
     /// </remarks>
-    public static IServiceCollection AddSdxCoreAuthentication(
+    public static IServiceCollection AddSdxCoreIdentityAuthentication(
         this IServiceCollection services,
         IConfiguration configuration)
     {

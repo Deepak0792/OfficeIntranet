@@ -19,7 +19,7 @@ public class CacheKeyBuilder : ICacheKeyBuilder
     {
         _environment = environment.EnvironmentName.ToLowerInvariant();
         // Assuming AppName or ServiceName is defined in appsettings
-        _serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "unknown";
+        _serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "unknown";        
     }
 
     public string BuildKey(string entity, string identifier)
@@ -35,7 +35,7 @@ public class CacheKeyBuilder : ICacheKeyBuilder
     {
         if (string.IsNullOrWhiteSpace(entity)) throw new ArgumentNullException(nameof(entity));
         if (string.IsNullOrWhiteSpace(identifierPattern)) throw new ArgumentNullException(nameof(identifierPattern));
-        
+
         return $"{_environment}:{entity.ToLowerInvariant()}:{identifierPattern.ToLowerInvariant()}";
     }
 }

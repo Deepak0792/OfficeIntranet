@@ -21,7 +21,7 @@ public static class ServiceCollectionExtensions
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when services or configuration is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when connection string is not configured.</exception>
-    public static IServiceCollection AddSdxCorePersistence(
+    public static IServiceCollection AddSdxCoreIdentityPersistence(
         this IServiceCollection services,
         IConfiguration configuration)
     {

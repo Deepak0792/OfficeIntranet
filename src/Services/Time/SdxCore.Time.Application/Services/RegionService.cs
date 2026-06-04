@@ -23,7 +23,7 @@ public class RegionService : IRegionService
 
     public async Task<IEnumerable<RegionResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("region", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Region), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class RegionService : IRegionService
 
     public async Task<RegionResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("region", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Region), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

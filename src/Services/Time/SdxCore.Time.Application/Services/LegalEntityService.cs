@@ -23,7 +23,7 @@ public class LegalEntityService : ILegalEntityService
 
     public async Task<IEnumerable<LegalEntityResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("legalentity", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(LegalEntity), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class LegalEntityService : ILegalEntityService
 
     public async Task<LegalEntityResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("legalentity", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(LegalEntity), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

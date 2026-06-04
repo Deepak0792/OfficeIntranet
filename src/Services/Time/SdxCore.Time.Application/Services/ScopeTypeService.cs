@@ -23,7 +23,7 @@ public class ScopeTypeService : IScopeTypeService
 
     public async Task<IEnumerable<ScopeTypeResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("scopetype", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(ScopeType), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class ScopeTypeService : IScopeTypeService
 
     public async Task<ScopeTypeResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("scopetype", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(ScopeType), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

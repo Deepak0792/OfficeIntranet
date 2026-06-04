@@ -23,7 +23,7 @@ public class OfficeLocationService : IOfficeLocationService
 
     public async Task<IEnumerable<OfficeLocationResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("officelocation", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(OfficeLocation), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class OfficeLocationService : IOfficeLocationService
 
     public async Task<OfficeLocationResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("officelocation", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(OfficeLocation), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

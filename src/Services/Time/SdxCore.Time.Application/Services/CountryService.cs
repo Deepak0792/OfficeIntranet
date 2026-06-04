@@ -23,7 +23,7 @@ public class CountryService : ICountryService
 
     public async Task<IEnumerable<CountryResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("country", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Country), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class CountryService : ICountryService
 
     public async Task<CountryResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("country", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Country), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

@@ -1,7 +1,8 @@
-﻿using SdxCore.SharedKernel.Entities;
+﻿using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Time.Domain.Entities;
-public class GeoFence : BaseAuditEntity<short>
+public class GeoFence : BaseAuditEntity<short>, IPublishableEntity
 {
     public required string GeoFenceCode { get; set; }
     public required string GeoFenceName { get; set; }

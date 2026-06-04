@@ -11,7 +11,7 @@ namespace SdxCore.Employee.Persistence.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddEmployeePersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSdxCoreEmployeePersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<OutboxSaveChangesInterceptor>();
 

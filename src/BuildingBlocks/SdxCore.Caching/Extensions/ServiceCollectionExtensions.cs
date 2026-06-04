@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Extension method to register caching services (L1 + L2 Redis).
     /// </summary>
-    public static IServiceCollection AddSdxCaching(
+    public static IServiceCollection AddSdxCoreCaching(
         this IServiceCollection services,
         IConfiguration configuration)
     {

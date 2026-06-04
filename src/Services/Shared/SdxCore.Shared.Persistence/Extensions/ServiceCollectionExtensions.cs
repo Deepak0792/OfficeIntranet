@@ -9,7 +9,7 @@ namespace SdxCore.Shared.Persistence.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSharedPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSdxCoreSharedPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<SharedDbContext>(options =>
         {

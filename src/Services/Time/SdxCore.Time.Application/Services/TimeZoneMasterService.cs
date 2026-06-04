@@ -23,7 +23,7 @@ public class TimeZoneMasterService : ITimeZoneMasterService
 
     public async Task<IEnumerable<TimeZoneMasterResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("timezonemaster", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(TimeZoneMaster), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class TimeZoneMasterService : ITimeZoneMasterService
 
     public async Task<TimeZoneMasterResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("timezonemaster", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(TimeZoneMaster), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

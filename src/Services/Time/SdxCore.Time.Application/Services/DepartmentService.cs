@@ -23,7 +23,7 @@ public class DepartmentService : IDepartmentService
 
     public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("department", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Department), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class DepartmentService : IDepartmentService
 
     public async Task<DepartmentResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("department", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Department), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var d = await _repository.GetByIdAsync(id, ct);

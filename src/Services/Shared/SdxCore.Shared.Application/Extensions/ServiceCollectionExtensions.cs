@@ -6,7 +6,7 @@ namespace SdxCore.Shared.Application.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSharedApplication(this IServiceCollection services)
+    public static IServiceCollection AddSdxCoreSharedApplication(this IServiceCollection services)
     {
         services.AddScoped<ILookupService, LookupService>();
 

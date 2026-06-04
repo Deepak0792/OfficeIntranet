@@ -13,9 +13,10 @@ public static class ServiceCollectionExtensions
     /// Registers MassTransit with RabbitMQ.
     /// </summary>
     public static IServiceCollection AddSdxMessaging(
-     this IServiceCollection services,
-     IConfiguration configuration,
-     Action<IBusRegistrationConfigurator>? configureConsumers = null)
+        this IServiceCollection services,
+        IConfiguration configuration,
+        string? endpointPrefix = null,
+        Action<IBusRegistrationConfigurator>? configureConsumers = null)
     {
         var rabbitConfig =
             configuration.GetSection("RabbitMQ")
@@ -26,7 +27,17 @@ public static class ServiceCollectionExtensions
         {
             configureConsumers?.Invoke(x);
 
-            x.SetKebabCaseEndpointNameFormatter();
+            if (!string.IsNullOrWhiteSpace(endpointPrefix))
+            {
+                x.SetEndpointNameFormatter(
+                    new KebabCaseEndpointNameFormatter(
+                        endpointPrefix,
+                        includeNamespace: false));
+            }
+            else
+            {
+                x.SetKebabCaseEndpointNameFormatter();
+            }
 
             x.UsingRabbitMq((context, cfg) =>
             {

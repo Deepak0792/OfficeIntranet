@@ -23,7 +23,7 @@ public class GeoFenceService : IGeoFenceService
 
     public async Task<IEnumerable<GeoFenceResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("geofence", "all");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(GeoFence), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
@@ -33,7 +33,7 @@ public class GeoFenceService : IGeoFenceService
 
     public async Task<GeoFenceResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("geofence", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(GeoFence), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);

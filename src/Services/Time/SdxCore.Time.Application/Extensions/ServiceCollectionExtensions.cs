@@ -7,7 +7,7 @@ namespace SdxCore.Time.Application.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddTimeServicesApplication(this IServiceCollection services)
+    public static IServiceCollection AddSdxCoreTimeServicesApplication(this IServiceCollection services)
     {
         // Register Services
         

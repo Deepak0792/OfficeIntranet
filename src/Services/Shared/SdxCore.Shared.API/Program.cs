@@ -21,8 +21,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSdxCoreCommon(builder.Configuration);
 
 // Register the persistence and application layers
-builder.Services.AddSharedPersistence(builder.Configuration);
-builder.Services.AddSharedApplication();
+builder.Services.AddSdxCoreSharedPersistence(builder.Configuration);
+builder.Services.AddSdxCoreSharedApplication();
 
 var app = builder.Build();
 

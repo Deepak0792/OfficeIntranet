@@ -1,7 +1,8 @@
-﻿using SdxCore.SharedKernel.Entities;
+﻿using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Time.Domain.Entities;
-public class DocumentType : BaseAuditEntity<short>
+public class DocumentType : BaseAuditEntity<short>, IPublishableEntity
 {
     public required string DocumentTypeCode { get; set; }
     public required string DocumentTypeName { get; set; }

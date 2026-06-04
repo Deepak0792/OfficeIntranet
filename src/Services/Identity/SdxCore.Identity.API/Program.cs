@@ -26,11 +26,11 @@ builder.Services.AddSdxCoreSharedKernel(builder.Configuration);
 
 // Register the persistence layer (EF Core + SQL Server)
 // Connection string comes from appsettings.json
-builder.Services.AddSdxCorePersistence(builder.Configuration);
+builder.Services.AddSdxCoreIdentityPersistence(builder.Configuration);
 
 // Register the authentication module via DI extension
 // All configuration values come from appsettings.json
-builder.Services.AddSdxCoreAuthentication(builder.Configuration);
+builder.Services.AddSdxCoreIdentityAuthentication(builder.Configuration);
 
 // Register providers based on what you need
 // IMPORTANT: You must register the provider that matches your appsettings.json "Authentication:Protocol" value

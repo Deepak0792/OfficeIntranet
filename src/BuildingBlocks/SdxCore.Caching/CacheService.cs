@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -12,17 +13,20 @@ public class CacheService : ICacheService
     private readonly IDistributedCache _distributedCache;
     private readonly IConnectionMultiplexer _redisConnection;
     private readonly ILogger<CacheService> _logger;
+    private readonly string _instanceName;
 
     public CacheService(
         IMemoryCache memoryCache,
         IDistributedCache distributedCache,
         IConnectionMultiplexer redisConnection,
-        ILogger<CacheService> logger)
+        ILogger<CacheService> logger,
+        IConfiguration configuration)
     {
         _memoryCache = memoryCache;
         _distributedCache = distributedCache;
         _redisConnection = redisConnection;
         _logger = logger;
+        _instanceName = configuration["Redis:InstanceName"] ?? "*";
     }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
@@ -108,19 +112,30 @@ public class CacheService : ICacheService
     public async Task RemoveByPatternAsync(string pattern, CancellationToken cancellationToken = default)
     {
         var endpoints = _redisConnection.GetEndPoints();
+        var db = _redisConnection.GetDatabase();
+
         foreach (var endpoint in endpoints)
         {
             var server = _redisConnection.GetServer(endpoint);
-            var keys = server.Keys(pattern: pattern);
-            
-            var db = _redisConnection.GetDatabase();
-            foreach (var key in keys)
+
+            // Redis stores keys with InstanceName prefix: "sdxcore:time:development:department:123"
+            // L1 stores keys without prefix:              "development:department:123"
+            var fullPattern = $"{_instanceName}{pattern}";
+            var keys = server.Keys(pattern: fullPattern).ToList();
+
+            foreach (var redisKey in keys)
             {
-                await db.KeyDeleteAsync(key);
-                _memoryCache.Remove(key.ToString());
+                await db.KeyDeleteAsync(redisKey);
+
+                // Strip the InstanceName prefix to get the L1 key
+                var l1Key = redisKey.ToString();
+                if (!string.IsNullOrEmpty(_instanceName) && l1Key.StartsWith(_instanceName))
+                    l1Key = l1Key[_instanceName.Length..];
+
+                _memoryCache.Remove(l1Key);
             }
         }
-        
+
         _logger.LogDebug("Cache removed for pattern: {Pattern}", pattern);
     }
 }

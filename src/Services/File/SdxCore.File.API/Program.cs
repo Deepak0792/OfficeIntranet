@@ -10,7 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSdxCoreCommon(builder.Configuration);
-builder.Services.AddFileStorage(builder.Configuration);
+builder.Services.AddSdxCoreFileStorage(builder.Configuration);
 
 var app = builder.Build();
 
