@@ -6,20 +6,20 @@ WORKDIR /src
 COPY SdxCore.sln ./
 
 # Copy project files for restore
-COPY src/Services/Time/SdxCore.Time.API/SdxCore.Time.API.csproj src/Services/Time/SdxCore.Time.API/
-COPY src/Services/Time/SdxCore.Time.Application/SdxCore.Time.Application.csproj src/Services/Time/SdxCore.Time.Application/
-COPY src/Services/Time/SdxCore.Time.Domain/SdxCore.Time.Domain.csproj src/Services/Time/SdxCore.Time.Domain/
-COPY src/Services/Time/SdxCore.Time.Persistence/SdxCore.Time.Persistence.csproj src/Services/Time/SdxCore.Time.Persistence/
+COPY src/Services/Employee/SdxCore.Employee.API/SdxCore.Employee.API.csproj src/Services/Employee/SdxCore.Employee.API/
+COPY src/Services/Employee/SdxCore.Employee.Application/SdxCore.Employee.Application.csproj src/Services/Employee/SdxCore.Employee.Application/
+COPY src/Services/Employee/SdxCore.Employee.Domain/SdxCore.Employee.Domain.csproj src/Services/Employee/SdxCore.Employee.Domain/
+COPY src/Services/Employee/SdxCore.Employee.Persistence/SdxCore.Employee.Persistence.csproj src/Services/Employee/SdxCore.Employee.Persistence/
 COPY src/BuildingBlocks/SdxCore.Common/SdxCore.Common.csproj src/BuildingBlocks/SdxCore.Common/
 COPY src/BuildingBlocks/SdxCore.SharedKernel/SdxCore.SharedKernel.csproj src/BuildingBlocks/SdxCore.SharedKernel/
 COPY src/BuildingBlocks/SdxCore.Caching/SdxCore.Caching.csproj src/BuildingBlocks/SdxCore.Caching/
 COPY src/BuildingBlocks/SdxCore.Messaging/SdxCore.Messaging.csproj src/BuildingBlocks/SdxCore.Messaging/
 
 # Restore dependencies
-RUN dotnet restore src/Services/Time/SdxCore.Time.API/SdxCore.Time.API.csproj
+RUN dotnet restore src/Services/Employee/SdxCore.Employee.API/SdxCore.Employee.API.csproj
 
 # Copy source code
-COPY src/Services/Time/ src/Services/Time/
+COPY src/Services/Employee/ src/Services/Employee/
 COPY src/BuildingBlocks/SdxCore.Common/ src/BuildingBlocks/SdxCore.Common/
 COPY src/BuildingBlocks/SdxCore.SharedKernel/ src/BuildingBlocks/SdxCore.SharedKernel/
 COPY src/BuildingBlocks/SdxCore.Caching/ src/BuildingBlocks/SdxCore.Caching/
@@ -27,11 +27,11 @@ COPY src/BuildingBlocks/SdxCore.Messaging/ src/BuildingBlocks/SdxCore.Messaging/
 
 # Build the application
 WORKDIR /src
-RUN dotnet build src/Services/Time/SdxCore.Time.API/SdxCore.Time.API.csproj -c Release -o /app/build
+RUN dotnet build src/Services/Employee/SdxCore.Employee.API/SdxCore.Employee.API.csproj -c Release -o /app/build
 
 # Publish stage
 FROM build AS publish
-RUN dotnet publish src/Services/Time/SdxCore.Time.API/SdxCore.Time.API.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish src/Services/Employee/SdxCore.Employee.API/SdxCore.Employee.API.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
@@ -58,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 EXPOSE 80
 
 # Set entry point
-ENTRYPOINT ["dotnet", "SdxCore.Time.API.dll"]
+ENTRYPOINT ["dotnet", "SdxCore.Employee.API.dll"]
