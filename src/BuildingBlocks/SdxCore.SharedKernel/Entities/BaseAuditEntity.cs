@@ -4,7 +4,7 @@ namespace SdxCore.SharedKernel.Entities;
 /// Full audit entity: CreatedAt, CreatedBy, LastUpdatedAt, LastUpdatedBy.
 /// Injected automatically by BaseRepository via IRequestContext.
 /// </summary>
-public abstract class BaseAuditEntity<TKey> : BaseEntity<TKey>
+public abstract class BaseAuditEntity<TKey> : BaseEntity<TKey>, IAuditableEntity
 {
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

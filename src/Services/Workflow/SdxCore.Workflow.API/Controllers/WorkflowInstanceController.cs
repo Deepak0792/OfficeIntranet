@@ -1,0 +1,110 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using SdxCore.Common.Models;
+using SdxCore.Common.Security;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.Workflow.Application.Contracts.Services;
+using SdxCore.Workflow.Application.DTOs.Request;
+using SdxCore.Workflow.Application.DTOs.Response;
+
+namespace SdxCore.Workflow.API.Controllers;
+
+[ApiController]
+[Route("api/v1/workflow/instances")]
+[GatewayOnly]
+public class WorkflowInstanceController(
+    IWorkflowInstanceService svc,
+    IRequestContext requestContext) : ControllerBase
+{
+    /// <summary>
+    /// GET /api/v1/workflow/instances
+    /// Query params: moduleCode, status, initiatedBy, fromDate, toDate, page, pageSize
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] string? moduleCode,
+        [FromQuery] string? status,
+        [FromQuery] int? initiatedBy,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        [FromQuery] PaginationFilter filter,
+        CancellationToken cancellationToken)
+    {
+        var data = await svc.GetPagedAsync(filter, moduleCode, status, initiatedBy, fromDate, toDate, cancellationToken);
+        return Ok(data);
+    }
+
+    /// <summary>GET /api/v1/workflow/instances/{id}</summary>
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    {
+        var data = await svc.GetByIdAsync(id, cancellationToken);
+        return Ok(new ApiResponse<WorkflowInstanceDetailResponse>(data, "Successfully fetched workflow instance details."));
+    }
+
+    /// <summary>GET /api/v1/workflow/instances/{id}/tasks</summary>
+    [HttpGet("{id:int}/tasks")]
+    public async Task<IActionResult> GetTasks(int id, CancellationToken cancellationToken)
+    {
+        var data = await svc.GetTasksAsync(id, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<WorkflowTaskResponse>>(data, "Successfully fetched task information."));
+    }
+
+    /// <summary>GET /api/v1/workflow/instances/{id}/history</summary>
+    [HttpGet("{id:int}/history")]
+    public async Task<IActionResult> GetHistory(int id, CancellationToken cancellationToken)
+    {
+        var data = await svc.GetHistoryAsync(id, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<WorkflowActionHistoryResponse>>(data, "Successfully fetched instances history."));
+    }
+
+    /// <summary>
+    /// GET /api/v1/workflow/instances/by-transaction
+    /// ?moduleCode=LEAVE_REQUEST&amp;referenceTransactionId=501
+    /// </summary>
+    [HttpGet("by-transaction")]
+    public async Task<IActionResult> GetByTransaction(
+        [FromQuery] string moduleCode,
+        [FromQuery] int referenceTransactionId, CancellationToken cancellationToken)
+    {
+        var data = await svc.GetByTransactionAsync(moduleCode, referenceTransactionId, cancellationToken);
+        return Ok(new ApiResponse<WorkflowInstanceResponse>(data, "Successfully fetched instance."));
+    }
+
+    /// <summary>GET /api/v1/workflow/instances/my-submissions</summary>
+    [HttpGet("my-submissions")]
+    public async Task<IActionResult> GetMySubmissions(CancellationToken cancellationToken)
+    {
+        int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
+        var data = await svc.GetMySubmissionsAsync(userId, cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<WorkflowInstanceResponse>>(data, "Successfully fetched instances."));
+    }
+
+    /// <summary>
+    /// POST /api/v1/workflow/instances
+    /// Submit a new transaction to the workflow engine.
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Submit([FromBody] SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken)
+    {
+        var data = await svc.SubmitAsync(request, cancellationToken);
+        return Ok(new ApiResponse<WorkflowInstanceResponse>(data, "Workflow instance created successfully."));
+    }
+
+    /// <summary>PATCH /api/v1/workflow/instances/{id}/cancel</summary>
+    [HttpPatch("{id:int}/cancel")]
+    public async Task<IActionResult> Cancel(int id, CancellationToken cancellationToken)
+    {
+        int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
+        await svc.CancelAsync(id,userId , cancellationToken);
+        return Ok(new ApiResponse<bool>(true, "Workflow instance cancelled."));
+    }
+
+    /// <summary>PATCH /api/v1/workflow/instances/{id}/withdraw</summary>
+    [HttpPatch("{id:int}/withdraw")]
+    public async Task<IActionResult> Withdraw(int id, CancellationToken cancellationToken)
+    {
+        int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
+        await svc.WithdrawAsync(id, userId, cancellationToken);
+        return Ok(new ApiResponse<bool>(true, "Workflow instance withdrawn."));
+    }
+}

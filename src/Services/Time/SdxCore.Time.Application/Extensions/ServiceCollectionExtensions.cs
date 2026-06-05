@@ -7,7 +7,7 @@ namespace SdxCore.Time.Application.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSdxCoreTimeServicesApplication(this IServiceCollection services)
+    public static IServiceCollection AddSdxCoreTimeApplication(this IServiceCollection services)
     {
         // Register Services
         
@@ -25,7 +25,6 @@ public static class ServiceCollectionExtensions
 
         // Register Background Services
         services.AddHostedService<OutboxProcessorBackgroundService>();
-        //builder.Services.AddHostedService<CacheInvalidationBackgroundService>();
 
         return services;
     }

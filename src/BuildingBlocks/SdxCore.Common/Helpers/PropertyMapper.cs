@@ -27,4 +27,17 @@ public static class PropertyMapper
             }
         }
     }
+    public static TDest MapToRecord<TDest>(object source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var json = System.Text.Json.JsonSerializer.Serialize(source);
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return System.Text.Json.JsonSerializer.Deserialize<TDest>(json, options)!;
+    }
+
+    public static IEnumerable<TDest> MapList<TSource, TDest>(IEnumerable<TSource> sourceList)
+    {
+        if (sourceList == null) return Enumerable.Empty<TDest>();
+        return sourceList.Select(Map<TSource, TDest>).ToList();
+    }
 }

@@ -33,7 +33,7 @@ builder.Services.AddSdxCoreEmployeeMessaging(builder.Configuration);
 
 // Register the persistence and application layers
 builder.Services.AddSdxCoreEmployeePersistence(builder.Configuration);
-builder.Services.AddSdxCoreEmployeeApplicationServices();
+builder.Services.AddSdxCoreEmployeeApplication();
 
 var app = builder.Build();
 

@@ -10,7 +10,7 @@ namespace SdxCore.Employee.Application.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSdxCoreEmployeeApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddSdxCoreEmployeeApplication(this IServiceCollection services)
     {
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<ISkillService, SkillService>();

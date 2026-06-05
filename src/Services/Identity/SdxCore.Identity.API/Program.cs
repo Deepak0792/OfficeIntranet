@@ -30,7 +30,7 @@ builder.Services.AddSdxCoreIdentityPersistence(builder.Configuration);
 
 // Register the authentication module via DI extension
 // All configuration values come from appsettings.json
-builder.Services.AddSdxCoreIdentityAuthentication(builder.Configuration);
+builder.Services.AddSdxCoreIdentityApplication(builder.Configuration);
 
 // Register providers based on what you need
 // IMPORTANT: You must register the provider that matches your appsettings.json "Authentication:Protocol" value

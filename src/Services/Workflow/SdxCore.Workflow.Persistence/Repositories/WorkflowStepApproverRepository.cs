@@ -1,0 +1,39 @@
+using Microsoft.EntityFrameworkCore;
+using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Persistence.Repositories;
+using SdxCore.Workflow.Domain.Entities;
+using SdxCore.Workflow.Domain.Repositories;
+using SdxCore.Workflow.Persistence.Data;
+
+namespace SdxCore.Workflow.Persistence.Repositories;
+
+public class WorkflowStepApproverRepository(WorkflowDbContext dbContext, IRequestContext requestContext) 
+    : BaseRepository<WorkflowStepApprover, short, WorkflowDbContext>(dbContext, requestContext), IWorkflowStepApproverRepository
+{
+    public async Task<IEnumerable<WorkflowStepApprover>> GetByStepIdAsync(short stepId, CancellationToken cancellationToken = default) =>
+        await _dbSet
+            .Include(x => x.Designations.Where(d => d.IsActive))
+            .Where(x => x.WorkflowStepId == stepId)
+            .OrderBy(x => x.PriorityOrder)
+            .ToListAsync(cancellationToken);
+
+    public async Task<WorkflowStepApprover?> GetWithDesignationsAsync(short id, CancellationToken cancellationToken = default) =>
+        await _dbSet
+            .Include(x => x.Designations.Where(d => d.IsActive))
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public async Task<IEnumerable<short>> GetDesignationIdsAsync(short approverId, CancellationToken cancellationToken = default) =>
+        await _dbContext.WorkflowStepApproverDesignations
+            .Where(x => x.WorkflowStepApproverId == approverId && x.IsActive)
+            .Select(x => x.DesignationId)
+            .ToListAsync(cancellationToken);
+
+    public async Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default)
+    {
+        var entity = await GetByIdAsync(id, cancellationToken);
+        if (entity is null) return false;
+        entity.IsActive = !entity.IsActive;
+        Update(entity);
+        return true;
+    }
+}

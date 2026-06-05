@@ -31,7 +31,7 @@ builder.Services.AddSdxCoreTimeMessaging(builder.Configuration);
 
 // Register the persistence and application layers
 builder.Services.AddSdxCoreTimePersistence(builder.Configuration);
-builder.Services.AddSdxCoreTimeServicesApplication();
+builder.Services.AddSdxCoreTimeApplication();
 
 
 var app = builder.Build();
