@@ -41,9 +41,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Authentication result with token on success, error details on failure.</returns>
     [HttpPost("token")]
-    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Token([FromBody] LoginRequest request, CancellationToken ct)
     {
         try
@@ -133,9 +130,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>New JWT access token and rotated refresh token.</returns>
     [HttpPost("refresh-token")]
-    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
         try
@@ -206,9 +200,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Success or error response.</returns>
     [HttpPost("revoke-token")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenRequest request, CancellationToken ct)
     {
         try
@@ -248,11 +239,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Token validation result with user information if valid.</returns>
     [HttpPost("validate-token")]
-    [ProducesResponseType(typeof(ApiResponse<TokenValidationResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ValidateToken(CancellationToken ct)
     {
         try
@@ -341,8 +327,6 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     /// <returns>Success message if token is valid, including user context from Gateway.</returns>
     [HttpGet("test-protected")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public IActionResult TestProtected()
     {
         // Check if X-User-Id header was added by the Gateway
@@ -378,9 +362,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Created user information.</returns>
     [HttpPost("create-user")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request, CancellationToken ct)
     {
         try
@@ -457,9 +438,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Created user information.</returns>
     [HttpPost("change-password")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdatePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
     {
         try
@@ -529,9 +507,6 @@ public sealed class AuthController : ControllerBase
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Created user information.</returns>
     [HttpPost("deactivate-user")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeactivatePassword([FromBody] DeactivateUserRequest deactivateUserRequest, CancellationToken ct)
     {
         try

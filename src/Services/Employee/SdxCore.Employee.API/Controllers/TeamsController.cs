@@ -21,7 +21,6 @@ public class TeamsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<TeamResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var result = await _service.GetAllAsync(cancellationToken);
@@ -29,7 +28,6 @@ public class TeamsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<TeamResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
@@ -37,7 +35,6 @@ public class TeamsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<TeamResponse>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateTeamRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -48,7 +45,6 @@ public class TeamsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<TeamResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(short id, [FromBody] UpdateTeamRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -59,7 +55,6 @@ public class TeamsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(short id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         // Reusing UpdateEmployeeStatusRequest since it just has a boolean IsActive.

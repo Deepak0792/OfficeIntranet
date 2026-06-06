@@ -14,6 +14,9 @@ builder.Services.AddSdxCoreFileStorage(builder.Configuration);
 
 var app = builder.Build();
 
+// Use Global Exception Middleware
+app.UseGlobalExceptionHandling();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

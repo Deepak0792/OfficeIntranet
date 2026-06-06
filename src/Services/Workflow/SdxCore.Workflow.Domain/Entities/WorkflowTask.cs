@@ -2,15 +2,14 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowTask : BaseEntity<int>
+public class WorkflowTask : BaseAuditEntity<int>
 {
     public int WorkflowInstanceId { get; set; }
     public short WorkflowStepId { get; set; }
-    public short WorkflowStepApproverId { get; set; }  // Rule that generated this task
-    public int AssignedToEmployeeId { get; set; }  // Resolved approver
+    public short WorkflowStepApproverId { get; set; }
+    public int AssignedToEmployeeId { get; set; }
     public int? DelegatedFromEmployeeId { get; set; }
-    public string TaskStatus { get; set; } = null!;  // FK → WORKFLOW_TASK_STATUS
-    // Computed: TaskStatusGroup = 'WORKFLOW_TASK_STATUS'
+    public string TaskStatus { get; set; } = null!;
     public string? Remarks { get; set; }
     public int? ParentWorkflowTaskId { get; set; }
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;

@@ -70,14 +70,9 @@ switch (protocol.ToLowerInvariant())
 
 var app = builder.Build();
 
-// Apply database migrations automatically on startup
-//using (var scope = app.Services.CreateScope())
-//{
-//    var context = scope.ServiceProvider.GetRequiredService<SdxCore.Identity.Persistence.Data.IdentityDbContext>();
-//    context.Database.Migrate();
-//}
+// Use Global Exception Middleware
+app.UseGlobalExceptionHandling();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

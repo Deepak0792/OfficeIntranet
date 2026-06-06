@@ -36,6 +36,9 @@ builder.Services.AddSdxCoreTimeApplication();
 
 var app = builder.Build();
 
+// Use Global Exception Middleware
+app.UseGlobalExceptionHandling();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

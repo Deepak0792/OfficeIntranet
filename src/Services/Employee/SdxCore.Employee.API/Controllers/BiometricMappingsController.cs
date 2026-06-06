@@ -20,7 +20,6 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpGet("api/v1/employees/{employeeId}/biometric-mappings")]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
@@ -28,7 +27,6 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpGet("api/v1/employees/{employeeId}/biometric-mappings/{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeBiometricMappingResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -36,7 +34,6 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpGet("api/v1/biometric-mappings/by-device/{deviceId}")]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByDeviceId(int deviceId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByDeviceIdAsync(deviceId, cancellationToken);
@@ -44,7 +41,6 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpPost("api/v1/employees/{employeeId}/biometric-mappings")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeBiometricMappingResponse>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -55,7 +51,6 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpPut("api/v1/employees/{employeeId}/biometric-mappings/{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeBiometricMappingResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -66,7 +61,6 @@ public class BiometricMappingsController : SdxControllerBase
     }
 
     [HttpPatch("api/v1/employees/{employeeId}/biometric-mappings/{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);

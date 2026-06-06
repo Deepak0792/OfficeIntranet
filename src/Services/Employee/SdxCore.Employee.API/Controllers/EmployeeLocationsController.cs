@@ -24,7 +24,6 @@ public class EmployeeLocationsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EmployeeLocationResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
@@ -32,8 +31,6 @@ public class EmployeeLocationsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeLocationResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -41,8 +38,6 @@ public class EmployeeLocationsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeLocationResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeLocationRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -53,9 +48,6 @@ public class EmployeeLocationsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeLocationResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeLocationRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -66,7 +58,6 @@ public class EmployeeLocationsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -77,7 +68,6 @@ public class EmployeeLocationsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/set-primary")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);

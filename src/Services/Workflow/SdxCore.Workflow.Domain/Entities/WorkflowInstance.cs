@@ -7,10 +7,8 @@ public class WorkflowInstance : BaseAuditEntity<int>
     public short WorkflowDefinitionId { get; set; }
     public short WorkflowModuleId { get; set; }
     public int ReferenceTransactionId { get; set; }
-    public short? CurrentWorkflowStepId { get; set; }   // NULL when completed/cancelled
-    public string WorkflowStatus { get; set; } = null!;  // FK → WORKFLOW_STATUS
-    // Computed: WorkflowStatusGroup = 'WORKFLOW_STATUS'
-    public int CreatedByEmpId { get; set; }   // FK → employee.Employee
+    public short? CurrentWorkflowStepId { get; set; }  
+    public string WorkflowStatus { get; set; } = null!; 
     public DateTime? CompletedAt { get; set; }
     public int? CompletedBy { get; set; }
     public bool IsActive { get; set; } = true;

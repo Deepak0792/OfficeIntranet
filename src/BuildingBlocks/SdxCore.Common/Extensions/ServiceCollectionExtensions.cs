@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.Common.Middleware;
 
 namespace SdxCore.Common.Extensions;
 
@@ -28,5 +30,5 @@ public static class ServiceCollectionExtensions
         //services.AddScoped<IRequestContext, RequestContext>();
 
         return services;
-    }  
+    }
 }

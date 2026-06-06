@@ -21,7 +21,6 @@ public class EmployeeTeamsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<EmployeeTeamResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
@@ -29,7 +28,6 @@ public class EmployeeTeamsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeTeamResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -37,7 +35,6 @@ public class EmployeeTeamsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeTeamResponse>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeTeamRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -48,7 +45,6 @@ public class EmployeeTeamsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeTeamResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeTeamRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -59,7 +55,6 @@ public class EmployeeTeamsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);

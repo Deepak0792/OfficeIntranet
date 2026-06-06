@@ -24,7 +24,6 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EmployeeDocumentResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
@@ -32,8 +31,6 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeDocumentResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -41,7 +38,6 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpGet("expiring")]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EmployeeDocumentResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExpiring(int employeeId, [FromQuery] int days = 30, CancellationToken cancellationToken = default)
     {
         var result = await _service.GetExpiringAsync(employeeId, days, cancellationToken);
@@ -49,8 +45,6 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeDocumentResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeDocumentRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -62,9 +56,6 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeDocumentResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeDocumentRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -75,7 +66,6 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);

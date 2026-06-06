@@ -2,7 +2,7 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowAssignment : BaseEntity<short>
+public class WorkflowAssignment : BaseAuditEntity<short>
 {
     public short WorkflowDefinitionId { get; set; }
     public short ScopeTypeId { get; set; }   // FK → time.ScopeType (routing scope)

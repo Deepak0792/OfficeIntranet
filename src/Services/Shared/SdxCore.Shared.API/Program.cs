@@ -26,6 +26,9 @@ builder.Services.AddSdxCoreSharedApplication();
 
 var app = builder.Build();
 
+// Use Global Exception Middleware
+app.UseGlobalExceptionHandling();
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

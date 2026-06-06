@@ -24,7 +24,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EmployeeRelationshipResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
@@ -32,8 +31,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeRelationshipResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -41,7 +38,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpGet("/api/v1/employees/{employeeId}/direct-reports")]
-    [ProducesResponseType(typeof(ApiResponse<IEnumerable<EmployeeRelationshipResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDirectReports(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetDirectReportsAsync(employeeId, cancellationToken);
@@ -49,8 +45,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpGet("/api/v1/employees/{employeeId}/manager")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeRelationshipResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetManager(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetManagerAsync(employeeId, cancellationToken);
@@ -58,8 +52,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeRelationshipResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -71,9 +63,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeRelationshipResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -84,7 +73,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -95,7 +83,6 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/set-primary")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);

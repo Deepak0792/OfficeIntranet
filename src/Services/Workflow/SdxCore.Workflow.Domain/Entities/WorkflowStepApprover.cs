@@ -2,13 +2,12 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowStepApprover : BaseEntity<short>
+public class WorkflowStepApprover : BaseAuditEntity<short>
 {
     public short WorkflowStepId { get; set; }
-    public string WorkflowApproverType { get; set; } = null!;  // FK → WORKFLOW_APPROVER_TYPE
-    // Computed: WorkflowApproverTypeGroup = 'WORKFLOW_APPROVER_TYPE'
-    public short? ScopeTypeId { get; set; }   // FK → time.ScopeType
-    public short? ScopeReferenceId { get; set; }   // Entity id within scope level
+    public string WorkflowApproverType { get; set; } = null!;
+    public short? ScopeTypeId { get; set; }
+    public short? ScopeReferenceId { get; set; }
     public short PriorityOrder { get; set; } = 1;
     public bool IsMandatory { get; set; } = true;
     public bool IsActive { get; set; } = true;

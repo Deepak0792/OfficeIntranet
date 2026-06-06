@@ -31,7 +31,7 @@ builder.Services.AddSdxCoreWorkflowApplication();
 var app = builder.Build();
 
 // Use Global Exception Middleware
-app.UseMiddleware<SdxCore.Common.Middleware.GlobalExceptionMiddleware>();
+app.UseGlobalExceptionHandling();
 
 if (app.Environment.IsDevelopment())
 {

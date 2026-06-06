@@ -21,7 +21,6 @@ public class EmployeeSkillsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<EmployeeSkillResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
@@ -29,7 +28,6 @@ public class EmployeeSkillsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeSkillResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
@@ -37,7 +35,6 @@ public class EmployeeSkillsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeSkillResponse>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeSkillRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -48,7 +45,6 @@ public class EmployeeSkillsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<EmployeeSkillResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeSkillRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -59,7 +55,6 @@ public class EmployeeSkillsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -70,7 +65,6 @@ public class EmployeeSkillsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/set-primary")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
     {
         var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);

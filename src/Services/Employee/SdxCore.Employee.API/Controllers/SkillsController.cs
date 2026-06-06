@@ -21,7 +21,6 @@ public class SkillsController : SdxControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.IEnumerable<SkillResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll([FromQuery] string? category, CancellationToken cancellationToken)
     {
         var result = await _service.GetAllAsync(category, cancellationToken);
@@ -29,7 +28,6 @@ public class SkillsController : SdxControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
@@ -37,7 +35,6 @@ public class SkillsController : SdxControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateSkillRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -48,7 +45,6 @@ public class SkillsController : SdxControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<SkillResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(short id, [FromBody] UpdateSkillRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
@@ -59,7 +55,6 @@ public class SkillsController : SdxControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleStatus(short id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
