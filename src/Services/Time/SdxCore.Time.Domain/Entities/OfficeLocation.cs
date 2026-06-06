@@ -19,6 +19,7 @@ public class OfficeLocation : BaseAuditEntity<short>, IPublishableEntity
     public decimal? Longitude { get; set; }
     public short? TimeZoneId { get; set; }
     public bool IsHeadOffice { get; set; }
+    public bool IsActive { get; set; } = true;
     public LegalEntity? LegalEntity { get; set; }
     public Country? Country { get; set; }
     public Region? Region { get; set; }

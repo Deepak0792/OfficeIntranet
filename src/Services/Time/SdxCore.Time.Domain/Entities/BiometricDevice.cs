@@ -9,5 +9,6 @@ public class BiometricDevice : BaseAuditEntity<int>
     public short? OfficeId { get; set; }
     public string? IpAddress { get; set; }
     public DateTime? LastSyncAt { get; set; }
+    public bool IsActive { get; set; } = true;
     public OfficeLocation? Office { get; set; }
 }

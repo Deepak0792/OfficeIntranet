@@ -12,4 +12,5 @@ public class TimeZoneMaster : BaseAuditEntity<short>, IPublishableEntity
     public string? WindowsTimeZoneId { get; set; }
     public string? IanaTimeZoneId { get; set; }
     public string? CountryCode { get; set; }
+    public bool IsActive { get; set; } = true;
 }

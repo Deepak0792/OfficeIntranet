@@ -10,5 +10,6 @@ public class LegalEntity : BaseAuditEntity<short>, IPublishableEntity
     public string? TaxIdentificationNumber { get; set; }
     public string? RegistrationNumber { get; set; }
     public string? CurrencyCode { get; set; }
-    public Country? Country { get; set; }
+    public bool IsActive { get; set; } = true;
+    public Country? Country { get; set; }    
 }

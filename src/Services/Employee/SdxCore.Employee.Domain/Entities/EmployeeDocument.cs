@@ -22,4 +22,5 @@ public class EmployeeDocument : BaseAuditEntity<int>
     public int? VerifiedByEmployeeId { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public int? WorkflowInstanceId { get; set; }
+    public bool IsActive { get; set; } = true;
 }

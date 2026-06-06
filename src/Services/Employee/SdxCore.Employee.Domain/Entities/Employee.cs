@@ -18,4 +18,5 @@ public class Employee : BaseAuditEntity<int>, IPublishableEntity
     public string? AboutMe { get; set; }
     public string? ProfilePhotoUrl { get; set; }
     public bool IsSystemEmployee { get; set; } = false;
+    public bool IsActive { get; set; } = true;
 }

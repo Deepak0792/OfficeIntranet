@@ -12,4 +12,5 @@ public class EmployeeRelationship : BaseAuditEntity<int>, IPublishableEntity
     public bool IsPrimaryRelationship { get; set; }
     public DateOnly? EffectiveFrom { get; set; }
     public DateOnly? EffectiveTo { get; set; }
+    public bool IsActive { get; set; } = true;
 }

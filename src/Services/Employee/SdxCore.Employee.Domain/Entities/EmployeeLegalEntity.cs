@@ -10,4 +10,5 @@ public class EmployeeLegalEntity : BaseAuditEntity<int>, IPublishableEntity
     public bool IsPrimary { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
+    public bool IsActive { get; set; } = true;
 }

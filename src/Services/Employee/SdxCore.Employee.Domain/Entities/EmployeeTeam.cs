@@ -11,7 +11,7 @@ public class EmployeeTeam : BaseAuditEntity<int>, IPublishableEntity
     public decimal? AllocationPercentage { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
-
+    public bool IsActive { get; set; } = true;
     public Employee Employee { get; set; } = null!;
     public Team Team { get; set; } = null!;
 }

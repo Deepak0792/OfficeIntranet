@@ -2,7 +2,7 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowModule : BaseEntity<short>
+public class WorkflowModule : BaseAuditEntity<short>
 {
     public string ModuleCode { get; set; } = null!;
     public string ModuleName { get; set; } = null!;

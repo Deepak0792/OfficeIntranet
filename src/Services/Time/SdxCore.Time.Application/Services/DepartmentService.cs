@@ -38,29 +38,14 @@ public class DepartmentService : IDepartmentService
         {
             var d = await _repository.GetByIdAsync(id, ct);
             if (d == null) return null;
-            return new DepartmentResponse
-            {
-                Id = d.Id,
-                DepartmentCode = d.DepartmentCode,
-                DepartmentName = d.DepartmentName,
-                ParentDepartmentId = d.ParentDepartmentId,
-                Description = d.Description,
-                IsActive = d.IsActive
-            };
+
+            return PropertyMapper.Map<Department, DepartmentResponse>(d);           
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<DepartmentResponse> CreateAsync(CreateDepartmentRequest dto, CancellationToken cancellationToken = default)
     {
-        var entity = new Department
-        {
-            DepartmentCode = dto.DepartmentCode,
-            DepartmentName = dto.DepartmentName,
-            ParentDepartmentId = dto.ParentDepartmentId,
-            Description = dto.Description,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var entity = PropertyMapper.Map<CreateDepartmentRequest, Department>(dto);
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
@@ -154,6 +139,3 @@ public class DepartmentService : IDepartmentService
         return true;
     }
 }
-
-
-

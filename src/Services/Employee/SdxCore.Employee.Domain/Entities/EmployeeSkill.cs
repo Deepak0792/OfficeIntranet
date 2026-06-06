@@ -11,7 +11,7 @@ public class EmployeeSkill : BaseAuditEntity<int>, IPublishableEntity
     public decimal? YearsOfExperience { get; set; }
     public bool IsPrimarySkill { get; set; }
     public DateOnly? LastUsedDate { get; set; }
-
+    public bool IsActive { get; set; } = true;
     public Employee Employee { get; set; } = null!;
     public Skill Skill { get; set; } = null!;
 }

@@ -9,4 +9,5 @@ public class DocumentType : BaseAuditEntity<short>, IPublishableEntity
     public string? Category { get; set; }
     public string? Description { get; set; }
     public bool IsMandatory { get; set; }
+    public bool IsActive { get; set; } = true;
 }

@@ -1,10 +1,12 @@
+using SdxCore.SharedKernel.Entities;
+
 namespace SdxCore.Identity.Domain.Entities;
 
 /// <summary>
 /// Domain entity representing a user account with credentials.
 /// Stores user authentication information including hashed passwords and account status.
 /// </summary>
-public sealed class User
+public sealed class User : BaseAuditEntity<int>
 {
     /// <summary>
     /// Unique identifier for the user account.
@@ -48,24 +50,4 @@ public sealed class User
     /// Indicates whether the account is active. Inactive accounts cannot authenticate.
     /// </summary>
     public bool IsActive { get; set; } = false;
-
-    /// <summary>
-    /// Timestamp when the user account was created.
-    /// </summary>
-    public DateTime CreatedAt { get; set; }
-
-    /// <summary>
-    /// Identifier of the user who created this account.
-    /// </summary>
-    public int? CreatedBy { get; set; }
-
-    /// <summary>
-    /// Timestamp of the last update to this account.
-    /// </summary>
-    public DateTime LastUpdatedAt { get; set; }
-
-    /// <summary>
-    /// Identifier of the user who last updated this account.
-    /// </summary>
-    public int? LastUpdatedBy { get; set; }
 }

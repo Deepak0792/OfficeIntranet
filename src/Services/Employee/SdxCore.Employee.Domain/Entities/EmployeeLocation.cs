@@ -10,4 +10,5 @@ public class EmployeeLocation : BaseAuditEntity<int>, IPublishableEntity
     public bool IsPrimaryLocation { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
+    public bool IsActive { get; set; } = true;
 }

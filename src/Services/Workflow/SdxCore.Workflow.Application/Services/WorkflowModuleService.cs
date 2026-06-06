@@ -54,13 +54,11 @@ public class WorkflowModuleService(
         if (await _repository.ExistsAsync(request.ModuleCode, cancellationToken))
             throw new DuplicateWorkflowModuleCodeException(request.ModuleCode);
 
-        var entity = new WorkflowModule
-        {
-            ModuleCode = request.ModuleCode.ToUpperInvariant(),
-            ModuleName = request.ModuleName,
-            EntityName = request.EntityName,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateWorkflowModuleRequest, WorkflowModule>(request);
+
+        entity.ModuleCode = request.ModuleCode.ToUpperInvariant();
+        entity.IsActive = true;
+
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);

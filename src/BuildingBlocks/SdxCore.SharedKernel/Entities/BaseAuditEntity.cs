@@ -6,7 +6,6 @@ namespace SdxCore.SharedKernel.Entities;
 /// </summary>
 public abstract class BaseAuditEntity<TKey> : BaseEntity<TKey>, IAuditableEntity
 {
-    public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public int? CreatedBy { get; set; }
     public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;

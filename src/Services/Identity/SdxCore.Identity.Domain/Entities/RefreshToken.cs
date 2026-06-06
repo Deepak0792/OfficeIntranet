@@ -2,7 +2,7 @@
 
 namespace SdxCore.Identity.Domain.Entities;
 
-public class RefreshToken : BaseEntity<int>
+public class RefreshToken : BaseAuditEntity<int>
 {
     /// <summary>
     /// Identifier of the employee this refresh token belongs to.
@@ -57,24 +57,4 @@ public class RefreshToken : BaseEntity<int>
     /// IP address of the client that created the token.
     /// </summary>
     public string? CreatedByIp { get; set; }
-
-    /// <summary>
-    /// Timestamp when the refresh token record was created.
-    /// </summary>
-    public DateTime CreatedAt { get; set; }
-
-    /// <summary>
-    /// Identifier of the user who created this refresh token record.
-    /// </summary>
-    public int? CreatedBy { get; set; }
-
-    /// <summary>
-    /// Timestamp of the last update to this refresh token record.
-    /// </summary>
-    public DateTime LastUpdatedAt { get; set; }
-
-    /// <summary>
-    /// Identifier of the user who last updated this refresh token record.
-    /// </summary>
-    public int? LastUpdatedBy { get; set; }
 }

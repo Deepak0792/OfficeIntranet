@@ -9,5 +9,6 @@ public class Country : BaseAuditEntity<short>, IPublishableEntity
     public string? CurrencyCode { get; set; }
     public short? DisplayOrder { get; set; }
     public short? TimeZoneId { get; set; }
+    public bool IsActive { get; set; } = true;
     public TimeZoneMaster? TimeZone { get; set; }    
 }
