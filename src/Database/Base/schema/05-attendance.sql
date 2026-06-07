@@ -12,7 +12,7 @@ GO
 
 -- ATTENDANCE STATUS
 CREATE TABLE attendance.AttendanceStatus (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     StatusCode          NVARCHAR(100)   NOT NULL UNIQUE,
     StatusName          NVARCHAR(200)   NOT NULL,
     IsPresent           BIT             NOT NULL DEFAULT 0,
@@ -23,48 +23,106 @@ CREATE TABLE attendance.AttendanceStatus (
     IsSystemStatus      BIT             NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL
+);
+GO
+
+-- SHIFT
+CREATE TABLE attendance.Shift (
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
+    ShiftCode               NVARCHAR(100)   NOT NULL UNIQUE,
+    ShiftName               NVARCHAR(200)   NOT NULL,
+    StartTime               TIME            NOT NULL,
+    EndTime                 TIME            NOT NULL,
+    BreakDurationMinutes    SMALLINT             NOT NULL DEFAULT 0,
+    GraceInMinutes          SMALLINT             NOT NULL DEFAULT 0,
+    GraceOutMinutes         SMALLINT             NOT NULL DEFAULT 0,
+    MinimumWorkingMinutes   SMALLINT             NULL,
+    MaximumWorkingMinutes   SMALLINT             NULL,
+    AttendanceFinalizeBufferMinutes     SMALLINT        NOT NULL DEFAULT 240,
+    MaxAllowedCheckoutDelayMinutes      SMALLINT        NULL,
+    IsNightShift            BIT             NOT NULL DEFAULT 0,
+    CrossesMidnight         BIT             NOT NULL DEFAULT 0,
+    IsFlexible              BIT             NOT NULL DEFAULT 0,
+    AllowOvertime           BIT             NOT NULL DEFAULT 1,
+    IsActive                BIT             NOT NULL DEFAULT 1,
+    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy               UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy           UNIQUEIDENTIFIER NULL
+);
+GO
+
+-- EMPLOYEE SHIFT ROSTER
+CREATE TABLE attendance.EmployeeShiftRoster (
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER      NOT NULL,
+    RosterDate          DATE        NOT NULL,
+    ShiftId             UNIQUEIDENTIFIER      NULL,
+    IsOffDay            BIT         NOT NULL DEFAULT 0,
+    IsHoliday           BIT         NOT NULL DEFAULT 0,
+    PlannedStartTime    DATETIME2   NULL,
+    PlannedEndTime      DATETIME2   NULL,
+    ActualStartTime     DATETIME2   NULL,
+    ActualEndTime       DATETIME2   NULL,
+    Remarks             NVARCHAR(1000) NULL,
+    IsLocked            BIT         NOT NULL DEFAULT 0,
+    IsActive            BIT             NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
+
+    CONSTRAINT FK_Roster_Employee
+        FOREIGN KEY (EmployeeId)
+        REFERENCES employee.Employee(Id),
+
+    CONSTRAINT FK_Roster_Shift
+        FOREIGN KEY (ShiftId)
+        REFERENCES attendance.Shift(Id),
+
+    CONSTRAINT UQ_EmployeeRoster
+        UNIQUE (EmployeeId, RosterDate)
 );
 GO
 
 
 CREATE TABLE attendance.WorkSession (
-    Id                      BIGINT PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              INT             NOT NULL,
-    EmployeeShiftId         BIGINT          NULL,
+    Id                      UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId              UNIQUEIDENTIFIER NOT NULL,
+    EmployeeShiftRosterId   UNIQUEIDENTIFIER NULL,
     SessionDate             DATE            NOT NULL,
     CheckInTime             DATETIME2       NOT NULL,
     CheckOutTime            DATETIME2       NULL,
     WorkedMinutes           INT             NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_WorkSession_Employee
         FOREIGN KEY (EmployeeId)
         REFERENCES employee.Employee(Id),
 
-    CONSTRAINT FK_WorkSession_EmployeeShift
-        FOREIGN KEY (EmployeeShiftId)
-        REFERENCES attendance.EmployeeShift(Id)
+    CONSTRAINT FK_WorkSession_EmployeeShiftRoster
+        FOREIGN KEY (EmployeeShiftRosterId)
+        REFERENCES attendance.EmployeeShiftRoster(Id)
 );
 GO
 
 PRINT 'Creating AttendanceRecord...';
 
 CREATE TABLE attendance.AttendanceRecord (
-    Id                                  BIGINT PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                          INT                 NOT NULL,
-    EmployeeShiftId                     BIGINT              NULL,
-    WorkSessionId                       BIGINT              NULL,
+    Id                                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                          UNIQUEIDENTIFIER NOT NULL,
+    EmployeeShiftRosterId               UNIQUEIDENTIFIER    NULL,
+    WorkSessionId                       UNIQUEIDENTIFIER    NULL,
     AttendanceDate                      DATE                NOT NULL,
-    ShiftId                             SMALLINT            NULL,
-    AttendanceStatus                    NVARCHAR(50)        NULL,
-    AttendanceStatusGroup               AS CAST('ATTENDANCE_STATUS' AS NVARCHAR(50)) PERSISTED,
+    ShiftId                             UNIQUEIDENTIFIER    NULL,
+    AttendanceStatusId                  UNIQUEIDENTIFIER        NULL,
     CheckInTime                         DATETIME2           NULL,
     CheckOutTime                        DATETIME2           NULL,
     LateByMinutes                       SMALLINT            NULL,
@@ -82,21 +140,21 @@ CREATE TABLE attendance.AttendanceRecord (
     IsAttendanceLocked                  BIT                 NOT NULL DEFAULT 0,
 
     Remarks                             NVARCHAR(1000)      NULL,
-    ApprovedBy                          INT                 NULL,
+    ApprovedBy                          UNIQUEIDENTIFIER    NULL,
     ApprovedAt                          DATETIME2           NULL,
     IsActive                            BIT                 NOT NULL DEFAULT 1,
     CreatedAt                           DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                           INT                 NULL,
+    CreatedBy                           UNIQUEIDENTIFIER    NULL,
     LastUpdatedAt                       DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                       INT                 NULL,
+    LastUpdatedBy                       UNIQUEIDENTIFIER    NULL,
 
     CONSTRAINT FK_AttendanceRecord_Employee
         FOREIGN KEY (EmployeeId)
         REFERENCES employee.Employee(Id),
 
-    CONSTRAINT FK_AttendanceRecord_EmployeeShift
-        FOREIGN KEY (EmployeeShiftId)
-        REFERENCES attendance.EmployeeShift(Id),
+    CONSTRAINT FK_AttendanceRecord_EmployeeShiftRoster
+        FOREIGN KEY (EmployeeShiftRosterId)
+        REFERENCES attendance.EmployeeShiftRoster(Id),
 
     CONSTRAINT FK_AttendanceRecord_WorkSession
         FOREIGN KEY (WorkSessionId)
@@ -106,9 +164,9 @@ CREATE TABLE attendance.AttendanceRecord (
         FOREIGN KEY (ShiftId)
         REFERENCES attendance.Shift(Id),
 
-    CONSTRAINT FK_AttendanceRecord_Status
-        FOREIGN KEY (AttendanceStatus, AttendanceStatusGroup)
-        REFERENCES shared.StatusLookup(StatusCode, StatusGroup),
+    CONSTRAINT FK_AttendanceRecord_AttendanceStatus
+        FOREIGN KEY (AttendanceStatusId)
+        REFERENCES attendance.AttendanceStatus(Id),
 
     CONSTRAINT UQ_AttendanceRecord
         UNIQUE (EmployeeId, AttendanceDate)
@@ -117,8 +175,8 @@ GO
 
 -- ATTENDANCE LOG - Raw biometric punches
 CREATE TABLE attendance.AttendanceLog (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
     PunchTime           DATETIME2       NOT NULL,
     PunchType           NVARCHAR(20)    NULL,
     DeviceId            NVARCHAR(100)   NULL,
@@ -126,9 +184,9 @@ CREATE TABLE attendance.AttendanceLog (
     IsProcessed         BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_AttendanceLog_Employee
         FOREIGN KEY (EmployeeId)
@@ -138,9 +196,9 @@ GO
 
 -- MOBILE ATTENDANCE LOG - GPS-based mobile punches
 CREATE TABLE attendance.MobileAttendanceLog (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
-    GeoFenceId          SMALLINT     NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
+    GeoFenceId          UNIQUEIDENTIFIER NULL,
     PunchTime           DATETIME2       NOT NULL,
     Latitude            DECIMAL(18,8)   NOT NULL,
     Longitude           DECIMAL(18,8)   NOT NULL,
@@ -148,9 +206,9 @@ CREATE TABLE attendance.MobileAttendanceLog (
     DeviceInfo          NVARCHAR(500)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_MobileAttendanceLog_Employee
         FOREIGN KEY (EmployeeId)
@@ -164,7 +222,7 @@ GO
 
 -- LEAVE TYPE
 CREATE TABLE attendance.LeaveType (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     LeaveCode           NVARCHAR(100)   NOT NULL UNIQUE,
     LeaveName           NVARCHAR(200)   NOT NULL,
     IsPaid              BIT             NOT NULL DEFAULT 1,
@@ -174,17 +232,17 @@ CREATE TABLE attendance.LeaveType (
     AllowHalfDay        BIT             NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER  NULL
 );
 GO
 
 -- LEAVE REQUEST
 CREATE TABLE attendance.LeaveRequest (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
-    LeaveTypeId         SMALLINT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
+    LeaveTypeId         UNIQUEIDENTIFIER NOT NULL,
     LeaveStatus         NVARCHAR(50)    NOT NULL,
     LeaveStatusGroup    AS CAST('LEAVE_STATUS' AS NVARCHAR(50)) PERSISTED,
     FromDate            DATE            NOT NULL,
@@ -193,15 +251,15 @@ CREATE TABLE attendance.LeaveRequest (
     IsHalfDay           BIT             NOT NULL DEFAULT 0,
     HalfDaySession      NVARCHAR(20)    NULL,
     Reason              NVARCHAR(1000)  NULL,
-    WorkflowInstanceId  INT          NULL,
+    WorkflowInstanceId  UNIQUEIDENTIFIER NULL,
     Remarks             NVARCHAR(1000)  NULL,
-    ApprovedBy          INT          NULL,
+    ApprovedBy          UNIQUEIDENTIFIER          NULL,
     ApprovedAt          DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_LeaveRequest_Employee
         FOREIGN KEY (EmployeeId)
@@ -223,9 +281,9 @@ GO
 
 -- LEAVE BALANCE
 CREATE TABLE attendance.LeaveBalance (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId      INT          NOT NULL,
-    LeaveTypeId     SMALLINT          NOT NULL,
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId      UNIQUEIDENTIFIER NOT NULL,
+    LeaveTypeId     UNIQUEIDENTIFIER NOT NULL,
     BalanceYear     SMALLINT             NOT NULL,
     OpeningBalance  DECIMAL(10,2)   NOT NULL DEFAULT 0,
     Allocated       DECIMAL(10,2)   NOT NULL DEFAULT 0,
@@ -235,9 +293,9 @@ CREATE TABLE attendance.LeaveBalance (
     ClosingBalance  AS (OpeningBalance + Allocated + CarryForward - Availed - Encashed),
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_LeaveBalance_Employee
         FOREIGN KEY (EmployeeId)
@@ -254,30 +312,30 @@ GO
 
 -- COMP-OFF TYPE
 CREATE TABLE attendance.CompOffType (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     CompOffTypeCode NVARCHAR(100)   NOT NULL UNIQUE,
     CompOffTypeName NVARCHAR(200)   NOT NULL,
     ExpiryDays      SMALLINT             NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER NULL
 );
 GO
 
 -- COMP-OFF BALANCE
 CREATE TABLE attendance.CompOffBalance (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
-    CompOffTypeId       SMALLINT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
+    CompOffTypeId       UNIQUEIDENTIFIER NOT NULL,
     EarnedDate          DATE            NOT NULL,
     ExpiryDate          DATE            NULL,
     TotalDays           DECIMAL(10,2)   NOT NULL,
     AvailedDays         DECIMAL(10,2)   NOT NULL DEFAULT 0,
     RemainingDays       AS (TotalDays - AvailedDays),
-    AttendanceRecordId  INT          NULL,
-    WorkflowInstanceId  INT          NULL,
+    AttendanceRecordId  UNIQUEIDENTIFIER NULL,
+    WorkflowInstanceId  UNIQUEIDENTIFIER NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy           INT             NULL,
@@ -304,23 +362,23 @@ GO
 
 -- ATTENDANCE REGULARIZATION
 CREATE TABLE attendance.AttendanceRegularization (
-    Id                                  INT      PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                          INT      NOT NULL,
+    Id                                  UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                          UNIQUEIDENTIFIER NOT NULL,
     AttendanceDate                      DATE        NOT NULL,
     RequestedCheckIn                    DATETIME2   NULL,
     RequestedCheckOut                   DATETIME2   NULL,
     Reason                              NVARCHAR(1000) NULL,
     RegularizationStatus                NVARCHAR(50) NOT NULL,
     RegularizationStatusGroup           AS CAST('ATTENDANCE_REGULARIZATION_STATUS' AS NVARCHAR(50)) PERSISTED,
-    WorkflowInstanceId                  INT      NULL,
-    ApprovedBy                          INT      NULL,
+    WorkflowInstanceId                  UNIQUEIDENTIFIER      NULL,
+    ApprovedBy                          UNIQUEIDENTIFIER NULL,
     ApprovedAt                          DATETIME2   NULL,
     Remarks                             NVARCHAR(1000) NULL,
     IsActive                            BIT             NOT NULL DEFAULT 1,
     CreatedAt                           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                           INT             NULL,
+    CreatedBy                           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                       INT             NULL,
+    LastUpdatedBy                       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Regularization_Employee
         FOREIGN KEY (EmployeeId)
@@ -336,32 +394,6 @@ CREATE TABLE attendance.AttendanceRegularization (
 );
 GO
 
--- SHIFT
-CREATE TABLE attendance.Shift (
-    Id                      SMALLINT          PRIMARY KEY IDENTITY(1,1),
-    ShiftCode               NVARCHAR(100)   NOT NULL UNIQUE,
-    ShiftName               NVARCHAR(200)   NOT NULL,
-    StartTime               TIME            NOT NULL,
-    EndTime                 TIME            NOT NULL,
-    BreakDurationMinutes    SMALLINT             NOT NULL DEFAULT 0,
-    GraceInMinutes          SMALLINT             NOT NULL DEFAULT 0,
-    GraceOutMinutes         SMALLINT             NOT NULL DEFAULT 0,
-    MinimumWorkingMinutes   SMALLINT             NULL,
-    MaximumWorkingMinutes   SMALLINT             NULL,
-    AttendanceFinalizeBufferMinutes     SMALLINT        NOT NULL DEFAULT 240,
-    MaxAllowedCheckoutDelayMinutes      SMALLINT        NULL,
-    IsNightShift            BIT             NOT NULL DEFAULT 0,
-    CrossesMidnight         BIT             NOT NULL DEFAULT 0,
-    IsFlexible              BIT             NOT NULL DEFAULT 0,
-    AllowOvertime           BIT             NOT NULL DEFAULT 1,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
-    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL
-);
-GO
-
 ALTER TABLE attendance.AttendanceRecord ADD CONSTRAINT FK_Attendance_Shift
         FOREIGN KEY (ShiftId)
         REFERENCES attendance.Shift(Id)
@@ -370,19 +402,19 @@ GO
 
 -- SHIFT ASSIGNMENT
 CREATE TABLE attendance.ShiftAssignment (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
-    ShiftId             SMALLINT          NOT NULL,
-    ScopeTypeId         SMALLINT          NOT NULL,
-    ScopeReferenceId    INT  NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    ShiftId             UNIQUEIDENTIFIER  NOT NULL,
+    ScopeTypeId         UNIQUEIDENTIFIER  NOT NULL,
+    ScopeReferenceId    UNIQUEIDENTIFIER  NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
     PriorityOrder       SMALLINT     NOT NULL DEFAULT 1,
     IsPrimaryShift      BIT     NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_ShiftAssignment_Shift
         FOREIGN KEY (ShiftId)
@@ -396,36 +428,36 @@ GO
 
 -- SHIFT SWAP STATUS
 CREATE TABLE attendance.ShiftSwapStatus (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     StatusCode          NVARCHAR(100)   NOT NULL UNIQUE,
     StatusName          NVARCHAR(200)   NOT NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL
 );
 GO
 
 -- SHIFT SWAP REQUEST
 CREATE TABLE attendance.ShiftSwapRequest (
-    Id                      INT      PRIMARY KEY IDENTITY(1,1),
-    RequesterEmployeeId     INT      NOT NULL,
-    TargetEmployeeId        INT      NOT NULL,
-    RequesterRosterId       INT      NOT NULL,
-    TargetRosterId          INT      NOT NULL,
+    Id                      UNIQUEIDENTIFIER PRIMARY KEY,
+    RequesterEmployeeId     UNIQUEIDENTIFIER NOT NULL,
+    TargetEmployeeId        UNIQUEIDENTIFIER NOT NULL,
+    RequesterRosterId       UNIQUEIDENTIFIER NOT NULL,
+    TargetRosterId          UNIQUEIDENTIFIER NOT NULL,
     ShiftSwapStatus         NVARCHAR(50) NOT NULL,
     ShiftSwapStatusGroup    AS CAST('SHIFT_SWAP_STATUS' AS NVARCHAR(50)) PERSISTED,
-    WorkflowInstanceId      INT      NULL,
+    WorkflowInstanceId      UNIQUEIDENTIFIER NULL,
     RequestedAt             DATETIME2   NOT NULL DEFAULT GETUTCDATE(),
-    ApprovedBy              INT      NULL,
+    ApprovedBy              UNIQUEIDENTIFIER NULL,
     ApprovedAt              DATETIME2   NULL,
     Remarks                 NVARCHAR(1000) NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_ShiftSwapRequest_RequesterEmployee
         FOREIGN KEY (RequesterEmployeeId)
@@ -447,31 +479,31 @@ GO
 
 -- ROTATION SHIFT
 CREATE TABLE attendance.RotationShift (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     RotationCode    NVARCHAR(100)   NOT NULL UNIQUE,
     RotationName    NVARCHAR(200)   NOT NULL,
     CycleLengthDays INT             NOT NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER NULL
 );
 GO
 
 -- ROTATION SHIFT DETAIL
 CREATE TABLE attendance.RotationShiftDetail (
-    Id              SMALLINT  PRIMARY KEY IDENTITY(1,1),
-    RotationShiftId SMALLINT  NOT NULL,
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
+    RotationShiftId UNIQUEIDENTIFIER  NOT NULL,
     SequenceNo      SMALLINT     NOT NULL,
-    ShiftId         SMALLINT  NULL,
+    ShiftId         UNIQUEIDENTIFIER NULL,
     DurationDays    SMALLINT     NOT NULL,
     IsOffDay        BIT     NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_RotationDetail_Rotation
         FOREIGN KEY (RotationShiftId)
@@ -485,19 +517,19 @@ GO
 
 -- ROTATION SHIFT ASSIGNMENT
 CREATE TABLE attendance.RotationShiftAssignment (
-    Id                  INT  PRIMARY KEY IDENTITY(1,1),
-    RotationShiftId     SMALLINT  NOT NULL,
-    ScopeTypeId         SMALLINT  NOT NULL,
-    ScopeReferenceId    INT  NOT NULL,
-    RotationOffsetDays INT NOT NULL DEFAULT 0,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    RotationShiftId     UNIQUEIDENTIFIER NOT NULL,
+    ScopeTypeId         UNIQUEIDENTIFIER NOT NULL,
+    ScopeReferenceId    UNIQUEIDENTIFIER  NOT NULL,
+    RotationOffsetDays  INT NOT NULL DEFAULT 0,
     RotationStartDate   DATE    NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_RotationAssignment_Rotation
         FOREIGN KEY (RotationShiftId)
@@ -523,46 +555,12 @@ ADD CONSTRAINT UQ_RotationShiftDetail_Sequence
 UNIQUE (RotationShiftId, SequenceNo);
 GO
 
-
--- EMPLOYEE SHIFT ROSTER
-CREATE TABLE attendance.EmployeeShiftRoster (
-    Id                  INT      PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT      NOT NULL,
-    RosterDate          DATE        NOT NULL,
-    ShiftId             SMALLINT      NULL,
-    IsOffDay            BIT         NOT NULL DEFAULT 0,
-    IsHoliday           BIT         NOT NULL DEFAULT 0,
-    PlannedStartTime    DATETIME2   NULL,
-    PlannedEndTime      DATETIME2   NULL,
-    ActualStartTime     DATETIME2   NULL,
-    ActualEndTime       DATETIME2   NULL,
-    Remarks             NVARCHAR(1000) NULL,
-    IsLocked            BIT         NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
-
-    CONSTRAINT FK_Roster_Employee
-        FOREIGN KEY (EmployeeId)
-        REFERENCES employee.Employee(Id),
-
-    CONSTRAINT FK_Roster_Shift
-        FOREIGN KEY (ShiftId)
-        REFERENCES attendance.Shift(Id),
-
-    CONSTRAINT UQ_EmployeeRoster
-        UNIQUE (EmployeeId, RosterDate)
-);
-GO
-
 CREATE TABLE attendance.EmployeeRosterGenerationTracker (
-    Id                      INT PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              INT             NOT NULL,
+    Id                      UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId              UNIQUEIDENTIFIER NOT NULL,
     RosterYear              SMALLINT        NOT NULL,
     RosterMonth             TINYINT         NOT NULL,
-    GenerationType          NVARCHAR(30)    NOT NULL,
+    GenerationType          NVARCHAR(50)    NOT NULL,
     GenerationTypeGroup     AS CAST('ROSTER_GENERATION_TYPE' AS NVARCHAR(50)) PERSISTED,
     GeneratedFromDate       DATE            NOT NULL,
     GeneratedToDate         DATE            NOT NULL,
@@ -571,9 +569,9 @@ CREATE TABLE attendance.EmployeeRosterGenerationTracker (
     Remarks                 NVARCHAR(500)   NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_EmployeeRosterGenerationTracker_Employee
         FOREIGN KEY (EmployeeId)
@@ -603,38 +601,38 @@ GO
 
 -- HOLIDAY CALENDAR
 CREATE TABLE attendance.HolidayCalendar (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     CalendarCode    NVARCHAR(100)   NOT NULL UNIQUE,
     CalendarName    NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
     IsDefault       BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER NULL
 );
 GO
 
 -- HOLIDAY TYPE
 CREATE TABLE attendance.HolidayType (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     HolidayTypeCode     NVARCHAR(100)   NOT NULL UNIQUE,
     HolidayTypeName     NVARCHAR(200)   NOT NULL,
     IsOptional          BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL
 );
 GO
 
 -- HOLIDAY
 CREATE TABLE attendance.Holiday (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    HolidayCalendarId   SMALLINT          NOT NULL,
-    HolidayTypeId       SMALLINT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    HolidayCalendarId   UNIQUEIDENTIFIER NOT NULL,
+    HolidayTypeId       UNIQUEIDENTIFIER NOT NULL,
     HolidayCode         NVARCHAR(100)   NULL,
     HolidayName         NVARCHAR(200)   NOT NULL,
     HolidayDate         DATE            NOT NULL,
@@ -645,9 +643,9 @@ CREATE TABLE attendance.Holiday (
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_Holiday_Calendar
         FOREIGN KEY (HolidayCalendarId)
@@ -661,10 +659,10 @@ GO
 
 -- HOLIDAY CALENDAR ASSIGNMENT
 CREATE TABLE attendance.HolidayCalendarAssignment (
-    Id                  INT  PRIMARY KEY IDENTITY(1,1),
-    HolidayCalendarId   SMALLINT  NOT NULL,
-    ScopeTypeId         SMALLINT  NOT NULL,
-    ScopeReferenceId    INT  NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    HolidayCalendarId   UNIQUEIDENTIFIER NOT NULL,
+    ScopeTypeId         UNIQUEIDENTIFIER NOT NULL,
+    ScopeReferenceId    UNIQUEIDENTIFIER  NOT NULL,
     EffectiveFrom       DATE    NULL,
     EffectiveTo         DATE    NULL,
     PriorityOrder       SMALLINT     NOT NULL DEFAULT 1,
@@ -672,9 +670,9 @@ CREATE TABLE attendance.HolidayCalendarAssignment (
     IsPrimary           BIT     NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_HolidayAssignment_Calendar
         FOREIGN KEY (HolidayCalendarId)
@@ -688,32 +686,32 @@ GO
 
 -- WORK WEEK POLICY
 CREATE TABLE attendance.WorkWeekPolicy (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     PolicyCode      NVARCHAR(100)   NOT NULL UNIQUE,
     PolicyName      NVARCHAR(200)   NOT NULL,
     Description     NVARCHAR(1000)  NULL,
     IsDefault       BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER NULL
 );
 GO
 
 -- WORK WEEK POLICY DAY
 CREATE TABLE attendance.WorkWeekPolicyDay (
-    Id                      SMALLINT  PRIMARY KEY IDENTITY(1,1),
-    WorkWeekPolicyId        SMALLINT  NOT NULL,
+    Id                      UNIQUEIDENTIFIER PRIMARY KEY,
+    WorkWeekPolicyId        UNIQUEIDENTIFIER NOT NULL,
     DayOfWeek               TINYINT NOT NULL,
     IsWorkingDay            BIT     NOT NULL,
     StandardWorkingMinutes  SMALLINT     NULL,
     IsHalfDay               BIT     NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_WorkWeekPolicyDay_Policy
         FOREIGN KEY (WorkWeekPolicyId)
@@ -726,18 +724,18 @@ GO
 
 -- WORK WEEK POLICY ASSIGNMENT
 CREATE TABLE attendance.WorkWeekPolicyAssignment (
-    Id                  SMALLINT  PRIMARY KEY IDENTITY(1,1),
-    WorkWeekPolicyId    SMALLINT  NOT NULL,
-    ScopeTypeId         SMALLINT  NOT NULL,
-    ScopeReferenceId    INT  NOT NULL,
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    WorkWeekPolicyId    UNIQUEIDENTIFIER NOT NULL,
+    ScopeTypeId         UNIQUEIDENTIFIER NOT NULL,
+    ScopeReferenceId    UNIQUEIDENTIFIER NOT NULL,
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
     PriorityOrder       SMALLINT     NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_WorkWeekAssignment_Policy
         FOREIGN KEY (WorkWeekPolicyId)
@@ -772,12 +770,12 @@ CREATE TABLE attendance.OutboxMessages
         CONSTRAINT [DF_OutboxMessages_IsActive] DEFAULT (1),
     [CreatedAt] DATETIME2 NOT NULL
         CONSTRAINT [DF_OutboxMessages_CreatedAt] DEFAULT GETUTCDATE(),
-    [CreatedBy] INT NULL,
+    [CreatedBy] UNIQUEIDENTIFIER NULL,
 
     [LastUpdatedAt] DATETIME2 NOT NULL
         CONSTRAINT [DF_OutboxMessages_LastUpdatedAt] DEFAULT GETUTCDATE(),
 
-    [LastUpdatedBy] INT NULL,
+    [LastUpdatedBy] UNIQUEIDENTIFIER NULL,
 
     [PublishedAt] DATETIME2 NULL,
 
@@ -799,7 +797,6 @@ GO
 CREATE INDEX IX_AttendanceRecord_EmployeeId ON attendance.AttendanceRecord(EmployeeId);
 CREATE INDEX IX_AttendanceRecord_AttendanceDate ON attendance.AttendanceRecord(AttendanceDate);
 CREATE INDEX IX_AttendanceRecord_ShiftId ON attendance.AttendanceRecord(ShiftId);
-CREATE INDEX IX_AttendanceRecord_Status ON attendance.AttendanceRecord(AttendanceStatus);
 CREATE INDEX IX_AttendanceRecord_Employee_Date ON attendance.AttendanceRecord(EmployeeId, AttendanceDate);
 
 CREATE INDEX IX_AttendanceLog_Employee_Time   ON attendance.AttendanceLog (EmployeeId, PunchTime);

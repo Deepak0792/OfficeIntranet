@@ -13,7 +13,7 @@ GO
 
 -- TIME ZONE MASTER
 CREATE TABLE time.TimeZoneMaster (
-    Id                      SMALLINT        PRIMARY KEY IDENTITY(1,1),
+    Id                      UNIQUEIDENTIFIER PRIMARY KEY,
     TimeZoneCode            NVARCHAR(100)   NOT NULL UNIQUE,
     TimeZoneName            NVARCHAR(200)   NOT NULL,
     UtcOffset               NVARCHAR(20)    NOT NULL,
@@ -24,19 +24,19 @@ CREATE TABLE time.TimeZoneMaster (
     CountryCode             NVARCHAR(10)    NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- COUNTRY
 CREATE TABLE time.Country (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     CountryCode     NVARCHAR(10)    NOT NULL UNIQUE,
     CountryName     NVARCHAR(200)   NOT NULL,
     CurrencyCode    NVARCHAR(10)    NULL,
-    TimeZoneId      SMALLINT        NULL,
+    TimeZoneId      UNIQUEIDENTIFIER        NULL,
     DisplayOrder    SMALLINT        NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -52,17 +52,17 @@ GO
 
 -- REGION
 CREATE TABLE time.Region (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
-    CountryId       SMALLINT          NOT NULL,
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
+    CountryId       UNIQUEIDENTIFIER          NOT NULL,
     RegionName      NVARCHAR(200)   NOT NULL,
     RegionType      NVARCHAR(50)    NULL,
-    ParentRegionId  SMALLINT          NULL,
+    ParentRegionId  UNIQUEIDENTIFIER          NULL,
     DisplayOrder    SMALLINT             NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Region_Country
         FOREIGN KEY (CountryId)
@@ -76,18 +76,18 @@ GO
 
 -- LEGAL ENTITY
 CREATE TABLE time.LegalEntity (
-    Id                          SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                          UNIQUEIDENTIFIER PRIMARY KEY,
     EntityCode                  NVARCHAR(50)    NOT NULL UNIQUE,
     EntityName                  NVARCHAR(300)   NOT NULL,
-    CountryId                   SMALLINT          NOT NULL,
+    CountryId                   UNIQUEIDENTIFIER          NOT NULL,
     TaxIdentificationNumber     NVARCHAR(100)   NULL,
     RegistrationNumber          NVARCHAR(100)   NULL,
     CurrencyCode                NVARCHAR(10)    NULL,
     IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                   INT             NULL,
+    CreatedBy                   UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy               INT             NULL,
+    LastUpdatedBy               UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_LegalEntity_Country
         FOREIGN KEY (CountryId)
@@ -97,10 +97,10 @@ GO
 
 -- OFFICE LOCATION
 CREATE TABLE time.OfficeLocation (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
-    LegalEntityId   SMALLINT          NOT NULL,
-    CountryId       SMALLINT          NOT NULL,
-    RegionId        SMALLINT          NULL,
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
+    LegalEntityId   UNIQUEIDENTIFIER          NOT NULL,
+    CountryId       UNIQUEIDENTIFIER          NOT NULL,
+    RegionId        UNIQUEIDENTIFIER          NULL,
     LocationCode    NVARCHAR(50)    NOT NULL UNIQUE,
     LocationName    NVARCHAR(200)   NOT NULL,
     BuildingName    NVARCHAR(200)   NULL,
@@ -111,13 +111,13 @@ CREATE TABLE time.OfficeLocation (
     PostalCode      NVARCHAR(20)    NULL,
     Latitude        DECIMAL(10,7)   NULL,
     Longitude       DECIMAL(10,7)   NULL,
-    TimeZoneId      SMALLINT          NULL,
+    TimeZoneId      UNIQUEIDENTIFIER          NULL,
     IsHeadOffice    BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_OfficeLocation_LegalEntity
         FOREIGN KEY (LegalEntityId)
@@ -139,16 +139,16 @@ GO
 
 -- DEPARTMENT
 CREATE TABLE time.Department (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     DepartmentCode      NVARCHAR(50)    NOT NULL UNIQUE,
     DepartmentName      NVARCHAR(200)   NOT NULL,
-    ParentDepartmentId  SMALLINT          NULL,
+    ParentDepartmentId  UNIQUEIDENTIFIER          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Department_Parent
         FOREIGN KEY (ParentDepartmentId)
@@ -158,35 +158,35 @@ GO
 
 -- SCOPE TYPE - Organizational hierarchy levels
 CREATE TABLE time.ScopeType (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     ScopeCode       NVARCHAR(100)   NOT NULL UNIQUE,
     ScopeName       NVARCHAR(200)   NOT NULL,
     HierarchyLevel  SMALLINT             NOT NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- DESIGNATION
 CREATE TABLE time.Designation (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     DesignationCode     NVARCHAR(50)    NOT NULL UNIQUE,
     DesignationName     NVARCHAR(200)   NOT NULL,
     Grade               NVARCHAR(50)    NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- DOCUMENT TYPE
 CREATE TABLE time.DocumentType (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
     DocumentTypeCode    NVARCHAR(50)    NOT NULL UNIQUE,
     DocumentTypeName    NVARCHAR(200)   NOT NULL,
     Category            NVARCHAR(100)   NULL,
@@ -194,26 +194,26 @@ CREATE TABLE time.DocumentType (
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- GEO FENCE
 CREATE TABLE time.GeoFence (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     GeoFenceCode    NVARCHAR(100)   NOT NULL UNIQUE,
     GeoFenceName    NVARCHAR(200)   NOT NULL,
     Latitude        DECIMAL(18,8)   NOT NULL,
     Longitude       DECIMAL(18,8)   NOT NULL,
     RadiusMeters    DECIMAL(18,2)   NOT NULL,
-    OfficeId        SMALLINT          NULL,
+    OfficeId        UNIQUEIDENTIFIER          NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_GeoFence_Office
         FOREIGN KEY (OfficeId)
@@ -223,18 +223,18 @@ GO
 
 -- BIOMETRIC DEVICE
 CREATE TABLE time.BiometricDevice (
-    Id              INT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER PRIMARY KEY,
     DeviceCode      NVARCHAR(100)   NOT NULL UNIQUE,
     DeviceName      NVARCHAR(200)   NOT NULL,
     SerialNumber    NVARCHAR(200)   NULL,
-    OfficeId        SMALLINT          NULL,
+    OfficeId        UNIQUEIDENTIFIER          NULL,
     IpAddress       NVARCHAR(100)   NULL,    
     LastSyncAt      DATETIME2       NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_BiometricDevice_Office
         FOREIGN KEY (OfficeId)
@@ -257,12 +257,12 @@ CREATE TABLE time.OutboxMessages
         CONSTRAINT [DF_OutboxMessages_IsActive] DEFAULT (1),
     [CreatedAt] DATETIME2 NOT NULL
         CONSTRAINT [DF_OutboxMessages_CreatedAt] DEFAULT GETUTCDATE(),
-    [CreatedBy] INT NULL,
+    [CreatedBy] UNIQUEIDENTIFIER NULL,
 
     [LastUpdatedAt] DATETIME2 NOT NULL
         CONSTRAINT [DF_OutboxMessages_LastUpdatedAt] DEFAULT GETUTCDATE(),
 
-    [LastUpdatedBy] INT NULL,
+    [LastUpdatedBy] UNIQUEIDENTIFIER NULL,
 
     [PublishedAt] DATETIME2 NULL,
 

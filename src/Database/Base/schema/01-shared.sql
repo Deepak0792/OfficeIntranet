@@ -20,16 +20,16 @@ CREATE TABLE shared.StatusLookup (
     IsTerminal      BIT             NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
     CONSTRAINT PK_StatusLookup PRIMARY KEY (StatusCode, StatusGroup)
 );
 GO
 
 CREATE TABLE shared.LookupDefinition
 (
-    LookupDefinitionId       INT        IDENTITY(1,1) NOT NULL,
+    LookupDefinitionId       UNIQUEIDENTIFIER NOT NULL,
     LookupCode               NVARCHAR(100) NOT NULL,
     LookupName               NVARCHAR(200) NOT NULL,
     -- STATIC_SQL | TABLE | PROCEDURE
@@ -37,7 +37,7 @@ CREATE TABLE shared.LookupDefinition
     SourceObjectName         NVARCHAR(300) NULL,
     SqlStatement             NVARCHAR(MAX) NULL,
     ProcedureName            NVARCHAR(300) NULL,
-    ParentLookupDefinitionId INT        NULL,
+    ParentLookupDefinitionId UNIQUEIDENTIFIER        NULL,
     -- UI Metadata
     ValueField               NVARCHAR(100) NOT NULL DEFAULT 'Id',
     TextField                NVARCHAR(100) NOT NULL DEFAULT 'Name',
@@ -48,9 +48,9 @@ CREATE TABLE shared.LookupDefinition
     IsSystem                 BIT           NOT NULL DEFAULT 0,
     IsActive                 BIT             NOT NULL DEFAULT 1,
     CreatedAt                DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                INT             NULL,
+    CreatedBy                UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy            INT             NULL,
+    LastUpdatedBy            UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_LookupDefinition
         PRIMARY KEY (LookupDefinitionId),
@@ -80,12 +80,12 @@ CREATE TABLE shared.OutboxMessages
         CONSTRAINT [DF_OutboxMessages_IsActive] DEFAULT (1),
     [CreatedAt] DATETIME2 NOT NULL
         CONSTRAINT [DF_OutboxMessages_CreatedAt] DEFAULT GETUTCDATE(),
-    [CreatedBy] INT NULL,
+    [CreatedBy] UNIQUEIDENTIFIER NULL,
 
     [LastUpdatedAt] DATETIME2 NOT NULL
         CONSTRAINT [DF_OutboxMessages_LastUpdatedAt] DEFAULT GETUTCDATE(),
 
-    [LastUpdatedBy] INT NULL,
+    [LastUpdatedBy] UNIQUEIDENTIFIER NULL,
 
     [PublishedAt] DATETIME2 NULL,
 
