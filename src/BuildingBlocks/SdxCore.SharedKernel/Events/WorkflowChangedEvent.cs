@@ -1,6 +1,6 @@
-namespace SdxCore.Workflow.Application.Services;
+namespace SdxCore.SharedKernel.Events;
 
-public record WorkflowEvent(
+public record WorkflowChangedEvent(
     string EventType,
     int WorkflowInstanceId,
     string ModuleCode,

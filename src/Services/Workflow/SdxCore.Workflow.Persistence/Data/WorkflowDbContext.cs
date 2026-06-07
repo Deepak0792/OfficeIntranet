@@ -23,6 +23,7 @@ public class WorkflowDbContext : SdxDbContext
     public DbSet<WorkflowTask> WorkflowTasks { get; set; }
     public DbSet<WorkflowActionHistory> WorkflowActionHistories { get; set; }
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<WorkflowAssignmentSummary> WorkflowAssignmentSummaries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -207,6 +208,24 @@ public class WorkflowDbContext : SdxDbContext
              .WithMany()
              .HasForeignKey(x => x.WorkflowStepId)
              .IsRequired(false);
+        });
+
+        modelBuilder.Entity<WorkflowAssignmentSummary>(e =>
+        {
+            e.HasNoKey();
+
+            e.ToView("vwWorkflowAssignment", "workflow");
+
+            e.Property(x => x.WorkflowModuleId);
+            e.Property(x => x.ModuleCode);
+            e.Property(x => x.WorkflowDefinitionId);
+            e.Property(x => x.WorkflowCode);
+            e.Property(x => x.WorkflowName);
+            e.Property(x => x.VersionNo);
+            e.Property(x => x.WorkflowAssignmentId);
+            e.Property(x => x.ScopeTypeId);
+            e.Property(x => x.ScopeReferenceId);
+            e.Property(x => x.PriorityOrder);
         });
 
         modelBuilder.Entity<OutboxMessage>(b =>

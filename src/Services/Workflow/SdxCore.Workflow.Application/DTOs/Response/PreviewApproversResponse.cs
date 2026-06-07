@@ -5,5 +5,5 @@ public record PreviewApproversResponse(
     string ApproverType,
     int    ResolvedEmployeeId,
     string ResolvedEmployeeName,
-    string? ResolvedDesignation,
-    string? ResolvedDepartment);
+    short? ResolvedDesignationId,
+    short? ResolvedDepartmentId);

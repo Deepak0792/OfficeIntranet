@@ -13,7 +13,7 @@ public class EmployeeDbContext : SdxDbContext
     }
 
     public DbSet<Domain.Entities.Employee> Employees { get; set; } = null!;
-    public DbSet<EmployeeFullProfile> EmployeeFullProfiles { get; set; } = null!;
+    public DbSet<EmployeeSummary> EmployeeFullProfiles { get; set; } = null!;
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     public DbSet<Skill> Skills { get; set; } = null!;
     public DbSet<EmployeeSkill> EmployeeSkills { get; set; } = null!;
@@ -41,16 +41,10 @@ public class EmployeeDbContext : SdxDbContext
             entity.Property(e => e.EmployeeCode).HasMaxLength(50).IsRequired();
         });
 
-        modelBuilder.Entity<EmployeeFullProfile>(entity =>
+        modelBuilder.Entity<EmployeeSummary>(entity =>
         {
-            entity.ToView("vw_EmployeeFullProfile");
+            entity.ToView("vwEmployeeSummary");
             entity.HasNoKey();
-        });
-
-        modelBuilder.Entity<Skill>(entity =>
-        {
-            entity.ToTable("Skill");
-            entity.HasKey(e => e.Id);
         });
 
         modelBuilder.Entity<EmployeeSkill>(entity =>

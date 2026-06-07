@@ -129,4 +129,36 @@ public class EmployeesController : SdxControllerBase
         var result = await _service.UpdateAboutAsync(id, request, cancellationToken);
         return OkOrNotFound(result, "About info updated successfully.");
     }
+
+    /// <summary>
+    /// GET /api/v1/employees/by-designation
+    ///
+    /// Returns employees matching given designation(s), optionally scoped.
+    /// Called internally by the Workflow engine's approver resolver.
+    ///
+    /// Examples:
+    ///   /by-designation?designationIds=5                      all HODs company-wide
+    ///   /by-designation?designationIds=5&scopeTypeId=5&scopeReferenceId=7 HODs in Dept 7
+    ///   /by-designation?designationIds=3&designationIds=5&scopeTypeId=4&scopeReferenceId=2 multi-designation, Office 2
+    /// </summary>
+    [HttpGet("by-designation")]
+    public async Task<IActionResult> GetByDesignation(
+        [FromQuery] List<short> designationIds,
+        [FromQuery] short? scopeTypeId,
+        [FromQuery] int? scopeReferenceId,
+        CancellationToken cancellationToken)
+    {
+        if (designationIds is null || designationIds.Count == 0)
+            return BadRequest(new ErrorResponse
+            {
+                ErrorCode = "BAD_REQUEST",
+                ErrorMessage = "At least one designationId is required."
+            });
+
+        var result = await _service.GetEmployeesByDesignationInScopeAsync(
+            designationIds, scopeTypeId, scopeReferenceId, cancellationToken);
+
+        return Ok(new ApiResponse<IEnumerable<EmployeesByDesignationResponse>>(
+            result, "Employees fetched successfully."));
+    }
 }

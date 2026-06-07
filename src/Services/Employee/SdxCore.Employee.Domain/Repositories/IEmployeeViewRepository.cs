@@ -5,8 +5,8 @@ namespace SdxCore.Employee.Domain.Repositories;
 
 public interface IEmployeeViewRepository
 {
-    Task<EmployeeFullProfile?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<IEnumerable<EmployeeFullProfile>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<(IEnumerable<EmployeeFullProfile> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
-    Task<IEnumerable<EmployeeFullProfile>> FindAsync(Expression<Func<EmployeeFullProfile, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<EmployeeSummary?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeSummary>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<(IEnumerable<EmployeeSummary> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeSummary>> FindAsync(Expression<Func<EmployeeSummary, bool>> predicate, CancellationToken cancellationToken = default);
 }

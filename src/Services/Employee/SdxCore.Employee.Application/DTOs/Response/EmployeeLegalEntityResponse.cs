@@ -8,7 +8,7 @@ public class EmployeeLegalEntityResponse
     public int EmployeeId { get; set; }
     public short LegalEntityId { get; set; }
     public string? LegalEntityName { get; set; }
-    public bool IsPrimary { get; set; }
+    public bool IsPrimaryLegalEntity { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; }

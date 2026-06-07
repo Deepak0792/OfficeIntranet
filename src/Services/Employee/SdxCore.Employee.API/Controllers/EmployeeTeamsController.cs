@@ -63,4 +63,11 @@ public class EmployeeTeamsController : SdxControllerBase
         var result = await _service.ToggleStatusAsync(employeeId, id, request.IsActive, cancellationToken);
         return OkOrNotFound(result, "Employee team status updated successfully.");
     }
+
+    [HttpPatch("{id}/set-primary")]
+    public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
+    {
+        var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);
+        return OkOrNotFound(result, "Employee primary team updated successfully.");
+    }
 }

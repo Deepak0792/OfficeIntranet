@@ -1,4 +1,5 @@
 using SdxCore.Common.Models;
+using SdxCore.Workflow.Application.Contracts.Engine;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
@@ -41,8 +42,7 @@ public class WorkflowInstanceService(
             e.CurrentWorkflowStepId,
             e.CurrentStep?.StepName,
             e.WorkflowStatus,
-            e.CreatedByEmpId,
-            string.Empty, // enriched by persistence layer via join
+            e.CreatedBy, // enriched by persistence layer via join
             e.CreatedAt,
             e.CompletedAt,
             tasks.Select(MapTask),
@@ -77,7 +77,7 @@ public class WorkflowInstanceService(
         return items.Select(MapSummary);
     }
 
-    public async Task<WorkflowInstanceResponse> SubmitAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowInstanceResponse> CreateAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default)
     {
         var instance = await engine.SubmitAsync(
             request.WorkflowModuleCode,
@@ -111,8 +111,7 @@ public class WorkflowInstanceService(
             e.CurrentStep?.StepName,
             e.CurrentStep?.StepNo,
             e.WorkflowStatus,
-            e.CreatedByEmpId,
-            string.Empty,
+            e.CreatedBy,
             e.CreatedAt,
             e.CompletedAt);
 

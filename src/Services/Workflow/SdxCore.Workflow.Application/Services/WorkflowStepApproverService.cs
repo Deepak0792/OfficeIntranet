@@ -1,6 +1,5 @@
 using SdxCore.Caching;
 using SdxCore.Common.Helpers;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
@@ -36,6 +35,15 @@ public class WorkflowStepApproverService(
             return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(e);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
+    }
+
+    public async Task<IEnumerable<short>> GetDesignationIdsAsync(short approverId, CancellationToken cancellationToken = default)
+    {
+        var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStepApprover), $"designation{approverId}");
+        return await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            return await approverRepository.GetDesignationIdsAsync(approverId, ct);
+        }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<WorkflowStepApproverResponse> CreateAsync(short stepId, CreateWorkflowStepApproverRequest request, CancellationToken cancellationToken = default)

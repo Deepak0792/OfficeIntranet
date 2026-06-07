@@ -15,7 +15,7 @@ public interface IWorkflowInstanceService
     Task<IEnumerable<WorkflowTaskResponse>> GetTasksAsync(int instanceId, CancellationToken cancellationToken = default);
     Task<WorkflowInstanceResponse> GetByTransactionAsync(string moduleCode, int referenceTransactionId, CancellationToken cancellationToken = default);
     Task<IEnumerable<WorkflowInstanceResponse>> GetMySubmissionsAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<WorkflowInstanceResponse> SubmitAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default);
+    Task<WorkflowInstanceResponse> CreateAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default);
     Task<bool> CancelAsync(int id, int actionBy, CancellationToken cancellationToken = default);
     Task<bool> WithdrawAsync(int id, int actionBy, CancellationToken cancellationToken = default);
 }

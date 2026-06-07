@@ -27,7 +27,7 @@ public class WorkflowStepService(
 
     public async Task<WorkflowStepResponse> GetByIdAsync(short definitionId, short id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStep), id.ToString());
+        var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStep), $"definition_{definitionId}_step{id}_with_approvers");
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var step = await _repository.GetWithApproversAsync(id, ct)
@@ -35,6 +35,24 @@ public class WorkflowStepService(
             return PropertyMapper.MapToRecord<WorkflowStepResponse>(step);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
+    }
+
+    public async Task<WorkflowStepResponse> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    {
+        var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStep), $"step{id}_with_approvers");
+        var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var step = await _repository.GetWithApproversAsync(id, ct)
+                ?? throw new WorkflowNotFoundException("WorkflowStep", id);
+            return PropertyMapper.MapToRecord<WorkflowStepResponse>(step);
+        }, CacheOptions.StaticMasterData, cancellationToken);
+        return res!;
+    }
+
+    public async Task<WorkflowStepResponse?> GetNextStepAsync(short definitionId, short currentStepNo, CancellationToken cancellationToken = default)
+    {
+        var steps = await GetByDefinitionIdAsync(definitionId, cancellationToken);
+        return steps.Where(x => x.StepNo > currentStepNo && x.IsActive).OrderBy(s => s.StepNo).FirstOrDefault();
     }
 
     public async Task<WorkflowStepResponse> CreateAsync(short definitionId, CreateWorkflowStepRequest request, CancellationToken cancellationToken = default)

@@ -20,18 +20,18 @@ public class EmployeeViewRepository : IEmployeeViewRepository
         _dbContext = dbContext;
     }
 
-    public async Task<EmployeeFullProfile?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSummary?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.EmployeeFullProfiles
             .FirstOrDefaultAsync(e => e.EmployeeId == id, cancellationToken);
     }
 
-    public async Task<IEnumerable<EmployeeFullProfile>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeSummary>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.EmployeeFullProfiles.AsNoTracking().ToListAsync(cancellationToken);
     }
 
-    public async Task<(IEnumerable<EmployeeFullProfile> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<(IEnumerable<EmployeeSummary> Items, int TotalCount)> GetAllPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = _dbContext.EmployeeFullProfiles.AsNoTracking();
         var count = await query.CountAsync(cancellationToken);
@@ -39,7 +39,7 @@ public class EmployeeViewRepository : IEmployeeViewRepository
         return (items, count);
     }
 
-    public async Task<IEnumerable<EmployeeFullProfile>> FindAsync(Expression<Func<EmployeeFullProfile, bool>> predicate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeSummary>> FindAsync(Expression<Func<EmployeeSummary, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await _dbContext.EmployeeFullProfiles.AsNoTracking().Where(predicate).ToListAsync(cancellationToken);
     }

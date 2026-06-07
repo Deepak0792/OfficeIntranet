@@ -6,6 +6,7 @@ using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
+using System.Linq.Expressions;
 
 namespace SdxCore.Employee.Application.Services;
 
@@ -30,12 +31,12 @@ public class EmployeeService : IEmployeeService
 
     public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> GetAllAsync(PaginationFilter filter, int? departmentId, int? locationId, int? legalEntityId, string? employmentType, bool? isActive, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("employee", $"all_{filter.PageNumber}_{filter.PageSize}_{departmentId}_{locationId}_{legalEntityId}_{employmentType}_{isActive}");
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), $"all_{filter.PageNumber}_{filter.PageSize}_{departmentId}_{locationId}_{legalEntityId}_{employmentType}_{isActive}");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var (items, count) = await _viewRepository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, ct);
 
-            var responses = items.Select(e => PropertyMapper.Map<EmployeeFullProfile, EmployeeSummaryResponse>(e)).ToList();
+            var responses = items.Select(e => PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(e)).ToList();
 
             return new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(responses, filter.PageNumber, filter.PageSize, count);
         }, CacheOptions.Default, cancellationToken)
@@ -43,34 +44,43 @@ public class EmployeeService : IEmployeeService
                 new List<EmployeeSummaryResponse>(), filter.PageNumber, filter.PageSize, 0);
     }
 
-    public async Task<EmployeeFullProfileResponse?> GetFullProfileAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSummaryResponse?> GetFullProfileAsync(int id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = _cacheKeyBuilder.BuildKey("employee_profile", id.ToString());
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var profile = await _viewRepository.GetByIdAsync(id, ct);
             if (profile == null) return null;
 
-            return PropertyMapper.Map<EmployeeFullProfile, EmployeeFullProfileResponse>(profile);
+            return PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(profile);
         }, CacheOptions.Default, cancellationToken);
     }
 
     public async Task<EmployeeResponse?> GetByCodeAsync(string employeeCode, CancellationToken cancellationToken = default)
     {
-        var entities = await _repository.FindAsync(e => e.EmployeeCode == employeeCode, cancellationToken);
-        var e = entities.FirstOrDefault();
-        if (e == null) return null;
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Employee), employeeCode);
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.FindAsync(e => e.EmployeeCode == employeeCode, cancellationToken);
+            var e = entities.FirstOrDefault();
+            if (e == null) return null;
 
-        return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
+            return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
+        }, CacheOptions.Default, cancellationToken);
     }
 
     public async Task<EmployeeResponse?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        var entities = await _repository.FindAsync(e => e.Email == email, cancellationToken);
-        var e = entities.FirstOrDefault();
-        if (e == null) return null;
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Employee), email);
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var entities = await _repository.FindAsync(e => e.Email == email, cancellationToken);
+            var e = entities.FirstOrDefault();
+            if (e == null) return null;
 
-        return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
+            return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
+        }, CacheOptions.Default, cancellationToken);
+
     }
 
     public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> SearchAsync(string query, PaginationFilter filter, CancellationToken cancellationToken = default)
@@ -83,17 +93,21 @@ public class EmployeeService : IEmployeeService
                                (x.LastName != null && x.LastName.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                                (x.Email != null && x.Email.Contains(query, StringComparison.OrdinalIgnoreCase)));
 
-        var responses = filteredItems.Select(e => PropertyMapper.Map<EmployeeFullProfile, EmployeeSummaryResponse>(e)).ToList();
+        var responses = filteredItems.Select(e => PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(e)).ToList();
 
         return new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(responses, filter.PageNumber, filter.PageSize, filteredItems.Count());
     }
 
     public async Task<EmployeeSummaryResponse?> GetSummaryAsync(int id, CancellationToken cancellationToken = default)
     {
-        var profile = await _viewRepository.GetByIdAsync(id, cancellationToken);
-        if (profile == null) return null;
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), id.ToString());
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var profile = await _viewRepository.GetByIdAsync(id, cancellationToken);
+            if (profile == null) return null;
 
-        return PropertyMapper.Map<EmployeeFullProfile, EmployeeSummaryResponse>(profile);
+            return PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(profile);
+        }, CacheOptions.Default, cancellationToken);
     }
 
     public async Task<EmployeeResponse> CreateAsync(CreateEmployeeRequest request, CancellationToken cancellationToken = default)
@@ -169,5 +183,56 @@ public class EmployeeService : IEmployeeService
 
 
         return true;
+    }
+
+    public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
+    List<short> designationIds,
+    short? scopeTypeId,
+    int? scopeReferenceId,
+    CancellationToken cancellationToken = default)
+    {
+        if (designationIds is null || designationIds.Count == 0)
+            return [];
+
+        // Build scope filter against vwEmployeeSummary columns
+        Expression<Func<EmployeeSummary, bool>> scopePredicate = scopeTypeId switch
+        {
+            5 when scopeReferenceId.HasValue =>   // DEPARTMENT
+                e => e.PrimaryDepartmentId == (short)scopeReferenceId.Value,
+
+            4 when scopeReferenceId.HasValue =>   // OFFICE
+                e => e.PrimaryLocationId == (short)scopeReferenceId.Value,
+
+            3 when scopeReferenceId.HasValue =>   // LEGAL_ENTITY
+                e => e.PrimaryLegalEntityId == (short)scopeReferenceId.Value,
+
+            6 when scopeReferenceId.HasValue =>   // TEAM
+                e => e.PrimaryTeamId == (short)scopeReferenceId.Value,
+
+            7 when scopeReferenceId.HasValue =>   // EMPLOYEE (single)
+                e => e.EmployeeId == scopeReferenceId.Value,
+
+            _ => e => true  // GLOBAL or no scope — no restriction
+        };
+
+        var employees = await _viewRepository.FindAsync(
+            e => designationIds.Contains((short)e.DesignationId!)
+              && e.IsActive,
+            cancellationToken);
+
+        // Apply scope filter in-memory after fetch
+        // (FindAsync already pulls from the view which has all scope columns)
+        var scoped = employees
+            .Where(scopePredicate.Compile())
+            .OrderBy(e => e.DisplayName)
+            .ToList();
+
+        return scoped.Select(e => new EmployeesByDesignationResponse
+        {
+            EmployeeId = e.EmployeeId,
+            DisplayName = e.DisplayName ?? string.Empty,
+            DesignationId = e.DesignationId,
+            PrimaryDepartmentId = e.PrimaryDepartmentId
+        });
     }
 }

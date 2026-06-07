@@ -8,7 +8,7 @@ using SdxCore.Workflow.Application.DTOs.Response;
 namespace SdxCore.Workflow.API.Controllers;
 
 [ApiController]
-[Route("api/v1/workflow/definition")]
+[Route("api/v1/workflow/definitions")]
 [GatewayOnly]
 public class WorkflowDefinitionController(IWorkflowDefinitionService svc) : ControllerBase
 {

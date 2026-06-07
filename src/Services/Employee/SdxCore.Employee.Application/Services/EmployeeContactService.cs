@@ -36,9 +36,9 @@ public class EmployeeContactService : IEmployeeContactService
         if (request.IsPrimary)
         {
             var existingEntities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.ContactType == request.ContactType && x.IsActive, cancellationToken);
-            foreach (var e in existingEntities.Where(x => x.IsPrimary))
+            foreach (var e in existingEntities.Where(x => x.IsPrimaryContact))
             {
-                e.IsPrimary = false;
+                e.IsPrimaryContact = false;
                 _repository.Update(e);
             }
         }
@@ -83,13 +83,13 @@ public class EmployeeContactService : IEmployeeContactService
         var target = entities.FirstOrDefault(x => x.Id == id);
         if (target == null) return false;
 
-        foreach (var e in entities.Where(x => x.IsPrimary && x.ContactType == target.ContactType))
+        foreach (var e in entities.Where(x => x.IsPrimaryContact && x.ContactType == target.ContactType))
         {
-            e.IsPrimary = false;
+            e.IsPrimaryContact = false;
             _repository.Update(e);
         }
 
-        target.IsPrimary = true;
+        target.IsPrimaryContact = true;
         _repository.Update(target);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

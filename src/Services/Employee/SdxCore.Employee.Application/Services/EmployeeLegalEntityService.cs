@@ -36,9 +36,9 @@ public class EmployeeLegalEntityService : IEmployeeLegalEntityService
         if (request.IsPrimary)
         {
             var existingEntities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
-            foreach (var e in existingEntities.Where(x => x.IsPrimary))
+            foreach (var e in existingEntities.Where(x => x.IsPrimaryLegalEntity))
             {
-                e.IsPrimary = false;
+                e.IsPrimaryLegalEntity = false;
                 _repository.Update(e);
             }
         }
@@ -86,13 +86,13 @@ public class EmployeeLegalEntityService : IEmployeeLegalEntityService
         var target = entities.FirstOrDefault(x => x.Id == id);
         if (target == null) return false;
 
-        foreach (var e in entities.Where(x => x.IsPrimary))
+        foreach (var e in entities.Where(x => x.IsPrimaryLegalEntity))
         {
-            e.IsPrimary = false;
+            e.IsPrimaryLegalEntity = false;
             _repository.Update(e);
         }
 
-        target.IsPrimary = true;
+        target.IsPrimaryLegalEntity = true;
         _repository.Update(target);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

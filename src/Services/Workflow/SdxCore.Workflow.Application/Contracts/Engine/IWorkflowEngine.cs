@@ -1,6 +1,6 @@
-using SdxCore.Workflow.Domain.Entities;
+﻿using SdxCore.Workflow.Domain.Entities;
 
-namespace SdxCore.Workflow.Domain.Repositories;
+namespace SdxCore.Workflow.Application.Contracts.Engine;
 
 public interface IWorkflowEngine
 {

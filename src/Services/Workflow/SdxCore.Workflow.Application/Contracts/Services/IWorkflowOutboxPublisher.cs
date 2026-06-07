@@ -1,8 +1,8 @@
-using SdxCore.Workflow.Application.Services;
+using SdxCore.SharedKernel.Events;
 
 namespace SdxCore.Workflow.Application.Contracts.Services;
 
 public interface IWorkflowOutboxPublisher
 {
-    Task PublishAsync(WorkflowEvent evt, CancellationToken cancellationToken = default);
+    Task PublishAsync(WorkflowChangedEvent evt, CancellationToken cancellationToken = default);
 }

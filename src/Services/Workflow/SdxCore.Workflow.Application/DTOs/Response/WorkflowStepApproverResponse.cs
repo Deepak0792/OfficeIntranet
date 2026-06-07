@@ -5,7 +5,6 @@ public record WorkflowStepApproverResponse(
     short  WorkflowStepId,
     string WorkflowApproverType,
     short? ScopeTypeId,
-    string? ScopeTypeName,
     short? ScopeReferenceId,
     short  PriorityOrder,
     bool   IsMandatory,

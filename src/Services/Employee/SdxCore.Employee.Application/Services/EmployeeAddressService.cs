@@ -35,9 +35,9 @@ public class EmployeeAddressService : IEmployeeAddressService
         if (request.IsPrimary)
         {
             var existingEntities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
-            foreach (var e in existingEntities.Where(x => x.IsPrimary))
+            foreach (var e in existingEntities.Where(x => x.IsPrimaryAddress))
             {
-                e.IsPrimary = false;
+                e.IsPrimaryAddress = false;
                 _repository.Update(e);
             }
         }
@@ -90,13 +90,13 @@ public class EmployeeAddressService : IEmployeeAddressService
         var target = entities.FirstOrDefault(x => x.Id == id);
         if (target == null) return false;
 
-        foreach (var e in entities.Where(x => x.IsPrimary))
+        foreach (var e in entities.Where(x => x.IsPrimaryAddress))
         {
-            e.IsPrimary = false;
+            e.IsPrimaryAddress = false;
             _repository.Update(e);
         }
 
-        target.IsPrimary = true;
+        target.IsPrimaryAddress = true;
         _repository.Update(target);
         await _repository.SaveChangesAsync(cancellationToken);
         return true;

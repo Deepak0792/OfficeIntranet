@@ -7,9 +7,14 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowModuleRepository(WorkflowDbContext dbContext, IRequestContext requestContext) 
-    : BaseRepository<WorkflowModule, short, WorkflowDbContext>(dbContext, requestContext), IWorkflowModuleRepository
+public class WorkflowModuleRepository : BaseRepository<WorkflowModule, short, WorkflowDbContext>, IWorkflowModuleRepository
 {
+    private readonly WorkflowDbContext dbContext;
+    public WorkflowModuleRepository(WorkflowDbContext dbContext, IRequestContext requestContext):base(dbContext, requestContext)
+    {
+        this.dbContext = dbContext;
+    }
+
     public async Task<WorkflowModule?> GetByCodeAsync(string moduleCode, CancellationToken cancellationToken = default) =>
         await _dbSet.FirstOrDefaultAsync(x => x.ModuleCode == moduleCode, cancellationToken);
 
@@ -31,4 +36,13 @@ public class WorkflowModuleRepository(WorkflowDbContext dbContext, IRequestConte
 
     public async Task<bool> ExistsAsync(string moduleCode, CancellationToken cancellationToken = default) =>
         await _dbSet.AnyAsync(x => x.ModuleCode == moduleCode, cancellationToken);
+
+    public async Task<IEnumerable<WorkflowAssignmentSummary>> GetWorkflowAssignmentsAsync(
+    string moduleCode, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.WorkflowAssignmentSummaries
+            .Where(x => x.ModuleCode == moduleCode)
+            .OrderBy(x => x.PriorityOrder)
+            .ToListAsync(cancellationToken);
+    }
 }

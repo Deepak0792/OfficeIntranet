@@ -1,3 +1,4 @@
+using SdxCore.Workflow.Application.Contracts.Resolver;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
@@ -12,11 +13,11 @@ public class WorkflowResolutionService(
     public async Task<IEnumerable<PreviewApproversResponse>> PreviewApproversAsync(
         PreviewApproversRequest request)
     {
-        var resolved = await resolver.ResolveAsync(request.WorkflowStepId, request.InitiatorEmployeeId);
+        var resolved = await resolver.ResolveApproverAsync(request.WorkflowStepId, request.InitiatorEmployeeId);
         return resolved.Select(r => new PreviewApproversResponse(
             r.WorkflowStepApproverId, r.ApproverType,
             r.ResolvedEmployeeId, r.ResolvedEmployeeName,
-            r.ResolvedDesignation, r.ResolvedDepartment));
+            r.ResolvedDesignationId, r.ResolvedDepartmentId));
     }
 
     public async Task<ResolveDefinitionResponse> ResolveDefinitionAsync(

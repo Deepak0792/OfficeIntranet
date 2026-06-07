@@ -1,8 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SdxCore.Common.Http;
+using SdxCore.Common.Options;
+using SdxCore.SharedKernel.Http;
 using SdxCore.Workflow.Application.BackgroundServices;
+using SdxCore.Workflow.Application.Clients;
+using SdxCore.Workflow.Application.Contracts.Clients;
+using SdxCore.Workflow.Application.Contracts.Engine;
+using SdxCore.Workflow.Application.Contracts.Resolver;
 using SdxCore.Workflow.Application.Contracts.Services;
+using SdxCore.Workflow.Application.Engine;
+using SdxCore.Workflow.Application.Resolver;
 using SdxCore.Workflow.Application.Services;
-using SdxCore.Workflow.Domain.Repositories;
 
 namespace SdxCore.Workflow.Application.Extensions;
 
@@ -10,6 +19,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSdxCoreWorkflowApplication(this IServiceCollection services)
     {
+        services.AddScoped<IWorkflowApproverResolver, WorkflowApproverResolver>();
         services.AddScoped<IWorkflowModuleService, WorkflowModuleService>();
         services.AddScoped<IWorkflowDefinitionService, WorkflowDefinitionService>();
         services.AddScoped<IWorkflowStepService, WorkflowStepService>();
@@ -21,8 +31,25 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IWorkflowEngine, WorkflowEngine>();
 
+        // Internal Handler
+        services.AddTransient<InternalApiKeyHandler>();
+
+        services.AddHttpClient<IEmployeeClient, EmployeeClient>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<ClientOptions>>().Value;
+            HttpClientConfigurator.Configure(client, options);
+        })
+        .AddHttpMessageHandler<InternalApiKeyHandler>();
+
+        services.AddHttpClient<ITimeClient, TimeClient>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<ClientOptions>>().Value;
+            HttpClientConfigurator.Configure(client, options);
+        })
+        .AddHttpMessageHandler<InternalApiKeyHandler>();
+
         // Register Background Services
-        services.AddHostedService<OutboxProcessorBackgroundService>();
+        services.AddHostedService<OutboxProcessorBackgroundService>();      
 
         return services;
     }

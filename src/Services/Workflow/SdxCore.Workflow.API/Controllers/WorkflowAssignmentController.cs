@@ -41,10 +41,6 @@ public class WorkflowAssignmentController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<WorkflowAssignmentResponse>>(data, "Successfully fetched workflow assignments."));
     }
 
-    /// <summary>
-    /// Resolve which workflow definition applies for a given module + employee.
-    /// GET /api/v1/workflow/assignments/resolve?moduleCode=LEAVE_REQUEST&employeeId=5&effectiveDate=2025-04-01
-    /// </summary>
     [HttpGet("resolve")]
     public async Task<IActionResult> Resolve(
         [FromQuery] string moduleCode,

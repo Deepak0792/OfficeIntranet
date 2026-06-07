@@ -8,10 +8,9 @@ using SdxCore.Workflow.Application.DTOs.Response;
 namespace SdxCore.Workflow.API.Controllers;
 
 [ApiController]
-[Route("api/v1/workflow/step/approver/designation")]
+[Route("api/v1/workflow/approvers/{approverId}/designations")]
 [GatewayOnly]
-public class WorkflowStepApproverDesignationController(
-    IWorkflowStepApproverDesignationService svc) : ControllerBase
+public class WorkflowStepApproverDesignationController(IWorkflowStepApproverDesignationService svc) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(short approverId)
@@ -22,8 +21,7 @@ public class WorkflowStepApproverDesignationController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(short approverId,
-        [FromBody] AddApproverDesignationRequest request)
+    public async Task<IActionResult> Add(short approverId, [FromBody] AddApproverDesignationRequest request)
     {
         var data = await svc.AddAsync(approverId, request, HttpContext.RequestAborted);
         return Ok(new ApiResponse<WorkflowStepApproverDesignationResponse>(data,

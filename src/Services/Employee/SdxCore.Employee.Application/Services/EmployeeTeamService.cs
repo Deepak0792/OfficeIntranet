@@ -84,4 +84,22 @@ public class EmployeeTeamService : IEmployeeTeamService
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    {
+        var team = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
+        var target = team.FirstOrDefault(x => x.Id == id);
+        if (target == null) return false;
+
+        foreach (var skill in team.Where(s => s.IsPrimaryTeam))
+        {
+            skill.IsPrimaryTeam = false;
+            _repository.Update(skill);
+        }
+
+        target.IsPrimaryTeam = true;
+        _repository.Update(target);
+        await _repository.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

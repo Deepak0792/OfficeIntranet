@@ -46,7 +46,7 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IRequestCon
         if (!string.IsNullOrEmpty(status))
             q = q.Where(x => x.WorkflowStatus == status);
         if (initiatedBy.HasValue)
-            q = q.Where(x => x.CreatedByEmpId == initiatedBy.Value);
+            q = q.Where(x => x.CreatedBy == initiatedBy.Value);
         if (fromDate.HasValue)
             q = q.Where(x => x.CreatedAt >= fromDate.Value);
         if (toDate.HasValue)
@@ -66,7 +66,7 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IRequestCon
             .Include(x => x.Definition)
             .Include(x => x.Module)
             .Include(x => x.CurrentStep)
-            .Where(x => x.CreatedByEmpId == employeeId && x.IsActive)
+            .Where(x => x.CreatedBy == employeeId && x.IsActive)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 

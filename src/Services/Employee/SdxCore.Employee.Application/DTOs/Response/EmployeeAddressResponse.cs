@@ -17,7 +17,7 @@ public class EmployeeAddressResponse
     public string? CountryName { get; set; }
     public short? RegionId { get; set; }
     public string? RegionName { get; set; }
-    public bool IsPrimary { get; set; }
+    public bool IsPrimaryAddress { get; set; }
     public int? WorkflowInstanceId { get; set; }
     public bool IsVerified { get; set; }
     public int? VerifiedByEmployeeId { get; set; }

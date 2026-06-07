@@ -15,7 +15,7 @@ public class EmployeeAddress : BaseAuditEntity<int>, IPublishableEntity
     public string? PostalCode { get; set; }
     public short CountryId { get; set; }
     public short? RegionId { get; set; }
-    public bool IsPrimary { get; set; }
+    public bool IsPrimaryAddress { get; set; }
     public int? WorkflowInstanceId { get; set; }
     public bool IsVerified { get; set; }
     public int? VerifiedByEmployeeId { get; set; }

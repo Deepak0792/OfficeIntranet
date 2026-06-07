@@ -1,18 +1,22 @@
+using SdxCore.SharedKernel.Events;
+using SdxCore.Workflow.Application.Contracts.Engine;
+using SdxCore.Workflow.Application.Contracts.Resolver;
 using SdxCore.Workflow.Application.Contracts.Services;
+using SdxCore.Workflow.Application.DTOs.Response;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Enums;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
 
-namespace SdxCore.Workflow.Application.Services;
+namespace SdxCore.Workflow.Application.Engine;
 
 public class WorkflowEngine(
-    IWorkflowAssignmentRepository assignmentRepo,
-    IWorkflowStepRepository stepRepo,
-    IWorkflowStepApproverRepository approverRepo,
+    IWorkflowStepService workflowStepService,
+    IWorkflowStepApproverService workflowStepApproverService,
     IWorkflowInstanceRepository instanceRepo,
     IWorkflowTaskRepository taskRepo,
     IWorkflowActionHistoryRepository historyRepo,
+    
     IWorkflowApproverResolver resolver,
     IWorkflowOutboxPublisher outbox) : IWorkflowEngine
 {
@@ -21,31 +25,29 @@ public class WorkflowEngine(
         string moduleCode, int referenceTransactionId, int initiatorEmployeeId, CancellationToken cancellationToken = default)
     {
         // 1. Resolve applicable definition via assignment scope hierarchy
-        var effectiveDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        var definition = await assignmentRepo.ResolveDefinitionAsync(
-            moduleCode, initiatorEmployeeId, effectiveDate, cancellationToken)
-            ?? throw new WorkflowDefinitionNotFoundException(moduleCode);
+        string workflowCode = string.Empty;
+        var definition = await resolver.ResolveDefinitionAsync(moduleCode, workflowCode, initiatorEmployeeId);
 
         // 2. Get the first active step
-        var firstStep = await stepRepo.GetNextStepAsync(definition.Id, 0, cancellationToken)
+        var firstStep = await workflowStepService.GetNextStepAsync(definition.WorkflowDefinitionId, 0, cancellationToken)
             ?? throw new WorkflowApproverResolutionException(
-                definition.Id, "No active steps found in the workflow definition.");
+                definition.WorkflowDefinitionId, "No active steps found in the workflow definition.");
 
         // 3. Create WorkflowInstance
         var instance = new WorkflowInstance
         {
-            WorkflowDefinitionId = definition.Id,
+            WorkflowDefinitionId = definition.WorkflowDefinitionId,
             WorkflowModuleId = definition.WorkflowModuleId,
             ReferenceTransactionId = referenceTransactionId,
             CurrentWorkflowStepId = firstStep.Id,
             WorkflowStatus = WorkflowStatus.Pending,
-            CreatedByEmpId = initiatorEmployeeId,
+            CreatedBy = initiatorEmployeeId,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             LastUpdatedAt = DateTime.UtcNow
         };
         instance = await instanceRepo.AddAsync(instance, cancellationToken);
-        await instanceRepo.SaveChangesAsync(cancellationToken);
+        //
 
         // 4. Write SUBMIT history
         await WriteHistoryAsync(instance.Id, null, firstStep.Id,
@@ -56,10 +58,12 @@ public class WorkflowEngine(
         await CreateTasksForStepAsync(instance, firstStep, cancellationToken);
 
         // 6. Publish outbox event
-        await outbox.PublishAsync(new WorkflowEvent(
+        await outbox.PublishAsync(new WorkflowChangedEvent(
             "workflow.instance.submitted",
             instance.Id, moduleCode, referenceTransactionId,
             WorkflowStatus.Pending, initiatorEmployeeId), cancellationToken);
+
+        await instanceRepo.SaveChangesAsync(cancellationToken);
 
         return instance;
     }
@@ -69,7 +73,7 @@ public class WorkflowEngine(
     {
         var task = await GetPendingTaskOrThrowAsync(taskId, actionBy, cancellationToken);
         var instance = await GetInstanceOrThrowAsync(task.WorkflowInstanceId, cancellationToken);
-        var currentStep = await stepRepo.GetByIdAsync(task.WorkflowStepId, cancellationToken)
+        var currentStep = await workflowStepService.GetByIdAsync(task.WorkflowStepId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStep", task.WorkflowStepId);
 
         // Mark this task completed
@@ -86,7 +90,7 @@ public class WorkflowEngine(
             .Where(t => t.WorkflowStepId == currentStep.Id && t.IsActive)
             .ToList();
 
-        var allApprovers = await approverRepo.GetByStepIdAsync(currentStep.Id, cancellationToken);
+        var allApprovers = await workflowStepApproverService.GetByStepIdAsync(currentStep.Id, cancellationToken);
         var mandatoryApproverIds = allApprovers
             .Where(a => a.IsMandatory && a.IsActive)
             .Select(a => a.Id)
@@ -105,7 +109,7 @@ public class WorkflowEngine(
             await WriteHistoryAsync(instance.Id, null, currentStep.Id,
                 WorkflowActionType.Approve, "Final step approved.",
                 WorkflowStatus.InProgress, WorkflowStatus.Approved, actionBy, cancellationToken);
-            await outbox.PublishAsync(new WorkflowEvent(
+            await outbox.PublishAsync(new WorkflowChangedEvent(
                 "workflow.instance.status_changed",
                 instance.Id, instance.Module?.ModuleCode ?? string.Empty,
                 instance.ReferenceTransactionId, WorkflowStatus.Approved, actionBy), cancellationToken);
@@ -113,7 +117,7 @@ public class WorkflowEngine(
         else
         {
             // Advance to next step
-            var nextStep = await stepRepo.GetNextStepAsync(
+            var nextStep = await workflowStepService.GetNextStepAsync(
                 instance.WorkflowDefinitionId, currentStep.StepNo, cancellationToken)
                 ?? throw new WorkflowApproverResolutionException(
                     currentStep.Id, "Could not find next step.");
@@ -143,7 +147,7 @@ public class WorkflowEngine(
 
         await TerminateInstanceAsync(instance, WorkflowStatus.Rejected, actionBy, cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowEvent(
+        await outbox.PublishAsync(new WorkflowChangedEvent(
             "workflow.instance.status_changed",
             instance.Id, instance.Module?.ModuleCode ?? string.Empty,
             instance.ReferenceTransactionId, WorkflowStatus.Rejected, actionBy), cancellationToken);
@@ -200,14 +204,14 @@ public class WorkflowEngine(
             WorkflowStatus.InProgress, WorkflowStatus.Pending, actionBy, cancellationToken);
 
         // Reset to first step so initiator can resubmit
-        var firstStep = await stepRepo.GetNextStepAsync(instance.WorkflowDefinitionId, 0, cancellationToken);
+        var firstStep = await workflowStepService.GetNextStepAsync(instance.WorkflowDefinitionId, 0, cancellationToken);
         instance.CurrentWorkflowStepId = firstStep?.Id;
         instance.WorkflowStatus = WorkflowStatus.Pending;
         instance.LastUpdatedAt = DateTime.UtcNow;
         instanceRepo.Update(instance);
         await instanceRepo.SaveChangesAsync(cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowEvent(
+        await outbox.PublishAsync(new WorkflowChangedEvent(
             "workflow.instance.returned",
             instance.Id, instance.Module?.ModuleCode ?? string.Empty,
             instance.ReferenceTransactionId, WorkflowStatus.Pending, actionBy), cancellationToken);
@@ -263,7 +267,7 @@ public class WorkflowEngine(
 
         await TerminateInstanceAsync(instance, WorkflowStatus.Cancelled, actionBy, cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowEvent(
+        await outbox.PublishAsync(new WorkflowChangedEvent(
             "workflow.instance.status_changed",
             instance.Id, instance.Module?.ModuleCode ?? string.Empty,
             instance.ReferenceTransactionId, WorkflowStatus.Cancelled, actionBy), cancellationToken);
@@ -284,7 +288,7 @@ public class WorkflowEngine(
 
         await TerminateInstanceAsync(instance, WorkflowStatus.Withdrawn, actionBy, cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowEvent(
+        await outbox.PublishAsync(new WorkflowChangedEvent(
             "workflow.instance.status_changed",
             instance.Id, instance.Module?.ModuleCode ?? string.Empty,
             instance.ReferenceTransactionId, WorkflowStatus.Withdrawn, actionBy), cancellationToken);
@@ -298,9 +302,9 @@ public class WorkflowEngine(
     /// resolver.ResolveAsync is called once — it returns all resolved
     /// approvers for the entire step, keyed by WorkflowStepApproverId.
     /// </summary>
-    private async Task CreateTasksForStepAsync(WorkflowInstance instance, WorkflowStep step, CancellationToken cancellationToken)
+    private async Task CreateTasksForStepAsync(WorkflowInstance instance, WorkflowStepResponse step, CancellationToken cancellationToken)
     {
-        var approvers = await approverRepo.GetByStepIdAsync(step.Id, cancellationToken);
+        var approvers = await workflowStepApproverService.GetByStepIdAsync(step.Id, cancellationToken);
         var activeApprovers = approvers.Where(a => a.IsActive).ToList();
 
         if (!activeApprovers.Any())
@@ -311,8 +315,10 @@ public class WorkflowEngine(
             ? DateTime.UtcNow.AddHours(step.EscalationAfterHours.Value)
             : (DateTime?)null;
 
+        int userId = instance.CreatedBy ?? throw new ArgumentNullException("UserId is not available");
+
         // Resolve all approvers for the step in a single call
-        var allResolved = await resolver.ResolveAsync(step.Id, instance.CreatedByEmpId); // Note: IWorkflowApproverResolver doesn't have CancellationToken yet
+        var allResolved = await resolver.ResolveApproverAsync(step.Id, userId); // Note: IWorkflowApproverResolver doesn't have CancellationToken yet
         var resolvedByRule = allResolved.ToLookup(r => r.WorkflowStepApproverId);
 
         foreach (var approverRule in activeApprovers.OrderBy(a => a.PriorityOrder))
@@ -339,7 +345,7 @@ public class WorkflowEngine(
                     TaskStatus = WorkflowTaskStatus.Pending,
                     AssignedAt = DateTime.UtcNow,
                     DueAt = dueAt,
-                    ActionBy = instance.CreatedByEmpId,
+                    ActionBy = userId,
                     IsActive = true
                 };
                 await taskRepo.AddAsync(task, cancellationToken);
@@ -403,7 +409,6 @@ public class WorkflowEngine(
             IsActive = true
         };
         await historyRepo.AddAsync(history, cancellationToken);
-        await historyRepo.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<WorkflowTask> GetPendingTaskOrThrowAsync(int taskId, int actionBy, CancellationToken cancellationToken)

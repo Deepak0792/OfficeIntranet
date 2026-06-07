@@ -1,7 +1,7 @@
+using SdxCore.Workflow.Application.DTOs.Resolver;
 using SdxCore.Workflow.Domain.Entities;
-using SdxCore.Workflow.Domain.Resolver;
 
-namespace SdxCore.Workflow.Domain.Repositories;
+namespace SdxCore.Workflow.Application.Contracts.Resolver;
 
 public interface IWorkflowApproverResolver
 {
@@ -14,7 +14,12 @@ public interface IWorkflowApproverResolver
     ///   ROLE              → finds employees with matching role in scope (auth schema)
     ///   SKIP_MANAGER      → skip-level manager from org hierarchy
     /// </summary>
-    Task<IEnumerable<ResolvedApprover>> ResolveAsync(
+    Task<IEnumerable<ResolvedApprover>> ResolveApproverAsync(
         short workflowStepId,
+        int initiatorEmployeeId);
+
+    Task<WorkflowAssignmentSummary> ResolveDefinitionAsync(
+        string moduleCode,
+        string workflowCode,
         int initiatorEmployeeId);
 }

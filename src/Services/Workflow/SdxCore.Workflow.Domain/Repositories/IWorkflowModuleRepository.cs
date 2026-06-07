@@ -9,4 +9,5 @@ public interface IWorkflowModuleRepository : IRepository<WorkflowModule, short>
     Task<IEnumerable<WorkflowModule>> GetAllAsync(bool activeOnly = true, CancellationToken cancellationToken = default);
     Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default);
     Task<bool> ExistsAsync(string moduleCode, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowAssignmentSummary>> GetWorkflowAssignmentsAsync(string moduleCode, CancellationToken cancellationToken = default);
 }

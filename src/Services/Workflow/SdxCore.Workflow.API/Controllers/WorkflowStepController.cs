@@ -9,7 +9,7 @@ namespace SdxCore.Workflow.API.Controllers;
 
 
 [ApiController]
-[Route("api/v1/workflow/step")]
+[Route("api/v1/workflow/definitions/{definitionId:short}/steps")]
 [GatewayOnly]
 public class WorkflowStepController(IWorkflowStepService svc) : ControllerBase
 {

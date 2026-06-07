@@ -87,4 +87,9 @@ public class WorkflowModuleService(
         await _repository.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<IEnumerable<WorkflowAssignmentSummary>> GetWorkflowAssignmentsAsync(string moduleCode, CancellationToken cancellationToken = default)
+    {
+        return await _repository.GetWorkflowAssignmentsAsync(moduleCode, cancellationToken);
+    }
 }

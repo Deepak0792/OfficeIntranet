@@ -1,7 +1,7 @@
 namespace SdxCore.Employee.Domain.Entities;
 using System;
 
-public class EmployeeFullProfile
+public class EmployeeSummary
 {
     public int EmployeeId { get; set; }
     public required string EmployeeCode { get; set; }
@@ -14,21 +14,11 @@ public class EmployeeFullProfile
     public DateOnly? DateOfJoining { get; set; }
     public required string EmploymentType { get; set; }
     public bool IsActive { get; set; }
-    
+    public short? PrimaryTeamId { get; set; }
     public short? PrimaryDepartmentId { get; set; }
-    public string? PrimaryDepartmentName { get; set; }
-    
     public short? DesignationId { get; set; }
-    public string? DesignationName { get; set; }
-    public string? Grade { get; set; }
-    
     public short? PrimaryLocationId { get; set; }
-    public string? PrimaryLocationName { get; set; }
-    public string? PrimaryLocationCity { get; set; }
-    
     public short? PrimaryLegalEntityId { get; set; }
-    public string? PrimaryLegalEntityName { get; set; }
-    
     public int? DirectManagerId { get; set; }
     public string? DirectManagerName { get; set; }
 }

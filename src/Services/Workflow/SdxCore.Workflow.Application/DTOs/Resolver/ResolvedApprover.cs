@@ -1,11 +1,9 @@
-using SdxCore.Workflow.Domain.Entities;
-
-namespace SdxCore.Workflow.Domain.Resolver;
+namespace SdxCore.Workflow.Application.DTOs.Resolver;
 
 public record ResolvedApprover(
     short WorkflowStepApproverId,
     string ApproverType,
     int ResolvedEmployeeId,
     string ResolvedEmployeeName,
-    string? ResolvedDesignation,
-    string? ResolvedDepartment);
+    short? ResolvedDesignationId,
+    short? ResolvedDepartmentId);
