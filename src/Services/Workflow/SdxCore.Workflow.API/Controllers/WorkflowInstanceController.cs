@@ -90,19 +90,19 @@ public class WorkflowInstanceController(
 
     /// <summary>PATCH /api/v1/workflow/instances/{id}/cancel</summary>
     [HttpPatch("{id:int}/cancel")]
-    public async Task<IActionResult> Cancel(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Cancel(int id, [FromBody] WorkflowActionRequest request, CancellationToken cancellationToken)
     {
         int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
-        await workflowInstanceService.CancelAsync(id,userId , cancellationToken);
+        await workflowInstanceService.CancelAsync(id, userId, request.Remarks, cancellationToken);
         return Ok(new ApiResponse<bool>(true, "Workflow instance cancelled."));
     }
 
     /// <summary>PATCH /api/v1/workflow/instances/{id}/withdraw</summary>
     [HttpPatch("{id:int}/withdraw")]
-    public async Task<IActionResult> Withdraw(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Withdraw(int id, [FromBody] WorkflowActionRequest request, CancellationToken cancellationToken)
     {
         int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
-        await workflowInstanceService.WithdrawAsync(id, userId, cancellationToken);
+        await workflowInstanceService.WithdrawAsync(id, userId, request.Remarks, cancellationToken);
         return Ok(new ApiResponse<bool>(true, "Workflow instance withdrawn."));
     }
 }

@@ -80,21 +80,22 @@ public class WorkflowInstanceService(
     public async Task<WorkflowInstanceResponse> CreateAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default)
     {
         var instance = await engine.SubmitAsync(
-            request.WorkflowModuleCode,
+            request.ModuleCode,
+            request.WorkflowCode,
             request.ReferenceTransactionId,
             request.InitiatedByEmployeeId, cancellationToken);
         return MapSummary(instance);
     }
 
-    public async Task<bool> CancelAsync(int id, int actionBy, CancellationToken cancellationToken = default)
+    public async Task<bool> CancelAsync(int id, int actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
-        await engine.CancelAsync(id, actionBy, cancellationToken);
+        await engine.CancelAsync(id, actionBy, remarks, cancellationToken);
         return true;
     }
 
-    public async Task<bool> WithdrawAsync(int id, int actionBy, CancellationToken cancellationToken = default)
+    public async Task<bool> WithdrawAsync(int id, int actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
-        await engine.WithdrawAsync(id, actionBy, cancellationToken);
+        await engine.WithdrawAsync(id, actionBy, remarks, cancellationToken);
         return true;
     }
 

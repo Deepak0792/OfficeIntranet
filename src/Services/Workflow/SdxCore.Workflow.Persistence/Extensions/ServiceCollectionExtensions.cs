@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.SharedKernel.Persistence;
 using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Repositories;
 using SdxCore.Workflow.Persistence.Data;
 using SdxCore.Workflow.Persistence.Repositories;
@@ -40,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkflowStepRepository, WorkflowStepRepository>();
         services.AddScoped<IWorkflowTaskRepository, WorkflowTaskRepository>();
         services.AddScoped<IOutboxRepository, OutboxRepository>();
+        services.AddScoped<IWorkflowOutboxPublisher, WorkflowOutboxPublisher>();
 
         return services;
     }

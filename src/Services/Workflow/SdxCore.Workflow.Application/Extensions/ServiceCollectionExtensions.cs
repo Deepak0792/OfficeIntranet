@@ -1,10 +1,13 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SdxCore.Common.Http;
 using SdxCore.Common.Options;
+using SdxCore.Messaging.BackgroundServices;
+using SdxCore.Messaging.Extensions;
 using SdxCore.SharedKernel.Http;
-using SdxCore.Workflow.Application.BackgroundServices;
 using SdxCore.Workflow.Application.Clients;
+using SdxCore.Workflow.Application.Consumers;
 using SdxCore.Workflow.Application.Contracts.Clients;
 using SdxCore.Workflow.Application.Contracts.Engine;
 using SdxCore.Workflow.Application.Contracts.Resolver;
@@ -49,7 +52,24 @@ public static class ServiceCollectionExtensions
         .AddHttpMessageHandler<InternalApiKeyHandler>();
 
         // Register Background Services
-        services.AddHostedService<OutboxProcessorBackgroundService>();      
+        services.AddHostedService<OutboxProcessorBackgroundService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddSdxCoreWorkflowMessaging(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        string serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "workflow";
+
+        services.AddSdxMessaging(
+            configuration,
+            endpointPrefix: serviceName,
+            configureBus =>
+            {
+                configureBus.AddConsumer<LeaveRequestSubmittedConsumer>();
+            });
 
         return services;
     }

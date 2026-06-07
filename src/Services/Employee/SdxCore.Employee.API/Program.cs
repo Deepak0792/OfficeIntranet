@@ -3,7 +3,6 @@ using SdxCore.Common.Extensions;
 using SdxCore.Employee.Application.Extensions;
 using SdxCore.Employee.Persistence.Extensions;
 using SdxCore.SharedKernel.Extensions;
-using SdxCore.Time.Application.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 

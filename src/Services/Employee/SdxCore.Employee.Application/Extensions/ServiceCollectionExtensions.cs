@@ -1,10 +1,13 @@
 using FluentValidation;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.Employee.Application.Consumers;
 using SdxCore.Employee.Application.Contracts.Services;
+using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.Services;
 using SdxCore.Employee.Application.Validators;
-using SdxCore.Employee.Application.DTOs.Request;
-using SdxCore.Employee.Application.BackgroundServices;
+using SdxCore.Messaging.BackgroundServices;
+using SdxCore.Messaging.Extensions;
 
 namespace SdxCore.Employee.Application.Extensions;
 
@@ -74,6 +77,22 @@ public static class ServiceCollectionExtensions
         // Register Background Services
         services.AddHostedService<OutboxProcessorBackgroundService>();
         //builder.Services.AddHostedService<CacheInvalidationBackgroundService>();
+        return services;
+    }
+
+    public static IServiceCollection AddSdxCoreEmployeeMessaging(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        string serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "employee";
+
+        services.AddSdxMessaging(
+            configuration,
+            endpointPrefix: serviceName,
+            configureBus =>
+            {
+                configureBus.AddConsumer<EntityChangedEventConsumer>();
+            });
+
         return services;
     }
 }

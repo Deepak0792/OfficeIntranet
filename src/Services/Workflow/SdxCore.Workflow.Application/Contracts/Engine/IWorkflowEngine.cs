@@ -14,6 +14,7 @@ public interface IWorkflowEngine
     /// </summary>
     Task<WorkflowInstance> SubmitAsync(
         string moduleCode,
+        string workflowCode,
         int referenceTransactionId,
         int initiatorEmployeeId,
         CancellationToken cancellationToken = default);
@@ -48,8 +49,8 @@ public interface IWorkflowEngine
     Task ProcessReassignAsync(int taskId, int reassignToEmployeeId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>Cancels an in-progress instance. Admin/system only.</summary>
-    Task CancelAsync(int instanceId, int actionBy, CancellationToken cancellationToken = default);
+    Task CancelAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>Withdrawn by the initiator. Only allowed when still PENDING.</summary>
-    Task WithdrawAsync(int instanceId, int actionBy, CancellationToken cancellationToken = default);
+    Task WithdrawAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
 }

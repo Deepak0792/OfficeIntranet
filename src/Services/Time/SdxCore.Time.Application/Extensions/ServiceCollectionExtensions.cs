@@ -1,5 +1,8 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Time.Application.BackgroundServices;
+using SdxCore.Messaging.BackgroundServices;
+using SdxCore.Messaging.Extensions;
+using SdxCore.Time.Application.Consumers;
 using SdxCore.Time.Application.Contracts.Services;
 using SdxCore.Time.Application.Services;
 
@@ -25,6 +28,22 @@ public static class ServiceCollectionExtensions
 
         // Register Background Services
         services.AddHostedService<OutboxProcessorBackgroundService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddSdxCoreTimeMessaging(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        string serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "time";
+
+        services.AddSdxMessaging(
+            configuration,
+            endpointPrefix: serviceName,
+            configureBus =>
+            {
+                configureBus.AddConsumer<EntityChangedEventConsumer>();
+            });
 
         return services;
     }

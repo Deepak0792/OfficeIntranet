@@ -19,13 +19,19 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         // Table name
         builder.ToTable("Users");
 
-        // Primary key
-        builder.HasKey(u => u.EmployeeId);
+        // Primary Key
+        builder.HasKey(u => u.Id);
 
-        // Properties
-        builder.Property(u => u.EmployeeId)
-            .IsRequired()
+        builder.Property(u => u.Id)
             .ValueGeneratedOnAdd();
+
+        builder.Property(u => u.EmployeeId)
+            .IsRequired();
+
+        // Unique constraint
+        builder.HasIndex(u => u.EmployeeId)
+            .IsUnique()
+            .HasDatabaseName("UQ_Users_EmployeeId");
 
         builder.Property(u => u.Username)
             .IsRequired()

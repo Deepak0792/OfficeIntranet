@@ -1,6 +1,7 @@
 namespace SdxCore.Workflow.Application.DTOs.Request;
 
 public record SubmitWorkflowInstanceRequest(
-    string WorkflowModuleCode,
+    string ModuleCode,
+    string WorkflowCode,
     int    ReferenceTransactionId,
     int    InitiatedByEmployeeId);

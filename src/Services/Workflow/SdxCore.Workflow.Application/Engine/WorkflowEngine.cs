@@ -3,6 +3,7 @@ using SdxCore.Workflow.Application.Contracts.Engine;
 using SdxCore.Workflow.Application.Contracts.Resolver;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Enums;
 using SdxCore.Workflow.Domain.Exceptions;
@@ -13,19 +14,17 @@ namespace SdxCore.Workflow.Application.Engine;
 public class WorkflowEngine(
     IWorkflowStepService workflowStepService,
     IWorkflowStepApproverService workflowStepApproverService,
-    IWorkflowInstanceRepository instanceRepo,
-    IWorkflowTaskRepository taskRepo,
-    IWorkflowActionHistoryRepository historyRepo,
-    
+    IWorkflowInstanceRepository instanceRepository,
+    IWorkflowTaskRepository taskRepository,
+    IWorkflowActionHistoryRepository historyRepository,
+
     IWorkflowApproverResolver resolver,
-    IWorkflowOutboxPublisher outbox) : IWorkflowEngine
+    IWorkflowOutboxPublisher outboxPublisher) : IWorkflowEngine
 {
     // ── Submit ───────────────────────────────────────────────
     public async Task<WorkflowInstance> SubmitAsync(
-        string moduleCode, int referenceTransactionId, int initiatorEmployeeId, CancellationToken cancellationToken = default)
+        string moduleCode, string workflowCode, int referenceTransactionId, int initiatorEmployeeId, CancellationToken cancellationToken = default)
     {
-        // 1. Resolve applicable definition via assignment scope hierarchy
-        string workflowCode = string.Empty;
         var definition = await resolver.ResolveDefinitionAsync(moduleCode, workflowCode, initiatorEmployeeId);
 
         // 2. Get the first active step
@@ -46,7 +45,7 @@ public class WorkflowEngine(
             CreatedAt = DateTime.UtcNow,
             LastUpdatedAt = DateTime.UtcNow
         };
-        instance = await instanceRepo.AddAsync(instance, cancellationToken);
+        instance = await instanceRepository.AddAsync(instance, cancellationToken);
         //
 
         // 4. Write SUBMIT history
@@ -58,12 +57,11 @@ public class WorkflowEngine(
         await CreateTasksForStepAsync(instance, firstStep, cancellationToken);
 
         // 6. Publish outbox event
-        await outbox.PublishAsync(new WorkflowChangedEvent(
-            "workflow.instance.submitted",
+        await outboxPublisher.PublishStatusChangedAsync(
             instance.Id, moduleCode, referenceTransactionId,
-            WorkflowStatus.Pending, initiatorEmployeeId), cancellationToken);
+            WorkflowStatus.Pending, WorkflowActionType.Submit, initiatorEmployeeId, null, cancellationToken);
 
-        await instanceRepo.SaveChangesAsync(cancellationToken);
+        await instanceRepository.SaveChangesAsync(cancellationToken);
 
         return instance;
     }
@@ -85,7 +83,7 @@ public class WorkflowEngine(
             WorkflowStatus.InProgress, WorkflowStatus.InProgress, actionBy, cancellationToken);
 
         // Check if ALL mandatory tasks for this step are completed
-        var allStepTasks = await taskRepo.GetByInstanceIdAsync(instance.Id, cancellationToken);
+        var allStepTasks = await taskRepository.GetByInstanceIdAsync(instance.Id, cancellationToken);
         var stepTasks = allStepTasks
             .Where(t => t.WorkflowStepId == currentStep.Id && t.IsActive)
             .ToList();
@@ -109,10 +107,11 @@ public class WorkflowEngine(
             await WriteHistoryAsync(instance.Id, null, currentStep.Id,
                 WorkflowActionType.Approve, "Final step approved.",
                 WorkflowStatus.InProgress, WorkflowStatus.Approved, actionBy, cancellationToken);
-            await outbox.PublishAsync(new WorkflowChangedEvent(
-                "workflow.instance.status_changed",
-                instance.Id, instance.Module?.ModuleCode ?? string.Empty,
-                instance.ReferenceTransactionId, WorkflowStatus.Approved, actionBy), cancellationToken);
+
+            // On APPROVE (final step):
+            await outboxPublisher.PublishStatusChangedAsync(
+                instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+                WorkflowStatus.Approved, WorkflowActionType.Approve, actionBy, remarks, cancellationToken);
         }
         else
         {
@@ -125,8 +124,8 @@ public class WorkflowEngine(
             instance.CurrentWorkflowStepId = nextStep.Id;
             instance.WorkflowStatus = WorkflowStatus.InProgress;
             instance.LastUpdatedAt = DateTime.UtcNow;
-            instanceRepo.Update(instance);
-            await instanceRepo.SaveChangesAsync(cancellationToken);
+            instanceRepository.Update(instance);
+            await instanceRepository.SaveChangesAsync(cancellationToken);
 
             await CreateTasksForStepAsync(instance, nextStep, cancellationToken);
         }
@@ -147,10 +146,10 @@ public class WorkflowEngine(
 
         await TerminateInstanceAsync(instance, WorkflowStatus.Rejected, actionBy, cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowChangedEvent(
-            "workflow.instance.status_changed",
-            instance.Id, instance.Module?.ModuleCode ?? string.Empty,
-            instance.ReferenceTransactionId, WorkflowStatus.Rejected, actionBy), cancellationToken);
+        // On REJECT:
+        await outboxPublisher.PublishStatusChangedAsync(
+            instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+            WorkflowStatus.Rejected, WorkflowActionType.Reject, actionBy, remarks, cancellationToken);
     }
 
     // ── Delegate ─────────────────────────────────────────────
@@ -180,12 +179,17 @@ public class WorkflowEngine(
             ActionBy = actionBy,
             IsActive = true
         };
-        await taskRepo.AddAsync(newTask, cancellationToken);
-        await taskRepo.SaveChangesAsync(cancellationToken);
+        await taskRepository.AddAsync(newTask, cancellationToken);
+        await taskRepository.SaveChangesAsync(cancellationToken);
 
         await WriteHistoryAsync(instance.Id, taskId, task.WorkflowStepId,
             WorkflowActionType.Delegate, remarks,
             WorkflowStatus.InProgress, WorkflowStatus.InProgress, actionBy, cancellationToken);
+
+        await outboxPublisher.PublishStatusChangedAsync(
+            instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+            WorkflowStatus.InProgress, WorkflowActionType.Delegate,
+            actionBy, remarks, cancellationToken);
     }
 
     // ── Return for clarification ─────────────────────────────
@@ -208,21 +212,24 @@ public class WorkflowEngine(
         instance.CurrentWorkflowStepId = firstStep?.Id;
         instance.WorkflowStatus = WorkflowStatus.Pending;
         instance.LastUpdatedAt = DateTime.UtcNow;
-        instanceRepo.Update(instance);
-        await instanceRepo.SaveChangesAsync(cancellationToken);
+        instanceRepository.Update(instance);
+        await instanceRepository.SaveChangesAsync(cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowChangedEvent(
-            "workflow.instance.returned",
-            instance.Id, instance.Module?.ModuleCode ?? string.Empty,
-            instance.ReferenceTransactionId, WorkflowStatus.Pending, actionBy), cancellationToken);
+        // RETURN ← new
+        await outboxPublisher.PublishStatusChangedAsync(
+            instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+            WorkflowStatus.Pending, WorkflowActionType.Return,
+            actionBy, remarks, cancellationToken);
     }
 
     // ── Reassign (admin) ─────────────────────────────────────
     public async Task ProcessReassignAsync(
         int taskId, int reassignToEmployeeId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
-        var task = await taskRepo.GetByIdWithDetailsAsync(taskId, cancellationToken)
+        var task = await taskRepository.GetByIdWithDetailsAsync(taskId, cancellationToken)
             ?? throw new WorkflowTaskNotFoundException(taskId);
+
+        var instance = await GetInstanceOrThrowAsync(task.WorkflowInstanceId, cancellationToken);
 
         if (task.TaskStatus != WorkflowTaskStatus.Pending)
             throw new WorkflowTaskAlreadyActionedException(taskId, task.TaskStatus);
@@ -242,16 +249,21 @@ public class WorkflowEngine(
             ActionBy = actionBy,
             IsActive = true
         };
-        await taskRepo.AddAsync(newTask, cancellationToken);
-        await taskRepo.SaveChangesAsync(cancellationToken);
+        await taskRepository.AddAsync(newTask, cancellationToken);
+        await taskRepository.SaveChangesAsync(cancellationToken);
 
         await WriteHistoryAsync(task.WorkflowInstanceId, taskId, task.WorkflowStepId,
             WorkflowActionType.Reassign, remarks,
             WorkflowStatus.InProgress, WorkflowStatus.InProgress, actionBy, cancellationToken);
+
+        // On REASSIGN:
+        await outboxPublisher.PublishStatusChangedAsync(
+            instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+            WorkflowStatus.InProgress, WorkflowActionType.Reassign, actionBy, remarks, cancellationToken);
     }
 
     // ── Cancel (admin/system) ────────────────────────────────
-    public async Task CancelAsync(int instanceId, int actionBy, CancellationToken cancellationToken = default)
+    public async Task CancelAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var instance = await GetInstanceOrThrowAsync(instanceId, cancellationToken);
 
@@ -262,19 +274,19 @@ public class WorkflowEngine(
 
         await CancelOpenTasksAsync(instanceId, null, cancellationToken);
         await WriteHistoryAsync(instanceId, null, null,
-            WorkflowActionType.Cancel, null,
+            WorkflowActionType.Cancel, remarks,
             instance.WorkflowStatus, WorkflowStatus.Cancelled, actionBy, cancellationToken);
 
         await TerminateInstanceAsync(instance, WorkflowStatus.Cancelled, actionBy, cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowChangedEvent(
-            "workflow.instance.status_changed",
-            instance.Id, instance.Module?.ModuleCode ?? string.Empty,
-            instance.ReferenceTransactionId, WorkflowStatus.Cancelled, actionBy), cancellationToken);
+        // On CANCEL:
+        await outboxPublisher.PublishStatusChangedAsync(
+            instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+            WorkflowStatus.Cancelled, WorkflowActionType.Cancel, actionBy, remarks, cancellationToken);
     }
 
     // ── Withdraw (initiator only) ────────────────────────────
-    public async Task WithdrawAsync(int instanceId, int actionBy, CancellationToken cancellationToken = default)
+    public async Task WithdrawAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var instance = await GetInstanceOrThrowAsync(instanceId, cancellationToken);
 
@@ -283,15 +295,15 @@ public class WorkflowEngine(
 
         await CancelOpenTasksAsync(instanceId, null, cancellationToken);
         await WriteHistoryAsync(instanceId, null, null,
-            WorkflowActionType.Withdraw, null,
+            WorkflowActionType.Withdraw, remarks,
             WorkflowStatus.Pending, WorkflowStatus.Withdrawn, actionBy, cancellationToken);
 
         await TerminateInstanceAsync(instance, WorkflowStatus.Withdrawn, actionBy, cancellationToken);
 
-        await outbox.PublishAsync(new WorkflowChangedEvent(
-            "workflow.instance.status_changed",
-            instance.Id, instance.Module?.ModuleCode ?? string.Empty,
-            instance.ReferenceTransactionId, WorkflowStatus.Withdrawn, actionBy), cancellationToken);
+        // On WITHDRAW:
+        await outboxPublisher.PublishStatusChangedAsync(
+            instance.Id, instance.Module!.ModuleCode, instance.ReferenceTransactionId,
+            WorkflowStatus.Withdrawn, WorkflowActionType.Withdraw, actionBy, remarks, cancellationToken);
     }
 
     // ── Private helpers ──────────────────────────────────────
@@ -348,10 +360,10 @@ public class WorkflowEngine(
                     ActionBy = userId,
                     IsActive = true
                 };
-                await taskRepo.AddAsync(task, cancellationToken);
+                await taskRepository.AddAsync(task, cancellationToken);
             }
         }
-        await taskRepo.SaveChangesAsync(cancellationToken);
+        await taskRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task CompleteTaskAsync(
@@ -361,21 +373,21 @@ public class WorkflowEngine(
         task.Remarks = remarks;
         task.ActionAt = DateTime.UtcNow;
         task.ActionBy = actionBy;
-        taskRepo.Update(task);
-        await taskRepo.SaveChangesAsync(cancellationToken);
+        taskRepository.Update(task);
+        await taskRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task CancelOpenTasksAsync(int instanceId, int? exceptTaskId, CancellationToken cancellationToken)
     {
-        var tasks = await taskRepo.GetByInstanceIdAsync(instanceId, cancellationToken);
+        var tasks = await taskRepository.GetByInstanceIdAsync(instanceId, cancellationToken);
         foreach (var t in tasks.Where(t =>
             t.TaskStatus == WorkflowTaskStatus.Pending && t.Id != exceptTaskId))
         {
             t.TaskStatus = WorkflowTaskStatus.Cancelled;
             t.ActionAt = DateTime.UtcNow;
-            taskRepo.Update(t);
+            taskRepository.Update(t);
         }
-        await taskRepo.SaveChangesAsync(cancellationToken);
+        await taskRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task TerminateInstanceAsync(
@@ -386,8 +398,8 @@ public class WorkflowEngine(
         instance.CompletedAt = DateTime.UtcNow;
         instance.CompletedBy = actionBy;
         instance.LastUpdatedAt = DateTime.UtcNow;
-        instanceRepo.Update(instance);
-        await instanceRepo.SaveChangesAsync(cancellationToken);
+        instanceRepository.Update(instance);
+        await instanceRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task WriteHistoryAsync(
@@ -408,12 +420,12 @@ public class WorkflowEngine(
             ActionAt = DateTime.UtcNow,
             IsActive = true
         };
-        await historyRepo.AddAsync(history, cancellationToken);
+        await historyRepository.AddAsync(history, cancellationToken);
     }
 
     private async Task<WorkflowTask> GetPendingTaskOrThrowAsync(int taskId, int actionBy, CancellationToken cancellationToken)
     {
-        var task = await taskRepo.GetByIdWithDetailsAsync(taskId, cancellationToken)
+        var task = await taskRepository.GetByIdWithDetailsAsync(taskId, cancellationToken)
             ?? throw new WorkflowTaskNotFoundException(taskId);
 
         if (task.AssignedToEmployeeId != actionBy)
@@ -427,7 +439,7 @@ public class WorkflowEngine(
 
     private async Task<WorkflowInstance> GetInstanceOrThrowAsync(int instanceId, CancellationToken cancellationToken)
     {
-        return await instanceRepo.GetByIdWithDetailsAsync(instanceId, cancellationToken)
+        return await instanceRepository.GetByIdWithDetailsAsync(instanceId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowInstance", instanceId);
     }
 }

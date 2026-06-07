@@ -8,7 +8,7 @@ using SdxCore.SharedKernel.Entities;
 using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 using System.Text.Json;
 
-namespace SdxCore.Workflow.Application.BackgroundServices;
+namespace SdxCore.Messaging.BackgroundServices;
 
 public sealed class OutboxProcessorBackgroundService : BackgroundService
 {
