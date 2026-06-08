@@ -50,17 +50,17 @@ GO
 
 -- EMPLOYEE LEGAL ENTITY
 CREATE TABLE employee.EmployeeLegalEntity (
-    Id              UNIQUEIDENTIFIER PRIMARY KEY,
-    EmployeeId      UNIQUEIDENTIFIER     NOT NULL,
-    LegalEntityId   UNIQUEIDENTIFIER  NOT NULL,
-    IsPrimary       BIT     NOT NULL DEFAULT 0,
-    StartDate       DATE    NULL,
-    EndDate         DATE    NULL,
-    IsActive        BIT             NOT NULL DEFAULT 1,
-    CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       UNIQUEIDENTIFIER             NULL,
-    LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
+    Id                              UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                      UNIQUEIDENTIFIER     NOT NULL,
+    LegalEntityId                   UNIQUEIDENTIFIER  NOT NULL,
+    IsPrimaryLegalEntity            BIT     NOT NULL DEFAULT 0,
+    StartDate                       DATE    NULL,
+    EndDate                         DATE    NULL,
+    IsActive                        BIT             NOT NULL DEFAULT 1,
+    CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_ELE_Employee
         FOREIGN KEY (EmployeeId)
@@ -158,17 +158,17 @@ GO
 
 -- EMPLOYEE CONTACT
 CREATE TABLE employee.EmployeeContact (
-    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
-    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
-    ContactType         NVARCHAR(50)    NOT NULL,
-    ContactTypeGroup    AS CAST('CONTACT_TYPE' AS NVARCHAR(50)) PERSISTED,
-    ContactValue        NVARCHAR(500)   NOT NULL,
-    IsPrimary           BIT             NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           UNIQUEIDENTIFIER             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
+    Id                                      UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                              UNIQUEIDENTIFIER NOT NULL,
+    ContactType                             NVARCHAR(50)    NOT NULL,
+    ContactTypeGroup                        AS CAST('CONTACT_TYPE' AS NVARCHAR(50)) PERSISTED,
+    ContactValue                            NVARCHAR(500)   NOT NULL,
+    IsPrimaryContact                        BIT             NOT NULL DEFAULT 0,
+    IsActive                                BIT             NOT NULL DEFAULT 1,
+    CreatedAt                               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                               UNIQUEIDENTIFIER             NULL,
+    LastUpdatedAt                           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EmployeeContact_Employee
         FOREIGN KEY (EmployeeId)
@@ -280,18 +280,19 @@ GO
 
 -- EMPLOYEE TEAM
 CREATE TABLE employee.EmployeeTeam (
-    Id                      UNIQUEIDENTIFIER PRIMARY KEY,
-    EmployeeId              UNIQUEIDENTIFIER NOT NULL,
-    TeamId                  UNIQUEIDENTIFIER NOT NULL,
-    RoleInTeam              NVARCHAR(100)   NULL,
-    AllocationPercentage    DECIMAL(5,2)    NULL,
-    StartDate               DATE            NULL,
-    EndDate                 DATE            NULL,
-    IsActive                BIT             NOT NULL DEFAULT 1,
-    CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               UNIQUEIDENTIFIER NULL,
-    LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           UNIQUEIDENTIFIER NULL,
+    Id                                          UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                                  UNIQUEIDENTIFIER NOT NULL,
+    TeamId                                      UNIQUEIDENTIFIER NOT NULL,
+    RoleInTeam                                  NVARCHAR(100)   NULL,
+    AllocationPercentage                        DECIMAL(5,2)    NULL,
+    IsPrimaryTeam                               BIT NOT NULL DEFAULT 0,
+    StartDate                                   DATE            NULL,
+    EndDate                                     DATE            NULL,
+    IsActive                                    BIT             NOT NULL DEFAULT 1,
+    CreatedAt                                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                                   UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt                               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                               UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_EmployeeTeam_Employee
         FOREIGN KEY (EmployeeId)
@@ -332,28 +333,28 @@ GO
 -- Expected StatusCodes: PERMANENT, CURRENT, MAILING, EMERGENCY, WORK
 
 CREATE TABLE employee.EmployeeAddress (
-    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
-    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
-    AddressType         NVARCHAR(50)    NOT NULL,
-    AddressTypeGroup    AS CAST('ADDRESS_TYPE' AS NVARCHAR(50)) PERSISTED,
-    AddressLine1        NVARCHAR(500)   NOT NULL,
-    AddressLine2        NVARCHAR(500)   NULL,
-    Landmark            NVARCHAR(300)   NULL,
-    City                NVARCHAR(100)   NOT NULL,
-    StateProvince       NVARCHAR(100)   NULL,
-    PostalCode          NVARCHAR(20)    NULL,
-    CountryId           UNIQUEIDENTIFIER NOT NULL,
-    RegionId            UNIQUEIDENTIFIER NULL,
-    IsPrimary           BIT             NOT NULL DEFAULT 0,
-    WorkflowInstanceId  UNIQUEIDENTIFIER NULL,
-    IsVerified          BIT             NOT NULL DEFAULT 0,
-    VerifiedByEmployeeId UNIQUEIDENTIFIER NULL,
-    VerifiedAt          DATETIME2       NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           UNIQUEIDENTIFIER NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
+    Id                                      UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                              UNIQUEIDENTIFIER NOT NULL,
+    AddressType                             NVARCHAR(50)    NOT NULL,
+    AddressTypeGroup                        AS CAST('ADDRESS_TYPE' AS NVARCHAR(50)) PERSISTED,
+    AddressLine1                            NVARCHAR(500)   NOT NULL,
+    AddressLine2                            NVARCHAR(500)   NULL,
+    Landmark                                NVARCHAR(300)   NULL,
+    City                                    NVARCHAR(100)   NOT NULL,
+    StateProvince                           NVARCHAR(100)   NULL,
+    PostalCode                              NVARCHAR(20)    NULL,
+    CountryId                               UNIQUEIDENTIFIER NOT NULL,
+    RegionId                                UNIQUEIDENTIFIER NULL,
+    IsPrimaryAddress                        BIT             NOT NULL DEFAULT 0,
+    WorkflowInstanceId                      UNIQUEIDENTIFIER NULL,
+    IsVerified                              BIT             NOT NULL DEFAULT 0,
+    VerifiedByEmployeeId                    UNIQUEIDENTIFIER NULL,
+    VerifiedAt                              DATETIME2       NULL,
+    IsActive                                BIT             NOT NULL DEFAULT 1,
+    CreatedAt                               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                               UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt                           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                           UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT FK_EmployeeAddress_Employee
         FOREIGN KEY (EmployeeId)
@@ -477,45 +478,55 @@ GO
 -- Partial unique index: only one IsPrimary = 1 per employee
 CREATE UNIQUE INDEX UIX_EmployeeAddress_PrimaryPerEmployee
     ON employee.EmployeeAddress (EmployeeId)
-    WHERE IsPrimary = 1 AND IsActive = 1;
+    WHERE IsPrimaryAddress = 1 AND IsActive = 1;
 GO
 
 -- VIEW - Employee Full Profile (for joins)
-CREATE OR ALTER VIEW employee.vw_EmployeeFullProfile AS
+CREATE OR ALTER VIEW employee.vwEmployeeSummary
+AS
 SELECT
     e.Id                                     AS EmployeeId,
     e.EmployeeCode,
     e.FirstName,
     e.LastName,
     e.DisplayName,
-    e.ProfilePhotoUrl,
     e.Email,
     e.MobileNumber,
     e.DateOfJoining,
     e.EmploymentType,
+	e.ProfilePhotoUrl,
     e.IsActive,
-    d.Id                                     AS PrimaryDepartmentId,
-    d.DepartmentName						 AS PrimaryDepartmentName,
-    dg.Id                                    AS DesignationId,
-    dg.DesignationName,
-    dg.Grade,
-    loc.Id                                   AS PrimaryLocationId,
-    loc.LocationName						 AS PrimaryLocationName,
-    loc.City								 AS PrimaryLocationCity,
+	te.TeamId								 AS PrimaryTeamId,
+    ed.DepartmentId                          AS PrimaryDepartmentId,
+    e.DesignationId                          AS DesignationId,
+    el.LocationId                            AS PrimaryLocationId,
     le.LegalEntityId                         AS PrimaryLegalEntityId,
-    ler.EntityName                           AS PrimaryLegalEntityName,
     mgr.Id                                   AS DirectManagerId,
     mgr.DisplayName                          AS DirectManagerName
 FROM employee.Employee e
-LEFT JOIN employee.EmployeeDepartment ed ON ed.EmployeeId = e.Id AND ed.IsPrimaryDepartment = 1 AND ed.IsActive = 1
-LEFT JOIN time.Department d ON d.Id = ed.DepartmentId
-LEFT JOIN time.Designation dg ON dg.Id = e.DesignationId
-LEFT JOIN employee.EmployeeLocation el ON el.EmployeeId = e.Id AND el.IsPrimaryLocation = 1 AND el.IsActive = 1
-LEFT JOIN time.OfficeLocation loc ON loc.Id = el.LocationId
-LEFT JOIN employee.EmployeeLegalEntity le ON le.EmployeeId = e.Id AND le.IsPrimary = 1 AND le.IsActive = 1
-LEFT JOIN time.LegalEntity ler ON ler.Id = le.LegalEntityId
-LEFT JOIN employee.EmployeeRelationship er ON er.ChildEmployeeId = e.Id AND er.RelationshipType = 'DIRECT_MANAGER' AND er.IsPrimaryRelationship = 1 AND er.IsActive = 1
-LEFT JOIN employee.Employee mgr ON mgr.Id = er.ParentEmployeeId;
+LEFT JOIN employee.EmployeeDepartment ed
+    ON ed.EmployeeId = e.Id
+    AND ed.IsPrimaryDepartment = 1
+    AND ed.IsActive = 1
+LEFT JOIN employee.EmployeeLocation el
+    ON el.EmployeeId = e.Id
+    AND el.IsPrimaryLocation = 1
+    AND el.IsActive = 1
+LEFT JOIN employee.EmployeeLegalEntity le
+    ON le.EmployeeId = e.Id
+    AND le.IsPrimaryLegalEntity = 1
+    AND le.IsActive = 1
+LEFT JOIN employee.EmployeeTeam te
+    ON te.EmployeeId = e.Id
+    AND te.IsPrimaryTeam = 1
+    AND te.IsActive = 1
+LEFT JOIN employee.EmployeeRelationship er
+    ON er.ChildEmployeeId = e.Id
+    AND er.RelationshipType = 'DIRECT_MANAGER'
+    AND er.IsPrimaryRelationship = 1
+    AND er.IsActive = 1
+LEFT JOIN employee.Employee mgr
+    ON mgr.Id = er.ParentEmployeeId;
 GO
 
 PRINT 'Employee schema created successfully';

@@ -39,6 +39,7 @@ CREATE TABLE workflow.WorkflowModule (
     Id              UNIQUEIDENTIFIER          PRIMARY KEY,
     ModuleCode      NVARCHAR(100)   NOT NULL UNIQUE,
     ModuleName      NVARCHAR(200)   NOT NULL,
+    [Schema]        NVARCHAR(50)    NOT NULL,
     EntityName      NVARCHAR(100)   NOT NULL,   -- Logical entity name tracked by the module
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -138,7 +139,7 @@ CREATE TABLE workflow.WorkflowStepApprover (
     WorkflowApproverType        NVARCHAR(50)    NOT NULL,
     WorkflowApproverTypeGroup   AS CAST('WORKFLOW_APPROVER_TYPE' AS NVARCHAR(50)) PERSISTED,
     ScopeTypeId                 UNIQUEIDENTIFIER          NULL,   -- FK → time.ScopeType
-    ScopeReferenceId            SMALLINT          NULL,   -- Entity id within that scope level
+    ScopeReferenceId            UNIQUEIDENTIFIER          NULL,   -- Entity id within that scope level
     PriorityOrder               SMALLINT             NOT NULL DEFAULT 1,
     IsMandatory                 BIT             NOT NULL DEFAULT 1,
     IsActive                    BIT             NOT NULL DEFAULT 1,
@@ -200,7 +201,7 @@ CREATE TABLE workflow.WorkflowAssignment (
     Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
     WorkflowDefinitionId    UNIQUEIDENTIFIER          NOT NULL,
     ScopeTypeId             UNIQUEIDENTIFIER          NOT NULL,   -- FK → time.ScopeType (routing scope)
-    ScopeReferenceId        SMALLINT          NOT NULL,   -- Entity id at the routing scope
+    ScopeReferenceId        UNIQUEIDENTIFIER          NULL,   -- Entity id at the routing scope
     EffectiveFrom           DATE            NOT NULL,
     EffectiveTo             DATE            NULL,
     PriorityOrder           SMALLINT             NOT NULL DEFAULT 1,  -- Conflict resolution when multiple match
@@ -231,7 +232,7 @@ CREATE TABLE workflow.WorkflowInstance (
     Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
     WorkflowDefinitionId    UNIQUEIDENTIFIER          NOT NULL,
     WorkflowModuleId        UNIQUEIDENTIFIER          NOT NULL,
-    ReferenceTransactionId  INT          NOT NULL,
+    ReferenceTransactionId  UNIQUEIDENTIFIER          NOT NULL,
     CurrentWorkflowStepId   UNIQUEIDENTIFIER          NULL,       -- NULL when completed or cancelled
     WorkflowStatus          NVARCHAR(50)    NOT NULL,
     WorkflowStatusGroup     AS CAST('WORKFLOW_STATUS' AS NVARCHAR(50)) PERSISTED,

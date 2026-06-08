@@ -74,7 +74,7 @@ INSERT INTO employee.Employee (Id, EmployeeCode, FirstName, LastName, DisplayNam
 
 PRINT 'Inserting EmployeeLegalEntity...';
 -- Mumbai / Pune - MEDCARE-IN
-INSERT INTO employee.EmployeeLegalEntity (Id, EmployeeId, LegalEntityId, IsPrimary, StartDate) VALUES
+INSERT INTO employee.EmployeeLegalEntity (Id, EmployeeId, LegalEntityId, IsPrimaryLegalEntity, StartDate) VALUES
 (NEWID(), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP001'), (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'), 1, '2012-01-15'),
 (NEWID(), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP002'), (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'), 1, '2014-03-01'),
 (NEWID(), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP003'), (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'), 1, '2015-06-10'),
@@ -253,7 +253,7 @@ INSERT INTO employee.EmployeeRelationship (Id, ParentEmployeeId, ChildEmployeeId
 
 
 PRINT 'Inserting EmployeeContact...';
-INSERT INTO employee.EmployeeContact (Id, EmployeeId, ContactType, ContactValue, IsPrimary) VALUES
+INSERT INTO employee.EmployeeContact (Id, EmployeeId, ContactType, ContactValue, IsPrimaryContact) VALUES
 (NEWID(), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP001'), 'WORK_PHONE',     '+91-22-40001001',                  1),
 (NEWID(), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP001'), 'PERSONAL_EMAIL', 'rajesh.sharma.personal@gmail.com', 0),
 (NEWID(), (SELECT Id FROM employee.Employee WHERE EmployeeCode='EMP002'), 'WORK_PHONE',     '+91-22-40001002',                  1),
