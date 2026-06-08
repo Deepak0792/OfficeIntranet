@@ -719,6 +719,7 @@ GO
 -- ============================================================
 INSERT INTO shared.LookupDefinition
 (
+    LookupDefinitionId,
     LookupCode,
     LookupName,
     LookupSourceType,
@@ -729,6 +730,7 @@ INSERT INTO shared.LookupDefinition
 )
 VALUES
 (
+    NEWID(),
     'FEEDBACK_STATUS',
     'Feedback Status',
     'STATIC_SQL',
@@ -761,6 +763,7 @@ BEGIN
 
     INSERT INTO shared.LookupDefinition
     (
+        LookupDefinitionId,
         LookupCode,
         LookupName,
         LookupSourceType,
@@ -774,6 +777,7 @@ BEGIN
     )
     VALUES
     (
+        '59B9433E-F36B-1410-8804-001812045BC4',
         'COUNTRY',
         'Country Lookup',
         'STATIC_SQL',
@@ -813,6 +817,7 @@ BEGIN
 
     INSERT INTO shared.LookupDefinition
     (
+        LookupDefinitionId,
         LookupCode,
         LookupName,
         LookupSourceType,
@@ -828,6 +833,7 @@ BEGIN
     )
     VALUES
     (
+        '59B9433E-F36B-1410-8804-001812045BC5',
         'STATE',
         'State Lookup',
         'STATIC_SQL',
@@ -879,6 +885,7 @@ BEGIN
 
     INSERT INTO shared.LookupDefinition
     (
+        LookupDefinitionId,
         LookupCode,
         LookupName,
         LookupSourceType,
@@ -894,6 +901,7 @@ BEGIN
     )
     VALUES
     (
+        '59B9433E-F36B-1410-8804-001812045BC7',
         'CITY',
         'City Lookup',
         'STATIC_SQL',

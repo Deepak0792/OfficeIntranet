@@ -108,12 +108,12 @@ GO
 
 -- SURVEY - Main survey entity
 CREATE TABLE survey.Survey (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
     SurveyCode              NVARCHAR(50)    NOT NULL UNIQUE,
     Title                   NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
     Instructions            NVARCHAR(MAX)   NULL,
-    CreatedById             INT          NOT NULL,
+    CreatedById             UNIQUEIDENTIFIER          NOT NULL,
     StartDate               DATE            NOT NULL,
     EndDate                 DATE            NOT NULL,
     IsAnonymous             BIT             NOT NULL DEFAULT 0,
@@ -132,9 +132,9 @@ CREATE TABLE survey.Survey (
     TotalResponses          INT             NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Survey_CreatedBy
         FOREIGN KEY (CreatedById)
@@ -152,8 +152,8 @@ GO
 
 -- SURVEY TARGET - Departments/employees targeted for survey
 CREATE TABLE survey.SurveyTarget (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    SurveyId            UNIQUEIDENTIFIER          NOT NULL,
     TargetType          NVARCHAR(50)   NOT NULL,
     TargetTypeGroup     AS CAST('TARGET_TYPE' AS NVARCHAR(50)) PERSISTED,
     -- TargetId mapping based on TargetType:
@@ -161,15 +161,15 @@ CREATE TABLE survey.SurveyTarget (
     -- DEPARTMENT: - time.Department(Id)
     -- LOCATION: - time.OfficeLocation(Id)
     -- EMPLOYEE: - employee.Employee(Id)
-    TargetId            INT          NULL,
-    DepartmentId        SMAllINT          NULL,
-    LocationId          SMAllINT          NULL,
-    EmployeeId          INT          NULL,
+    TargetId            UNIQUEIDENTIFIER          NULL,
+    DepartmentId        UNIQUEIDENTIFIER          NULL,
+    LocationId          UNIQUEIDENTIFIER          NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SurveyTarget_Survey
         FOREIGN KEY (SurveyId)
@@ -196,8 +196,8 @@ GO
 
 -- SURVEY QUESTION - Questions in a survey
 CREATE TABLE survey.SurveyQuestion (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    SurveyId            UNIQUEIDENTIFIER          NOT NULL,
     QuestionText        NVARCHAR(1000) NOT NULL,
     QuestionType        NVARCHAR(50)   NOT NULL,
     QuestionTypeGroup   AS CAST('QUESTION_TYPE' AS NVARCHAR(50)) PERSISTED,
@@ -211,9 +211,9 @@ CREATE TABLE survey.SurveyQuestion (
     SkipLogic           NVARCHAR(MAX)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SurveyQuestion_Survey
         FOREIGN KEY (SurveyId)
@@ -228,9 +228,9 @@ GO
 
 -- SURVEY RESPONSE - Employee responses to survey
 CREATE TABLE survey.SurveyResponse (
-    Id                  INT             PRIMARY KEY IDENTITY(1,1),
-    SurveyId            INT             NOT NULL,
-    EmployeeId          INT             NOT NULL,
+    Id                  UNIQUEIDENTIFIER             PRIMARY KEY,
+    SurveyId            UNIQUEIDENTIFIER             NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER             NOT NULL,
     SubmissionNumber    INT             NOT NULL DEFAULT 1,
     IsAnonymous         BIT             NOT NULL DEFAULT 0,
     AnonymousHash       NVARCHAR(64)    NULL,
@@ -241,9 +241,9 @@ CREATE TABLE survey.SurveyResponse (
     DeviceInfo          NVARCHAR(200)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SurveyResponse_Survey
         FOREIGN KEY (SurveyId)
@@ -260,17 +260,17 @@ GO
 
 -- SURVEY RESPONSE ANSWER - Individual answers to survey questions
 CREATE TABLE survey.SurveyResponseAnswer (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    ResponseId          INT          NOT NULL,
-    QuestionId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    ResponseId          UNIQUEIDENTIFIER          NOT NULL,
+    QuestionId          UNIQUEIDENTIFIER          NOT NULL,
     AnswerText          NVARCHAR(MAX)  NULL,
     AnswerRating        DECIMAL(5,2)   NULL,
     AnswerOptions       NVARCHAR(MAX)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SurveyResponseAnswer_Response
         FOREIGN KEY (ResponseId)
@@ -285,9 +285,9 @@ GO
 
 -- SURVEY NOTIFICATION - Survey notifications to employees
 CREATE TABLE survey.SurveyNotification (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    SurveyId            UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     NotificationType    NVARCHAR(50)   NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
     ChannelStatusGroup  AS CAST('NOTIFICATION_CHANNEL' AS NVARCHAR(50)) PERSISTED,
@@ -300,9 +300,9 @@ CREATE TABLE survey.SurveyNotification (
     ErrorMessage        NVARCHAR(500)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SurveyNotification_Survey
         FOREIGN KEY (SurveyId)
@@ -325,8 +325,8 @@ GO
 
 -- SURVEY ANALYTICS - Pre-computed survey analytics
 CREATE TABLE survey.SurveyAnalytics (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    SurveyId            INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    SurveyId            UNIQUEIDENTIFIER          NOT NULL,
     TotalQuestions      INT             NOT NULL DEFAULT 0,
     TotalResponses      INT             NOT NULL DEFAULT 0,
     CompletionRate      DECIMAL(5,2)   NOT NULL DEFAULT 0,
@@ -337,9 +337,9 @@ CREATE TABLE survey.SurveyAnalytics (
     LastCalculatedAt    DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SurveyAnalytics_Survey
         FOREIGN KEY (SurveyId)
@@ -354,13 +354,13 @@ GO
 
 -- POLL - Main poll entity
 CREATE TABLE survey.Poll (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
     PollCode                NVARCHAR(50)    NOT NULL UNIQUE,
     Question                NVARCHAR(500)   NOT NULL,
     Description             NVARCHAR(1000)  NULL,
     PollType                NVARCHAR(50)   NOT NULL,
     PollTypeGroup           AS CAST('POLL_TYPE' AS NVARCHAR(50)) PERSISTED,
-    CreatedById             INT          NOT NULL,
+    CreatedById             UNIQUEIDENTIFIER          NOT NULL,
     IsAnonymous             BIT             NOT NULL DEFAULT 0,
     AllowMultipleVotes      BIT             NOT NULL DEFAULT 0,
     ExpiryDate              DATETIME2       NULL,
@@ -372,9 +372,9 @@ CREATE TABLE survey.Poll (
     Category                NVARCHAR(100)  NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Poll_CreatedBy
         FOREIGN KEY (CreatedById)
@@ -393,8 +393,8 @@ GO
 
 -- POLL OPTION - Options for a poll
 CREATE TABLE survey.PollOption (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    PollId              INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    PollId              UNIQUEIDENTIFIER          NOT NULL,
     OptionText          NVARCHAR(300)   NOT NULL,
     DisplayOrder        INT             NOT NULL DEFAULT 0,
     ImageUrl            NVARCHAR(1000)  NULL,
@@ -402,9 +402,9 @@ CREATE TABLE survey.PollOption (
     Percentage          DECIMAL(5,2)   NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_PollOption_Poll
         FOREIGN KEY (PollId)
@@ -415,18 +415,18 @@ GO
 
 -- POLL VOTE - Employee votes on poll
 CREATE TABLE survey.PollVote (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    PollId              INT          NOT NULL,
-    OptionId            INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    PollId              UNIQUEIDENTIFIER          NOT NULL,
+    OptionId            UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     AnonymousHash       NVARCHAR(64)    NULL,
     VoteDate            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IPAddress           NVARCHAR(50)    NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_PollVote_Poll
         FOREIGN KEY (PollId)
@@ -447,8 +447,8 @@ GO
 
 -- POLL TARGET - Departments/employees targeted for poll
 CREATE TABLE survey.PollTarget (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    PollId              INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    PollId              UNIQUEIDENTIFIER          NOT NULL,
     TargetType          NVARCHAR(50)   NOT NULL,
     TargetTypeGroup     AS CAST('TARGET_TYPE' AS NVARCHAR(50)) PERSISTED,
     -- TargetId mapping based on TargetType:
@@ -456,15 +456,15 @@ CREATE TABLE survey.PollTarget (
     -- DEPARTMENT: - time.Department(Id)
     -- LOCATION: - time.OfficeLocation(Id)
     -- EMPLOYEE: - employee.Employee(Id)
-    TargetId            INT          NULL,
-    DepartmentId        SMAllINT          NULL,
-    LocationId          SMAllINT          NULL,
-    EmployeeId          INT          NULL,
+    TargetId            UNIQUEIDENTIFIER          NULL,
+    DepartmentId        UNIQUEIDENTIFIER          NULL,
+    LocationId          UNIQUEIDENTIFIER          NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_PollTarget_Poll
         FOREIGN KEY (PollId)
@@ -493,7 +493,7 @@ GO
 
 -- ANONYMOUS FEEDBACK - Employee anonymous feedback
 CREATE TABLE survey.AnonymousFeedback (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     FeedbackReference   NVARCHAR(20)   NOT NULL UNIQUE,
     FeedbackCategory    NVARCHAR(50)   NOT NULL,
     FeedbackCategoryGroup AS CAST('FEEDBACK_CATEGORY' AS NVARCHAR(50)) PERSISTED,
@@ -502,9 +502,9 @@ CREATE TABLE survey.AnonymousFeedback (
     StatusCode          NVARCHAR(50)   NOT NULL DEFAULT 'SUBMITTED',
     StatusCodeGroup     AS CAST('FEEDBACK_STATUS' AS NVARCHAR(50)) PERSISTED,
     Priority            NVARCHAR(20)   NOT NULL DEFAULT 'NORMAL',
-    AssignedToId        INT          NULL,
+    AssignedToId        UNIQUEIDENTIFIER          NULL,
     AnonymousHash       NVARCHAR(64)   NOT NULL,
-    EmployeeId          INT          NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NULL,
     IsAnonymousByChoice BIT             NOT NULL DEFAULT 1,
     AttachmentUrl       NVARCHAR(1000)  NULL,
     AttachmentName      NVARCHAR(255)  NULL,
@@ -512,9 +512,9 @@ CREATE TABLE survey.AnonymousFeedback (
     ResolvedAt          DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_AnonymousFeedback_Category
         FOREIGN KEY (FeedbackCategory, FeedbackCategoryGroup)
@@ -539,19 +539,19 @@ GO
 
 -- FEEDBACK ACTION - Actions taken on feedback
 CREATE TABLE survey.FeedbackAction (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    FeedbackId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    FeedbackId          UNIQUEIDENTIFIER          NOT NULL,
     ActionType          NVARCHAR(50)   NOT NULL,
-    ActionById          INT          NOT NULL,
+    ActionById          UNIQUEIDENTIFIER          NOT NULL,
     PreviousStatus      NVARCHAR(50)   NULL,
     NewStatus           NVARCHAR(50)   NULL,
     Comments            NVARCHAR(MAX)  NULL,
     AttachmentUrl       NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_FeedbackAction_Feedback
         FOREIGN KEY (FeedbackId)
@@ -568,10 +568,10 @@ GO
 
 -- FEEDBACK ESCALATION - Escalation tracking for feedback
 CREATE TABLE survey.FeedbackEscalation (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    FeedbackId          INT          NOT NULL,
-    EscalatedById       INT          NOT NULL,
-    EscalatedToId       INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    FeedbackId          UNIQUEIDENTIFIER          NOT NULL,
+    EscalatedById       UNIQUEIDENTIFIER          NOT NULL,
+    EscalatedToId       UNIQUEIDENTIFIER          NOT NULL,
     EscalationLevel     SMAllINT             NOT NULL DEFAULT 1,
     Reason              NVARCHAR(500)  NOT NULL,
     IsAccepted          BIT             NULL,
@@ -579,9 +579,9 @@ CREATE TABLE survey.FeedbackEscalation (
     ResolvedAt          DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_FeedbackEscalation_Feedback
         FOREIGN KEY (FeedbackId)

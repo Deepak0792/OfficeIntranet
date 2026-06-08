@@ -12,7 +12,7 @@ GO
 
 -- TAX PROOF CATEGORY - IT Declaration Sections
 CREATE TABLE payroll.TaxProofCategory (
-    Id                      SMALLINT             PRIMARY KEY IDENTITY(1,1),
+    Id                      UNIQUEIDENTIFIER             PRIMARY KEY,
     CategoryCode            NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName            NVARCHAR(200)   NOT NULL,
     Section                 NVARCHAR(100)   NULL,
@@ -23,15 +23,15 @@ CREATE TABLE payroll.TaxProofCategory (
     DisplayOrder            SMALLINT         NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- SALARY GRADE
 CREATE TABLE payroll.SalaryGrade (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
     GradeCode       NVARCHAR(50)    NOT NULL UNIQUE,
     GradeName       NVARCHAR(200)   NOT NULL,
     MinCTC          DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -40,27 +40,27 @@ CREATE TABLE payroll.SalaryGrade (
     Description     NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- SALARY STRUCTURE
 CREATE TABLE payroll.SalaryStructure (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
     StructureCode   NVARCHAR(100)   NOT NULL UNIQUE,
     StructureName   NVARCHAR(200)   NOT NULL,
-    LegalEntityId   SMALLINT          NOT NULL,
+    LegalEntityId   UNIQUEIDENTIFIER          NOT NULL,
     CurrencyCode    NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     VersionNo       SMALLINT             NOT NULL DEFAULT 1,
     IsDefault       BIT             NOT NULL DEFAULT 0,
     Description     NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SalaryStructure_LegalEntity
         FOREIGN KEY (LegalEntityId)
@@ -70,36 +70,36 @@ GO
 
 -- PAYROLL COMPONENT
 CREATE TABLE payroll.PayrollComponent (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
     ComponentCode   NVARCHAR(100)   NOT NULL UNIQUE,
     ComponentName   NVARCHAR(200)   NOT NULL,
     IsEarning       BIT             NOT NULL DEFAULT 1,
     IsDeduction     BIT             NOT NULL DEFAULT 0, 
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 );
 GO
 
 -- SALARY STRUCTURE COMPONENT
 CREATE TABLE payroll.SalaryStructureComponent (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
-    SalaryStructureId   SMALLINT          NOT NULL,
-    PayrollComponentId  SMALLINT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    SalaryStructureId   UNIQUEIDENTIFIER          NOT NULL,
+    PayrollComponentId  UNIQUEIDENTIFIER          NOT NULL,
     CalculationType     NVARCHAR(50)    NOT NULL DEFAULT 'FIXED',
     CalculationTypeGroup AS CAST('CALC_TYPE' AS NVARCHAR(50)) PERSISTED,
     PercentageValue     DECIMAL(10,4)   NULL,
-    BaseComponentId     SMALLINT          NULL,
+    BaseComponentId     UNIQUEIDENTIFIER          NULL,
     FormulaExpression   NVARCHAR(2000)  NULL,
     IsStatutory         BIT             NOT NULL DEFAULT 0,
     DisplayOrder        SMALLINT             NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SSC_SalaryStructure
         FOREIGN KEY (SalaryStructureId)
@@ -121,8 +121,8 @@ GO
 
 -- PAYROLL ATTENDANCE SUMMARY
 CREATE TABLE payroll.PayrollAttendanceSummary (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     PayrollMonth        SMALLINT             NOT NULL,
     PayrollYear         SMALLINT             NOT NULL,
     TotalWorkingDays    DECIMAL(10,2)   NOT NULL,
@@ -133,9 +133,9 @@ CREATE TABLE payroll.PayrollAttendanceSummary (
     ProcessedAt         DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT UQ_PayrollAttendanceSummary
         UNIQUE (EmployeeId, PayrollMonth, PayrollYear),
@@ -148,10 +148,10 @@ GO
 
 -- EMPLOYEE SALARY
 CREATE TABLE payroll.EmployeeSalary (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
-    SalaryStructureId   SMALLINT          NOT NULL,
-    SalaryGradeId       SMALLINT          NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
+    SalaryStructureId   UNIQUEIDENTIFIER          NOT NULL,
+    SalaryGradeId       UNIQUEIDENTIFIER          NULL,
     AnnualCTC           DECIMAL(18,2)   NOT NULL,
     MonthlyCTC          DECIMAL(18,2)   NOT NULL,
     MonthlyGross        DECIMAL(18,2)   NOT NULL,
@@ -162,9 +162,9 @@ CREATE TABLE payroll.EmployeeSalary (
     Remarks             NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EmployeeSalary_Employee
         FOREIGN KEY (EmployeeId)
@@ -182,9 +182,9 @@ GO
 
 -- EMPLOYEE SALARY COMPONENT
 CREATE TABLE payroll.EmployeeSalaryComponent (
-    Id                          INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeSalaryId            INT          NOT NULL,
-    SalaryStructureComponentId  SMALLINT          NOT NULL,
+    Id                          UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeSalaryId            UNIQUEIDENTIFIER          NOT NULL,
+    SalaryStructureComponentId  UNIQUEIDENTIFIER          NOT NULL,
     PayrollMonth                SMALLINT             NOT NULL,
     PayrollYear                 SMALLINT             NOT NULL,
     ComputedAmount              DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -193,9 +193,9 @@ CREATE TABLE payroll.EmployeeSalaryComponent (
     OverrideReason              NVARCHAR(500)   NULL,
     IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                   INT             NULL,
+    CreatedBy                   UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy               INT             NULL,
+    LastUpdatedBy               UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_ESC_EmployeeSalary
         FOREIGN KEY (EmployeeSalaryId)
@@ -212,10 +212,10 @@ GO
 
 -- SALARY REVISION
 CREATE TABLE payroll.SalaryRevision (
-    Id                   INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId           INT          NOT NULL,
-    OldEmployeeSalaryId  INT          NULL,
-    NewEmployeeSalaryId  INT          NOT NULL,
+    Id                   UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId           UNIQUEIDENTIFIER          NOT NULL,
+    OldEmployeeSalaryId  UNIQUEIDENTIFIER          NULL,
+    NewEmployeeSalaryId  UNIQUEIDENTIFIER          NOT NULL,
     RevisionType         NVARCHAR(50)    NOT NULL,
     RevisionTypeGroup    AS CAST('SALARY_REVISION_TYPE' AS NVARCHAR(50)) PERSISTED,
     RevisionDate         DATE            NOT NULL,
@@ -224,11 +224,11 @@ CREATE TABLE payroll.SalaryRevision (
     IncrementAmount      AS (NewAnnualCTC - ISNULL(OldAnnualCTC, 0)),
     IncrementPercentage  DECIMAL(10,4)   NULL,
     Reason               NVARCHAR(2000)  NULL,
-    ApprovedBy           INT          NULL,
+    ApprovedBy           UNIQUEIDENTIFIER          NULL,
     ApprovedAt           DATETIME2       NULL,
     IsActive             BIT             NOT NULL DEFAULT 1,
     LastUpdatedAt        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy        INT             NULL,
+    LastUpdatedBy        UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SalaryRevision_Employee
         FOREIGN KEY (EmployeeId)
@@ -254,7 +254,7 @@ GO
 
 -- BANK MASTER
 CREATE TABLE payroll.BankMaster (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
     BankCode        NVARCHAR(50)    NOT NULL UNIQUE,
     BankName        NVARCHAR(300)   NOT NULL,
     IfscPrefix      NVARCHAR(10)    NULL,
@@ -262,17 +262,17 @@ CREATE TABLE payroll.BankMaster (
     CountryCode     NVARCHAR(10)    NOT NULL DEFAULT 'IN',
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- EMPLOYEE BANK ACCOUNT
 CREATE TABLE payroll.EmployeeBankAccount (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
-    BankMasterId        SMALLINT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
+    BankMasterId        UNIQUEIDENTIFIER          NOT NULL,
     AccountHolderName   NVARCHAR(300)   NOT NULL,
     AccountNumber       NVARCHAR(100)   NOT NULL,
     AccountType         NVARCHAR(50)    NOT NULL DEFAULT 'SAVINGS',
@@ -284,13 +284,13 @@ CREATE TABLE payroll.EmployeeBankAccount (
     CurrencyCode        NVARCHAR(10)    NOT NULL DEFAULT 'INR',
     IsPrimary           BIT             NOT NULL DEFAULT 0,
     IsVerified          BIT             NOT NULL DEFAULT 0,
-    VerifiedBy          INT          NULL,
+    VerifiedBy          UNIQUEIDENTIFIER          NULL,
     VerifiedAt          DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EBA_Employee
         FOREIGN KEY (EmployeeId)
@@ -312,8 +312,8 @@ GO
 
 -- PAYROLL DISBURSEMENT
 CREATE TABLE payroll.PayrollDisbursement (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    LegalEntityId           SMALLINT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
+    LegalEntityId           UNIQUEIDENTIFIER          NOT NULL,
     PayrollMonth            SMALLINT             NOT NULL,
     PayrollYear             SMALLINT             NOT NULL,
     DisbursementDate        DATE            NULL,
@@ -323,8 +323,8 @@ CREATE TABLE payroll.PayrollDisbursement (
     DisbursementStatus      NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     DisbursementStatusGroup AS CAST('DISBURSEMENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     BankBatchReferenceNo    NVARCHAR(200)   NULL,
-    InitiatedBy             INT          NOT NULL,
-    ApprovedBy              INT          NULL,
+    InitiatedBy             UNIQUEIDENTIFIER          NOT NULL,
+    ApprovedBy              UNIQUEIDENTIFIER          NULL,
     ApprovedAt              DATETIME2       NULL,
     ProcessedAt             DATETIME2       NULL,
     Remarks                 NVARCHAR(1000)  NULL,
@@ -355,10 +355,10 @@ GO
 
 -- PAYROLL DISBURSEMENT TRANSACTION
 CREATE TABLE payroll.PayrollDisbursementTransaction (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    PayrollDisbursementId   INT          NOT NULL,
-    EmployeeId              INT          NOT NULL,
-    EmployeeBankAccountId   INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
+    PayrollDisbursementId   UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId              UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeBankAccountId   UNIQUEIDENTIFIER          NOT NULL,
     PayrollMonth            SMALLINT             NOT NULL,
     PayrollYear             SMALLINT             NOT NULL,
     GrossAmount             DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -378,9 +378,9 @@ CREATE TABLE payroll.PayrollDisbursementTransaction (
     Remarks                 NVARCHAR(1000)  NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_PDT_Disbursement
         FOREIGN KEY (PayrollDisbursementId)
@@ -409,7 +409,7 @@ GO
 
 -- TAX REGIME
 CREATE TABLE payroll.TaxRegime (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
     RegimeCode      NVARCHAR(100)   NOT NULL UNIQUE,
     RegimeName      NVARCHAR(300)   NOT NULL,
     CountryCode     NVARCHAR(10)    NOT NULL,
@@ -417,16 +417,16 @@ CREATE TABLE payroll.TaxRegime (
     Description     NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- TAX SLAB
 CREATE TABLE payroll.TaxSlab (
-    Id              SMALLINT          PRIMARY KEY IDENTITY(1,1),
-    TaxRegimeId     SMALLINT          NOT NULL,
+    Id              UNIQUEIDENTIFIER          PRIMARY KEY,
+    TaxRegimeId     UNIQUEIDENTIFIER          NOT NULL,
     FiscalYear      SMALLINT             NOT NULL,
     SlabOrder       SMALLINT             NOT NULL,
     MinIncome       DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -436,9 +436,9 @@ CREATE TABLE payroll.TaxSlab (
     CessRate        DECIMAL(10,4)   NOT NULL DEFAULT 0,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TaxSlab_TaxRegime
         FOREIGN KEY (TaxRegimeId)
@@ -451,9 +451,9 @@ GO
 
 -- EMPLOYEE TAX DECLARATION
 CREATE TABLE payroll.EmployeeTaxDeclaration (
-    Id                       INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId               INT          NOT NULL,
-    TaxRegimeId              SMALLINT          NOT NULL,
+    Id                       UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId               UNIQUEIDENTIFIER          NOT NULL,
+    TaxRegimeId              UNIQUEIDENTIFIER          NOT NULL,
     FiscalYear               SMALLINT             NOT NULL
         CONSTRAINT CK_ETD_FiscalYear CHECK (FiscalYear BETWEEN 2000 AND 2099),
     DeclaredTotalIncome      DECIMAL(18,2)   NOT NULL DEFAULT 0,
@@ -463,14 +463,14 @@ CREATE TABLE payroll.EmployeeTaxDeclaration (
     DeclarationStatus        NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     DeclarationStatusGroup   AS CAST('DECLARATION_STATUS' AS NVARCHAR(50)) PERSISTED,
     SubmittedAt              DATETIME2       NULL,
-    VerifiedBy               INT          NULL,
+    VerifiedBy               UNIQUEIDENTIFIER          NULL,
     VerifiedAt               DATETIME2       NULL,
     Remarks                  NVARCHAR(2000)  NULL,
     IsActive                 BIT             NOT NULL DEFAULT 1,
     CreatedAt                DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                INT             NULL,
+    CreatedBy                UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy            INT             NULL,
+    LastUpdatedBy            UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT UQ_EmployeeTaxDeclaration
         UNIQUE (EmployeeId, FiscalYear),
@@ -495,9 +495,9 @@ GO
 
 -- TAX DECLARATION ITEM
 CREATE TABLE payroll.TaxDeclarationItem (
-    Id                          INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeTaxDeclarationId    INT          NOT NULL,
-    TaxProofCategoryId          SMALLINT             NOT NULL,
+    Id                          UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeTaxDeclarationId    UNIQUEIDENTIFIER          NOT NULL,
+    TaxProofCategoryId          UNIQUEIDENTIFIER             NOT NULL,
     DeclaredAmount              DECIMAL(18,2)   NOT NULL DEFAULT 0
         CONSTRAINT CK_TDI_DeclaredAmount CHECK (DeclaredAmount >= 0),
     ApprovedAmount              DECIMAL(18,2)   NULL
@@ -505,9 +505,9 @@ CREATE TABLE payroll.TaxDeclarationItem (
     Remarks                     NVARCHAR(500)   NULL,
     IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                   INT             NULL,
+    CreatedBy                   UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy               INT             NULL,
+    LastUpdatedBy                UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT UQ_TDI_DeclarationCategory
         UNIQUE (EmployeeTaxDeclarationId, TaxProofCategoryId),
@@ -524,8 +524,8 @@ GO
 
 -- TAX DECLARATION PROOF
 CREATE TABLE payroll.TaxDeclarationProof (
-    Id                   INT          PRIMARY KEY IDENTITY(1,1),
-    TaxDeclarationItemId INT          NOT NULL,
+    Id                   UNIQUEIDENTIFIER          PRIMARY KEY,
+    TaxDeclarationItemId UNIQUEIDENTIFIER          NOT NULL,
     Description          NVARCHAR(500)   NULL,
     DeclaredAmount       DECIMAL(18,2)   NOT NULL DEFAULT 0
         CONSTRAINT CK_TDP_DeclaredAmount CHECK (DeclaredAmount >= 0),
@@ -536,14 +536,14 @@ CREATE TABLE payroll.TaxDeclarationProof (
     UploadedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     ReviewStatus         NVARCHAR(50)    NOT NULL DEFAULT 'PENDING',
     ReviewStatusGroup    AS CAST('PROOF_REVIEW_STATUS' AS NVARCHAR(50)) PERSISTED,
-    ReviewedBy           INT          NULL,
+    ReviewedBy           UNIQUEIDENTIFIER          NULL,
     ReviewedAt           DATETIME2       NULL,
     RejectionReason      NVARCHAR(500)   NULL,
     IsActive             BIT             NOT NULL DEFAULT 1,
     CreatedAt            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy            INT             NULL,
+    CreatedBy            UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy        INT             NULL,
+    LastUpdatedBy        UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TDP_DeclarationItem
         FOREIGN KEY (TaxDeclarationItemId)
@@ -561,10 +561,10 @@ GO
 
 -- EMPLOYEE TAX DEDUCTION
 CREATE TABLE payroll.EmployeeTaxDeduction (
-    Id                               INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId                       INT          NOT NULL,
-    EmployeeTaxDeclarationId         INT          NULL,
-    TaxRegimeId                      SMALLINT          NOT NULL,
+    Id                               UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId                       UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeTaxDeclarationId         UNIQUEIDENTIFIER          NULL,
+    TaxRegimeId                      UNIQUEIDENTIFIER          NOT NULL,
     PayrollMonth                     SMALLINT             NOT NULL,
     PayrollYear                      SMALLINT             NOT NULL,
     FiscalYear                       SMALLINT             NOT NULL,
@@ -579,12 +579,12 @@ CREATE TABLE payroll.EmployeeTaxDeduction (
     CumulativeTDSYTD                 DECIMAL(18,2)   NOT NULL DEFAULT 0,
     IsAdjustment                     BIT             NOT NULL DEFAULT 0,
     AdjustmentReason                 NVARCHAR(500)   NULL,
-    PayrollDisbursementTransactionId INT          NULL,
+    PayrollDisbursementTransactionId UNIQUEIDENTIFIER          NULL,
     IsActive                         BIT             NOT NULL DEFAULT 1,
     CreatedAt                        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                        INT             NULL,
+    CreatedBy                        UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                    DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                    INT             NULL,
+LastUpdatedBy                        UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT UQ_EmployeeTaxDeduction
         UNIQUE (EmployeeId, PayrollMonth, PayrollYear),
@@ -609,8 +609,8 @@ GO
 
 -- TAX DEDUCTION BREAKDOWN
 CREATE TABLE payroll.TaxDeductionBreakdown (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeTaxDeductionId  INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeTaxDeductionId  UNIQUEIDENTIFIER          NOT NULL,
     DeductionHead           NVARCHAR(200)   NOT NULL,
     DeductionCategory       NVARCHAR(50)    NULL,
     DeductionCategoryGroup  AS CAST('DEDUCTION_CATEGORY' AS NVARCHAR(50)) PERSISTED,
@@ -620,9 +620,9 @@ CREATE TABLE payroll.TaxDeductionBreakdown (
     Remarks                 NVARCHAR(500)   NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TaxBreakdown_TaxDeduction
         FOREIGN KEY (EmployeeTaxDeductionId)
@@ -636,8 +636,8 @@ GO
 
 -- SALARY SLIP PUBLICATION
 CREATE TABLE payroll.SalarySlipPublication (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
-    DisbursementTransactionId       INT          NOT NULL UNIQUE,
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
+    DisbursementTransactionId       UNIQUEIDENTIFIER          NOT NULL UNIQUE,
     SlipStatus                      NVARCHAR(50)    NOT NULL DEFAULT 'DRAFT',
     SlipStatusGroup                 AS CAST('SALARY_SLIP_STATUS' AS NVARCHAR(50)) PERSISTED,
     FileUrl                         NVARCHAR(1000)  NULL,
@@ -648,9 +648,9 @@ CREATE TABLE payroll.SalarySlipPublication (
     Remarks                         NVARCHAR(1000)  NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SalarySlipPub_DisbursementTransaction
         FOREIGN KEY (DisbursementTransactionId)

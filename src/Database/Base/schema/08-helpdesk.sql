@@ -12,16 +12,16 @@ GO
 
 -- MODULE 1: MASTER TABLES
 CREATE TABLE helpdesk.TicketCategory (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     CategoryCode        NVARCHAR(100)   NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
-    ParentCategoryId    SMALLINT          NULL,
+    ParentCategoryId    UNIQUEIDENTIFIER          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TicketCategory_Parent
         FOREIGN KEY (ParentCategoryId)
@@ -30,16 +30,16 @@ CREATE TABLE helpdesk.TicketCategory (
 GO
 
 CREATE TABLE helpdesk.SupportGroup (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     SupportGroupCode    NVARCHAR(100)   NOT NULL UNIQUE,
     SupportGroupName    NVARCHAR(200)   NOT NULL,
-    DepartmentId        SMALLINT          NULL,
+    DepartmentId        UNIQUEIDENTIFIER          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SupportGroup_Department
         FOREIGN KEY (DepartmentId)
@@ -48,18 +48,18 @@ CREATE TABLE helpdesk.SupportGroup (
 GO
 
 CREATE TABLE helpdesk.AssetCategory (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     CategoryCode        NVARCHAR(100)   NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
-    ParentCategoryId    SMALLINT          NULL,
+    ParentCategoryId    UNIQUEIDENTIFIER          NULL,
     Description         NVARCHAR(1000)  NULL,
     IsTrackable         BIT             NOT NULL DEFAULT 1,
     IsConsumable        BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_AssetCategory_Parent
         FOREIGN KEY (ParentCategoryId)
@@ -68,7 +68,7 @@ CREATE TABLE helpdesk.AssetCategory (
 GO
 
 CREATE TABLE helpdesk.Vendor (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     VendorCode          NVARCHAR(100)   NOT NULL UNIQUE,
     VendorName          NVARCHAR(300)   NOT NULL,
     ContactPerson       NVARCHAR(200)   NULL,
@@ -78,41 +78,41 @@ CREATE TABLE helpdesk.Vendor (
     Address             NVARCHAR(1000)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL
 );
 GO
 
 -- MODULE 2: TICKET MANAGEMENT
 CREATE TABLE helpdesk.Ticket (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
     TicketNumber                    NVARCHAR(50)    NOT NULL UNIQUE,
-    RequesterEmployeeId             INT          NOT NULL,
-    RequestedForEmployeeId          INT          NULL,
-    TicketCategoryId                SMALLINT          NOT NULL,
+    RequesterEmployeeId             UNIQUEIDENTIFIER          NOT NULL,
+    RequestedForEmployeeId          UNIQUEIDENTIFIER          NULL,
+    TicketCategoryId                UNIQUEIDENTIFIER          NOT NULL,
     TicketPriorityCode              NVARCHAR(50)    NOT NULL,
     TicketPriorityGroup             AS CAST('HELPDESK_TICKET_PRIORITY' AS NVARCHAR(50)) PERSISTED,
     TicketStatusCode                NVARCHAR(50)    NOT NULL,
     TicketStatusGroup               AS CAST('HELPDESK_TICKET_STATUS' AS NVARCHAR(50)) PERSISTED,
-    SupportGroupId                  SMALLINT          NULL,
-    AssignedToEmployeeId            INT          NULL,
-    AssetId                         INT          NULL,
-    OfficeLocationId                SMALLINT          NULL,
+    SupportGroupId                  UNIQUEIDENTIFIER          NULL,
+    AssignedToEmployeeId            UNIQUEIDENTIFIER          NULL,
+    AssetId                         UNIQUEIDENTIFIER          NULL,
+    OfficeLocationId                UNIQUEIDENTIFIER          NULL,
     Subject                         NVARCHAR(300)   NOT NULL,
     Description                     NVARCHAR(MAX)  NULL,
     OpenedAt                        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     AssignedAt                      DATETIME2       NULL,
     ResolvedAt                      DATETIME2       NULL,
     ClosedAt                        DATETIME2       NULL,
-    WorkflowInstanceId              INT          NULL,
+    WorkflowInstanceId              UNIQUEIDENTIFIER          NULL,
     IsReopened                      BIT             NOT NULL DEFAULT 0,
     ReopenedCount                   SMALLINT             NOT NULL DEFAULT 0,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Ticket_Requester
         FOREIGN KEY (RequesterEmployeeId)
@@ -149,16 +149,16 @@ CREATE TABLE helpdesk.Ticket (
 GO
 
 CREATE TABLE helpdesk.TicketComment (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    TicketId            INT          NOT NULL,
-    CommentedBy         INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    TicketId            UNIQUEIDENTIFIER          NOT NULL,
+    CommentedBy         UNIQUEIDENTIFIER          NOT NULL,
     CommentText         NVARCHAR(MAX)   NOT NULL,
     IsInternalComment   BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TicketComment_Ticket
         FOREIGN KEY (TicketId)
@@ -171,9 +171,9 @@ CREATE TABLE helpdesk.TicketComment (
 GO
 
 CREATE TABLE helpdesk.TicketAttachment (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    TicketId            INT          NOT NULL,
-    UploadedBy          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    TicketId            UNIQUEIDENTIFIER          NOT NULL,
+    UploadedBy          UNIQUEIDENTIFIER          NOT NULL,
     FileName            NVARCHAR(500)   NOT NULL,
     OriginalFileName    NVARCHAR(500)   NULL,
     FileExtension       NVARCHAR(20)    NULL,
@@ -183,9 +183,9 @@ CREATE TABLE helpdesk.TicketAttachment (
     UploadedAt          DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TicketAttachment_Ticket
         FOREIGN KEY (TicketId)
@@ -199,7 +199,7 @@ GO
 
 -- MODULE 3: SLA MANAGEMENT
 CREATE TABLE helpdesk.SlaPolicy (
-    Id                              SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
     PolicyCode                      NVARCHAR(100)   NOT NULL UNIQUE,
     PolicyName                      NVARCHAR(200)   NOT NULL,
     TicketPriorityCode              NVARCHAR(50)    NOT NULL,
@@ -209,9 +209,9 @@ CREATE TABLE helpdesk.SlaPolicy (
     EscalationTimeMinutes           SMALLINT             NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SlaPolicy_Priority
         FOREIGN KEY (TicketPriorityCode, TicketPriorityGroup)
@@ -220,9 +220,9 @@ CREATE TABLE helpdesk.SlaPolicy (
 GO
 
 CREATE TABLE helpdesk.TicketSlaTracking (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
-    TicketId                        INT          NOT NULL,
-    SlaPolicyId                     SMALLINT          NOT NULL,
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
+    TicketId                        UNIQUEIDENTIFIER          NOT NULL,
+    SlaPolicyId                     UNIQUEIDENTIFIER          NOT NULL,
     ResponseDueAt                   DATETIME2       NULL,
     ResolutionDueAt                 DATETIME2       NULL,
     FirstResponseAt                 DATETIME2       NULL,
@@ -233,9 +233,9 @@ CREATE TABLE helpdesk.TicketSlaTracking (
     LastEvaluatedAt                 DATETIME2       NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_TicketSlaTracking_Ticket
         FOREIGN KEY (TicketId)
@@ -252,14 +252,14 @@ GO
 
 -- MODULE 4: ASSET & DEVICE MANAGEMENT
 CREATE TABLE helpdesk.Asset (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
     AssetCode                       NVARCHAR(100)   NOT NULL UNIQUE,
     AssetTag                        NVARCHAR(100)   NULL UNIQUE,
     AssetName                       NVARCHAR(300)   NOT NULL,
-    AssetCategoryId                 SMALLINT          NOT NULL,
+    AssetCategoryId                 UNIQUEIDENTIFIER          NOT NULL,
     AssetStatusCode                 NVARCHAR(50)    NOT NULL,
     AssetStatusGroup                AS CAST('HELPDESK_ASSET_STATUS' AS NVARCHAR(50)) PERSISTED,
-    VendorId                        SMALLINT          NULL,
+    VendorId                        UNIQUEIDENTIFIER          NULL,
     SerialNumber                    NVARCHAR(200)   NULL,
     ModelNumber                     NVARCHAR(200)   NULL,
     Manufacturer                    NVARCHAR(200)   NULL,
@@ -271,16 +271,16 @@ CREATE TABLE helpdesk.Asset (
     WarrantyExpiryDate              DATE            NULL,
     PurchaseCost                    DECIMAL(18,2)   NULL,
     CurrentBookValue                DECIMAL(18,2)   NULL,
-    OfficeLocationId                SMALLINT          NULL,
-    CurrentEmployeeId               INT          NULL,
+    OfficeLocationId                UNIQUEIDENTIFIER          NULL,
+    CurrentEmployeeId               UNIQUEIDENTIFIER          NULL,
     Description                     NVARCHAR(1000)  NULL,
     LastAuditDate                   DATE            NULL,
     NextAuditDate                   DATE            NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Asset_Category
         FOREIGN KEY (AssetCategoryId)
@@ -305,10 +305,10 @@ CREATE TABLE helpdesk.Asset (
 GO
 
 CREATE TABLE helpdesk.AssetAssignment (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
-    AssetId                         INT          NOT NULL,
-    EmployeeId                      INT          NOT NULL,
-    AssignedByEmployeeId            INT          NOT NULL,
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
+    AssetId                         UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId                      UNIQUEIDENTIFIER          NOT NULL,
+    AssignedByEmployeeId            UNIQUEIDENTIFIER          NOT NULL,
     AssignedDate                    DATETIME2       NOT NULL,
     ExpectedReturnDate              DATE            NULL,
     ReturnedDate                    DATETIME2       NULL,
@@ -316,9 +316,9 @@ CREATE TABLE helpdesk.AssetAssignment (
     Remarks                         NVARCHAR(1000)  NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_AssetAssignment_Asset
         FOREIGN KEY (AssetId)
@@ -335,20 +335,20 @@ CREATE TABLE helpdesk.AssetAssignment (
 GO
 
 CREATE TABLE helpdesk.AssetMaintenance (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
-    AssetId                         INT          NOT NULL,
-    VendorId                        SMALLINT          NULL,
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
+    AssetId                         UNIQUEIDENTIFIER          NOT NULL,
+    VendorId                        UNIQUEIDENTIFIER          NULL,
     MaintenanceDate                 DATE            NOT NULL,
     MaintenanceType                 NVARCHAR(100)   NULL,
     CostAmount                      DECIMAL(18,2)   NULL,
     Description                     NVARCHAR(1000)  NULL,
     NextMaintenanceDate             DATE            NULL,
-    CreatedByEmployeeId             INT          NULL,
+    CreatedByEmployeeId             UNIQUEIDENTIFIER          NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_AssetMaintenance_Asset
         FOREIGN KEY (AssetId)
@@ -366,19 +366,19 @@ GO
 
 -- MODULE 5: SOFTWARE LICENSE MANAGEMENT
 CREATE TABLE helpdesk.SoftwareProduct (
-    Id                                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                                  UNIQUEIDENTIFIER          PRIMARY KEY,
     SoftwareCode                        NVARCHAR(100)   NOT NULL UNIQUE,
     SoftwareName                        NVARCHAR(300)   NOT NULL,
     VersionNumber                       NVARCHAR(100)   NULL,
-    VendorId                            SMALLINT          NULL,
+    VendorId                            UNIQUEIDENTIFIER          NULL,
     LicenseTypeCode                     NVARCHAR(50)    NOT NULL,
     LicenseTypeGroup                    AS CAST('HELPDESK_LICENSE_TYPE' AS NVARCHAR(50)) PERSISTED,
     Description                         NVARCHAR(1000)  NULL,
     IsActive                            BIT             NOT NULL DEFAULT 1,
     CreatedAt                           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                           INT             NULL,
+    CreatedBy                           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                       INT             NULL,
+    LastUpdatedBy                       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SoftwareProduct_Vendor
         FOREIGN KEY (VendorId)
@@ -391,8 +391,8 @@ CREATE TABLE helpdesk.SoftwareProduct (
 GO
 
 CREATE TABLE helpdesk.SoftwareLicense (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
-    SoftwareProductId               INT          NOT NULL,
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
+    SoftwareProductId               UNIQUEIDENTIFIER          NOT NULL,
     LicenseKey                      NVARCHAR(500)   NULL,
     LicenseCount                    SMALLINT             NOT NULL DEFAULT 1,
     UsedLicenseCount                SMALLINT             NOT NULL DEFAULT 0,
@@ -404,9 +404,9 @@ CREATE TABLE helpdesk.SoftwareLicense (
     Remarks                         NVARCHAR(1000)  NULL,
     IsActive                        BIT             NOT NULL DEFAULT 1,
     CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                       INT             NULL,
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                   INT             NULL,
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SoftwareLicense_Product
         FOREIGN KEY (SoftwareProductId)
@@ -418,19 +418,19 @@ CREATE TABLE helpdesk.SoftwareLicense (
 GO
 
 CREATE TABLE helpdesk.SoftwareInstallation (
-    Id                              INT          PRIMARY KEY IDENTITY(1,1),
-    SoftwareLicenseId               INT          NOT NULL,
-    AssetId                         INT          NOT NULL,
-    InstalledForEmployeeId          INT          NULL,
-    InstalledByEmployeeId          INT          NULL,
+    Id                              UNIQUEIDENTIFIER          PRIMARY KEY,
+    SoftwareLicenseId               UNIQUEIDENTIFIER          NOT NULL,
+    AssetId                         UNIQUEIDENTIFIER          NOT NULL,
+    InstalledForEmployeeId          UNIQUEIDENTIFIER          NULL,
+    InstalledByEmployeeId           UNIQUEIDENTIFIER          NULL,
     InstalledDate                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     UninstalledDate                 DATETIME2       NULL,
     Remarks                         NVARCHAR(1000)  NULL,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    IsActive                        BIT             NOT NULL DEFAULT 1,
+    CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_SoftwareInstallation_License
         FOREIGN KEY (SoftwareLicenseId)
@@ -456,7 +456,7 @@ CREATE INDEX IX_Ticket_AssignedTo        ON helpdesk.Ticket (AssignedToEmployeeI
 CREATE INDEX IX_Ticket_Status            ON helpdesk.Ticket (TicketStatusCode);
 CREATE INDEX IX_Ticket_Category          ON helpdesk.Ticket (TicketCategoryId);
 CREATE INDEX IX_Ticket_Priority          ON helpdesk.Ticket (TicketPriorityCode);
-CREATE INDEX IX_Ticket_OpenedAt           ON helpdesk.Ticket (OpenedAt);
+CREATE INDEX IX_Ticket_OpenedAt          ON helpdesk.Ticket (OpenedAt);
 
 CREATE INDEX IX_TicketComment_Ticket      ON helpdesk.TicketComment (TicketId, CreatedAt);
 
@@ -473,7 +473,6 @@ CREATE INDEX IX_Asset_HostName            ON helpdesk.Asset (HostName);
 
 CREATE INDEX IX_AssetAssignment_Employee  ON helpdesk.AssetAssignment (EmployeeId);
 CREATE INDEX IX_AssetAssignment_Asset     ON helpdesk.AssetAssignment (AssetId);
-CREATE INDEX IX_AssetAssignment_Active    ON helpdesk.AssetAssignment (IsActiveAssignment);
 
 CREATE INDEX IX_AssetMaintenance_Asset    ON helpdesk.AssetMaintenance (AssetId);
 

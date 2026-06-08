@@ -48,7 +48,7 @@ GO
 --      module tables store the payload detail.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.AuditEvent (
-    Id                      INT          NOT NULL IDENTITY(1,1),
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
 
     -- Identity of the actor
     ActorUserId             NVARCHAR(100)   NOT NULL,               -- internal user / service-account id
@@ -90,9 +90,9 @@ CREATE TABLE audit.AuditEvent (
     RowChecksum             NVARCHAR(64)    NULL,                   -- SHA-256 of canonical row fields
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_AuditEvent PRIMARY KEY (Id)
 );
@@ -105,15 +105,15 @@ GO
 --      Kept separate to avoid sparse columns on AuditEvent and to allow multi-value tags.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.AuditEventTag (
-    Id              INT          NOT NULL IDENTITY(1,1),
-    AuditEventId    INT          NOT NULL,
+    Id              UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId    UNIQUEIDENTIFIER          NOT NULL,
     TagKey          NVARCHAR(200)   NOT NULL,
     TagValue        NVARCHAR(1000)  NULL,
     IsActive        BIT             NOT NULL DEFAULT 1,
     CreatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy       INT             NULL,
+    CreatedBy       UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy   INT             NULL,
+    LastUpdatedBy   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_AuditEventTag PRIMARY KEY (Id),
 
@@ -137,8 +137,8 @@ GO
 --      Links to AuditEvent for actor and service context.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.EntityChangeLog (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    AuditEventId        INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId        UNIQUEIDENTIFIER          NOT NULL,
 
     -- Entity identity
     EntityName          NVARCHAR(200)   NOT NULL,               -- logical entity, e.g. "Employee", "LeaveRequest"
@@ -162,9 +162,9 @@ CREATE TABLE audit.EntityChangeLog (
     ChangedAt           DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_EntityChangeLog PRIMARY KEY (Id),
 
@@ -181,8 +181,8 @@ GO
 --      Each row represents one field that changed value.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.FieldAuditLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    EntityChangeLogId       INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    EntityChangeLogId       UNIQUEIDENTIFIER          NOT NULL,
 
     -- Field identity
     FieldName               NVARCHAR(200)   NOT NULL,           -- logical field name, e.g. "AnnualCTC"
@@ -197,9 +197,9 @@ CREATE TABLE audit.FieldAuditLog (
     IsMaskedInLog           BIT             NOT NULL DEFAULT 0, -- when 1, OldValue/NewValue are replaced with [MASKED]
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_FieldAuditLog PRIMARY KEY (Id),
 
@@ -223,8 +223,8 @@ GO
 --      Paired 1-to-1 with ApiResponseLog.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ApiRequestLog (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    AuditEventId        INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId        UNIQUEIDENTIFIER          NOT NULL,
 
     -- HTTP context
     HttpMethod          NVARCHAR(10)    NOT NULL,               -- GET | POST | PUT | PATCH | DELETE
@@ -243,9 +243,9 @@ CREATE TABLE audit.ApiRequestLog (
     ReceivedAt          DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_ApiRequestLog PRIMARY KEY (Id),
 
@@ -261,8 +261,8 @@ GO
 --      Stores HTTP status, response size, error detail, and end-to-end latency.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ApiResponseLog (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    ApiRequestLogId     INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          NOT NULL,
+    ApiRequestLogId     UNIQUEIDENTIFIER          NOT NULL,
 
     -- Response metadata
     HttpStatusCode      INT             NOT NULL,
@@ -284,9 +284,9 @@ CREATE TABLE audit.ApiResponseLog (
     DurationMs          INT             NULL,                   -- total request-to-response milliseconds
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_ApiResponseLog PRIMARY KEY (Id),
 
@@ -305,8 +305,8 @@ GO
 --      Supports end-to-end message tracing and retry/failure forensics.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.IntegrationMessageLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER          NOT NULL,
 
     -- Direction
     Direction               NVARCHAR(20)    NOT NULL,           -- OUTBOUND | INBOUND
@@ -334,9 +334,9 @@ CREATE TABLE audit.IntegrationMessageLog (
     DurationMs              INT             NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_IntegrationMessageLog PRIMARY KEY (Id),
 
@@ -360,8 +360,8 @@ GO
 --      provides a separate, append-only audit trail.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.WorkflowAuditLog (
-    Id                          INT          NOT NULL IDENTITY(1,1),
-    AuditEventId                INT          NOT NULL,
+    Id                          UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId                UNIQUEIDENTIFIER          NOT NULL,
 
     -- Workflow identity
     WorkflowDefinitionCode      NVARCHAR(100)   NOT NULL,       -- e.g. "LEAVE_APPROVAL", "PAYROLL_DISBURSEMENT"
@@ -410,8 +410,8 @@ GO
 --      Links to WorkflowAuditLog for the parent transition context.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ApprovalDecisionLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    WorkflowAuditLogId      INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    WorkflowAuditLogId      UNIQUEIDENTIFIER          NOT NULL,
 
     -- Approver identity
     ApproverUserId          NVARCHAR(100)   NOT NULL,
@@ -428,9 +428,9 @@ CREATE TABLE audit.ApprovalDecisionLog (
     TimeToDecideMs          INT          NULL,               -- time from step assignment to decision
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_ApprovalDecisionLog PRIMARY KEY (Id),
 
@@ -453,8 +453,8 @@ GO
 --      Captures totals, outcome summary, and source file metadata.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.BulkOperationLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER          NOT NULL,
 
     -- Operation identity
     OperationType           NVARCHAR(200)   NOT NULL,           -- e.g. "PAYROLL_IMPORT", "EMPLOYEE_BULK_UPDATE"
@@ -482,9 +482,9 @@ CREATE TABLE audit.BulkOperationLog (
     DurationMs              INT          NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_BulkOperationLog PRIMARY KEY (Id),
 
@@ -500,8 +500,8 @@ GO
 --      Links to EntityChangeLog when a change was persisted, allowing full diff tracing per item.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.BulkOperationItemLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    BulkOperationLogId      INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    BulkOperationLogId      UNIQUEIDENTIFIER          NOT NULL,
 
     -- Item identity
     RowSequence             INT             NOT NULL,           -- position in the source file / batch
@@ -517,12 +517,12 @@ CREATE TABLE audit.BulkOperationItemLog (
     ErrorMessage            NVARCHAR(2000)  NULL,
 
     -- Change linkage (set when ItemStatus = SUCCESS and a change was persisted)
-    EntityChangeLogId       INT          NULL,
+    EntityChangeLogId       UNIQUEIDENTIFIER          NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_BulkOperationItemLog PRIMARY KEY (Id),
 
@@ -550,8 +550,8 @@ GO
 --      by configuration drift.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ConfigChangeLog (
-    Id                  INT          NOT NULL IDENTITY(1,1),
-    AuditEventId        INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId        UNIQUEIDENTIFIER          NOT NULL,
 
     -- Config identity
     ConfigScope         NVARCHAR(100)   NOT NULL,               -- GLOBAL | SERVICE | TENANT | FEATURE_FLAG | ROLE_PERMISSION | LOOKUP
@@ -572,9 +572,9 @@ CREATE TABLE audit.ConfigChangeLog (
     ChangedAt           DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_ConfigChangeLog PRIMARY KEY (Id),
 
@@ -597,8 +597,8 @@ GO
 --      Stores run outcome, affected record counts, and any error detail for SLA and incident tracking.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ScheduledJobLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER         NOT NULL,
 
     -- Job identity
     JobCode                 NVARCHAR(200)   NOT NULL,           -- unique code for the job, e.g. "PAYROLL_PROCESS_MAR25"
@@ -630,9 +630,9 @@ CREATE TABLE audit.ScheduledJobLog (
     NextRetryAt             DATETIME2(7)    NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_ScheduledJobLog PRIMARY KEY (Id),
 
@@ -655,8 +655,8 @@ GO
 --      Captures channel, template, delivery status, and retry history.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.NotificationLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER          NOT NULL,
 
     -- Notification identity
     NotificationType        NVARCHAR(100)   NOT NULL,           -- EMAIL | SMS | IN_APP | PUSH | WEBHOOK_ALERT | ESCALATION
@@ -688,9 +688,9 @@ CREATE TABLE audit.NotificationLog (
     RetryCount              INT             NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_NotificationLog PRIMARY KEY (Id),
 
@@ -713,8 +713,8 @@ GO
 --      Captures the filter criteria, output format, file metadata, and delivery method.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.DataExportLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER          NOT NULL,
 
     -- Export identity
     ExportType              NVARCHAR(200)   NOT NULL,           -- REPORT | DATA_DUMP | SALARY_SLIP | TAX_STATEMENT | CUSTOM
@@ -742,9 +742,9 @@ CREATE TABLE audit.DataExportLog (
     DownloadedAt            DATETIME2(7)    NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_DataExportLog PRIMARY KEY (Id),
 
@@ -768,8 +768,8 @@ GO
 --       Captures entity, field, access justification, and the policy that permitted the access.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.SensitiveDataAccessLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER          NOT NULL,
 
     -- Subject (whose data was accessed)
     SubjectUserId           NVARCHAR(100)   NULL,               -- data subject; may differ from actor
@@ -789,9 +789,9 @@ CREATE TABLE audit.SensitiveDataAccessLog (
     AccessedAt              DATETIME2(7)    NOT NULL DEFAULT GETUTCDATE(),
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT PK_SensitiveDataAccessLog PRIMARY KEY (Id),
 
@@ -815,8 +815,8 @@ GO
 --       Provides the complete audit trail for privileged user access.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ImpersonationLog (
-    Id                          INT          NOT NULL IDENTITY(1,1),
-    AuditEventId                INT          NOT NULL,
+    Id                          UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId                UNIQUEIDENTIFIER          NOT NULL,
 
     -- Who is doing the impersonating / delegating
     ActorUserId                 NVARCHAR(100)   NOT NULL,
@@ -840,9 +840,9 @@ CREATE TABLE audit.ImpersonationLog (
     DurationSeconds             AS (DATEDIFF(SECOND, StartedAt, EndedAt)),
     IsActive                    BIT             NOT NULL DEFAULT 1,
     CreatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                   INT             NULL,
+    CreatedBy                   UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy               INT             NULL,    
+    LastUpdatedBy               UNIQUEIDENTIFIER             NULL,    
 
     CONSTRAINT PK_ImpersonationLog PRIMARY KEY (Id),
 
@@ -866,8 +866,8 @@ GO
 --       Each row is a point-in-time snapshot of the consent state.
 -- ----------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE audit.ConsentAuditLog (
-    Id                      INT          NOT NULL IDENTITY(1,1),
-    AuditEventId            INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          NOT NULL,
+    AuditEventId            UNIQUEIDENTIFIER          NOT NULL,
 
     -- Subject
     SubjectUserId           NVARCHAR(100)   NOT NULL,
@@ -893,9 +893,9 @@ CREATE TABLE audit.ConsentAuditLog (
     ExpiresAt               DATETIME2(7)    NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
     
     CONSTRAINT PK_ConsentAuditLog PRIMARY KEY (Id),
 
