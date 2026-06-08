@@ -730,7 +730,7 @@ INSERT INTO shared.LookupDefinition
 )
 VALUES
 (
-    '59B9433E-F36B-1410-8804-001812045BC3',
+    NEWID(),
     'FEEDBACK_STATUS',
     'Feedback Status',
     'STATIC_SQL',

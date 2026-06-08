@@ -101,40 +101,40 @@ GO
 
 -- EVENT CATEGORY - Categories for events
 CREATE TABLE event.EventCategory (
-    Id                  SMALLINT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     CategoryCode        NVARCHAR(50)    NOT NULL UNIQUE,
     CategoryName        NVARCHAR(200)   NOT NULL,
     Description         NVARCHAR(1000)  NULL,
     IconUrl             NVARCHAR(500)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 );
 GO
 
 
 -- EVENT - Main event entity
 CREATE TABLE event.Event (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
     EventCode               NVARCHAR(50)    NOT NULL UNIQUE,
     EventTitle              NVARCHAR(300)   NOT NULL,
     Description             NVARCHAR(MAX)   NULL,
-    EventCategoryId              SMALLINT          NOT NULL,
+    EventCategoryId         UNIQUEIDENTIFIER          NOT NULL,
     CategoryStatus          NVARCHAR(50)    NOT NULL DEFAULT 'ANNUAL_FUNCTION',
     CategoryStatusGroup     AS CAST('EVENT_CATEGORY' AS NVARCHAR(50)) PERSISTED,
     Venue                   NVARCHAR(500)   NULL,
-    OfficeLocationId        SMALLINT          NULL,
+    OfficeLocationId        UNIQUEIDENTIFIER          NULL,
     EventDate               DATE            NOT NULL,
     StartTime               TIME            NOT NULL,
     EndTime                 TIME            NOT NULL,
     RegistrationStartDate   DATETIME2       NULL,
     RegistrationEndDate     DATETIME2       NULL,
     Capacity                INT             NULL,
-    IsRegistrationRequired BIT             NOT NULL DEFAULT 1,
+    IsRegistrationRequired  BIT             NOT NULL DEFAULT 1,
     IsPublic                BIT             NOT NULL DEFAULT 1,
-    OrganizerId             INT          NOT NULL,
+    OrganizerId             UNIQUEIDENTIFIER          NOT NULL,
     StatusCode              NVARCHAR(50)   NOT NULL DEFAULT 'DRAFT',
     StatusGroup             AS CAST('EVENT_STATUS' AS NVARCHAR(50)) PERSISTED,
     QRCodeUrl               NVARCHAR(1000)  NULL,
@@ -147,9 +147,9 @@ CREATE TABLE event.Event (
     AdditionalInfo          NVARCHAR(MAX)   NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_Event_Category
         FOREIGN KEY (EventCategoryId)
@@ -176,8 +176,8 @@ GO
 
 -- EVENT BANNER - Event images and attachments
 CREATE TABLE event.EventBanner (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
     FileName            NVARCHAR(255)   NOT NULL,
     FileUrl             NVARCHAR(1000)  NOT NULL,
     FileType            NVARCHAR(50)    NOT NULL,
@@ -185,12 +185,12 @@ CREATE TABLE event.EventBanner (
     DisplayOrder        SMALLINT             NOT NULL DEFAULT 0,
     IsCoverImage        BIT             NOT NULL DEFAULT 0,
     Description         NVARCHAR(500)   NULL,
-    UploadedById        INT          NOT NULL,
+    UploadedById        UNIQUEIDENTIFIER          NOT NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventBanner_Event
         FOREIGN KEY (EventId)
@@ -205,19 +205,19 @@ GO
 
 -- EVENT ATTACHMENT - Additional event documents
 CREATE TABLE event.EventAttachment (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
     FileName            NVARCHAR(255)   NOT NULL,
     FileUrl             NVARCHAR(1000)  NOT NULL,
     FileType            NVARCHAR(50)    NOT NULL,
     FileSize            INT          NULL,
     Description         NVARCHAR(500)   NULL,
-    UploadedById        INT          NOT NULL,
+    UploadedById        UNIQUEIDENTIFIER          NOT NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventAttachment_Event
         FOREIGN KEY (EventId)
@@ -232,15 +232,15 @@ GO
 
 -- EVENT DEPARTMENT - Departments invited to event
 CREATE TABLE event.EventDepartment (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
-    DepartmentId        SMALLINT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
+    DepartmentId        UNIQUEIDENTIFIER          NOT NULL,
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventDepartment_Event
         FOREIGN KEY (EventId)
@@ -257,16 +257,16 @@ GO
 
 -- EVENT INVITEE - Specific employees invited to event
 CREATE TABLE event.EventInvitee (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     IsMandatory         BIT             NOT NULL DEFAULT 0,
     InvitedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventInvitee_Event
         FOREIGN KEY (EventId)
@@ -283,18 +283,18 @@ GO
 
 -- EVENT RSVP - Employee response to event invitation
 CREATE TABLE event.EventRSVP (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     ResponseStatus      NVARCHAR(50)   NOT NULL DEFAULT 'PENDING',
     ResponseStatusGroup AS CAST('RSVP_STATUS' AS NVARCHAR(50)) PERSISTED,
     ResponseDate        DATETIME2       NULL,
     Remarks             NVARCHAR(500)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventRSVP_Event
         FOREIGN KEY (EventId)
@@ -315,9 +315,9 @@ GO
 
 -- EVENT WAITLIST - Employees waiting for event capacity
 CREATE TABLE event.EventWaitlist (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     Position            INT             NOT NULL,
     NotifiedAt          DATETIME2       NULL,
     OfferedAt           DATETIME2       NULL,
@@ -325,9 +325,9 @@ CREATE TABLE event.EventWaitlist (
     Status              NVARCHAR(50)   NOT NULL DEFAULT 'WAITLISTED',
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventWaitlist_Event
         FOREIGN KEY (EventId)
@@ -344,9 +344,9 @@ GO
 
 -- EVENT ATTENDANCE - QR code based attendance tracking
 CREATE TABLE event.EventAttendance (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     CheckInTime         DATETIME2       NULL,
     CheckOutTime        DATETIME2       NULL,
     AttendanceStatus    NVARCHAR(50)   NOT NULL DEFAULT 'CHECKED_IN',
@@ -357,9 +357,9 @@ CREATE TABLE event.EventAttendance (
     Notes               NVARCHAR(500)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventAttendance_Event
         FOREIGN KEY (EventId)
@@ -380,12 +380,12 @@ GO
 
 -- EVENT NOTIFICATION - Notification history for events
 CREATE TABLE event.EventNotification (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
     NotificationType    NVARCHAR(50)   NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
     ChannelStatusGroup  AS CAST('NOTIFICATION_CHANNEL' AS NVARCHAR(50)) PERSISTED,
-    RecipientId         INT          NULL,
+    RecipientId         UNIQUEIDENTIFIER          NULL,
     RecipientEmail      NVARCHAR(255)  NULL,
     Subject             NVARCHAR(300)  NULL,
     Message             NVARCHAR(MAX)  NULL,
@@ -396,9 +396,9 @@ CREATE TABLE event.EventNotification (
     ErrorMessage        NVARCHAR(500)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventNotification_Event
         FOREIGN KEY (EventId)
@@ -421,8 +421,8 @@ GO
 
 -- EVENT FEEDBACK QUESTION - Questions for event feedback
 CREATE TABLE event.EventFeedbackQuestion (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
     QuestionText        NVARCHAR(500)  NOT NULL,
     QuestionType        NVARCHAR(50)   NOT NULL,
     IsRequired          BIT             NOT NULL DEFAULT 1,
@@ -430,9 +430,9 @@ CREATE TABLE event.EventFeedbackQuestion (
     Options             NVARCHAR(MAX)   NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventFeedbackQuestion_Event
         FOREIGN KEY (EventId)
@@ -443,18 +443,18 @@ GO
 
 -- EVENT FEEDBACK - Employee feedback for an event
 CREATE TABLE event.EventFeedback (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EventId             INT          NOT NULL,
-    EmployeeId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EventId             UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
     OverallRating       DECIMAL(3,2)   NOT NULL,
     Comments            NVARCHAR(MAX)  NULL,
     WouldRecommend      BIT             NULL,
     SubmittedAt         DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventFeedback_Event
         FOREIGN KEY (EventId)
@@ -471,17 +471,16 @@ GO
 
 -- EVENT FEEDBACK ANSWER - Individual answers to feedback questions
 CREATE TABLE event.EventFeedbackAnswer (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    FeedbackId          INT          NOT NULL,
-    QuestionId          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    FeedbackId          UNIQUEIDENTIFIER          NOT NULL,
+    QuestionId          UNIQUEIDENTIFIER          NOT NULL,
     AnswerText          NVARCHAR(MAX)  NULL,
     AnswerRating        DECIMAL(3,2)   NULL,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EventFeedbackAnswer_Feedback
         FOREIGN KEY (FeedbackId)
@@ -590,8 +589,8 @@ GO
 
 -- CELEBRATION SCHEDULE - Daily schedule for birthdays and anniversaries
 CREATE TABLE event.CelebrationSchedule (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId              INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId              UNIQUEIDENTIFIER          NOT NULL,
     CelebrationType         NVARCHAR(50)   NOT NULL,
     CelebrationTypeGroup    AS CAST('CELEBRATION_TYPE' AS NVARCHAR(50)) PERSISTED,
     CelebrationDate         DATE            NOT NULL,
@@ -600,9 +599,9 @@ CREATE TABLE event.CelebrationSchedule (
     AcknowledgedAt          DATETIME2       NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_CelebrationSchedule_Employee
         FOREIGN KEY (EmployeeId)
@@ -619,9 +618,9 @@ GO
 
 -- GREETING CARD - Generated greeting cards for celebrations
 CREATE TABLE event.GreetingCard (
-    Id                      INT          PRIMARY KEY IDENTITY(1,1),
-    CelebrationScheduleId   INT          NOT NULL,
-    EmployeeId              INT          NOT NULL,
+    Id                      UNIQUEIDENTIFIER          PRIMARY KEY,
+    CelebrationScheduleId   UNIQUEIDENTIFIER          NOT NULL,
+    EmployeeId              UNIQUEIDENTIFIER          NOT NULL,
     GreetingType            NVARCHAR(50)   NOT NULL,
     GreetingTypeGroup       AS CAST('CELEBRATION_TYPE' AS NVARCHAR(50)) PERSISTED,
     CardTemplate            NVARCHAR(100)  NULL,
@@ -637,9 +636,9 @@ CREATE TABLE event.GreetingCard (
     TeamNotificationSentAt  DATETIME2       NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy               INT             NULL,
+    CreatedBy               UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy           INT             NULL,
+    LastUpdatedBy           UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_GreetingCard_Schedule
         FOREIGN KEY (CelebrationScheduleId)
@@ -664,11 +663,11 @@ GO
 
 -- GREETING CARD NOTIFICATION - Track notifications sent for greetings
 CREATE TABLE event.GreetingNotification (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    GreetingCardId      INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    GreetingCardId      UNIQUEIDENTIFIER          NOT NULL,
     Channel             NVARCHAR(50)   NOT NULL,
     ChannelStatusGroup  AS CAST('NOTIFICATION_CHANNEL' AS NVARCHAR(50)) PERSISTED,
-    RecipientId         INT          NOT NULL,
+    RecipientId         UNIQUEIDENTIFIER          NOT NULL,
     RecipientEmail      NVARCHAR(255)   NULL,
     Subject             NVARCHAR(300)   NULL,
     Message             NVARCHAR(MAX)   NULL,
@@ -679,9 +678,9 @@ CREATE TABLE event.GreetingNotification (
     ErrorMessage        NVARCHAR(500)  NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_GreetingNotification_GreetingCard
         FOREIGN KEY (GreetingCardId)
@@ -704,9 +703,9 @@ GO
 
 -- CELEBRATION WISH - Employee wishes on greeting cards
 CREATE TABLE event.CelebrationWish (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    GreetingCardId      INT          NOT NULL,
-    WisherId            INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    GreetingCardId      UNIQUEIDENTIFIER          NOT NULL,
+    WisherId            UNIQUEIDENTIFIER          NOT NULL,
     WishText            NVARCHAR(500)  NOT NULL,
     IsGif               BIT             NOT NULL DEFAULT 0,
     GifUrl              NVARCHAR(1000)  NULL,
@@ -716,9 +715,9 @@ CREATE TABLE event.CelebrationWish (
     DeletedAt           DATETIME2       NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_CelebrationWish_GreetingCard
         FOREIGN KEY (GreetingCardId)
@@ -733,16 +732,16 @@ GO
 
 -- CELEBRATION REACTION - Reactions to celebration wishes
 CREATE TABLE event.CelebrationReaction (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    WishId              INT          NOT NULL,
-    ReactorId           INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    WishId              UNIQUEIDENTIFIER          NOT NULL,
+    ReactorId           UNIQUEIDENTIFIER          NOT NULL,
     ReactionType        NVARCHAR(50)   NOT NULL,
     ReactionTypeGroup   AS CAST('REACTION_TYPE' AS NVARCHAR(50)) PERSISTED,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_CelebrationReaction_Wish
         FOREIGN KEY (WishId)
@@ -763,21 +762,20 @@ GO
 
 -- CELEBRATION COMMENT - Comments on celebration wishes
 CREATE TABLE event.CelebrationComment (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    WishId              INT          NOT NULL,
-    CommenterId         INT          NOT NULL,
-    ParentCommentId     INT          NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    WishId              UNIQUEIDENTIFIER          NOT NULL,
+    CommenterId         UNIQUEIDENTIFIER          NOT NULL,
+    ParentCommentId     UNIQUEIDENTIFIER          NULL,
     CommentText         NVARCHAR(500)  NOT NULL,
     IsEdited            BIT             NOT NULL DEFAULT 0,
     EditedAt            DATETIME2       NULL,
     IsDeleted           BIT             NOT NULL DEFAULT 0,
     DeletedAt           DATETIME2       NULL,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_CelebrationComment_Wish
         FOREIGN KEY (WishId)
@@ -796,9 +794,9 @@ GO
 
 -- BIRTHDAY WALL POST - Featured birthday/anniversary posts on dashboard
 CREATE TABLE event.BirthdayWallPost (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    GreetingCardId      INT          NOT NULL,
-    PostedById          INT          NOT NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    GreetingCardId      UNIQUEIDENTIFIER          NOT NULL,
+    PostedById          UNIQUEIDENTIFIER          NOT NULL,
     PostContent         NVARCHAR(MAX)  NULL,
     ImageUrl            NVARCHAR(1000)  NULL,
     IsFeatured          BIT             NOT NULL DEFAULT 0,
@@ -807,9 +805,9 @@ CREATE TABLE event.BirthdayWallPost (
     ViewCount           INT             NOT NULL DEFAULT 0,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_BirthdayWallPost_GreetingCard
         FOREIGN KEY (GreetingCardId)
@@ -824,7 +822,7 @@ GO
 
 -- MILESTONE BADGE - Awarded for work anniversary milestones
 CREATE TABLE event.MilestoneBadge (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
     BadgeCode           NVARCHAR(50)    NOT NULL UNIQUE,
     BadgeName           NVARCHAR(100)   NOT NULL,
     Description         NVARCHAR(500)   NULL,
@@ -833,26 +831,26 @@ CREATE TABLE event.MilestoneBadge (
     BadgeColor          NVARCHAR(20)    NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL
 );
 GO
 
 
 -- EMPLOYEE BADGE - Badges earned by employees for milestones
 CREATE TABLE event.EmployeeBadge (
-    Id                  INT          PRIMARY KEY IDENTITY(1,1),
-    EmployeeId          INT          NOT NULL,
-    BadgeId             INT          NOT NULL,
-    GreetingCardId      INT          NULL,
+    Id                  UNIQUEIDENTIFIER          PRIMARY KEY,
+    EmployeeId          UNIQUEIDENTIFIER          NOT NULL,
+    BadgeId             UNIQUEIDENTIFIER          NOT NULL,
+    GreetingCardId      UNIQUEIDENTIFIER          NULL,
     AwardedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     DisplayOnProfile    BIT             NOT NULL DEFAULT 1,
     IsActive            BIT             NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           INT             NULL,
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       INT             NULL,
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EmployeeBadge_Employee
         FOREIGN KEY (EmployeeId)
@@ -914,15 +912,15 @@ GO
 -- SEED DEFAULT MILESTONE BADGES
 IF NOT EXISTS (SELECT 1 FROM event.MilestoneBadge WHERE BadgeCode = 'ONE_YEAR')
 BEGIN
-    INSERT INTO event.MilestoneBadge (BadgeCode, BadgeName, Description, YearsRequired, IconUrl, BadgeColor)
+    INSERT INTO event.MilestoneBadge (Id, BadgeCode, BadgeName, Description, YearsRequired, IconUrl, BadgeColor)
     VALUES
-    ('ONE_YEAR', 'First Year', 'Completed 1 year at company', 1, NULL, '#CD7F32'),
-    ('THREE_YEARS', 'Three Year Club', 'Completed 3 years at company', 3, NULL, '#C0C0C0'),
-    ('FIVE_YEARS', 'Five Year Veteran', 'Completed 5 years at company', 5, NULL, '#FFD700'),
-    ('SEVEN_YEARS', 'Seven Year Champion', 'Completed 7 years at company', 7, NULL, '#E5E4E2'),
-    ('TEN_YEARS', 'Decade Master', 'Completed 10 years at company', 10, NULL, '#9966CC'),
-    ('FIFTEEN_YEARS', 'Fifteen Year Legend', 'Completed 15 years at company', 15, NULL, '#333399'),
-    ('TWENTY_YEARS', 'Twenty Year Icon', 'Completed 20 years at company', 20, NULL, '#FFD700');
+    (NEWID(), 'ONE_YEAR', 'First Year', 'Completed 1 year at company', 1, NULL, '#CD7F32'),
+    (NEWID(), 'THREE_YEARS', 'Three Year Club', 'Completed 3 years at company', 3, NULL, '#C0C0C0'),
+    (NEWID(), 'FIVE_YEARS', 'Five Year Veteran', 'Completed 5 years at company', 5, NULL, '#FFD700'),
+    (NEWID(), 'SEVEN_YEARS', 'Seven Year Champion', 'Completed 7 years at company', 7, NULL, '#E5E4E2'),
+    (NEWID(), 'TEN_YEARS', 'Decade Master', 'Completed 10 years at company', 10, NULL, '#9966CC'),
+    (NEWID(), 'FIFTEEN_YEARS', 'Fifteen Year Legend', 'Completed 15 years at company', 15, NULL, '#333399'),
+    (NEWID(), 'TWENTY_YEARS', 'Twenty Year Icon', 'Completed 20 years at company', 20, NULL, '#FFD700');
 END
 GO
 
