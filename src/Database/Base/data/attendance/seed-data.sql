@@ -144,7 +144,7 @@ PRINT 'Inserting WorkWeekPolicyAssignment...';
 -- Global default: Admin policy
 INSERT INTO attendance.WorkWeekPolicyAssignment (Id, WorkWeekPolicyId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, PriorityOrder) VALUES
 (NEWID(), (SELECT Id FROM attendance.WorkWeekPolicy WHERE PolicyCode='WWP-ADMIN-INDIA'),
- (SELECT Id FROM time.ScopeType WHERE ScopeCode='GLOBAL'), (SELECT Id FROM time.Department WHERE DepartmentCode='ADMIN'), '2012-01-01', 1);
+ (SELECT Id FROM time.ScopeType WHERE ScopeCode='GLOBAL'), (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'), '2012-01-01', 1);
 
 -- Clinical departments - 6-day
 INSERT INTO attendance.WorkWeekPolicyAssignment (Id, WorkWeekPolicyId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, PriorityOrder) VALUES
@@ -202,7 +202,7 @@ PRINT 'Inserting ShiftAssignment...';
 -- Global default: General shift (admin/support/finance)
 INSERT INTO attendance.ShiftAssignment (Id, ShiftId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, PriorityOrder, IsPrimaryShift) VALUES
 (NEWID(), (SELECT Id FROM attendance.Shift WHERE ShiftCode='SHF-GEN'),
- (SELECT Id FROM time.ScopeType WHERE ScopeCode='GLOBAL'), (SELECT Id FROM [time].[ScopeType] WHERE ScopeCode='DEPARTMENT'), '2012-01-01', 1, 1);
+ (SELECT Id FROM time.ScopeType WHERE ScopeCode='GLOBAL'), (SELECT Id FROM time.LegalEntity WHERE EntityCode='MEDCARE-IN'), '2012-01-01', 1, 1);
 
 -- HR, Finance, Admin, IT - General / Flexible
 INSERT INTO attendance.ShiftAssignment (Id, ShiftId, ScopeTypeId, ScopeReferenceId, EffectiveFrom, PriorityOrder, IsPrimaryShift) VALUES
