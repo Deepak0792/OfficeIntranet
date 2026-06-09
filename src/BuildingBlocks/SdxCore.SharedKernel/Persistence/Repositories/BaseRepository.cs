@@ -13,11 +13,11 @@ public abstract class BaseRepository<TEntity, TKey, TDbContext>
 {
     protected readonly TDbContext _dbContext;
     protected readonly DbSet<TEntity> _dbSet;
-    protected readonly IRequestContext _requestContext;
+    protected readonly IUserContext _requestContext;
 
     protected BaseRepository(
         TDbContext dbContext,
-        IRequestContext requestContext)
+        IUserContext requestContext)
     {
         _dbContext = dbContext;
         _dbSet = dbContext.Set<TEntity>();

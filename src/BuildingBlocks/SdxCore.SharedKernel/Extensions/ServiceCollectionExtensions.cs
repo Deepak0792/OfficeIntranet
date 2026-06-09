@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
         if (configuration is null)
             throw new ArgumentNullException(nameof(configuration));
 
-        services.AddScoped<IRequestContext, RequestContext>();
+        services.AddScoped<IUserContext, UserContext>();
 
         return services;
     }   

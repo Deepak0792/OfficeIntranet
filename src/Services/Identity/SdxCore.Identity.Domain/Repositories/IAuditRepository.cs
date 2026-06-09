@@ -7,7 +7,7 @@ namespace SdxCore.Identity.Domain.Repositories;
 /// Repository interface for audit event data access.
 /// Provides append-only access to audit logs for compliance and security monitoring.
 /// </summary>
-public interface IAuditRepository : IRepository<AuditEvent, int>
+public interface IAuditRepository : IRepository<AuditEvent, Guid>
 {
     /// <summary>
     /// Retrieves audit events for a specific username.

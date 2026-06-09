@@ -9,7 +9,7 @@ public class OutboxRepository : OutboxRepository<WorkflowDbContext>, IOutboxRepo
 {
     public OutboxRepository(
         WorkflowDbContext dbContext,
-        IRequestContext requestContext)
+        IUserContext requestContext)
         : base(dbContext, requestContext)
     {
     }

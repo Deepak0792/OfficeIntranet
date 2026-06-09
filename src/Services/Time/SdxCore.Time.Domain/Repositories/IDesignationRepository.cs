@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Repositories;
 
-public interface IDesignationRepository : IRepository<Designation, short> { }
+public interface IDesignationRepository : IRepository<Designation, Guid> { }
 

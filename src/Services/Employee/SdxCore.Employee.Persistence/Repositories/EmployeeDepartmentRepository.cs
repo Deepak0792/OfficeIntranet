@@ -8,7 +8,7 @@ namespace SdxCore.Employee.Persistence.Repositories;
 
 public class EmployeeDepartmentRepository : BaseRepository<EmployeeDepartment, int, EmployeeDbContext>, IEmployeeDepartmentRepository
 {
-    public EmployeeDepartmentRepository(EmployeeDbContext dbContext, IRequestContext requestContext) 
+    public EmployeeDepartmentRepository(EmployeeDbContext dbContext, IUserContext requestContext) 
         : base(dbContext, requestContext)
     {
     }

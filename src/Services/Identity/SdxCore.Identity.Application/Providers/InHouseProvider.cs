@@ -129,8 +129,8 @@ public sealed class InHouseProvider : IInHouseProvider
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (request.EmployeeId == 0)
-            throw new ArgumentException("EmployeeId cannot be null or 0.", nameof(request));
+        if (request.EmployeeId == Guid.Empty)
+            throw new ArgumentException("EmployeeId cannot be empty.", nameof(request));
 
         if (string.IsNullOrWhiteSpace(request.Username))
             throw new ArgumentException("Username cannot be null or empty.", nameof(request));
@@ -155,6 +155,7 @@ public sealed class InHouseProvider : IInHouseProvider
         // Create User with defaults
         var user = new User
         {
+            Id = Guid.NewGuid(),
             EmployeeId = request.EmployeeId,
             Username = request.Username,
             PasswordHash = passwordHash,
@@ -176,8 +177,8 @@ public sealed class InHouseProvider : IInHouseProvider
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (request.EmployeeId == 0)
-            throw new ArgumentException("EmployeeId cannot be null or 0.", nameof(request));
+        if (request.EmployeeId == Guid.Empty)
+            throw new ArgumentException("EmployeeId cannot be empty.", nameof(request));
 
         if (string.IsNullOrWhiteSpace(request.CurrentPassword))
             throw new ArgumentException("CurrentPassword cannot be null or empty.", nameof(request));
@@ -213,10 +214,10 @@ public sealed class InHouseProvider : IInHouseProvider
     }
 
     /// <inheritdoc />
-    public async Task<bool> DeactivateUserAsync(int employeeId, CancellationToken ct = default)
+    public async Task<bool> DeactivateUserAsync(Guid employeeId, CancellationToken ct = default)
     {
-        if (employeeId == 0)
-            throw new ArgumentNullException("EmployeeId cannot be null or empty.", nameof(employeeId));
+        if (employeeId == Guid.Empty)
+            throw new ArgumentException("EmployeeId cannot be empty.", nameof(employeeId));
 
         try
         {

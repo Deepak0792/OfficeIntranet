@@ -2,7 +2,7 @@ namespace SdxCore.Time.Application.DTOs.Response;
 
 public class TimeZoneMasterResponse
 {
-    public short Id { get; set; }
+    public Guid Id { get; set; }
     public required string TimeZoneCode { get; set; }
     public required string TimeZoneName { get; set; }
     public required string UtcOffset { get; set; }

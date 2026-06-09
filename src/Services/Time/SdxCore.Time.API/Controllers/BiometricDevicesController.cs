@@ -29,8 +29,8 @@ public class BiometricDevicesController : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
         if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "BiometricDevice not found." });
@@ -49,8 +49,8 @@ public class BiometricDevicesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateBiometricDeviceRequest dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBiometricDeviceRequest dto, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -60,8 +60,8 @@ public class BiometricDevicesController : ControllerBase
         return Ok(new ApiResponse<bool>(true, "BiometricDevice updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -72,8 +72,8 @@ public class BiometricDevicesController : ControllerBase
         return Ok(new ApiResponse<bool>(true, $"BiometricDevice {statusStr} successfully."));
     }
 
-    [HttpPatch("{id}/sync")]
-    public async Task<IActionResult> SyncDevice(int id, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/sync")]
+    public async Task<IActionResult> SyncDevice(Guid id, CancellationToken cancellationToken)
     {
         var updated = await _service.SyncDeviceAsync(id, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Active BiometricDevice not found." });

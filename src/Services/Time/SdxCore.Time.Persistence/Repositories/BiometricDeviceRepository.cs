@@ -6,7 +6,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class BiometricDeviceRepository : BaseRepository<BiometricDevice, int, TimeDbContext>, IBiometricDeviceRepository
+public class BiometricDeviceRepository : BaseRepository<BiometricDevice, Guid, TimeDbContext>, IBiometricDeviceRepository
 {
-    public BiometricDeviceRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public BiometricDeviceRepository(TimeDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 }

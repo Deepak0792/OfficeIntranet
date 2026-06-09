@@ -14,7 +14,7 @@ public sealed record TokenValidationResponse
     /// <summary>
     /// User identifier extracted from the token.
     /// </summary>
-    public int UserId { get; init; }
+    public Guid? UserId { get; init; }
 
     /// <summary>
     /// Username extracted from the token.

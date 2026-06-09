@@ -4,6 +4,6 @@ namespace SdxCore.Shared.Domain.Repositories;
 
 public interface ILookupRepository
 {
-    Task<IEnumerable<LookupItem>> GetLookupAsync(string code, string? parentId = null, CancellationToken cancellationToken = default);
+    Task<IEnumerable<LookupItem>> GetLookupAsync(string code, Guid? parentId = null, CancellationToken cancellationToken = default);
 }
 

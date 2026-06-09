@@ -2,6 +2,7 @@
 {
     public static class SystemUser
     {
-        public static int SystemUserId { get; } = 1;
+        public static readonly Guid SystemUserId =
+            new("32119FAA-D461-477F-868C-42793BEAE8F7");
     }
 }

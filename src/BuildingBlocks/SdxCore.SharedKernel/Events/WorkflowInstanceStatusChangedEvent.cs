@@ -5,11 +5,11 @@
 /// Consumed by Attendance to update LeaveRequest.LeaveStatus.
 /// </summary>
 public record WorkflowInstanceStatusChangedEvent(
-    int WorkflowInstanceId,
+    Guid WorkflowInstanceId,
     string ModuleCode,              // "LEAVE_REQUEST"
-    int ReferenceTransactionId,  // LeaveRequestId
+    Guid ReferenceTransactionId,  // LeaveRequestId
     string NewStatus,               // "APPROVED", "REJECTED", "WITHDRAWN", etc.
     string ActionType,
-    int ActionBy,
+    Guid ActionBy,
     string? Remarks,
     DateTime OccurredOnUtc);

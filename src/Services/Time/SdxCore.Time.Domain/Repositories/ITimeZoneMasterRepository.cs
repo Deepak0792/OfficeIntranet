@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Repositories;
 
-public interface ITimeZoneMasterRepository : IRepository<TimeZoneMaster, short> { }
+public interface ITimeZoneMasterRepository : IRepository<TimeZoneMaster, Guid> { }
 

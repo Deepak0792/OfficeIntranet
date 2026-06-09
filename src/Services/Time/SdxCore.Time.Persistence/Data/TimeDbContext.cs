@@ -35,8 +35,9 @@ public class TimeDbContext : SdxDbContext
         {
             b.ToTable("OutboxMessages", "time");
             b.HasKey(x => x.Id);
+
             b.Property(x => x.Id)
-                .HasDefaultValueSql("NEWSEQUENTIALID()");
+                .ValueGeneratedNever();
         });
 
         modelBuilder.ApplyConfigurationsFromAssembly(

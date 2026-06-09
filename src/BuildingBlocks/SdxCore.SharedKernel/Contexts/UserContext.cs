@@ -1,26 +1,30 @@
 using Microsoft.AspNetCore.Http;
 using SdxCore.SharedKernel.Contracts;
 namespace SdxCore.SharedKernel.Contexts;
-public class RequestContext : IRequestContext
+public class UserContext : IUserContext
 {
-    private readonly IHttpContextAccessor _http;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public RequestContext(IHttpContextAccessor http)
+    public UserContext(IHttpContextAccessor http)
     {
-        _http = http;
+        _httpContextAccessor = http;
     }
 
-    private HttpContext? Http => _http.HttpContext;
+    private HttpContext? Http => _httpContextAccessor.HttpContext;
 
     public bool IsAuthenticated =>
         !string.IsNullOrEmpty(Http?.Request?.Headers["X-User-Id"]);
 
-    public int? UserId
+    public Guid? UserId
     {
         get
         {
-            var value = Http?.Request?.Headers["X-User-Id"].FirstOrDefault();
-            return int.TryParse(value, out var userId) ? userId : null;
+            var value = _httpContextAccessor.HttpContext?
+                .Request
+                .Headers["X-User-Id"]
+                .FirstOrDefault();
+
+            return Guid.TryParse(value, out var id) ? id : null;
         }
     }
 

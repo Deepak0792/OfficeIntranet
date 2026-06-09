@@ -28,8 +28,8 @@ public class LegalEntitiesController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<LegalEntityResponse>>(result, "Successfully fetched LegalEntities."));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
         if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "LegalEntity not found." });
@@ -48,8 +48,8 @@ public class LegalEntitiesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateLegalEntityRequest dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLegalEntityRequest dto, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -59,8 +59,8 @@ public class LegalEntitiesController : ControllerBase
         return Ok(new ApiResponse<bool>(true, "LegalEntity updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 

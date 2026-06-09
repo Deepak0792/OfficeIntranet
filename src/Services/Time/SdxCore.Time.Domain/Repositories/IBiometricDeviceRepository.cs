@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Repositories;
 
-public interface IBiometricDeviceRepository : IRepository<BiometricDevice, int> { }
+public interface IBiometricDeviceRepository : IRepository<BiometricDevice, Guid> { }
 

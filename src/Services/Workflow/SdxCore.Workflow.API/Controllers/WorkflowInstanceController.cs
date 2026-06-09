@@ -13,7 +13,7 @@ namespace SdxCore.Workflow.API.Controllers;
 [GatewayOnly]
 public class WorkflowInstanceController(
     IWorkflowInstanceService workflowInstanceService,
-    IRequestContext requestContext) : ControllerBase
+    IUserContext requestContext) : ControllerBase
 {
     /// <summary>
     /// Query params: moduleCode, status, initiatedBy, fromDate, toDate, page, pageSize

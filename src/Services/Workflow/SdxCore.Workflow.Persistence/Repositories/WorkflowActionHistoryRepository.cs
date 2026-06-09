@@ -7,7 +7,7 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowActionHistoryRepository(WorkflowDbContext dbContext, IRequestContext requestContext)
+public class WorkflowActionHistoryRepository(WorkflowDbContext dbContext, IUserContext requestContext)
     : BaseRepository<WorkflowActionHistory, int, WorkflowDbContext>(dbContext, requestContext), IWorkflowActionHistoryRepository
 {
     public async Task<IEnumerable<WorkflowActionHistory>> GetByInstanceIdAsync(int instanceId, CancellationToken cancellationToken = default) =>

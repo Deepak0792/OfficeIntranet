@@ -28,8 +28,8 @@ public class DesignationsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<DesignationResponse>>(result, "Successfully fetched Designations."));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
         if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Designation not found." });
@@ -48,8 +48,8 @@ public class DesignationsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateDesignationRequest dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDesignationRequest dto, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -59,8 +59,8 @@ public class DesignationsController : ControllerBase
         return Ok(new ApiResponse<bool>(true, "Designation updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 

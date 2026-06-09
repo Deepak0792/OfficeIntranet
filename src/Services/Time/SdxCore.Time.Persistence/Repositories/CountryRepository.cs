@@ -6,8 +6,8 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class CountryRepository : BaseRepository<Country, short,TimeDbContext>, ICountryRepository
+public class CountryRepository : BaseRepository<Country, Guid,TimeDbContext>, ICountryRepository
 {
-    public CountryRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public CountryRepository(TimeDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 }
 

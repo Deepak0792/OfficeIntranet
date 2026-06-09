@@ -16,9 +16,9 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// Initializes a new instance of the <see cref="AuditRepository"/> class.
 /// </remarks>
 /// <param name="dbContext">The database context.</param>
-public class AuditRepository : BaseRepository<AuditEvent, int, IdentityDbContext>, IAuditRepository
+public class AuditRepository : BaseRepository<AuditEvent, Guid, IdentityDbContext>, IAuditRepository
 {
-    public AuditRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public AuditRepository(IdentityDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<AuditEvent>> GetByUsernameAsync(string username, CancellationToken ct = default)

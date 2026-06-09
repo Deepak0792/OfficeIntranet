@@ -28,8 +28,8 @@ public class RegionsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Regions."));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
         if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Region not found." });
@@ -48,8 +48,8 @@ public class RegionsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateRegionRequest dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateRegionRequest dto, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -59,8 +59,8 @@ public class RegionsController : ControllerBase
         return Ok(new ApiResponse<bool>(true, "Region updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -71,8 +71,8 @@ public class RegionsController : ControllerBase
         return Ok(new ApiResponse<bool>(true, $"Region {statusStr} successfully."));
     }
 
-    [HttpGet("by-country/{countryId}")]
-    public async Task<IActionResult> GetByCountry(short countryId, CancellationToken cancellationToken)
+    [HttpGet("by-country/{countryId:guid}")]
+    public async Task<IActionResult> GetByCountry(Guid countryId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByCountryIdAsync(countryId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
@@ -85,22 +85,22 @@ public class RegionsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
     }
 
-    [HttpGet("{id}/children")]
-    public async Task<IActionResult> GetChildren(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/children")]
+    public async Task<IActionResult> GetChildren(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetChildrenAsync(id, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
     }
 
-    [HttpGet("{id}/ancestors")]
-    public async Task<IActionResult> GetAncestors(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/ancestors")]
+    public async Task<IActionResult> GetAncestors(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetAncestorsAsync(id, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<RegionResponse>>(result, "Successfully fetched Region list."));
     }
 
-    [HttpPatch("{id}/parent")]
-    public async Task<IActionResult> UpdateParent(short id, [FromBody] UpdateParentRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/parent")]
+    public async Task<IActionResult> UpdateParent(Guid id, [FromBody] UpdateParentRequest request, CancellationToken cancellationToken)
     {
         var updated = await _service.UpdateParentAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Region not found." });

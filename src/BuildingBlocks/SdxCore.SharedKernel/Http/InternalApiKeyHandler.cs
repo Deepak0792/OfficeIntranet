@@ -7,12 +7,12 @@ namespace SdxCore.SharedKernel.Http;
 public class InternalApiKeyHandler : DelegatingHandler
 {
     private readonly IConfiguration _configuration;
-    private readonly IRequestContext _requestContext;
+    private readonly IUserContext _requestContext;
     private readonly ILogger<InternalApiKeyHandler> _logger;
 
     public InternalApiKeyHandler(
         IConfiguration configuration,
-        IRequestContext requestContext,
+        IUserContext requestContext,
         ILogger<InternalApiKeyHandler> logger)
     {
         _configuration = configuration;

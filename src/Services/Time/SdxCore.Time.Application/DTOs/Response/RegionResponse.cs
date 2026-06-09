@@ -1,15 +1,17 @@
 namespace SdxCore.Time.Application.DTOs.Response;
+using System.Text.Json.Serialization;
+using System.Collections.Generic;
 
 public class RegionResponse
 {
-    public short Id { get; set; }
-    public short CountryId { get; set; }
+    public Guid Id { get; set; }
+    public Guid CountryId { get; set; }
     public required string RegionName { get; set; }
     public string? RegionType { get; set; }
-    public short? ParentRegionId { get; set; }
+    public Guid? ParentRegionId { get; set; }
     public bool IsActive { get; set; }
 
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public System.Collections.Generic.List<RegionResponse>? Children { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<RegionResponse>? Children { get; set; }
 }
 

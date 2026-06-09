@@ -37,7 +37,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return new PagedResponse<IEnumerable<BiometricDeviceResponse>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
     }
 
-    public async Task<BiometricDeviceResponse?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<BiometricDeviceResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         //var cacheKey = _cacheKeyBuilder.BuildKey("biometricdevice", id.ToString());
         //return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -54,8 +54,8 @@ public class BiometricDeviceService : IBiometricDeviceService
     public async Task<BiometricDeviceResponse> CreateAsync(CreateBiometricDeviceRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateBiometricDeviceRequest, BiometricDevice>(dto);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
-        entity.CreatedAt = DateTime.UtcNow;
 
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -63,7 +63,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(int id, UpdateBiometricDeviceRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateBiometricDeviceRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -75,7 +75,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return true;
     }
 
-    public async Task<bool> ToggleStatusAsync(int id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -86,7 +86,7 @@ public class BiometricDeviceService : IBiometricDeviceService
         return true;
     }
 
-    public async Task<bool> SyncDeviceAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SyncDeviceAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null || !entity.IsActive) return false;

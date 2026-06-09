@@ -7,7 +7,7 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowTaskRepository(WorkflowDbContext dbContext, IRequestContext requestContext) 
+public class WorkflowTaskRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
     : BaseRepository<WorkflowTask, int, WorkflowDbContext>(dbContext, requestContext), IWorkflowTaskRepository
 {
 

@@ -11,7 +11,7 @@ public class OutboxRepository<TDbContext> : BaseRepository<OutboxMessage, Guid, 
 {
     public OutboxRepository(
         TDbContext dbContext,
-        IRequestContext requestContext)
+        IUserContext requestContext)
         : base(dbContext, requestContext)
     {
     }

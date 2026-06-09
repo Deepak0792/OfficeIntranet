@@ -6,10 +6,10 @@ namespace SdxCore.Time.Application.Contracts.Services;
 public interface ILegalEntityService
 {
     Task<IEnumerable<LegalEntityResponse>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<LegalEntityResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<LegalEntityResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<LegalEntityResponse> CreateAsync(CreateLegalEntityRequest dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateLegalEntityRequest dto, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(Guid id, UpdateLegalEntityRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

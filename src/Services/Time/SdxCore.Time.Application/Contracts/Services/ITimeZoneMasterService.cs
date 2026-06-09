@@ -6,10 +6,10 @@ namespace SdxCore.Time.Application.Contracts.Services;
 public interface ITimeZoneMasterService
 {
     Task<IEnumerable<TimeZoneMasterResponse>> GetAllAsync(CancellationToken cancellationToken = default);
-    Task<TimeZoneMasterResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default);
+    Task<TimeZoneMasterResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<TimeZoneMasterResponse> CreateAsync(CreateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default);
-    Task<bool> UpdateAsync(short id, UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
+    Task<bool> UpdateAsync(Guid id, UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
 }
 
 

@@ -2,12 +2,12 @@
 
 namespace SdxCore.Identity.Domain.Entities;
 
-public class RefreshToken : BaseAuditEntity<int>
+public class RefreshToken : BaseAuditEntity<Guid>
 {
     /// <summary>
     /// Identifier of the employee this refresh token belongs to.
     /// </summary>
-    public int EmployeeId { get; set; }
+    public Guid EmployeeId { get; set; }
 
     /// <summary>
     /// Hashed value of the refresh token. Never stores plaintext tokens.

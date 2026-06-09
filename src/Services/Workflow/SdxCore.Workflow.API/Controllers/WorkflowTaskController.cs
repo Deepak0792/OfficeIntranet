@@ -14,7 +14,7 @@ namespace SdxCore.Workflow.API.Controllers;
 [GatewayOnly]
 public class WorkflowTaskController(
     IWorkflowTaskService svc,
-    IRequestContext requestContext) : ControllerBase
+    IUserContext requestContext) : ControllerBase
 {
     /// <summary>
     /// GET /api/v1/workflow/tasks/my-pending

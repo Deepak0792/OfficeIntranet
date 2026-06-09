@@ -20,12 +20,11 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
         // Table name
         builder.ToTable("AuditEvents");
 
-        // Since AuditEvent is a record type without an explicit Id property,
-        // we need to configure a shadow property as the primary key
-        builder.Property<int>("Id")
-            .ValueGeneratedOnAdd();
-        
-        builder.HasKey("Id");
+        // Primary Key
+        builder.HasKey(a => a.Id);
+
+        builder.Property(a => a.Id)
+            .ValueGeneratedNever();
 
         // Properties
         builder.Property(a => a.EventType)
@@ -56,7 +55,7 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
             .IsRequired(false)
             .HasMaxLength(1000);
 
-        // Indexes for common query patterns
+        // Indexes
         builder.HasIndex(a => a.EventType)
             .HasDatabaseName("IX_AuditEvents_EventType");
 
@@ -67,10 +66,9 @@ public class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
             .HasDatabaseName("IX_AuditEvents_Username");
 
         builder.HasIndex(a => a.CreatedAt)
-            .HasDatabaseName("IX_AuditEvents_OccurredAt");
+            .HasDatabaseName("IX_AuditEvents_CreatedAt");
 
-        // Composite index for common queries (username + timestamp)
         builder.HasIndex(a => new { a.Username, a.CreatedAt })
-            .HasDatabaseName("IX_AuditEvents_Username_OccurredAt");
+            .HasDatabaseName("IX_AuditEvents_Username_CreatedAt");
     }
 }

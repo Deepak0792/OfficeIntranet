@@ -2,14 +2,14 @@
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Time.Domain.Entities;
-public class GeoFence : BaseAuditEntity<short>, IPublishableEntity
+public class GeoFence : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public required string GeoFenceCode { get; set; }
     public required string GeoFenceName { get; set; }
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
     public decimal RadiusMeters { get; set; }
-    public short? OfficeId { get; set; }
+    public Guid? OfficeId { get; set; }
     public bool IsActive { get; set; } = true;
     public OfficeLocation? Office { get; set; }  
 }

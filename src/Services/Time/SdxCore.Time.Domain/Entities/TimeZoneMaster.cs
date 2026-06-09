@@ -2,7 +2,7 @@
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Time.Domain.Entities;
-public class TimeZoneMaster : BaseAuditEntity<short>, IPublishableEntity
+public class TimeZoneMaster : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public required string TimeZoneCode { get; set; }
     public required string TimeZoneName { get; set; }

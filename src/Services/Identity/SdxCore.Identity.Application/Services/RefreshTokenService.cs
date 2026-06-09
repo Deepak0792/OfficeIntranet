@@ -15,14 +15,14 @@ namespace SdxCore.Identity.Application.Services;
 public class RefreshTokenService : IRefreshTokenService
 {
     private readonly IAuditLoggerService _auditLoggerService;
-    private readonly IRequestContext _requestContext;
+    private readonly IUserContext _requestContext;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly ITokenFactory _tokenFactory;
 
     public RefreshTokenService(
         IAuditLoggerService auditLoggerService,
-        IRequestContext requestContext,
+        IUserContext requestContext,
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
         ITokenFactory tokenFactory)
@@ -139,15 +139,17 @@ public class RefreshTokenService : IRefreshTokenService
     /// <param name="ct"></param>
     /// <returns></returns>
     public async Task<RefreshTokenResponse> CreateAsync(
-        int employeeId,
+        Guid employeeId,
         CancellationToken ct = default)
     {
         string rawRefreshToken = GenerateRefreshToken();
 
         var entity = new RefreshToken
         {
+            Id = Guid.NewGuid(),
             EmployeeId = employeeId,
             HashToken = PasswordHasher.HashToken(rawRefreshToken),
+            IsActive = true,
             CreatedBy = employeeId,
             LastUpdatedBy = employeeId,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
@@ -158,7 +160,7 @@ public class RefreshTokenService : IRefreshTokenService
 
         await _refreshTokenRepository.AddAsync(entity, ct);
         await _refreshTokenRepository.SaveChangesAsync(ct);
-       
+
         var result = new RefreshTokenResponse
         {
             Id = entity.Id,

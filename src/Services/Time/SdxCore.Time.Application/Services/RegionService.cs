@@ -31,7 +31,7 @@ public class RegionService : IRegionService
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<RegionResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<RegionResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Region), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -45,8 +45,8 @@ public class RegionService : IRegionService
     public async Task<RegionResponse> CreateAsync(CreateRegionRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateRegionRequest, Region>(dto);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
-        entity.CreatedAt = DateTime.UtcNow;
 
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -54,7 +54,7 @@ public class RegionService : IRegionService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(short id, UpdateRegionRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateRegionRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -66,7 +66,7 @@ public class RegionService : IRegionService
         return true;
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -77,7 +77,7 @@ public class RegionService : IRegionService
         return true;
     }
 
-    public async Task<IEnumerable<RegionResponse>> GetByCountryIdAsync(short countryId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RegionResponse>> GetByCountryIdAsync(Guid countryId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.CountryId == countryId && x.IsActive, cancellationToken);
         return entities.Select(e => PropertyMapper.Map<Region, RegionResponse>(e));
@@ -98,13 +98,13 @@ public class RegionService : IRegionService
         return lookup[null].ToList();
     }
 
-    public async Task<IEnumerable<RegionResponse>> GetChildrenAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RegionResponse>> GetChildrenAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var children = await _repository.FindAsync(x => x.ParentRegionId == id && x.IsActive, cancellationToken);
         return children.Select(e => PropertyMapper.Map<Region, RegionResponse>(e));
     }
 
-    public async Task<IEnumerable<RegionResponse>> GetAncestorsAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RegionResponse>> GetAncestorsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var ancestors = new List<RegionResponse>();
         var currentId = id;
@@ -124,7 +124,7 @@ public class RegionService : IRegionService
         return ancestors;
     }
 
-    public async Task<bool> UpdateParentAsync(short id, UpdateParentRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateParentAsync(Guid id, UpdateParentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -138,6 +138,3 @@ public class RegionService : IRegionService
         return true;
     }
 }
-
-
-

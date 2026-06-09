@@ -2,10 +2,10 @@ namespace SdxCore.Time.Application.DTOs.Response;
 
 public class OfficeLocationResponse
 {
-    public short Id { get; set; }
-    public short LegalEntityId { get; set; }
-    public short CountryId { get; set; }
-    public short? RegionId { get; set; }
+    public Guid Id { get; set; }
+    public Guid LegalEntityId { get; set; }
+    public Guid CountryId { get; set; }
+    public Guid? RegionId { get; set; }
     public required string LocationCode { get; set; }
     public required string LocationName { get; set; }
     public string? BuildingName { get; set; }
@@ -16,7 +16,7 @@ public class OfficeLocationResponse
     public string? PostalCode { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
-    public short? TimeZoneId { get; set; }
+    public Guid? TimeZoneId { get; set; }
     public bool IsHeadOffice { get; set; }
     public bool IsActive { get; set; }
 }

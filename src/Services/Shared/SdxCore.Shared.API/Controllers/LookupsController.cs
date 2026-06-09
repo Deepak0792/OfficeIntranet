@@ -36,8 +36,8 @@ public class LookupsController : ControllerBase
     /// <summary>
     /// Gets a list of lookup items by lookup code and parent ID.
     /// </summary>
-    [HttpGet("{code}/{parentId}")]
-    public async Task<IActionResult> GetLookupWithParent(string code, string parentId, CancellationToken cancellationToken)
+    [HttpGet("{code}/{parentId:guid}")]
+    public async Task<IActionResult> GetLookupWithParent(string code, Guid parentId, CancellationToken cancellationToken)
     {
         var result = await _lookupService.GetLookupAsync(code, parentId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<LookupItem>>(result, "Successfully fetched lookup items."));

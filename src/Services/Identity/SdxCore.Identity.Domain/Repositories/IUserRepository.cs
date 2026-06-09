@@ -7,7 +7,7 @@ namespace SdxCore.Identity.Domain.Repositories;
 /// Repository interface for user account data access.
 /// Provides methods for querying and managing user records in persistent storage.
 /// </summary>
-public interface IUserRepository : IRepository<User, int>
+public interface IUserRepository : IRepository<User, Guid>
 {
     /// <summary>
     /// Finds a user by username.
@@ -22,14 +22,14 @@ public interface IUserRepository : IRepository<User, int>
     /// </summary>
     /// <param name="employeeId">Employee ID.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task IncrementFailedAttemptsAsync(int employeeId, CancellationToken ct = default);
+    Task IncrementFailedAttemptsAsync(Guid employeeId, CancellationToken ct = default);
 
     /// <summary>
     /// Resets the failed authentication attempts counter to zero.
     /// </summary>
     /// <param name="employeeId">Employee ID.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task ResetFailedAttemptsAsync(int employeeId, CancellationToken ct = default);
+    Task ResetFailedAttemptsAsync(Guid employeeId, CancellationToken ct = default);
 
     /// <summary>
     /// Updates the last login timestamp for a user.
@@ -37,14 +37,14 @@ public interface IUserRepository : IRepository<User, int>
     /// <param name="employeeId">Employee ID.</param>
     /// <param name="loginTime">Login timestamp.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task UpdateLastLoginAsync(int employeeId, DateTime loginTime, CancellationToken ct = default);
+    Task UpdateLastLoginAsync(Guid employeeId, DateTime loginTime, CancellationToken ct = default);
 
     /// <summary>
     /// Deactivates a user account.
     /// </summary>
     /// <param name="employeeId">Employee ID.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task DeactivateAsync(int employeeId, CancellationToken ct = default);
+    Task DeactivateAsync(Guid employeeId, CancellationToken ct = default);
 
     /// <summary>
     /// Locks a user account until the specified timestamp.
@@ -52,7 +52,7 @@ public interface IUserRepository : IRepository<User, int>
     /// <param name="employeeId">Employee ID.</param>
     /// <param name="lockedUntil">Timestamp until which the account should be locked.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task LockAccountAsync(int employeeId, DateTime lockedUntil, CancellationToken ct = default);
+    Task LockAccountAsync(Guid employeeId, DateTime lockedUntil, CancellationToken ct = default);
 
     /// <summary>
     /// Updates a user's password hash.
@@ -60,6 +60,6 @@ public interface IUserRepository : IRepository<User, int>
     /// <param name="employeeId">Employee ID.</param>
     /// <param name="newPasswordHash">New password hash.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task UpdatePasswordHashAsync(int employeeId, string newPasswordHash, CancellationToken ct = default);
+    Task UpdatePasswordHashAsync(Guid employeeId, string newPasswordHash, CancellationToken ct = default);
 }
 

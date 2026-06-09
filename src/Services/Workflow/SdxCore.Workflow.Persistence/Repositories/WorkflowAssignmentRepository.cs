@@ -7,7 +7,7 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowAssignmentRepository(WorkflowDbContext dbContext, IRequestContext requestContext) 
+public class WorkflowAssignmentRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
     : BaseRepository<WorkflowAssignment, short, WorkflowDbContext>(dbContext, requestContext), IWorkflowAssignmentRepository
 {
     public async Task<IEnumerable<WorkflowAssignment>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default) =>

@@ -10,7 +10,7 @@ public class EmployeeBiometricMappingRepository :
     BaseRepository<EmployeeBiometricMapping, int, EmployeeDbContext>,
     IEmployeeBiometricMappingRepository
 {
-    public EmployeeBiometricMappingRepository(EmployeeDbContext dbContext, IRequestContext requestContext)
+    public EmployeeBiometricMappingRepository(EmployeeDbContext dbContext, IUserContext requestContext)
         : base(dbContext, requestContext)
     {
     }

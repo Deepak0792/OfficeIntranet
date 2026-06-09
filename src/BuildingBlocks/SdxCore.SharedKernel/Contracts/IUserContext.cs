@@ -1,7 +1,7 @@
 namespace SdxCore.SharedKernel.Contracts;
-public interface IRequestContext
+public interface IUserContext
 {
-    int? UserId { get; }
+    Guid? UserId { get; }
 
     string? Username { get; }
 

@@ -15,14 +15,14 @@ public class LookupRepository : ILookupRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<LookupItem>> GetLookupAsync(string code, string? parentId = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<LookupItem>> GetLookupAsync(string code, Guid? parentId = null, CancellationToken cancellationToken = default)
     {
         var codeParam = new SqlParameter("@LookupCode", code);
-        
+
         var sql = "EXEC shared.GetLookup @LookupCode";
         var parameters = new List<object> { codeParam };
 
-        if (!string.IsNullOrEmpty(parentId))
+        if (parentId != Guid.Empty)
         {
             var parentIdParam = new SqlParameter("@ParentId", parentId);
             sql = "EXEC shared.GetLookup @LookupCode, @ParentId";
@@ -30,7 +30,7 @@ public class LookupRepository : ILookupRepository
         }
 
         var result = await _context.Database.SqlQueryRaw<LookupItem>(sql, parameters.ToArray()).ToListAsync(cancellationToken);
-        
+
         return result;
     }
 }

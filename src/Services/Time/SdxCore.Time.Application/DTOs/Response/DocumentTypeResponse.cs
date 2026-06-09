@@ -2,7 +2,7 @@ namespace SdxCore.Time.Application.DTOs.Response;
 
 public class DocumentTypeResponse
 {
-    public short Id { get; set; }
+    public Guid Id { get; set; }
     public required string DocumentTypeCode { get; set; }
     public required string DocumentTypeName { get; set; }
     public string? Category { get; set; }

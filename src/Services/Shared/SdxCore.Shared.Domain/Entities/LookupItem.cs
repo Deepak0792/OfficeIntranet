@@ -5,10 +5,10 @@ namespace SdxCore.Shared.Domain.Entities;
 public class LookupItem
 {
     [JsonPropertyName("id")]
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
 
     [JsonPropertyName("idType")]
-    public string IdType { get; set; } = "string";
+    public string IdType { get; set; } = "guid";
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;

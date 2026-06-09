@@ -12,7 +12,7 @@ namespace SdxCore.Identity.Application.Providers;
 public sealed class AuditLoggerService : IAuditLoggerService, IDisposable
 {
     private readonly IAuditRepository _auditRepository;
-    private readonly IRequestContext _requestContext;
+    private readonly IUserContext _requestContext;
     private readonly ILogger<AuditLoggerService> _logger;
 
     private readonly Channel<AuditEvent> _channel;
@@ -23,7 +23,7 @@ public sealed class AuditLoggerService : IAuditLoggerService, IDisposable
 
     public AuditLoggerService(
         IAuditRepository auditRepository,
-        IRequestContext requestContext,
+        IUserContext requestContext,
         ILogger<AuditLoggerService> logger)
     {
         _auditRepository = auditRepository ?? throw new ArgumentNullException(nameof(auditRepository));
@@ -55,6 +55,7 @@ public sealed class AuditLoggerService : IAuditLoggerService, IDisposable
         try
         {
             var auditEvent = PropertyMapper.Map<AuditEventRequest, AuditEvent>(auditEventRequest);
+            auditEvent.Id = Guid.NewGuid();
             auditEvent.Protocol = auditEventRequest.Protocol.ToString();
 
             if (!_channel.Writer.TryWrite(auditEvent))

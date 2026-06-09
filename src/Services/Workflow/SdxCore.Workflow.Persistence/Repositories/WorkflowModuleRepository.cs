@@ -10,7 +10,7 @@ namespace SdxCore.Workflow.Persistence.Repositories;
 public class WorkflowModuleRepository : BaseRepository<WorkflowModule, short, WorkflowDbContext>, IWorkflowModuleRepository
 {
     private readonly WorkflowDbContext dbContext;
-    public WorkflowModuleRepository(WorkflowDbContext dbContext, IRequestContext requestContext):base(dbContext, requestContext)
+    public WorkflowModuleRepository(WorkflowDbContext dbContext, IUserContext requestContext):base(dbContext, requestContext)
     {
         this.dbContext = dbContext;
     }

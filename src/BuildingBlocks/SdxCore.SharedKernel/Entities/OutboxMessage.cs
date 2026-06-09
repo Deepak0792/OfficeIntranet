@@ -6,7 +6,7 @@ namespace SdxCore.SharedKernel.Entities;
 public class OutboxMessage
 {
     [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; }
 
     [Required]
     [MaxLength(500)]
@@ -35,11 +35,11 @@ public class OutboxMessage
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public int? CreatedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
 
     public DateTime LastUpdatedAt { get; set; } = DateTime.UtcNow;
 
-    public int? LastUpdatedBy { get; set; }
+    public Guid? LastUpdatedBy { get; set; }
 
     public DateTime? PublishedAt { get; set; }
 

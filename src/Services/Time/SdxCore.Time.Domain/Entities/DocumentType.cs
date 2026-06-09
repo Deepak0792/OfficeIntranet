@@ -2,7 +2,7 @@
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Time.Domain.Entities;
-public class DocumentType : BaseAuditEntity<short>, IPublishableEntity
+public class DocumentType : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public required string DocumentTypeCode { get; set; }
     public required string DocumentTypeName { get; set; }

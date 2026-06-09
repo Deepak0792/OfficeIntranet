@@ -5,5 +5,5 @@ namespace SdxCore.Identity.Domain.DTOs.Request;
 /// </summary>
 public sealed record DeactivateUserRequest
 {
-    public required int EmployeeId { get; set; }
+    public required Guid EmployeeId { get; set; }
 }

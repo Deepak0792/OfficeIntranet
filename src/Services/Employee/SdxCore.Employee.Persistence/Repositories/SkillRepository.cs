@@ -8,7 +8,7 @@ namespace SdxCore.Employee.Persistence.Repositories;
 
 public class SkillRepository : BaseRepository<Skill, short, EmployeeDbContext>, ISkillRepository
 {
-    public SkillRepository(EmployeeDbContext dbContext, IRequestContext requestContext)
+    public SkillRepository(EmployeeDbContext dbContext, IUserContext requestContext)
         : base(dbContext, requestContext)
     {
     }

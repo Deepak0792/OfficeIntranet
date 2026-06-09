@@ -1,10 +1,8 @@
-using System.Net.Http.Headers;
-using System.Text.Json;
+using SdxCore.Common.Http;
 using SdxCore.Common.Models;
 using SdxCore.Common.Routing;
-using SdxCore.Common.Http;
-using System.ComponentModel.DataAnnotations;
-using System.IO;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace SdxCore.Gateway.API.Middleware;
 
@@ -190,11 +188,7 @@ public sealed class GatewayAuthenticationMiddleware
         var internalApiKey = configuration["Authentication:InternalApiKey"];
         if (!string.IsNullOrEmpty(internalApiKey))
         {
-            if (headers.ContainsKey("X-Internal-API-Key"))
-            {
-                headers.Remove("X-Internal-API-Key");
-            }
-            headers.Add("X-Internal-API-Key", internalApiKey);
+            headers["X-Internal-API-Key"] = internalApiKey;
         }
     }
 
@@ -205,10 +199,12 @@ public sealed class GatewayAuthenticationMiddleware
         var headers = context.Request.Headers;
 
         // Add user context to headers for downstream services
-        if (validationResult.UserId != 0)
+        if (!validationResult.UserId.HasValue || validationResult.UserId.Value == Guid.Empty)
         {
-            context.Request.Headers["X-User-Id"] = validationResult.UserId.ToString();
+            throw new InvalidOperationException("UserId is missing or invalid.");
         }
+
+        context.Request.Headers["X-User-Id"] = validationResult.UserId.Value.ToString();
 
         if (!string.IsNullOrEmpty(validationResult.Username))
         {

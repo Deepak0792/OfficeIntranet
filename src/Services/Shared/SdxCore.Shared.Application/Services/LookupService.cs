@@ -13,7 +13,7 @@ public class LookupService : ILookupService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<LookupItem>> GetLookupAsync(string code, string? parentId = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<LookupItem>> GetLookupAsync(string code, Guid? parentId = null, CancellationToken cancellationToken = default)
     {
         return await _repository.GetLookupAsync(code, parentId, cancellationToken);
     }

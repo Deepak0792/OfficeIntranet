@@ -3,5 +3,5 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Domain.Repositories;
 
-public interface IScopeTypeRepository : IRepository<ScopeType, short> { }
+public interface IScopeTypeRepository : IRepository<ScopeType, Guid> { }
 

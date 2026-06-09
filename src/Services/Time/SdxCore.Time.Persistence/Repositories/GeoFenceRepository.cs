@@ -7,7 +7,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class GeoFenceRepository : BaseRepository<GeoFence, short, TimeDbContext>, IGeoFenceRepository
+public class GeoFenceRepository : BaseRepository<GeoFence, Guid, TimeDbContext>, IGeoFenceRepository
 {
-    public GeoFenceRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public GeoFenceRepository(TimeDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 }

@@ -18,7 +18,7 @@ namespace SdxCore.Identity.Application.Services;
 /// </summary>
 public sealed class AuthenticationService : IAuthenticationService
 {
-    private readonly IRequestContext _requestContext;
+    private readonly IUserContext _requestContext;
     private readonly IProviderRegistry _providerRegistry;
     private readonly ITokenFactory _tokenFactory;
     private readonly IAuditLoggerService _auditLoggerService;
@@ -26,7 +26,7 @@ public sealed class AuthenticationService : IAuthenticationService
     private readonly IRefreshTokenService _refreshTokenService;
 
     public AuthenticationService(
-        IRequestContext requestContext,
+        IUserContext requestContext,
         IProviderRegistry providerRegistry,
         ITokenFactory tokenFactory,
         IAuditLoggerService auditLoggerService,
@@ -103,12 +103,10 @@ public sealed class AuthenticationService : IAuthenticationService
             if (token is null)
                 throw new ArgumentNullException("Token Generation failed");
 
-            int employeeId = ExtractSubjectFromClaims(providerResult.Claims);
+            Guid employeeId = ExtractSubjectFromClaims(providerResult.Claims);
 
-            if (employeeId == 0)
-            {
-                throw new ArgumentException("EmployeeId is 0");
-            }
+            if (employeeId == Guid.Empty)
+                throw new ArgumentException("EmployeeId cannot be empty.");
 
             _logger.LogInformation(
                "Authentication successful for user {Username} using protocol {Protocol}",
@@ -323,8 +321,17 @@ public sealed class AuthenticationService : IAuthenticationService
     /// <summary>
     /// Extracts the subject (user ID) from claims.
     /// </summary>
-    private int ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
+    private Guid ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
     {
-        return Convert.ToInt32(claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value);
+        var subjectValue = claims
+            .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")
+            ?.Value;
+
+        if (!Guid.TryParse(subjectValue, out var subjectId))
+        {
+            throw new InvalidOperationException("Subject claim is missing or is not a valid GUID.");
+        }
+
+        return subjectId;
     }
 }

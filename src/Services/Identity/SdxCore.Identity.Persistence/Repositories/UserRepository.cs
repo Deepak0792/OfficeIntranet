@@ -11,13 +11,13 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// Repository implementation for user account data access.
 /// Uses Entity Framework Core to manage User entities in SQL Server.
 /// </summary>
-public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUserRepository
+public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUserRepository
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UserRepository"/> class.
     /// </summary>
     /// <param name="context">The database context.</param>
-    public UserRepository(IdentityDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public UserRepository(IdentityDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 
 
     /// <inheritdoc />
@@ -31,7 +31,7 @@ public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUse
     }
 
     /// <inheritdoc />
-    public async Task IncrementFailedAttemptsAsync(int employeeId, CancellationToken ct = default)
+    public async Task IncrementFailedAttemptsAsync(Guid employeeId, CancellationToken ct = default)
     {
         var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
         if (user is null)
@@ -48,7 +48,7 @@ public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUse
     /// <param name="userId">User ID.</param>
     /// <param name="lockedUntil">Timestamp until which the account should be locked.</param>
     /// <param name="ct">Cancellation token.</param>
-    public async Task LockAccountAsync(int employeeId, DateTime lockedUntil, CancellationToken ct = default)
+    public async Task LockAccountAsync(Guid employeeId, DateTime lockedUntil, CancellationToken ct = default)
     {
         var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
         if (user is null)
@@ -65,7 +65,7 @@ public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUse
     /// <param name="userId">User ID.</param>
     /// <param name="newPasswordHash">New password hash.</param>
     /// <param name="ct">Cancellation token.</param>
-    public async Task UpdatePasswordHashAsync(int employeeId, string newPasswordHash, CancellationToken ct = default)
+    public async Task UpdatePasswordHashAsync(Guid employeeId, string newPasswordHash, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(newPasswordHash))
             throw new ArgumentException("Password hash cannot be null or empty.", nameof(newPasswordHash));
@@ -80,7 +80,7 @@ public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUse
     }
 
     /// <inheritdoc />
-    public async Task ResetFailedAttemptsAsync(int employeeId, CancellationToken ct = default)
+    public async Task ResetFailedAttemptsAsync(Guid employeeId, CancellationToken ct = default)
     {
         var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
         if (user is null)
@@ -93,7 +93,7 @@ public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUse
     }
 
     /// <inheritdoc />
-    public async Task UpdateLastLoginAsync(int employeeId, DateTime loginTime, CancellationToken ct = default)
+    public async Task UpdateLastLoginAsync(Guid employeeId, DateTime loginTime, CancellationToken ct = default)
     {
         var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
         if (user is null)
@@ -104,7 +104,7 @@ public class UserRepository : BaseRepository<User, int, IdentityDbContext>, IUse
     }
 
     /// <inheritdoc />
-    public async Task DeactivateAsync(int employeeId, CancellationToken ct = default)
+    public async Task DeactivateAsync(Guid employeeId, CancellationToken ct = default)
     {
         var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
         if (user is null)

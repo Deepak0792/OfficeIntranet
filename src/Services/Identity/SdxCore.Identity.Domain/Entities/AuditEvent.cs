@@ -7,7 +7,7 @@ namespace SdxCore.Identity.Domain.Entities;
 /// Records all authentication attempts for compliance and security monitoring.
 /// This is an append-only record - audit events should never be modified or deleted.
 /// </summary>
-public sealed class AuditEvent : BaseEntity<int>
+public sealed class AuditEvent : BaseEntity<Guid>
 {
     /// <summary>
     /// Type of authentication event (e.g., "LOGIN_SUCCESS", "LOGIN_FAILURE").
@@ -22,7 +22,7 @@ public sealed class AuditEvent : BaseEntity<int>
     /// <summary>
     /// User identifier if available. May be null for failed attempts where user was not found.
     /// </summary>
-    public int? EmployeeId { get; init; }
+    public Guid? EmployeeId { get; init; }
 
     /// <summary>
     /// Username submitted in the authentication request. May be null for non-username protocols.

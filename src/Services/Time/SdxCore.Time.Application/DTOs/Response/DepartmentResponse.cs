@@ -1,15 +1,17 @@
 namespace SdxCore.Time.Application.DTOs.Response;
+using System.Text.Json.Serialization;
+using System.Collections.Generic;
 
 public class DepartmentResponse
 {
-    public short Id { get; set; }
+    public Guid Id { get; set; }
     public required string DepartmentCode { get; set; }
     public required string DepartmentName { get; set; }
-    public short? ParentDepartmentId { get; set; }
+    public Guid? ParentDepartmentId { get; set; }
     public string? Description { get; set; }
     public bool IsActive { get; set; }
 
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public System.Collections.Generic.List<DepartmentResponse>? Children { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<DepartmentResponse>? Children { get; set; }
 }
 

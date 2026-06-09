@@ -31,7 +31,7 @@ public class DepartmentService : IDepartmentService
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<DepartmentResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<DepartmentResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Department), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -39,20 +39,23 @@ public class DepartmentService : IDepartmentService
             var d = await _repository.GetByIdAsync(id, ct);
             if (d == null) return null;
 
-            return PropertyMapper.Map<Department, DepartmentResponse>(d);           
+            return PropertyMapper.Map<Department, DepartmentResponse>(d);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
     public async Task<DepartmentResponse> CreateAsync(CreateDepartmentRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateDepartmentRequest, Department>(dto);
+        entity.Id = Guid.NewGuid();
+        entity.IsActive = true;
+
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(short id, UpdateDepartmentRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateDepartmentRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -67,7 +70,7 @@ public class DepartmentService : IDepartmentService
         return true;
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -100,13 +103,13 @@ public class DepartmentService : IDepartmentService
         }
     }
 
-    public async Task<IEnumerable<DepartmentResponse>> GetChildrenAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DepartmentResponse>> GetChildrenAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var children = await _repository.FindAsync(x => x.ParentDepartmentId == id && x.IsActive, cancellationToken);
         return children.Select(e => PropertyMapper.Map<Department, DepartmentResponse>(e));
     }
 
-    public async Task<IEnumerable<DepartmentResponse>> GetAncestorsAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DepartmentResponse>> GetAncestorsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var ancestors = new List<DepartmentResponse>();
         var currentId = id;
@@ -126,7 +129,7 @@ public class DepartmentService : IDepartmentService
         return ancestors;
     }
 
-    public async Task<bool> UpdateParentAsync(short id, UpdateParentRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateParentAsync(Guid id, UpdateParentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

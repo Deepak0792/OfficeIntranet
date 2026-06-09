@@ -6,7 +6,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class LegalEntityRepository : BaseRepository<LegalEntity, short, TimeDbContext>, ILegalEntityRepository
+public class LegalEntityRepository : BaseRepository<LegalEntity, Guid, TimeDbContext>, ILegalEntityRepository
 {
-    public LegalEntityRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public LegalEntityRepository(TimeDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 }

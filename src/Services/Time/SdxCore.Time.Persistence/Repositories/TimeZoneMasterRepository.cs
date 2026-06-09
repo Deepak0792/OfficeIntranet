@@ -7,7 +7,7 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class TimeZoneMasterRepository : BaseRepository<TimeZoneMaster, short, TimeDbContext>, ITimeZoneMasterRepository
+public class TimeZoneMasterRepository : BaseRepository<TimeZoneMaster, Guid, TimeDbContext>, ITimeZoneMasterRepository
 {
-    public TimeZoneMasterRepository(TimeDbContext dbContext, IRequestContext requestContext) : base(dbContext, requestContext) { }
+    public TimeZoneMasterRepository(TimeDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
 }

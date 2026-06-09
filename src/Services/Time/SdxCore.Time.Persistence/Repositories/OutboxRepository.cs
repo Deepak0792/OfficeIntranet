@@ -9,7 +9,7 @@ public class OutboxRepository : OutboxRepository<TimeDbContext>, IOutboxReposito
 {
     public OutboxRepository(
         TimeDbContext dbContext,
-        IRequestContext requestContext)
+        IUserContext requestContext)
         : base(dbContext, requestContext)
     {
     }

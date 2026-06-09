@@ -5,7 +5,7 @@ namespace SdxCore.Identity.Domain.DTOs.Request;
 /// </summary>
 public sealed record CreateUserRequest
 {
-    public int EmployeeId { get; set; }
+    public Guid EmployeeId { get; set; }
     /// <summary>
     /// The unique username for the new user. Must be non-null, non-empty, and unique.
     /// </summary>

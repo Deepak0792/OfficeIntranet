@@ -31,7 +31,7 @@ public class OfficeLocationService : IOfficeLocationService
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<OfficeLocationResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<OfficeLocationResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(OfficeLocation), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -45,8 +45,8 @@ public class OfficeLocationService : IOfficeLocationService
     public async Task<OfficeLocationResponse> CreateAsync(CreateOfficeLocationRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateOfficeLocationRequest, OfficeLocation>(dto);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
-        entity.CreatedAt = DateTime.UtcNow;
 
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -54,7 +54,7 @@ public class OfficeLocationService : IOfficeLocationService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(short id, UpdateOfficeLocationRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateOfficeLocationRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -66,7 +66,7 @@ public class OfficeLocationService : IOfficeLocationService
         return true;
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -77,5 +77,3 @@ public class OfficeLocationService : IOfficeLocationService
         return true;
     }
 }
-
-

@@ -6,12 +6,12 @@ namespace SdxCore.Identity.Domain.Entities;
 /// Domain entity representing a user account with credentials.
 /// Stores user authentication information including hashed passwords and account status.
 /// </summary>
-public sealed class User : BaseAuditEntity<int>
+public sealed class User : BaseAuditEntity<Guid>
 {
     /// <summary>
     /// Unique identifier for the user account.
     /// </summary>
-    public int EmployeeId { get; set; }
+    public Guid EmployeeId { get; set; }
 
     /// <summary>
     /// Username for authentication. Must be unique across all users.

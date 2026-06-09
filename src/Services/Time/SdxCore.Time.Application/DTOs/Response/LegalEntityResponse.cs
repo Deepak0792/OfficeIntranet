@@ -2,10 +2,10 @@ namespace SdxCore.Time.Application.DTOs.Response;
 
 public class LegalEntityResponse
 {
-    public short Id { get; set; }
+    public Guid Id { get; set; }
     public required string EntityCode { get; set; }
     public required string EntityName { get; set; }
-    public short CountryId { get; set; }
+    public Guid CountryId { get; set; }
     public string? TaxIdentificationNumber { get; set; }
     public string? RegistrationNumber { get; set; }
     public string? CurrencyCode { get; set; }

@@ -31,7 +31,7 @@ public class LegalEntityService : ILegalEntityService
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<LegalEntityResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<LegalEntityResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(LegalEntity), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -45,8 +45,8 @@ public class LegalEntityService : ILegalEntityService
     public async Task<LegalEntityResponse> CreateAsync(CreateLegalEntityRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateLegalEntityRequest, LegalEntity>(dto);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
-        entity.CreatedAt = DateTime.UtcNow;
 
         await _repository.AddAsync(entity, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);
@@ -54,7 +54,7 @@ public class LegalEntityService : ILegalEntityService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(short id, UpdateLegalEntityRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateLegalEntityRequest dto, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -66,7 +66,7 @@ public class LegalEntityService : ILegalEntityService
         return true;
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -77,5 +77,3 @@ public class LegalEntityService : ILegalEntityService
         return true;
     }
 }
-
-

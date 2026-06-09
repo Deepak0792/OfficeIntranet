@@ -7,7 +7,7 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowStepApproverDesignationRepository(WorkflowDbContext dbContext, IRequestContext requestContext)
+public class WorkflowStepApproverDesignationRepository(WorkflowDbContext dbContext, IUserContext requestContext)
     : BaseRepository<WorkflowStepApproverDesignation, short, WorkflowDbContext>(dbContext, requestContext), IWorkflowStepApproverDesignationRepository
 {
     public async Task<IEnumerable<WorkflowStepApproverDesignation>> GetByApproverIdAsync(short approverId, CancellationToken cancellationToken = default) =>

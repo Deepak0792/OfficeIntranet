@@ -23,12 +23,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasKey(u => u.Id);
 
         builder.Property(u => u.Id)
-            .ValueGeneratedOnAdd();
+            .ValueGeneratedNever(); // uniqueidentifier supplied by application
 
+        // EmployeeId
         builder.Property(u => u.EmployeeId)
             .IsRequired();
 
-        // Unique constraint
         builder.HasIndex(u => u.EmployeeId)
             .IsUnique()
             .HasDatabaseName("UQ_Users_EmployeeId");

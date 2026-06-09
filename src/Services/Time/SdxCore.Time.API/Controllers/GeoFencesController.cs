@@ -28,8 +28,8 @@ public class GeoFencesController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<GeoFenceResponse>>(result, "Successfully fetched GeoFences."));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
         if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "GeoFence not found." });
@@ -48,8 +48,8 @@ public class GeoFencesController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateGeoFenceRequest dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGeoFenceRequest dto, CancellationToken cancellationToken)
     {
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -60,8 +60,8 @@ public class GeoFencesController : ControllerBase
         return Ok(new ApiResponse<bool>(true, "GeoFence updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
 
         if (!ModelState.IsValid) return BadRequest(ModelState);

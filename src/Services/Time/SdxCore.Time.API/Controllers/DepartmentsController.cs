@@ -28,8 +28,8 @@ public class DepartmentsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Departments."));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _departmentService.GetByIdAsync(id, cancellationToken);
         if (result == null) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
@@ -49,8 +49,8 @@ public class DepartmentsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateDepartmentRequest dto, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDepartmentRequest dto, CancellationToken cancellationToken)
     {
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -61,8 +61,8 @@ public class DepartmentsController : ControllerBase
         return Ok(new ApiResponse<bool>(true, "Department updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -80,22 +80,22 @@ public class DepartmentsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Department list."));
     }
 
-    [HttpGet("{id}/children")]
-    public async Task<IActionResult> GetChildren(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/children")]
+    public async Task<IActionResult> GetChildren(Guid id, CancellationToken cancellationToken)
     {
         var result = await _departmentService.GetChildrenAsync(id, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Department list."));
     }
 
-    [HttpGet("{id}/ancestors")]
-    public async Task<IActionResult> GetAncestors(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/ancestors")]
+    public async Task<IActionResult> GetAncestors(Guid id, CancellationToken cancellationToken)
     {
         var result = await _departmentService.GetAncestorsAsync(id, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<DepartmentResponse>>(result, "Successfully fetched Department list."));
     }
 
-    [HttpPatch("{id}/parent")]
-    public async Task<IActionResult> UpdateParent(short id, [FromBody] UpdateParentRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/parent")]
+    public async Task<IActionResult> UpdateParent(Guid id, [FromBody] UpdateParentRequest request, CancellationToken cancellationToken)
     {
         var updated = await _departmentService.UpdateParentAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
