@@ -7,6 +7,7 @@ using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Repositories;
+using SdxCore.SharedKernel.Contexts;
 using SdxCore.SharedKernel.Contracts;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -15,20 +16,20 @@ namespace SdxCore.Identity.Application.Services;
 public class RefreshTokenService : IRefreshTokenService
 {
     private readonly IAuditLoggerService _auditLoggerService;
-    private readonly IUserContext _requestContext;
+    private readonly IUserContext _userContext;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly ITokenFactory _tokenFactory;
 
     public RefreshTokenService(
         IAuditLoggerService auditLoggerService,
-        IUserContext requestContext,
+        IUserContext userContext,
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
         ITokenFactory tokenFactory)
     {
-        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(requestContext));
-        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
+        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(userContext));
+        _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory)); ;
@@ -96,7 +97,7 @@ public class RefreshTokenService : IRefreshTokenService
         await RotateAsync(
             existingToken,
             refreshTokenResult.RawToken,
-            _requestContext.IpAddress,
+            _userContext.IpAddress,
             ct);
 
         await _auditLoggerService.LogAsync(new AuditEventRequest
@@ -104,7 +105,8 @@ public class RefreshTokenService : IRefreshTokenService
             EventType = "REFRESH_TOKEN_SUCCESS",
             Protocol = AuthProtocol.InHouse,
             Username = user.Username,
-            EmployeeId = existingToken.EmployeeId
+            EmployeeId = existingToken.EmployeeId,
+            IpAddress = _userContext.IpAddress
         }, ct);
 
         return new AuthenticationResponse
@@ -153,9 +155,9 @@ public class RefreshTokenService : IRefreshTokenService
             CreatedBy = employeeId,
             LastUpdatedBy = employeeId,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
-            CreatedByIp = _requestContext.IpAddress,
-            UserAgent = _requestContext.UserAgent,
-            Device = _requestContext.Device
+            CreatedByIp = _userContext.IpAddress,
+            UserAgent = _userContext.UserAgent,
+            Device = _userContext.Device
         };
 
         await _refreshTokenRepository.AddAsync(entity, ct);
@@ -238,7 +240,7 @@ public class RefreshTokenService : IRefreshTokenService
             return;
 
         token.RevokedAt = DateTime.UtcNow;
-        token.RevokedByIp = _requestContext.IpAddress;
+        token.RevokedByIp = _userContext.IpAddress;
 
         _refreshTokenRepository.Update(token);
         await _refreshTokenRepository.SaveChangesAsync(ct);

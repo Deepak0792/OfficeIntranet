@@ -10,7 +10,7 @@
 
 PRINT 'Inserting System Employee...';
 INSERT INTO employee.Employee (Id, EmployeeCode, FirstName, LastName, DisplayName, Email, MobileNumber, DesignationId, PreferredLanguage, PreferredTimeZoneId, DateOfJoining, AboutMe, IsSystemEmployee) VALUES
-(NEWID(), 'SYS000', 'System', 'User', 'System', 'system@internal.local', NULL, NULL, 'en', NULL, '2000-01-01', 'Internal system account used for automated operations. Do not modify or delete.', 1);
+('32119FAA-D461-477F-868C-42793BEAE8F7', 'SYS000', 'System', 'User', 'System', 'system@internal.local', NULL, NULL, 'en', NULL, '2000-01-01', 'Internal system account used for automated operations. Do not modify or delete.', 1);
 
 PRINT 'Inserting Employees...';
 INSERT INTO employee.Employee (Id, EmployeeCode, FirstName, LastName, DisplayName, Email, MobileNumber, DesignationId, PreferredLanguage, PreferredTimeZoneId, DateOfJoining, EmploymentType, AboutMe) VALUES

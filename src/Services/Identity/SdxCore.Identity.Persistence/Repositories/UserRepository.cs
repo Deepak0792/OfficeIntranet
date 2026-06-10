@@ -27,13 +27,13 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
             throw new ArgumentException("Username cannot be null or empty.", nameof(username));
 
         return await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.Username == username, ct);
+            .SingleOrDefaultAsync(u => u.Username == username, ct);
     }
 
     /// <inheritdoc />
     public async Task IncrementFailedAttemptsAsync(Guid employeeId, CancellationToken ct = default)
     {
-        var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
+        var user = await GetByEmployeeIdAsync(employeeId, ct);
         if (user is null)
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
 
@@ -50,7 +50,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
     /// <param name="ct">Cancellation token.</param>
     public async Task LockAccountAsync(Guid employeeId, DateTime lockedUntil, CancellationToken ct = default)
     {
-        var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
+        var user = await GetByEmployeeIdAsync(employeeId, ct);
         if (user is null)
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
 
@@ -70,7 +70,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
         if (string.IsNullOrWhiteSpace(newPasswordHash))
             throw new ArgumentException("Password hash cannot be null or empty.", nameof(newPasswordHash));
 
-        var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
+        var user = await GetByEmployeeIdAsync(employeeId, ct);
         if (user is null)
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
 
@@ -82,7 +82,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
     /// <inheritdoc />
     public async Task ResetFailedAttemptsAsync(Guid employeeId, CancellationToken ct = default)
     {
-        var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
+        var user = await GetByEmployeeIdAsync(employeeId, ct);
         if (user is null)
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
 
@@ -95,7 +95,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
     /// <inheritdoc />
     public async Task UpdateLastLoginAsync(Guid employeeId, DateTime loginTime, CancellationToken ct = default)
     {
-        var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
+        var user = await GetByEmployeeIdAsync(employeeId, ct);
         if (user is null)
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
         user.LastLoginAt = loginTime;
@@ -106,13 +106,19 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
     /// <inheritdoc />
     public async Task DeactivateAsync(Guid employeeId, CancellationToken ct = default)
     {
-        var user = await _dbContext.Users.FindAsync(new object[] { employeeId }, ct);
+        var user = await GetByEmployeeIdAsync(employeeId, ct);
         if (user is null)
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
 
         user.IsActive = false;
         Update(user);
         await _dbContext.SaveChangesAsync(ct);
+    }
+
+    private Task<User?> GetByEmployeeIdAsync(Guid employeeId, CancellationToken ct)
+    {
+        return _dbContext.Users
+            .SingleOrDefaultAsync(u => u.EmployeeId == employeeId, ct);
     }
 }
 

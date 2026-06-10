@@ -7,6 +7,7 @@ using SdxCore.Identity.Application.Exceptions;
 using SdxCore.Identity.Domain.DTOs;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
+using SdxCore.SharedKernel.Contexts;
 using SdxCore.SharedKernel.Contracts;
 using System.Security.Claims;
 
@@ -18,7 +19,7 @@ namespace SdxCore.Identity.Application.Services;
 /// </summary>
 public sealed class AuthenticationService : IAuthenticationService
 {
-    private readonly IUserContext _requestContext;
+    private readonly IUserContext _userContext;
     private readonly IProviderRegistry _providerRegistry;
     private readonly ITokenFactory _tokenFactory;
     private readonly IAuditLoggerService _auditLoggerService;
@@ -26,14 +27,14 @@ public sealed class AuthenticationService : IAuthenticationService
     private readonly IRefreshTokenService _refreshTokenService;
 
     public AuthenticationService(
-        IUserContext requestContext,
+        IUserContext userContext,
         IProviderRegistry providerRegistry,
         ITokenFactory tokenFactory,
         IAuditLoggerService auditLoggerService,
         IRefreshTokenService refreshTokenService,
         ILogger<AuthenticationService> logger)
     {
-        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
+        _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
         _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory));
         _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(auditLoggerService));
@@ -75,10 +76,11 @@ public sealed class AuthenticationService : IAuthenticationService
             if (!providerResult.IsSuccess)
             {
                 _logger.LogWarning(
-                    "Authentication failed for user {Username} using protocol {Protocol}: {Reason}",
+                    "Authentication failed for user {Username} using protocol {Protocol}: {Reason} {IpAddress}",
                     request.Username ?? "unknown",
                     protocol,
-                    providerResult.FailureReason);
+                    providerResult.FailureReason,
+                    _userContext.IpAddress);
 
                 // Log audit event for failure
                 await _auditLoggerService.LogAsync(new AuditEventRequest
@@ -87,6 +89,7 @@ public sealed class AuthenticationService : IAuthenticationService
                     Protocol = protocol,
                     Username = request.Username,
                     FailureReason = providerResult.FailureReason,
+                    IpAddress = _userContext.IpAddress
                 }, ct);
 
                 return new AuthenticationResponse
@@ -129,7 +132,8 @@ public sealed class AuthenticationService : IAuthenticationService
                 EventType = "LOGIN_SUCCESS",
                 Protocol = protocol,
                 Username = request.Username,
-                EmployeeId = employeeId
+                EmployeeId = employeeId,
+                IpAddress = _userContext.IpAddress
             }, ct);
 
             // 7. Return successful result
@@ -150,7 +154,8 @@ public sealed class AuthenticationService : IAuthenticationService
                 EventType = "LOGIN_FAILURE",
                 Protocol = protocol,
                 Username = request.Username,
-                FailureReason = "Configuration error"
+                FailureReason = "Configuration error",
+                IpAddress = _userContext.IpAddress
             }, ct);
 
             return new AuthenticationResponse
@@ -170,7 +175,8 @@ public sealed class AuthenticationService : IAuthenticationService
                 EventType = "LOGIN_FAILURE",
                 Protocol = protocol,
                 Username = request.Username,
-                FailureReason = "Provider not found"
+                FailureReason = "Provider not found",
+                IpAddress = _userContext.IpAddress
             }, ct);
 
             return new AuthenticationResponse
@@ -190,7 +196,8 @@ public sealed class AuthenticationService : IAuthenticationService
                 EventType = "LOGIN_FAILURE",
                 Protocol = protocol,
                 Username = request.Username,
-                FailureReason = "Internal error"
+                FailureReason = "Internal error",
+                IpAddress = _userContext.IpAddress
             }, ct);
 
 
