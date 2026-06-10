@@ -1,12 +1,12 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record WorkflowDefinitionResponse(
-    short  Id,
-    short  WorkflowModuleId,
+    Guid Id,
+    Guid WorkflowModuleId,
     string ModuleCode,
     string ModuleName,
     string WorkflowCode,
     string WorkflowName,
-    short  VersionNo,
+    Guid VersionNo,
     string? Description,
-    bool   IsActive);
+    bool IsActive);

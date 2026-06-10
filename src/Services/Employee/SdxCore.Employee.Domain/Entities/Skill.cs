@@ -3,7 +3,7 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class Skill : BaseAuditEntity<short>, IPublishableEntity
+public class Skill : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public required string SkillName { get; set; }
     public string? SkillCategory { get; set; }

@@ -16,13 +16,13 @@ public class EmployeeAddressService : IEmployeeAddressService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<EmployeeAddressResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeAddressResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
         return entities.Select(e => PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(e)).ToList();      
     }
 
-    public async Task<EmployeeAddressResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeAddressResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
@@ -30,9 +30,9 @@ public class EmployeeAddressService : IEmployeeAddressService
         return PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(entity);
     }
 
-    public async Task<EmployeeAddressResponse> AddAsync(int employeeId, CreateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeAddressResponse> AddAsync(Guid employeeId, CreateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.IsPrimary)
+        if (request.IsPrimaryAddress)
         {
             var existingEntities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
             foreach (var e in existingEntities.Where(x => x.IsPrimaryAddress))
@@ -53,7 +53,7 @@ public class EmployeeAddressService : IEmployeeAddressService
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
     }
 
-    public async Task<EmployeeAddressResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeAddressResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) throw new KeyNotFoundException("Employee address not found");
@@ -73,7 +73,7 @@ public class EmployeeAddressService : IEmployeeAddressService
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return false;
@@ -84,7 +84,7 @@ public class EmployeeAddressService : IEmployeeAddressService
         return true;
     }
 
-    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = entities.FirstOrDefault(x => x.Id == id);

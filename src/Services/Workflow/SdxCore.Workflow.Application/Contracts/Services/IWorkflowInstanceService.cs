@@ -9,13 +9,13 @@ public interface IWorkflowInstanceService
     Task<PagedResponse<IEnumerable<WorkflowInstanceResponse>>> GetPagedAsync(
        PaginationFilter filter,
         string? moduleCode, string? status,
-        int? initiatedBy, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
-    Task<WorkflowInstanceDetailResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    Task<IEnumerable<WorkflowActionHistoryResponse>> GetHistoryAsync(int instanceId, CancellationToken cancellationToken = default);
-    Task<IEnumerable<WorkflowTaskResponse>> GetTasksAsync(int instanceId, CancellationToken cancellationToken = default);
-    Task<WorkflowInstanceResponse> GetByTransactionAsync(string moduleCode, int referenceTransactionId, CancellationToken cancellationToken = default);
-    Task<IEnumerable<WorkflowInstanceResponse>> GetMySubmissionsAsync(int employeeId, CancellationToken cancellationToken = default);
+        Guid? initiatedBy, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default);
+    Task<WorkflowInstanceDetailResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowActionHistoryResponse>> GetHistoryAsync(Guid instanceId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowTaskResponse>> GetTasksAsync(Guid instanceId, CancellationToken cancellationToken = default);
+    Task<WorkflowInstanceResponse> GetByTransactionAsync(string moduleCode, Guid referenceTransactionId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowInstanceResponse>> GetMySubmissionsAsync(Guid employeeId, CancellationToken cancellationToken = default);
     Task<WorkflowInstanceResponse> CreateAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default);
-    Task<bool> CancelAsync(int id, int actionBy, string? remarks, CancellationToken cancellationToken = default);
-    Task<bool> WithdrawAsync(int id, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task<bool> CancelAsync(Guid id, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task<bool> WithdrawAsync(Guid id, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 }

@@ -4,9 +4,9 @@ namespace SdxCore.Employee.Application.DTOs.Response;
 
 public class EmployeeDepartmentResponse
 {
-    public int Id { get; set; }
-    public int EmployeeId { get; set; }
-    public short DepartmentId { get; set; }
+    public Guid Id { get; set; }
+    public Guid EmployeeId { get; set; }
+    public Guid DepartmentId { get; set; }
     public string? DepartmentName { get; set; }
     public bool IsPrimaryDepartment { get; set; }
     public decimal? AllocationPercentage { get; set; }

@@ -8,9 +8,9 @@ public class UpdateEmployeeRequest
     public string? LastName { get; set; }
     public string? DisplayName { get; set; }
     public string? MobileNumber { get; set; }
-    public short? DesignationId { get; set; }
+    public Guid? DesignationId { get; set; }
     public string? PreferredLanguage { get; set; }
-    public short? PreferredTimeZoneId { get; set; }
+    public Guid? PreferredTimeZoneId { get; set; }
     public DateOnly? DateOfJoining { get; set; }
     public required string EmploymentType { get; set; }
 }

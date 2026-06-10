@@ -32,7 +32,7 @@ public class TeamService : ITeamService
         }, CacheOptions.Default, cancellationToken) ?? new List<TeamResponse>();
     }
 
-    public async Task<TeamResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<TeamResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey("Team", id.ToString());
 
@@ -56,7 +56,7 @@ public class TeamService : ITeamService
         return PropertyMapper.Map<Team, TeamResponse>(created);
     }
 
-    public async Task<TeamResponse> UpdateAsync(short id, UpdateTeamRequest request, CancellationToken cancellationToken = default)
+    public async Task<TeamResponse> UpdateAsync(Guid id, UpdateTeamRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) throw new KeyNotFoundException($"Team with ID {id} not found.");
@@ -71,7 +71,7 @@ public class TeamService : ITeamService
         return PropertyMapper.Map<Team, TeamResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

@@ -1,5 +1,5 @@
 namespace SdxCore.Workflow.Application.DTOs.Request;
 
 public record DelegateTaskRequest(
-    int    DelegateToEmployeeId,
+    Guid DelegateToEmployeeId,
     string? Remarks);

@@ -1,17 +1,17 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record WorkflowInstanceResponse(
-    int Id,
-    short WorkflowDefinitionId,
+    Guid Id,
+    Guid WorkflowDefinitionId,
     string WorkflowCode,
     string WorkflowName,
-    short WorkflowModuleId,
+    Guid WorkflowModuleId,
     string ModuleCode,
-    int ReferenceTransactionId,
-    short? CurrentWorkflowStepId,
+    Guid ReferenceTransactionId,
+    Guid? CurrentWorkflowStepId,
     string? CurrentStepName,
     short? CurrentStepNo,
     string WorkflowStatus,
-    int? CreatedBy,
+    Guid? CreatedBy,
     DateTime CreatedAt,
     DateTime? CompletedAt);

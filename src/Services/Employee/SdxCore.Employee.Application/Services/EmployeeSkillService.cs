@@ -18,7 +18,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         _skillRepository = skillRepository;
     }
 
-    public async Task<IEnumerable<EmployeeSkillResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeSkillResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var skills = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
         
@@ -34,7 +34,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         return responses;
     }
 
-    public async Task<EmployeeSkillResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSkillResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var skill = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (skill == null) return null;
@@ -46,7 +46,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         return employeeSkill;
     }
 
-    public async Task<EmployeeSkillResponse> AddAsync(int employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSkillResponse> AddAsync(Guid employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeSkillRequest , EmployeeSkill>(request);
         entity.EmployeeId = employeeId;
@@ -57,7 +57,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created skill");
     }
 
-    public async Task<EmployeeSkillResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSkillResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
     {
         var skill = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (skill == null) throw new KeyNotFoundException("Employee skill not found");
@@ -71,7 +71,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         return await GetByIdAsync(employeeId, skill.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated skill");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var skill = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (skill == null) return false;
@@ -82,7 +82,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         return true;
     }
 
-    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var skills = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = skills.FirstOrDefault(x => x.Id == id);

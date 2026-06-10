@@ -8,21 +8,21 @@ using SdxCore.Workflow.Persistence.Data;
 namespace SdxCore.Workflow.Persistence.Repositories;
 
 public class WorkflowStepRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowStep, short, WorkflowDbContext>(dbContext, requestContext), IWorkflowStepRepository
+    : BaseRepository<WorkflowStep, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowStepRepository
 {
-    public async Task<IEnumerable<WorkflowStep>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<WorkflowStep>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Where(x => x.WorkflowDefinitionId == definitionId)
             .OrderBy(x => x.StepNo)
             .ToListAsync(cancellationToken);
 
-    public async Task<WorkflowStep?> GetWithApproversAsync(short id, CancellationToken cancellationToken = default) =>
+    public async Task<WorkflowStep?> GetWithApproversAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Approvers.Where(a => a.IsActive))
                 .ThenInclude(a => a.Designations.Where(d => d.IsActive))
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public async Task<WorkflowStep?> GetNextStepAsync(short definitionId, short currentStepNo, CancellationToken cancellationToken = default) =>
+    public async Task<WorkflowStep?> GetNextStepAsync(Guid definitionId, short currentStepNo, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Where(x => x.WorkflowDefinitionId == definitionId
                      && x.StepNo > currentStepNo
@@ -30,7 +30,7 @@ public class WorkflowStepRepository(WorkflowDbContext dbContext, IUserContext re
             .OrderBy(x => x.StepNo)
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await GetByIdAsync(id, cancellationToken);
         if (entity is null) return false;
@@ -39,7 +39,7 @@ public class WorkflowStepRepository(WorkflowDbContext dbContext, IUserContext re
         return true;
     }
 
-    public async Task ReorderAsync(short definitionId, short stepId, short newStepNo, CancellationToken cancellationToken = default)
+    public async Task ReorderAsync(Guid definitionId, Guid stepId, short newStepNo, CancellationToken cancellationToken = default)
     {
         // Shift existing steps to make room, then assign new StepNo
         var steps = await _dbSet

@@ -15,7 +15,7 @@ public class EmployeeClient : IEmployeeClient
     }
 
     public async Task<EmployeeSummaryResponse?> GetEmployeeeSummaryAsync(
-        int id,
+        Guid id,
         CancellationToken cancellationToken = default!)
     {
         var employee = await _httpClient.GetFromJsonAsync<EmployeeSummaryResponse>(
@@ -26,9 +26,9 @@ public class EmployeeClient : IEmployeeClient
     }
 
     public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
-            IEnumerable<short> designationIds,
-            short? scopeTypeId,
-            int? scopeReferenceId,
+            IEnumerable<Guid> designationIds,
+            string? scopeCode,
+            Guid? scopeReferenceId,
             CancellationToken cancellationToken)
     {
         var queryParams = new List<KeyValuePair<string, string>>();
@@ -38,8 +38,10 @@ public class EmployeeClient : IEmployeeClient
             queryParams.Add(new("designationIds", designationId.ToString()));
         }
 
-        if (scopeTypeId.HasValue)
-            queryParams.Add(new("scopeTypeId", scopeTypeId.Value.ToString()));
+        if (scopeCode is not null)
+        {
+            queryParams.Add(new("scopeCode", scopeCode));
+        }
 
         if (scopeReferenceId.HasValue)
             queryParams.Add(new("scopeReferenceId", scopeReferenceId.Value.ToString()));

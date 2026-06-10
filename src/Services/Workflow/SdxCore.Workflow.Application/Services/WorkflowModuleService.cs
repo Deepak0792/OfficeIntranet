@@ -25,7 +25,7 @@ public class WorkflowModuleService(
         }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowModuleResponse>();
     }
 
-    public async Task<WorkflowModuleResponse> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowModuleResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowModule), id.ToString());
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -64,7 +64,7 @@ public class WorkflowModuleService(
         return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
     }
 
-    public async Task<WorkflowModuleResponse> UpdateAsync(short id, UpdateWorkflowModuleRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowModuleResponse> UpdateAsync(Guid id, UpdateWorkflowModuleRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowModule", id);
@@ -77,7 +77,7 @@ public class WorkflowModuleService(
         return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

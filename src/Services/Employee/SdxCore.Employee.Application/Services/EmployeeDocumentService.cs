@@ -16,14 +16,14 @@ public class EmployeeDocumentService : IEmployeeDocumentService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<EmployeeDocumentResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeDocumentResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
         return entities.Select(e => PropertyMapper.Map<EmployeeDocument, EmployeeDocumentResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeDocumentResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDocumentResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
@@ -31,7 +31,7 @@ public class EmployeeDocumentService : IEmployeeDocumentService
         return PropertyMapper.Map<EmployeeDocument, EmployeeDocumentResponse>(entity);
     }
 
-    public async Task<IEnumerable<EmployeeDocumentResponse>> GetExpiringAsync(int employeeId, int days, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeDocumentResponse>> GetExpiringAsync(Guid employeeId, int days, CancellationToken cancellationToken = default)
     {
         var targetDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(days));
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.ExpiryDate.HasValue && x.ExpiryDate.Value <= targetDate && x.IsActive, cancellationToken);
@@ -39,7 +39,7 @@ public class EmployeeDocumentService : IEmployeeDocumentService
         return entities.Select(e => PropertyMapper.Map<EmployeeDocument, EmployeeDocumentResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeDocumentResponse> AddAsync(int employeeId, CreateEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDocumentResponse> AddAsync(Guid employeeId, CreateEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeDocumentRequest, EmployeeDocument>(request);
         entity.EmployeeId = employeeId;
@@ -52,7 +52,7 @@ public class EmployeeDocumentService : IEmployeeDocumentService
             ?? throw new Exception("Failed to retrieve created entity");
     }
 
-    public async Task<EmployeeDocumentResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDocumentResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) throw new KeyNotFoundException("Employee document not found");
@@ -68,7 +68,7 @@ public class EmployeeDocumentService : IEmployeeDocumentService
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return false;

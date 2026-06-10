@@ -8,7 +8,7 @@ public class CreateEmployeeLocationRequestValidator : AbstractValidator<CreateEm
     public CreateEmployeeLocationRequestValidator()
     {
         RuleFor(x => x.LocationId)
-            .GreaterThan((short)0).WithMessage("Location ID must be valid.");
+            .NotEmpty().WithMessage("Location ID must be valid.");
 
         RuleFor(x => x.EndDate)
             .GreaterThanOrEqualTo(x => x.StartDate).When(x => x.StartDate.HasValue && x.EndDate.HasValue)

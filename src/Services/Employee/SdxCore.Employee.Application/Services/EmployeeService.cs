@@ -1,4 +1,5 @@
 using SdxCore.Caching;
+using SdxCore.Common.Enums.Workflow;
 using SdxCore.Common.Helpers;
 using SdxCore.Common.Models;
 using SdxCore.Employee.Application.Contracts.Services;
@@ -29,7 +30,9 @@ public class EmployeeService : IEmployeeService
         _cacheKeyBuilder = cacheKeyBuilder;
     }
 
-    public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> GetAllAsync(PaginationFilter filter, int? departmentId, int? locationId, int? legalEntityId, string? employmentType, bool? isActive, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> GetAllAsync(PaginationFilter filter,
+        Guid? departmentId, Guid? locationId, Guid? legalEntityId, string? employmentType, bool? isActive,
+        CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), $"all_{filter.PageNumber}_{filter.PageSize}_{departmentId}_{locationId}_{legalEntityId}_{employmentType}_{isActive}");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -44,7 +47,7 @@ public class EmployeeService : IEmployeeService
                 new List<EmployeeSummaryResponse>(), filter.PageNumber, filter.PageSize, 0);
     }
 
-    public async Task<EmployeeSummaryResponse?> GetFullProfileAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSummaryResponse?> GetFullProfileAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -98,7 +101,7 @@ public class EmployeeService : IEmployeeService
         return new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(responses, filter.PageNumber, filter.PageSize, filteredItems.Count());
     }
 
-    public async Task<EmployeeSummaryResponse?> GetSummaryAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSummaryResponse?> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), id.ToString());
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -122,7 +125,7 @@ public class EmployeeService : IEmployeeService
         return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(entity);
     }
 
-    public async Task<bool> UpdateAsync(int id, UpdateEmployeeRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateEmployeeRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -143,7 +146,7 @@ public class EmployeeService : IEmployeeService
         return true;
     }
 
-    public async Task<bool> ToggleStatusAsync(int id, UpdateEmployeeStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, UpdateEmployeeStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -157,7 +160,7 @@ public class EmployeeService : IEmployeeService
         return true;
     }
 
-    public async Task<bool> UpdatePhotoAsync(int id, UpdateEmployeePhotoRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdatePhotoAsync(Guid id, UpdateEmployeePhotoRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -171,7 +174,7 @@ public class EmployeeService : IEmployeeService
         return true;
     }
 
-    public async Task<bool> UpdateAboutAsync(int id, UpdateEmployeeAboutRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAboutAsync(Guid id, UpdateEmployeeAboutRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -186,38 +189,39 @@ public class EmployeeService : IEmployeeService
     }
 
     public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
-    List<short> designationIds,
-    short? scopeTypeId,
-    int? scopeReferenceId,
+    List<Guid> designationIds,
+    string? scopeCode,
+    Guid? scopeReferenceId,
     CancellationToken cancellationToken = default)
     {
         if (designationIds is null || designationIds.Count == 0)
             return [];
 
         // Build scope filter against vwEmployeeSummary columns
-        Expression<Func<EmployeeSummary, bool>> scopePredicate = scopeTypeId switch
+        Expression<Func<EmployeeSummary, bool>> scopePredicate = scopeCode switch
         {
-            5 when scopeReferenceId.HasValue =>   // DEPARTMENT
-                e => e.PrimaryDepartmentId == (short)scopeReferenceId.Value,
+            ScopeTypeCodes.Department when scopeReferenceId.HasValue =>   // DEPARTMENT
+                e => e.PrimaryDepartmentId == scopeReferenceId.Value,
 
-            4 when scopeReferenceId.HasValue =>   // OFFICE
-                e => e.PrimaryLocationId == (short)scopeReferenceId.Value,
+            ScopeTypeCodes.Office when scopeReferenceId.HasValue =>   // OFFICE
+                e => e.PrimaryLocationId == scopeReferenceId.Value,
 
-            3 when scopeReferenceId.HasValue =>   // LEGAL_ENTITY
-                e => e.PrimaryLegalEntityId == (short)scopeReferenceId.Value,
+            ScopeTypeCodes.LegalEntity when scopeReferenceId.HasValue =>   // LEGAL_ENTITY
+                e => e.PrimaryLegalEntityId == scopeReferenceId.Value,
 
-            6 when scopeReferenceId.HasValue =>   // TEAM
-                e => e.PrimaryTeamId == (short)scopeReferenceId.Value,
+            ScopeTypeCodes.Team when scopeReferenceId.HasValue =>   // TEAM
+                e => e.PrimaryTeamId == scopeReferenceId.Value,
 
-            7 when scopeReferenceId.HasValue =>   // EMPLOYEE (single)
+            ScopeTypeCodes.Employee when scopeReferenceId.HasValue =>   // EMPLOYEE (single)
                 e => e.EmployeeId == scopeReferenceId.Value,
 
             _ => e => true  // GLOBAL or no scope — no restriction
         };
 
         var employees = await _viewRepository.FindAsync(
-            e => designationIds.Contains((short)e.DesignationId!)
-              && e.IsActive,
+            e => e.DesignationId.HasValue
+                && designationIds.Contains(e.DesignationId.Value)
+                && e.IsActive,
             cancellationToken);
 
         // Apply scope filter in-memory after fetch

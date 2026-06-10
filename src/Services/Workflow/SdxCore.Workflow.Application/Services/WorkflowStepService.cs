@@ -15,7 +15,7 @@ public class WorkflowStepService(
     ICacheService cacheService,
     ICacheKeyBuilder cacheKeyBuilder) : IWorkflowStepService
 {
-    public async Task<IEnumerable<WorkflowStepResponse>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowStepResponse>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStep), $"definition_{definitionId}");
         return await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -25,7 +25,7 @@ public class WorkflowStepService(
         }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowStepResponse>();
     }
 
-    public async Task<WorkflowStepResponse> GetByIdAsync(short definitionId, short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepResponse> GetByIdAsync(Guid definitionId, Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStep), $"definition_{definitionId}_step{id}_with_approvers");
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -37,7 +37,7 @@ public class WorkflowStepService(
         return res!;
     }
 
-    public async Task<WorkflowStepResponse> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStep), $"step{id}_with_approvers");
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -49,13 +49,13 @@ public class WorkflowStepService(
         return res!;
     }
 
-    public async Task<WorkflowStepResponse?> GetNextStepAsync(short definitionId, short currentStepNo, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepResponse?> GetNextStepAsync(Guid definitionId, short currentStepNo, CancellationToken cancellationToken = default)
     {
         var steps = await GetByDefinitionIdAsync(definitionId, cancellationToken);
         return steps.Where(x => x.StepNo > currentStepNo && x.IsActive).OrderBy(s => s.StepNo).FirstOrDefault();
     }
 
-    public async Task<WorkflowStepResponse> CreateAsync(short definitionId, CreateWorkflowStepRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepResponse> CreateAsync(Guid definitionId, CreateWorkflowStepRequest request, CancellationToken cancellationToken = default)
     {
         _ = await defRepo.GetByIdAsync(definitionId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowDefinition", definitionId);
@@ -76,7 +76,7 @@ public class WorkflowStepService(
         return PropertyMapper.MapToRecord<WorkflowStepResponse>(entity);
     }
 
-    public async Task<WorkflowStepResponse> UpdateAsync(short definitionId, short id, UpdateWorkflowStepRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepResponse> UpdateAsync(Guid definitionId, Guid id, UpdateWorkflowStepRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStep", id);
@@ -92,7 +92,7 @@ public class WorkflowStepService(
         return PropertyMapper.MapToRecord<WorkflowStepResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short definitionId, short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid definitionId, Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
@@ -103,7 +103,7 @@ public class WorkflowStepService(
         return true;
     }
 
-    public async Task<bool> ReorderAsync(short definitionId, short id, ReorderWorkflowStepRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ReorderAsync(Guid definitionId, Guid id, ReorderWorkflowStepRequest request, CancellationToken cancellationToken = default)
     {
         await _repository.ReorderAsync(definitionId, id, request.StepNo, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

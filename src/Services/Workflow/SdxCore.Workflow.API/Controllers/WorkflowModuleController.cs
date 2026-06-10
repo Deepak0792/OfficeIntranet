@@ -19,8 +19,8 @@ public class WorkflowModuleController(IWorkflowModuleService workflowModuleServi
         return Ok(new ApiResponse<IEnumerable<WorkflowModuleResponse>>(data, "Successfully fetched workflow modules."));
     }
 
-    [HttpGet("{id:short}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var data = await workflowModuleService.GetByIdAsync(id, cancellationToken);
         return Ok(new ApiResponse<WorkflowModuleResponse>(data, "Successfully fetched workflow module."));
@@ -40,15 +40,15 @@ public class WorkflowModuleController(IWorkflowModuleService workflowModuleServi
         return Ok(new ApiResponse<WorkflowModuleResponse>(data, "Workflow module created successfully."));
     }
 
-    [HttpPut("{id:short}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateWorkflowModuleRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateWorkflowModuleRequest request, CancellationToken cancellationToken)
     {
         var data = await workflowModuleService.UpdateAsync(id, request, cancellationToken);
         return Ok(new ApiResponse<WorkflowModuleResponse>(data, "Workflow module updated successfully."));
     }
 
-    [HttpPatch("{id:short}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         var updated = await workflowModuleService.ToggleStatusAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Workflow definition not found." });

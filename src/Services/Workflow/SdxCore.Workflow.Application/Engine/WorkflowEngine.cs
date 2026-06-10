@@ -1,3 +1,4 @@
+using SdxCore.Common.Enums.Workflow;
 using SdxCore.SharedKernel.Events;
 using SdxCore.Workflow.Application.Contracts.Engine;
 using SdxCore.Workflow.Application.Contracts.Resolver;
@@ -5,7 +6,6 @@ using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Response;
 using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Entities;
-using SdxCore.Workflow.Domain.Enums;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
 
@@ -23,7 +23,7 @@ public class WorkflowEngine(
 {
     // ── Submit ───────────────────────────────────────────────
     public async Task<WorkflowInstance> SubmitAsync(
-        string moduleCode, string workflowCode, int referenceTransactionId, int initiatorEmployeeId, CancellationToken cancellationToken = default)
+        string moduleCode, string workflowCode, Guid referenceTransactionId, Guid initiatorEmployeeId, CancellationToken cancellationToken = default)
     {
         var definition = await resolver.ResolveDefinitionAsync(moduleCode, workflowCode, initiatorEmployeeId);
 
@@ -67,7 +67,7 @@ public class WorkflowEngine(
     }
 
     // ── Approve ──────────────────────────────────────────────
-    public async Task ProcessApproveAsync(int taskId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task ProcessApproveAsync(Guid taskId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var task = await GetPendingTaskOrThrowAsync(taskId, actionBy, cancellationToken);
         var instance = await GetInstanceOrThrowAsync(task.WorkflowInstanceId, cancellationToken);
@@ -132,7 +132,7 @@ public class WorkflowEngine(
     }
 
     // ── Reject ───────────────────────────────────────────────
-    public async Task ProcessRejectAsync(int taskId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task ProcessRejectAsync(Guid taskId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var task = await GetPendingTaskOrThrowAsync(taskId, actionBy, cancellationToken);
         var instance = await GetInstanceOrThrowAsync(task.WorkflowInstanceId, cancellationToken);
@@ -154,7 +154,7 @@ public class WorkflowEngine(
 
     // ── Delegate ─────────────────────────────────────────────
     public async Task ProcessDelegateAsync(
-        int taskId, int delegateToEmployeeId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+        Guid taskId, Guid delegateToEmployeeId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var task = await GetPendingTaskOrThrowAsync(taskId, actionBy, cancellationToken);
         var instance = await GetInstanceOrThrowAsync(task.WorkflowInstanceId, cancellationToken);
@@ -193,7 +193,7 @@ public class WorkflowEngine(
     }
 
     // ── Return for clarification ─────────────────────────────
-    public async Task ProcessReturnAsync(int taskId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task ProcessReturnAsync(Guid taskId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var task = await GetPendingTaskOrThrowAsync(taskId, actionBy, cancellationToken);
         var instance = await GetInstanceOrThrowAsync(task.WorkflowInstanceId, cancellationToken);
@@ -224,7 +224,7 @@ public class WorkflowEngine(
 
     // ── Reassign (admin) ─────────────────────────────────────
     public async Task ProcessReassignAsync(
-        int taskId, int reassignToEmployeeId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+        Guid taskId, Guid reassignToEmployeeId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var task = await taskRepository.GetByIdWithDetailsAsync(taskId, cancellationToken)
             ?? throw new WorkflowTaskNotFoundException(taskId);
@@ -263,7 +263,7 @@ public class WorkflowEngine(
     }
 
     // ── Cancel (admin/system) ────────────────────────────────
-    public async Task CancelAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task CancelAsync(Guid instanceId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var instance = await GetInstanceOrThrowAsync(instanceId, cancellationToken);
 
@@ -286,7 +286,7 @@ public class WorkflowEngine(
     }
 
     // ── Withdraw (initiator only) ────────────────────────────
-    public async Task WithdrawAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task WithdrawAsync(Guid instanceId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         var instance = await GetInstanceOrThrowAsync(instanceId, cancellationToken);
 
@@ -327,7 +327,7 @@ public class WorkflowEngine(
             ? DateTime.UtcNow.AddHours(step.EscalationAfterHours.Value)
             : (DateTime?)null;
 
-        int userId = instance.CreatedBy ?? throw new ArgumentNullException("UserId is not available");
+        Guid userId = instance.CreatedBy ?? throw new ArgumentNullException("UserId is not available");
 
         // Resolve all approvers for the step in a single call
         var allResolved = await resolver.ResolveApproverAsync(step.Id, userId); // Note: IWorkflowApproverResolver doesn't have CancellationToken yet
@@ -367,7 +367,7 @@ public class WorkflowEngine(
     }
 
     private async Task CompleteTaskAsync(
-        WorkflowTask task, string newStatus, int actionBy, string? remarks, CancellationToken cancellationToken)
+        WorkflowTask task, string newStatus, Guid actionBy, string? remarks, CancellationToken cancellationToken)
     {
         task.TaskStatus = newStatus;
         task.Remarks = remarks;
@@ -377,7 +377,7 @@ public class WorkflowEngine(
         await taskRepository.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task CancelOpenTasksAsync(int instanceId, int? exceptTaskId, CancellationToken cancellationToken)
+    private async Task CancelOpenTasksAsync(Guid instanceId, Guid? exceptTaskId, CancellationToken cancellationToken)
     {
         var tasks = await taskRepository.GetByInstanceIdAsync(instanceId, cancellationToken);
         foreach (var t in tasks.Where(t =>
@@ -391,7 +391,7 @@ public class WorkflowEngine(
     }
 
     private async Task TerminateInstanceAsync(
-        WorkflowInstance instance, string finalStatus, int actionBy, CancellationToken cancellationToken)
+        WorkflowInstance instance, string finalStatus, Guid actionBy, CancellationToken cancellationToken)
     {
         instance.WorkflowStatus = finalStatus;
         instance.CurrentWorkflowStepId = null;
@@ -403,9 +403,9 @@ public class WorkflowEngine(
     }
 
     private async Task WriteHistoryAsync(
-        int instanceId, int? taskId, short? stepId,
+        Guid instanceId, Guid? taskId, Guid? stepId,
         string actionType, string? remarks,
-        string? fromStatus, string? toStatus, int actionBy, CancellationToken cancellationToken)
+        string? fromStatus, string? toStatus, Guid actionBy, CancellationToken cancellationToken)
     {
         var history = new WorkflowActionHistory
         {
@@ -423,7 +423,7 @@ public class WorkflowEngine(
         await historyRepository.AddAsync(history, cancellationToken);
     }
 
-    private async Task<WorkflowTask> GetPendingTaskOrThrowAsync(int taskId, int actionBy, CancellationToken cancellationToken)
+    private async Task<WorkflowTask> GetPendingTaskOrThrowAsync(Guid taskId, Guid actionBy, CancellationToken cancellationToken)
     {
         var task = await taskRepository.GetByIdWithDetailsAsync(taskId, cancellationToken)
             ?? throw new WorkflowTaskNotFoundException(taskId);
@@ -437,7 +437,7 @@ public class WorkflowEngine(
         return task;
     }
 
-    private async Task<WorkflowInstance> GetInstanceOrThrowAsync(int instanceId, CancellationToken cancellationToken)
+    private async Task<WorkflowInstance> GetInstanceOrThrowAsync(Guid instanceId, CancellationToken cancellationToken)
     {
         return await instanceRepository.GetByIdWithDetailsAsync(instanceId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowInstance", instanceId);

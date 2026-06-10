@@ -2,15 +2,15 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowInstance : BaseAuditEntity<int>
+public class WorkflowInstance : BaseAuditEntity<Guid>
 {
-    public short WorkflowDefinitionId { get; set; }
-    public short WorkflowModuleId { get; set; }
-    public int ReferenceTransactionId { get; set; }
-    public short? CurrentWorkflowStepId { get; set; }  
+    public Guid WorkflowDefinitionId { get; set; }
+    public Guid WorkflowModuleId { get; set; }
+    public Guid ReferenceTransactionId { get; set; }
+    public Guid? CurrentWorkflowStepId { get; set; }  
     public string WorkflowStatus { get; set; } = null!; 
     public DateTime? CompletedAt { get; set; }
-    public int? CompletedBy { get; set; }
+    public Guid? CompletedBy { get; set; }
     public bool IsActive { get; set; } = true;
 
     // Navigation

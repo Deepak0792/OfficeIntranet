@@ -18,7 +18,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         _teamRepository = teamRepository;
     }
 
-    public async Task<IEnumerable<EmployeeTeamResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeTeamResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var teams = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
         
@@ -35,7 +35,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         return responses;
     }
 
-    public async Task<EmployeeTeamResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeTeamResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var team = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (team == null) return null;
@@ -48,7 +48,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         return employeeTeam;
     }
 
-    public async Task<EmployeeTeamResponse> AddAsync(int employeeId, CreateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeTeamResponse> AddAsync(Guid employeeId, CreateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeTeamRequest, EmployeeTeam>(request);
         entity.EmployeeId = employeeId;
@@ -59,7 +59,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created team");
     }
 
-    public async Task<EmployeeTeamResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeTeamResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
     {
         var team = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (team == null) throw new KeyNotFoundException("Employee team not found");
@@ -74,7 +74,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         return await GetByIdAsync(employeeId, team.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated team");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var team = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (team == null) return false;
@@ -85,7 +85,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         return true;
     }
 
-    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var team = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = team.FirstOrDefault(x => x.Id == id);

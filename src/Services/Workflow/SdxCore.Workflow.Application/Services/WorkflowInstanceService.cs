@@ -17,7 +17,7 @@ public class WorkflowInstanceService(
     public async Task<PagedResponse<IEnumerable<WorkflowInstanceResponse>>> GetPagedAsync(
         PaginationFilter filter,
         string? moduleCode, string? status,
-        int? initiatedBy, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+        Guid? initiatedBy, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
     {
         var (items, total) = await instanceRepo.GetPagedAsync(
            filter.PageNumber, filter.PageSize, moduleCode, status, initiatedBy, fromDate, toDate, cancellationToken);
@@ -25,7 +25,7 @@ public class WorkflowInstanceService(
             items.Select(MapSummary), filter.PageNumber, filter.PageSize, total);
     }
 
-    public async Task<WorkflowInstanceDetailResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowInstanceDetailResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var e = await instanceRepo.GetByIdWithDetailsAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowInstance", id);
@@ -49,20 +49,20 @@ public class WorkflowInstanceService(
             history.OrderBy(h => h.ActionAt).Select(MapHistory));
     }
 
-    public async Task<IEnumerable<WorkflowActionHistoryResponse>> GetHistoryAsync(int instanceId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowActionHistoryResponse>> GetHistoryAsync(Guid instanceId, CancellationToken cancellationToken = default)
     {
         var history = await historyRepo.GetByInstanceIdAsync(instanceId, cancellationToken);
         return history.OrderBy(h => h.ActionAt).Select(MapHistory);
     }
 
-    public async Task<IEnumerable<WorkflowTaskResponse>> GetTasksAsync(int instanceId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowTaskResponse>> GetTasksAsync(Guid instanceId, CancellationToken cancellationToken = default)
     {
         var tasks = await taskRepo.GetByInstanceIdAsync(instanceId, cancellationToken);
         return tasks.Select(MapTask);
     }
 
     public async Task<WorkflowInstanceResponse> GetByTransactionAsync(
-        string moduleCode, int referenceTransactionId, CancellationToken cancellationToken = default)
+        string moduleCode, Guid referenceTransactionId, CancellationToken cancellationToken = default)
     {
         var e = await instanceRepo.GetByTransactionAsync(moduleCode, referenceTransactionId, cancellationToken)
             ?? throw new WorkflowNotFoundException(
@@ -71,7 +71,7 @@ public class WorkflowInstanceService(
         return MapSummary(e);
     }
 
-    public async Task<IEnumerable<WorkflowInstanceResponse>> GetMySubmissionsAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowInstanceResponse>> GetMySubmissionsAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var items = await instanceRepo.GetMySubmissionsAsync(employeeId, cancellationToken);
         return items.Select(MapSummary);
@@ -87,13 +87,13 @@ public class WorkflowInstanceService(
         return MapSummary(instance);
     }
 
-    public async Task<bool> CancelAsync(int id, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task<bool> CancelAsync(Guid id, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         await engine.CancelAsync(id, actionBy, remarks, cancellationToken);
         return true;
     }
 
-    public async Task<bool> WithdrawAsync(int id, int actionBy, string? remarks, CancellationToken cancellationToken = default)
+    public async Task<bool> WithdrawAsync(Guid id, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
     {
         await engine.WithdrawAsync(id, actionBy, remarks, cancellationToken);
         return true;
@@ -128,7 +128,7 @@ public class WorkflowInstanceService(
             t.ParentWorkflowTaskId,
             t.AssignedAt, t.DueAt, t.ActionAt,
             t.Instance?.Module?.ModuleCode ?? string.Empty,
-            t.Instance?.ReferenceTransactionId ?? 0,
+            t.Instance?.ReferenceTransactionId ?? Guid.Empty,
             t.Instance?.WorkflowStatus ?? string.Empty);
 
     private static WorkflowActionHistoryResponse MapHistory(Domain.Entities.WorkflowActionHistory h) =>

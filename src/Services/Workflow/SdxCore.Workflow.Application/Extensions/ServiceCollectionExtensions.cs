@@ -31,6 +31,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkflowAssignmentService, WorkflowAssignmentService>();
         services.AddScoped<IWorkflowInstanceService, WorkflowInstanceService>();
         services.AddScoped<IWorkflowTaskService, WorkflowTaskService>();
+        services.AddScoped<IEmployeeQueryService, EmployeeQueryService>();
+        services.AddScoped<ITimeQueryService, TimeQueryService>();
 
         services.AddScoped<IWorkflowEngine, WorkflowEngine>();
 

@@ -1,8 +1,8 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record WorkflowStepApproverDesignationResponse(
-    short  Id,
-    short  WorkflowStepApproverId,
-    short  DesignationId,
+    Guid Id,
+    Guid WorkflowStepApproverId,
+    Guid DesignationId,
     string DesignationCode,
     string DesignationName);

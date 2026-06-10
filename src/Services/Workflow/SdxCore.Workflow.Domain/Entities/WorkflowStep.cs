@@ -2,9 +2,9 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowStep : BaseAuditEntity<short>
+public class WorkflowStep : BaseAuditEntity<Guid>
 {
-    public short WorkflowDefinitionId { get; set; }
+    public Guid WorkflowDefinitionId { get; set; }
     public short StepNo { get; set; }
     public string StepName { get; set; } = null!;
     public string WorkflowStepType { get; set; } = null!;

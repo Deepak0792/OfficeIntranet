@@ -4,8 +4,8 @@ namespace SdxCore.Employee.Application.DTOs.Request;
 
 public class CreateEmployeeLegalEntityRequest
 {
-    public short LegalEntityId { get; set; }
-    public bool IsPrimary { get; set; }
+    public Guid LegalEntityId { get; set; }
+    public bool IsPrimaryLegalEntity { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
 }

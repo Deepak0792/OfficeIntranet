@@ -8,10 +8,10 @@ using SdxCore.Workflow.Persistence.Data;
 namespace SdxCore.Workflow.Persistence.Repositories;
 
 public class WorkflowTaskRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowTask, int, WorkflowDbContext>(dbContext, requestContext), IWorkflowTaskRepository
+    : BaseRepository<WorkflowTask, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowTaskRepository
 {
 
-    public async Task<WorkflowTask?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default) =>
+    public async Task<WorkflowTask?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Instance)
                 .ThenInclude(i => i.Definition)
@@ -21,7 +21,7 @@ public class WorkflowTaskRepository(WorkflowDbContext dbContext, IUserContext re
             .Include(x => x.StepApprover)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-    public async Task<IEnumerable<WorkflowTask>> GetByInstanceIdAsync(int instanceId, CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<WorkflowTask>> GetByInstanceIdAsync(Guid instanceId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Step)
             .Include(x => x.StepApprover)
@@ -30,7 +30,7 @@ public class WorkflowTaskRepository(WorkflowDbContext dbContext, IUserContext re
             .ToListAsync(cancellationToken);
 
     public async Task<IEnumerable<WorkflowTask>> GetMyPendingTasksAsync(
-        int employeeId, string? moduleCode = null, CancellationToken cancellationToken = default)
+        Guid employeeId, string? moduleCode = null, CancellationToken cancellationToken = default)
     {
         var q = _dbSet
             .Include(x => x.Instance)
@@ -46,7 +46,7 @@ public class WorkflowTaskRepository(WorkflowDbContext dbContext, IUserContext re
     }
 
     public async Task<(IEnumerable<WorkflowTask> Items, int TotalCount)> GetMyPendingPagedAsync(
-        int employeeId, string? moduleCode, int page, int pageSize, CancellationToken cancellationToken = default)
+        Guid employeeId, string? moduleCode, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var q = _dbSet
             .Include(x => x.Instance)

@@ -3,9 +3,9 @@ using SdxCore.Workflow.Domain.Entities;
 
 namespace SdxCore.Workflow.Domain.Repositories;
 
-public interface IWorkflowStepApproverDesignationRepository : IRepository<WorkflowStepApproverDesignation, short>
+public interface IWorkflowStepApproverDesignationRepository : IRepository<WorkflowStepApproverDesignation, Guid>
 {
-    Task<IEnumerable<WorkflowStepApproverDesignation>> GetByApproverIdAsync(short approverId, CancellationToken cancellationToken = default);
-    Task<bool> DeleteAsync(short approverId, short designationId, CancellationToken cancellationToken = default);
-    Task<bool> ExistsAsync(short approverId, short designationId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowStepApproverDesignation>> GetByApproverIdAsync(Guid approverId, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(Guid approverId, Guid designationId, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(Guid approverId, Guid designationId, CancellationToken cancellationToken = default);
 }

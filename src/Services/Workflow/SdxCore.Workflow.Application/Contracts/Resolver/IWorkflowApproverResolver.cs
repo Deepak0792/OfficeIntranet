@@ -15,11 +15,11 @@ public interface IWorkflowApproverResolver
     ///   SKIP_MANAGER      → skip-level manager from org hierarchy
     /// </summary>
     Task<IEnumerable<ResolvedApprover>> ResolveApproverAsync(
-        short workflowStepId,
-        int initiatorEmployeeId);
+        Guid workflowStepId,
+        Guid initiatorEmployeeId);
 
     Task<WorkflowAssignmentSummary> ResolveDefinitionAsync(
         string moduleCode,
         string workflowCode,
-        int initiatorEmployeeId);
+        Guid initiatorEmployeeId);
 }

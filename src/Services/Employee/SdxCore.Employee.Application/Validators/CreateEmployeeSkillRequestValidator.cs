@@ -7,7 +7,7 @@ public class CreateEmployeeSkillRequestValidator : AbstractValidator<CreateEmplo
 {
     public CreateEmployeeSkillRequestValidator()
     {
-        RuleFor(x => x.SkillId).GreaterThan((short)0);
+        RuleFor(x => x.SkillId).NotEmpty();
         RuleFor(x => x.SkillLevel).MaximumLength(50);
         RuleFor(x => x.YearsOfExperience).GreaterThanOrEqualTo(0);
     }

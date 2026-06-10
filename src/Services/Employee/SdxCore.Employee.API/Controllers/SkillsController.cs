@@ -27,8 +27,8 @@ public class SkillsController : SdxControllerBase
         return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<SkillResponse>>(result, "Skills fetched successfully."));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(id, cancellationToken);
         return OkOrNotFound(result, "Skill fetched successfully.");
@@ -44,8 +44,8 @@ public class SkillsController : SdxControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, new ApiResponse<SkillResponse>(result, "Skill created successfully."));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(short id, [FromBody] UpdateSkillRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSkillRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -54,8 +54,8 @@ public class SkillsController : SdxControllerBase
         return Ok(new ApiResponse<SkillResponse>(result, "Skill updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

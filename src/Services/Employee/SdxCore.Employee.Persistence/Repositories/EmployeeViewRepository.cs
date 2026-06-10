@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 using SdxCore.Employee.Persistence.Data;
+using System.Linq.Expressions;
 
 namespace SdxCore.Employee.Persistence.Repositories;
 
@@ -20,7 +15,7 @@ public class EmployeeViewRepository : IEmployeeViewRepository
         _dbContext = dbContext;
     }
 
-    public async Task<EmployeeSummary?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSummary?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.EmployeeFullProfiles
             .FirstOrDefaultAsync(e => e.EmployeeId == id, cancellationToken);

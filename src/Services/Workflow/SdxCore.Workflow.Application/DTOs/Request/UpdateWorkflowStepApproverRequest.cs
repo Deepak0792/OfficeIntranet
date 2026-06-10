@@ -1,7 +1,7 @@
 namespace SdxCore.Workflow.Application.DTOs.Request;
 
 public record UpdateWorkflowStepApproverRequest(
-    short? ScopeTypeId,
-    short? ScopeReferenceId,
+    Guid? ScopeTypeId,
+    Guid? ScopeReferenceId,
     short  PriorityOrder,
     bool   IsMandatory);

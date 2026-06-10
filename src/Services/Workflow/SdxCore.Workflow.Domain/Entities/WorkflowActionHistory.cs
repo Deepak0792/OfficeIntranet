@@ -2,17 +2,17 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowActionHistory : BaseAuditEntity<int>
+public class WorkflowActionHistory : BaseAuditEntity<Guid>
 {
-    public int WorkflowInstanceId { get; set; }
-    public int? WorkflowTaskId { get; set; }
-    public short? WorkflowStepId { get; set; }
+    public Guid WorkflowInstanceId { get; set; }
+    public Guid? WorkflowTaskId { get; set; }
+    public Guid? WorkflowStepId { get; set; }
     public string WorkflowActionType { get; set; } = null!; 
     public string? Remarks { get; set; }
     public string? FromWorkflowStatus { get; set; }
     public string? ToWorkflowStatus { get; set; }
     public bool IsActive { get; set; } = true;
-    public int ActionBy { get; set; }
+    public Guid ActionBy { get; set; }
     public DateTime ActionAt { get; set; }
 
     // Navigation

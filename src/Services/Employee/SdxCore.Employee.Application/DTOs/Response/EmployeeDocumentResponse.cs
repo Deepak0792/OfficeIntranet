@@ -1,12 +1,10 @@
-using System;
-
 namespace SdxCore.Employee.Application.DTOs.Response;
 
 public class EmployeeDocumentResponse
 {
-    public int Id { get; set; }
-    public int EmployeeId { get; set; }
-    public short DocumentTypeId { get; set; }
+    public Guid Id { get; set; }
+    public Guid EmployeeId { get; set; }
+    public Guid DocumentTypeId { get; set; }
     public string? DocumentTypeName { get; set; }
     public string? FileName { get; set; }
     public string? OriginalFileName { get; set; }
@@ -20,8 +18,8 @@ public class EmployeeDocumentResponse
     public string? Remarks { get; set; }
     public DateTime UploadedAt { get; set; }
     public bool IsVerified { get; set; }
-    public int? VerifiedByEmployeeId { get; set; }
+    public Guid? VerifiedByEmployeeId { get; set; }
     public DateTime? VerifiedAt { get; set; }
-    public int? WorkflowInstanceId { get; set; }
+    public Guid? WorkflowInstanceId { get; set; }
     public bool IsActive { get; set; }
 }

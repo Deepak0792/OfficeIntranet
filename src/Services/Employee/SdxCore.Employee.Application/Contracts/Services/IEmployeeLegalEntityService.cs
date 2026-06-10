@@ -5,10 +5,10 @@ namespace SdxCore.Employee.Application.Contracts.Services;
 
 public interface IEmployeeLegalEntityService
 {
-    Task<IEnumerable<EmployeeLegalEntityResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeLegalEntityResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default);
-    Task<EmployeeLegalEntityResponse> AddAsync(int employeeId, CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default);
-    Task<EmployeeLegalEntityResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default);
-    Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeLegalEntityResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
+    Task<EmployeeLegalEntityResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
+    Task<EmployeeLegalEntityResponse> AddAsync(Guid employeeId, CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default);
+    Task<EmployeeLegalEntityResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default);
+    Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
 }

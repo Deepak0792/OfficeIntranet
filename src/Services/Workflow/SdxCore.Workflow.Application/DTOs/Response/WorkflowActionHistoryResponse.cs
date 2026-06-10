@@ -1,15 +1,15 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record WorkflowActionHistoryResponse(
-    int      Id,
-    int      WorkflowInstanceId,
-    int?     WorkflowTaskId,
-    short?   WorkflowStepId,
-    string?  StepName,
-    string   WorkflowActionType,
-    string?  Remarks,
-    string?  FromWorkflowStatus,
-    string?  ToWorkflowStatus,
-    int      ActionBy,
-    string   ActionByName,
+    Guid Id,
+    Guid WorkflowInstanceId,
+    Guid? WorkflowTaskId,
+    Guid? WorkflowStepId,
+    string? StepName,
+    string WorkflowActionType,
+    string? Remarks,
+    string? FromWorkflowStatus,
+    string? ToWorkflowStatus,
+    Guid ActionBy,
+    string ActionByName,
     DateTime ActionAt);

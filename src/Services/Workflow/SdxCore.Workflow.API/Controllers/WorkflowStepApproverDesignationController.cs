@@ -8,12 +8,12 @@ using SdxCore.Workflow.Application.DTOs.Response;
 namespace SdxCore.Workflow.API.Controllers;
 
 [ApiController]
-[Route("api/v1/workflow/approvers/{approverId}/designations")]
+[Route("api/v1/workflow/approvers/{approverId:guid}/designations")]
 [GatewayOnly]
 public class WorkflowStepApproverDesignationController(IWorkflowStepApproverDesignationService svc) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll(short approverId)
+    public async Task<IActionResult> GetAll(Guid approverId)
     {
         var data = await svc.GetByApproverIdAsync(approverId, HttpContext.RequestAborted);
         return Ok(new ApiResponse<IEnumerable<WorkflowStepApproverDesignationResponse>>(data,
@@ -21,7 +21,7 @@ public class WorkflowStepApproverDesignationController(IWorkflowStepApproverDesi
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(short approverId, [FromBody] AddApproverDesignationRequest request)
+    public async Task<IActionResult> Add(Guid approverId, [FromBody] AddApproverDesignationRequest request)
     {
         var data = await svc.AddAsync(approverId, request, HttpContext.RequestAborted);
         return Ok(new ApiResponse<WorkflowStepApproverDesignationResponse>(data,
@@ -29,8 +29,8 @@ public class WorkflowStepApproverDesignationController(IWorkflowStepApproverDesi
     }
 
     // Hard DELETE â€” only resource in workflow API that uses DELETE
-    [HttpDelete("{designationId:short}")]
-    public async Task<IActionResult> Remove(short approverId, short designationId)
+    [HttpDelete("{designationId:guid}")]
+    public async Task<IActionResult> Remove(Guid approverId, Guid designationId)
     {
         var status = await svc.DeleteAsync(approverId, designationId, HttpContext.RequestAborted);
         return Ok(new ApiResponse<bool>(status,

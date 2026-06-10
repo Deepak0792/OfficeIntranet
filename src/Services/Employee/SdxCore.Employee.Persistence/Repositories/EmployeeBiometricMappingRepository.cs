@@ -7,7 +7,7 @@ using SdxCore.SharedKernel.Persistence.Repositories;
 namespace SdxCore.Employee.Persistence.Repositories;
 
 public class EmployeeBiometricMappingRepository : 
-    BaseRepository<EmployeeBiometricMapping, int, EmployeeDbContext>,
+    BaseRepository<EmployeeBiometricMapping, Guid, EmployeeDbContext>,
     IEmployeeBiometricMappingRepository
 {
     public EmployeeBiometricMappingRepository(EmployeeDbContext dbContext, IUserContext requestContext)

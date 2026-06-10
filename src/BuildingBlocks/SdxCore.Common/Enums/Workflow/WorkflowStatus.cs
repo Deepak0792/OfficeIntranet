@@ -1,4 +1,4 @@
-namespace SdxCore.Workflow.Domain.Enums;
+namespace SdxCore.Common.Enums.Workflow;
 
 public static class WorkflowStatus
 {

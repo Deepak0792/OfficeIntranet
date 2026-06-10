@@ -8,7 +8,7 @@ public class CreateEmployeeLegalEntityRequestValidator : AbstractValidator<Creat
     public CreateEmployeeLegalEntityRequestValidator()
     {
         RuleFor(x => x.LegalEntityId)
-            .GreaterThan((short)0).WithMessage("Legal Entity ID must be valid.");
+            .NotEmpty().WithMessage("Legal Entity ID must be valid.");
 
         RuleFor(x => x.EndDate)
             .GreaterThanOrEqualTo(x => x.StartDate).When(x => x.StartDate.HasValue && x.EndDate.HasValue)

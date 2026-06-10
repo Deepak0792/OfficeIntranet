@@ -2,20 +2,20 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Workflow.Domain.Entities;
 
-public class WorkflowTask : BaseAuditEntity<int>
+public class WorkflowTask : BaseAuditEntity<Guid>
 {
-    public int WorkflowInstanceId { get; set; }
-    public short WorkflowStepId { get; set; }
-    public short WorkflowStepApproverId { get; set; }
-    public int AssignedToEmployeeId { get; set; }
-    public int? DelegatedFromEmployeeId { get; set; }
+    public Guid WorkflowInstanceId { get; set; }
+    public Guid WorkflowStepId { get; set; }
+    public Guid WorkflowStepApproverId { get; set; }
+    public Guid AssignedToEmployeeId { get; set; }
+    public Guid? DelegatedFromEmployeeId { get; set; }
     public string TaskStatus { get; set; } = null!;
     public string? Remarks { get; set; }
-    public int? ParentWorkflowTaskId { get; set; }
+    public Guid? ParentWorkflowTaskId { get; set; }
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DueAt { get; set; }
     public DateTime? ActionAt { get; set; }
-    public int ActionBy { get; set; }
+    public Guid ActionBy { get; set; }
     public bool IsActive { get; set; } = true;
 
     // Navigation

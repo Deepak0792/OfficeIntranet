@@ -9,8 +9,8 @@ using SdxCore.Employee.Application.DTOs.Response;
 namespace SdxCore.Employee.API.Controllers;
 
 [ApiController]
-[Route("api/v1/employees/{employeeId}/addresses")]
 [GatewayOnly]
+[Route("api/v1/employees/{employeeId:guid}/addresses")]
 public class EmployeeAddressesController : SdxControllerBase
 {
     protected override ErrorResponse NotFoundError =>
@@ -24,21 +24,21 @@ public class EmployeeAddressesController : SdxControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByEmployeeId(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<EmployeeAddressResponse>>(result));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee address retrieved successfully.");
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeAddressRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(Guid employeeId, [FromBody] CreateEmployeeAddressRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -48,8 +48,8 @@ public class EmployeeAddressesController : SdxControllerBase
             new ApiResponse<EmployeeAddressResponse>(result, "Employee address added successfully."));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeAddressRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeAddressRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -58,8 +58,8 @@ public class EmployeeAddressesController : SdxControllerBase
         return Ok(new ApiResponse<EmployeeAddressResponse>(result, "Employee address updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid employeeId, Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -68,8 +68,8 @@ public class EmployeeAddressesController : SdxControllerBase
         return OkOrNotFound(result, "Employee address status updated successfully.");
     }
 
-    [HttpPatch("{id}/set-primary")]
-    public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/set-primary")]
+    public async Task<IActionResult> SetPrimary(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee address set as primary successfully.");

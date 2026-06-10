@@ -1,5 +1,4 @@
 using SdxCore.Common.Helpers;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
@@ -17,20 +16,20 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository
         return PropertyMapper.MapList<WorkflowAssignment, WorkflowAssignmentResponse>(items);
     }
 
-    public async Task<WorkflowAssignmentResponse> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowAssignmentResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var e = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowAssignment", id);
         return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(e);
     }
 
-    public async Task<IEnumerable<WorkflowAssignmentResponse>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowAssignmentResponse>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default)
     {
         var items = await _repository.GetByDefinitionIdAsync(definitionId, cancellationToken);
         return PropertyMapper.MapList<WorkflowAssignment, WorkflowAssignmentResponse>(items);
     }
 
-    public async Task<ResolveDefinitionResponse> ResolveAsync(string moduleCode, int employeeId, DateOnly? effectiveDate, CancellationToken cancellationToken = default)
+    public async Task<ResolveDefinitionResponse> ResolveAsync(string moduleCode, Guid employeeId, DateOnly? effectiveDate, CancellationToken cancellationToken = default)
     {
         var date = effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var def = await _repository.ResolveDefinitionAsync(moduleCode, employeeId, date, cancellationToken)
@@ -55,7 +54,7 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository
         return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(entity);
     }
 
-    public async Task<WorkflowAssignmentResponse> UpdateAsync(short id, UpdateWorkflowAssignmentRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowAssignmentResponse> UpdateAsync(Guid id, UpdateWorkflowAssignmentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowAssignment", id);
@@ -69,7 +68,7 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository
         return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

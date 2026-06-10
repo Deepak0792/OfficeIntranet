@@ -5,13 +5,13 @@ namespace SdxCore.Workflow.Application.Contracts.Services;
 
 public interface IEmployeeQueryService
 {
-    Task<EmployeeSummaryResponse?> GetReportingManagerAsync(int employeeId, CancellationToken cancellationToken = default!);
-    Task<EmployeeSummaryResponse?> GetEmployeeByIdAsync(int employeeId, CancellationToken cancellationToken = default!);
+    Task<EmployeeSummaryResponse?> GetReportingManagerAsync(Guid employeeId, CancellationToken cancellationToken = default!);
+    Task<EmployeeSummaryResponse?> GetEmployeeByIdAsync(Guid employeeId, CancellationToken cancellationToken = default!);
     Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
-        IEnumerable<short> designationIds,
-        short? scopeTypeId,
-        int? scopeReferenceId);
+        IEnumerable<Guid> designationIds,
+        string? scopeCode,
+        Guid? scopeReferenceId);
     //Task<IEnumerable<EmployeeSummaryResponse>> GetEmployeesByRoleInScopeAsync(
-    //    short approverRuleId, short? scopeTypeId, int? scopeReferenceId);
-    Task<int?> GetScopeReferenceIdAsync(int employeeId, short? scopeTypeId, CancellationToken cancellationToken = default!);
+    //    Guid approverRuleId, Guid? scopeTypeId, Guid? scopeReferenceId);
+    Task<Guid?> GetScopeReferenceIdAsync(Guid employeeId, string? scopeCode, CancellationToken cancellationToken = default!);
 }

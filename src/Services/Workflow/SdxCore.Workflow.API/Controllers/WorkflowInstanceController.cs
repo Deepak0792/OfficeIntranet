@@ -22,7 +22,7 @@ public class WorkflowInstanceController(
     public async Task<IActionResult> GetPaged(
         [FromQuery] string? moduleCode,
         [FromQuery] string? status,
-        [FromQuery] int? initiatedBy,
+        [FromQuery] Guid? initiatedBy,
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate,
         [FromQuery] PaginationFilter filter,
@@ -33,23 +33,23 @@ public class WorkflowInstanceController(
         return Ok(data);
     }
 
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var data = await workflowInstanceService.GetByIdAsync(id, cancellationToken);
         return Ok(new ApiResponse<WorkflowInstanceDetailResponse>(data, "Successfully fetched workflow instance details."));
     }
 
-    [HttpGet("{id:int}/tasks")]
-    public async Task<IActionResult> GetTasks(int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/tasks")]
+    public async Task<IActionResult> GetTasks(Guid id, CancellationToken cancellationToken)
     {
         var data = await workflowInstanceService.GetTasksAsync(id, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<WorkflowTaskResponse>>(data, "Successfully fetched task information."));
     }
 
     /// <summary>GET /api/v1/workflow/instances/{id}/history</summary>
-    [HttpGet("{id:int}/history")]
-    public async Task<IActionResult> GetHistory(int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/history")]
+    public async Task<IActionResult> GetHistory(Guid id, CancellationToken cancellationToken)
     {
         var data = await workflowInstanceService.GetHistoryAsync(id, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<WorkflowActionHistoryResponse>>(data, "Successfully fetched instances history."));
@@ -62,7 +62,7 @@ public class WorkflowInstanceController(
     [HttpGet("by-transaction")]
     public async Task<IActionResult> GetByTransaction(
         [FromQuery] string moduleCode,
-        [FromQuery] int referenceTransactionId, CancellationToken cancellationToken)
+        [FromQuery] Guid referenceTransactionId, CancellationToken cancellationToken)
     {
         var data = await workflowInstanceService.GetByTransactionAsync(moduleCode, referenceTransactionId, cancellationToken);
         return Ok(new ApiResponse<WorkflowInstanceResponse>(data, "Successfully fetched instance."));
@@ -72,7 +72,7 @@ public class WorkflowInstanceController(
     [HttpGet("my-submissions")]
     public async Task<IActionResult> GetMySubmissions(CancellationToken cancellationToken)
     {
-        int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
+        Guid userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
         var data = await workflowInstanceService.GetMySubmissionsAsync(userId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<WorkflowInstanceResponse>>(data, "Successfully fetched instances."));
     }
@@ -89,19 +89,19 @@ public class WorkflowInstanceController(
     }
 
     /// <summary>PATCH /api/v1/workflow/instances/{id}/cancel</summary>
-    [HttpPatch("{id:int}/cancel")]
-    public async Task<IActionResult> Cancel(int id, [FromBody] WorkflowActionRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id, [FromBody] WorkflowActionRequest request, CancellationToken cancellationToken)
     {
-        int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
+        Guid userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
         await workflowInstanceService.CancelAsync(id, userId, request.Remarks, cancellationToken);
         return Ok(new ApiResponse<bool>(true, "Workflow instance cancelled."));
     }
 
     /// <summary>PATCH /api/v1/workflow/instances/{id}/withdraw</summary>
-    [HttpPatch("{id:int}/withdraw")]
-    public async Task<IActionResult> Withdraw(int id, [FromBody] WorkflowActionRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/withdraw")]
+    public async Task<IActionResult> Withdraw(Guid id, [FromBody] WorkflowActionRequest request, CancellationToken cancellationToken)
     {
-        int userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
+        Guid userId = requestContext.UserId ?? throw new InvalidOperationException("UserId is not available.");
         await workflowInstanceService.WithdrawAsync(id, userId, request.Remarks, cancellationToken);
         return Ok(new ApiResponse<bool>(true, "Workflow instance withdrawn."));
     }

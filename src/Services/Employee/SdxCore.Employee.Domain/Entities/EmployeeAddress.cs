@@ -3,9 +3,9 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class EmployeeAddress : BaseAuditEntity<int>, IPublishableEntity
+public class EmployeeAddress : BaseAuditEntity<Guid>, IPublishableEntity
 {
-    public int EmployeeId { get; set; }
+    public Guid EmployeeId { get; set; }
     public string AddressType { get; set; } = null!;
     public string AddressLine1 { get; set; } = null!;
     public string? AddressLine2 { get; set; }
@@ -13,12 +13,12 @@ public class EmployeeAddress : BaseAuditEntity<int>, IPublishableEntity
     public string City { get; set; } = null!;
     public string? StateProvince { get; set; }
     public string? PostalCode { get; set; }
-    public short CountryId { get; set; }
-    public short? RegionId { get; set; }
+    public Guid CountryId { get; set; }
+    public Guid? RegionId { get; set; }
     public bool IsPrimaryAddress { get; set; }
-    public int? WorkflowInstanceId { get; set; }
+    public Guid? WorkflowInstanceId { get; set; }
     public bool IsVerified { get; set; }
-    public int? VerifiedByEmployeeId { get; set; }
+    public Guid? VerifiedByEmployeeId { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public bool IsActive { get; set; } = true;
 }

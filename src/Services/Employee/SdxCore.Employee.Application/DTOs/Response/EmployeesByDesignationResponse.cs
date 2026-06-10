@@ -5,8 +5,8 @@
 /// </summary>
 public class EmployeesByDesignationResponse
 {
-    public int EmployeeId { get; set; }
+    public Guid EmployeeId { get; set; }
     public string DisplayName { get; set; } = null!;
-    public short? DesignationId { get; set; }
-    public short? PrimaryDepartmentId { get; set; }
+    public Guid? DesignationId { get; set; }
+    public Guid? PrimaryDepartmentId { get; set; }
 }

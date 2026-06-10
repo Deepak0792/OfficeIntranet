@@ -3,11 +3,11 @@ using SdxCore.Workflow.Domain.Entities;
 
 namespace SdxCore.Workflow.Domain.Repositories;
 
-public interface IWorkflowStepRepository : IRepository<WorkflowStep, short>
+public interface IWorkflowStepRepository : IRepository<WorkflowStep, Guid>
 {
-    Task<IEnumerable<WorkflowStep>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default);
-    Task<WorkflowStep?> GetWithApproversAsync(short id, CancellationToken cancellationToken = default);
-    Task<WorkflowStep?> GetNextStepAsync(short definitionId, short currentStepNo, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default);
-    Task ReorderAsync(short definitionId, short stepId, short newStepNo, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowStep>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default);
+    Task<WorkflowStep?> GetWithApproversAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<WorkflowStep?> GetNextStepAsync(Guid definitionId, short currentStepNo, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid id, CancellationToken cancellationToken = default);
+    Task ReorderAsync(Guid definitionId, Guid stepId, short newStepNo, CancellationToken cancellationToken = default);
 }

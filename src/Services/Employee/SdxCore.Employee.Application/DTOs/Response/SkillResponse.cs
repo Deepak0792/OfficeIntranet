@@ -3,7 +3,7 @@ using System;
 
 public class SkillResponse
 {
-    public short Id { get; set; }
+    public Guid Id { get; set; }
     public required string SkillName { get; set; }
     public string? SkillCategory { get; set; }
     public string? Description { get; set; }

@@ -7,7 +7,7 @@ public class CreateEmployeeBiometricMappingRequestValidator : AbstractValidator<
 {
     public CreateEmployeeBiometricMappingRequestValidator()
     {
-        RuleFor(x => x.BiometricDeviceId).GreaterThan(0);
+        RuleFor(x => x.BiometricDeviceId).NotEmpty();
         RuleFor(x => x.DeviceEmployeeCode).NotEmpty().MaximumLength(100);
     }
 }

@@ -6,7 +6,7 @@ using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Employee.Persistence.Repositories;
 
-public class TeamRepository : BaseRepository<Team, short, EmployeeDbContext>, ITeamRepository
+public class TeamRepository : BaseRepository<Team, Guid, EmployeeDbContext>, ITeamRepository
 {
     public TeamRepository(EmployeeDbContext dbContext, IUserContext requestContext)
         : base(dbContext, requestContext)

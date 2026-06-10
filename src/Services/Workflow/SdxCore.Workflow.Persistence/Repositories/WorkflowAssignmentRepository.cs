@@ -8,16 +8,16 @@ using SdxCore.Workflow.Persistence.Data;
 namespace SdxCore.Workflow.Persistence.Repositories;
 
 public class WorkflowAssignmentRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowAssignment, short, WorkflowDbContext>(dbContext, requestContext), IWorkflowAssignmentRepository
+    : BaseRepository<WorkflowAssignment, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowAssignmentRepository
 {
-    public async Task<IEnumerable<WorkflowAssignment>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<WorkflowAssignment>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Definition)
             .Where(x => x.WorkflowDefinitionId == definitionId)
             .ToListAsync(cancellationToken);
 
     public async Task<WorkflowDefinition?> ResolveDefinitionAsync(
-        string moduleCode, int employeeId, DateOnly effectiveDate, CancellationToken cancellationToken = default)
+        string moduleCode, Guid employeeId, DateOnly effectiveDate, CancellationToken cancellationToken = default)
     {
         // Get employee's org data via raw SQL join across schemas
         // Walks: EMPLOYEE(7) → TEAM(6) → DEPARTMENT(5) → OFFICE(4) → LEGAL_ENTITY(3) → COUNTRY(2) → GLOBAL(1)
@@ -66,7 +66,7 @@ public class WorkflowAssignmentRepository(WorkflowDbContext dbContext, IUserCont
         return results.FirstOrDefault();
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await GetByIdAsync(id, cancellationToken);
         if (entity is null) return false;

@@ -7,7 +7,7 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowModuleRepository : BaseRepository<WorkflowModule, short, WorkflowDbContext>, IWorkflowModuleRepository
+public class WorkflowModuleRepository : BaseRepository<WorkflowModule, Guid, WorkflowDbContext>, IWorkflowModuleRepository
 {
     private readonly WorkflowDbContext dbContext;
     public WorkflowModuleRepository(WorkflowDbContext dbContext, IUserContext requestContext):base(dbContext, requestContext)
@@ -25,7 +25,7 @@ public class WorkflowModuleRepository : BaseRepository<WorkflowModule, short, Wo
         return await q.OrderBy(x => x.ModuleCode).ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await GetByIdAsync(id, cancellationToken);
         if (entity is null) return false;

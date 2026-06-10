@@ -9,7 +9,7 @@ using SdxCore.Employee.Application.DTOs.Response;
 namespace SdxCore.Employee.API.Controllers;
 
 [ApiController]
-[Route("api/v1/employees/{employeeId}/legal-entities")]
+[Route("api/v1/employees/{employeeId:guid}/legal-entities")]
 [GatewayOnly]
 public class EmployeeLegalEntitiesController : SdxControllerBase
 {
@@ -24,21 +24,21 @@ public class EmployeeLegalEntitiesController : SdxControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByEmployeeId(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<EmployeeLegalEntityResponse>>(result));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee legal entity retrieved successfully.");
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(Guid employeeId, [FromBody] CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -48,8 +48,8 @@ public class EmployeeLegalEntitiesController : SdxControllerBase
             new ApiResponse<EmployeeLegalEntityResponse>(result, "Employee legal entity added successfully."));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeLegalEntityRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeLegalEntityRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -58,8 +58,8 @@ public class EmployeeLegalEntitiesController : SdxControllerBase
         return Ok(new ApiResponse<EmployeeLegalEntityResponse>(result, "Employee legal entity updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid employeeId, Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -68,8 +68,8 @@ public class EmployeeLegalEntitiesController : SdxControllerBase
         return OkOrNotFound(result, "Employee legal entity status updated successfully.");
     }
 
-    [HttpPatch("{id}/set-primary")]
-    public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/set-primary")]
+    public async Task<IActionResult> SetPrimary(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee legal entity set as primary successfully.");

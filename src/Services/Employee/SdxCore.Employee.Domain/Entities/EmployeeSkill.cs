@@ -3,10 +3,10 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class EmployeeSkill : BaseAuditEntity<int>, IPublishableEntity
+public class EmployeeSkill : BaseAuditEntity<Guid>, IPublishableEntity
 {
-    public int EmployeeId { get; set; }
-    public short SkillId { get; set; }
+    public Guid EmployeeId { get; set; }
+    public Guid SkillId { get; set; }
     public string? SkillLevel { get; set; }
     public decimal? YearsOfExperience { get; set; }
     public bool IsPrimarySkill { get; set; }

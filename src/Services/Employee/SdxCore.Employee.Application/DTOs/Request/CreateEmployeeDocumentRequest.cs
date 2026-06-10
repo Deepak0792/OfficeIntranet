@@ -4,7 +4,7 @@ namespace SdxCore.Employee.Application.DTOs.Request;
 
 public class CreateEmployeeDocumentRequest
 {
-    public short DocumentTypeId { get; set; }
+    public Guid DocumentTypeId { get; set; }
     public string? FileName { get; set; }
     public string? OriginalFileName { get; set; }
     public string? FileExtension { get; set; }

@@ -15,7 +15,7 @@ public class WorkflowStepApproverDesignationService(
     ICacheService cacheService,
     ICacheKeyBuilder cacheKeyBuilder) : IWorkflowStepApproverDesignationService
 {
-    public async Task<IEnumerable<WorkflowStepApproverDesignationResponse>> GetByApproverIdAsync(short approverId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowStepApproverDesignationResponse>> GetByApproverIdAsync(Guid approverId, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStepApproverDesignation), $"approver_{approverId}");
         return await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -25,7 +25,7 @@ public class WorkflowStepApproverDesignationService(
         }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowStepApproverDesignationResponse>();
     }
 
-    public async Task<WorkflowStepApproverDesignationResponse> AddAsync(short approverId, AddApproverDesignationRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepApproverDesignationResponse> AddAsync(Guid approverId, AddApproverDesignationRequest request, CancellationToken cancellationToken = default)
     {
         _ = await approverRepo.GetByIdAsync(approverId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStepApprover", approverId);
@@ -45,7 +45,7 @@ public class WorkflowStepApproverDesignationService(
         return PropertyMapper.MapToRecord<WorkflowStepApproverDesignationResponse>(entity);
     }
 
-    public async Task<bool> DeleteAsync(short approverId, short designationId, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(Guid approverId, Guid designationId, CancellationToken cancellationToken = default)
     {
         var deleted = await repo.DeleteAsync(approverId, designationId, cancellationToken);
         if (deleted)

@@ -1,12 +1,12 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record WorkflowStepApproverResponse(
-    short  Id,
-    short  WorkflowStepId,
+    Guid Id,
+    Guid WorkflowStepId,
     string WorkflowApproverType,
-    short? ScopeTypeId,
-    short? ScopeReferenceId,
-    short  PriorityOrder,
-    bool   IsMandatory,
-    bool   IsActive,
+    Guid? ScopeTypeId,
+    Guid? ScopeReferenceId,
+    short PriorityOrder,
+    bool IsMandatory,
+    bool IsActive,
     IEnumerable<WorkflowStepApproverDesignationResponse>? Designations);

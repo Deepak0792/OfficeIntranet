@@ -1,14 +1,14 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record WorkflowAssignmentResponse(
-    short    Id,
-    short    WorkflowDefinitionId,
-    string   WorkflowCode,
-    string   WorkflowName,
-    short    ScopeTypeId,
-    string   ScopeTypeName,
-    short    ScopeReferenceId,
+    Guid Id,
+    Guid WorkflowDefinitionId,
+    string WorkflowCode,
+    string WorkflowName,
+    Guid ScopeTypeId,
+    string ScopeTypeName,
+    Guid ScopeReferenceId,
     DateOnly EffectiveFrom,
     DateOnly? EffectiveTo,
-    short    PriorityOrder,
-    bool     IsActive);
+    Guid PriorityOrder,
+    bool IsActive);

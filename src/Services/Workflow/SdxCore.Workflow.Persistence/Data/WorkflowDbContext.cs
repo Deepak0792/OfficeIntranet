@@ -36,7 +36,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowModule", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.ModuleCode).HasMaxLength(100).IsRequired();
             e.Property(x => x.ModuleName).HasMaxLength(200).IsRequired();
             e.Property(x => x.EntityName).HasMaxLength(100).IsRequired();
@@ -52,7 +52,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowDefinition", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.WorkflowCode).HasMaxLength(100).IsRequired();
             e.Property(x => x.WorkflowName).HasMaxLength(200).IsRequired();
             e.Property(x => x.Description).HasMaxLength(1000);
@@ -72,7 +72,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowStep", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.StepName).HasMaxLength(200).IsRequired();
             e.Property(x => x.WorkflowStepType).HasMaxLength(50).IsRequired();
             // WorkflowStepTypeGroup is a computed persisted column — never written by EF
@@ -91,7 +91,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowStepApprover", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.WorkflowApproverType).HasMaxLength(50).IsRequired();
             e.Property<string>("WorkflowApproverTypeGroup")
              .HasComputedColumnSql("CAST('WORKFLOW_APPROVER_TYPE' AS NVARCHAR(50))", stored: true)
@@ -107,7 +107,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowStepApproverDesignation", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.HasIndex(x => new { x.WorkflowStepApproverId, x.DesignationId }).IsUnique();
         });
 
@@ -116,7 +116,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowAssignment", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
         });
 
         // ── WorkflowInstance ─────────────────────────────────
@@ -124,7 +124,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowInstance", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.WorkflowStatus).HasMaxLength(50).IsRequired();
             e.Property<string>("WorkflowStatusGroup")
              .HasComputedColumnSql("CAST('WORKFLOW_STATUS' AS NVARCHAR(50))", stored: true)
@@ -157,7 +157,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowTask", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.TaskStatus).HasMaxLength(50).IsRequired();
             e.Property(x => x.Remarks).HasMaxLength(2000);
             e.Property<string>("TaskStatusGroup")
@@ -183,7 +183,7 @@ public class WorkflowDbContext : SdxDbContext
         {
             e.ToTable("WorkflowActionHistory", "workflow");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).UseIdentityColumn();
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.WorkflowActionType).HasMaxLength(50).IsRequired();
             e.Property(x => x.Remarks).HasMaxLength(2000);
             e.Property(x => x.FromWorkflowStatus).HasMaxLength(50);
@@ -230,10 +230,9 @@ public class WorkflowDbContext : SdxDbContext
 
         modelBuilder.Entity<OutboxMessage>(b =>
         {
-            b.ToTable("OutboxMessages", "time");
+            b.ToTable("OutboxMessages", "workflow");
             b.HasKey(x => x.Id);
-            b.Property(x => x.Id)
-                .HasDefaultValueSql("NEWSEQUENTIALID()");
+            b.Property(x => x.Id).ValueGeneratedNever();
         });
     }
 }

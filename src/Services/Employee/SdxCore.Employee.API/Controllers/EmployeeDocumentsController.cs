@@ -9,7 +9,7 @@ using SdxCore.Employee.Application.DTOs.Response;
 namespace SdxCore.Employee.API.Controllers;
 
 [ApiController]
-[Route("api/v1/employees/{employeeId}/documents")]
+[Route("api/v1/employees/{employeeId:guid}/documents")]
 [GatewayOnly]
 public class EmployeeDocumentsController : SdxControllerBase
 {
@@ -24,28 +24,28 @@ public class EmployeeDocumentsController : SdxControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByEmployeeId(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<EmployeeDocumentResponse>>(result));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee document retrieved successfully.");
     }
 
     [HttpGet("expiring")]
-    public async Task<IActionResult> GetExpiring(int employeeId, [FromQuery] int days = 30, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetExpiring(Guid employeeId, [FromQuery] int days = 30, CancellationToken cancellationToken = default)
     {
         var result = await _service.GetExpiringAsync(employeeId, days, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<EmployeeDocumentResponse>>(result));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeDocumentRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(Guid employeeId, [FromBody] CreateEmployeeDocumentRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -55,8 +55,8 @@ public class EmployeeDocumentsController : SdxControllerBase
             new ApiResponse<EmployeeDocumentResponse>(result, "Employee document added successfully."));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeDocumentRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeDocumentRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -65,8 +65,8 @@ public class EmployeeDocumentsController : SdxControllerBase
         return Ok(new ApiResponse<EmployeeDocumentResponse>(result, "Employee document updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid employeeId, Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

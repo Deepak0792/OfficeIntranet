@@ -23,7 +23,7 @@ public class WorkflowDefinitionService(
         return new PagedResponse<IEnumerable<WorkflowDefinitionResponse>>(res, filter.PageNumber, filter.PageSize, total);
     }
 
-    public async Task<WorkflowDefinitionResponse> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowDefinitionResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowDefinition), id.ToString());
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -47,7 +47,7 @@ public class WorkflowDefinitionService(
         return res!;
     }
 
-    public async Task<IEnumerable<WorkflowDefinitionResponse>> GetByModuleIdAsync(short moduleId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowDefinitionResponse>> GetByModuleIdAsync(Guid moduleId, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowDefinition), $"module_{moduleId}");
         return await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -57,7 +57,7 @@ public class WorkflowDefinitionService(
         }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowDefinitionResponse>();
     }
 
-    public async Task<WorkflowDefinitionWithStepsResponse> GetWithStepsAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowDefinitionWithStepsResponse> GetWithStepsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowDefinition), $"withsteps_{id}");
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -91,7 +91,7 @@ public class WorkflowDefinitionService(
         return PropertyMapper.MapToRecord<WorkflowDefinitionResponse>(entity);
     }
 
-    public async Task<WorkflowDefinitionResponse> UpdateAsync(short id, UpdateWorkflowDefinitionRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowDefinitionResponse> UpdateAsync(Guid id, UpdateWorkflowDefinitionRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowDefinition", id);
@@ -105,7 +105,7 @@ public class WorkflowDefinitionService(
         return PropertyMapper.MapToRecord<WorkflowDefinitionResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

@@ -6,5 +6,5 @@ namespace SdxCore.Workflow.Application.Contracts.Services;
 public interface IWorkflowResolutionService
 {
     Task<IEnumerable<PreviewApproversResponse>> PreviewApproversAsync(PreviewApproversRequest request);
-    Task<ResolveDefinitionResponse> ResolveDefinitionAsync(string moduleCode, int employeeId, DateOnly? effectiveDate);
+    Task<ResolveDefinitionResponse> ResolveDefinitionAsync(string moduleCode, Guid employeeId, DateOnly? effectiveDate);
 }

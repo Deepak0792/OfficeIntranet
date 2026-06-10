@@ -39,7 +39,7 @@ public class SkillService : ISkillService
         return items ?? new List<SkillResponse>();
     }
 
-    public async Task<SkillResponse?> GetByIdAsync(short id, CancellationToken cancellationToken = default)
+    public async Task<SkillResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey("Skill", id.ToString());
 
@@ -63,7 +63,7 @@ public class SkillService : ISkillService
         return PropertyMapper.Map<Skill, SkillResponse>(created);
     }
 
-    public async Task<SkillResponse> UpdateAsync(short id, UpdateSkillRequest request, CancellationToken cancellationToken = default)
+    public async Task<SkillResponse> UpdateAsync(Guid id, UpdateSkillRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) throw new KeyNotFoundException($"Skill with ID {id} not found.");
@@ -78,7 +78,7 @@ public class SkillService : ISkillService
         return PropertyMapper.Map<Skill, SkillResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

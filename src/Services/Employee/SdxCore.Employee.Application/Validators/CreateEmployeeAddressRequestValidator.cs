@@ -17,6 +17,7 @@ public class CreateEmployeeAddressRequestValidator : AbstractValidator<CreateEmp
             .NotEmpty().WithMessage("City is required.");
 
         RuleFor(x => x.CountryId)
-            .GreaterThan((short)0).WithMessage("Country ID must be valid.");
+             .NotEmpty()
+             .WithMessage("Country ID must be valid.");
     }
 }

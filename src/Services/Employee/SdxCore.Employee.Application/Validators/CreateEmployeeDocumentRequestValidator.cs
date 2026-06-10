@@ -8,7 +8,7 @@ public class CreateEmployeeDocumentRequestValidator : AbstractValidator<CreateEm
     public CreateEmployeeDocumentRequestValidator()
     {
         RuleFor(x => x.DocumentTypeId)
-            .GreaterThan((short)0).WithMessage("Document Type ID must be valid.");
+            .NotEmpty().WithMessage("Document Type ID must be valid.");
 
         RuleFor(x => x.ExpiryDate)
             .GreaterThanOrEqualTo(x => x.IssuedDate).When(x => x.IssuedDate.HasValue && x.ExpiryDate.HasValue)

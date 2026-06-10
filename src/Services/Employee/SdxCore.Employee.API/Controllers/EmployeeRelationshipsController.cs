@@ -9,7 +9,7 @@ using SdxCore.Employee.Application.DTOs.Response;
 namespace SdxCore.Employee.API.Controllers;
 
 [ApiController]
-[Route("api/v1/employees/{employeeId}/relationships")]
+[Route("api/v1/employees/{employeeId:guid}/relationships")]
 [GatewayOnly]
 public class EmployeeRelationshipsController : SdxControllerBase
 {
@@ -24,35 +24,35 @@ public class EmployeeRelationshipsController : SdxControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByEmployeeId(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<EmployeeRelationshipResponse>>(result));
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee relationship retrieved successfully.");
     }
 
-    [HttpGet("/api/v1/employees/{employeeId}/direct-reports")]
-    public async Task<IActionResult> GetDirectReports(int employeeId, CancellationToken cancellationToken)
+    [HttpGet("/api/v1/employees/{employeeId:guid}/direct-reports")]
+    public async Task<IActionResult> GetDirectReports(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetDirectReportsAsync(employeeId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<EmployeeRelationshipResponse>>(result));
     }
 
-    [HttpGet("/api/v1/employees/{employeeId}/manager")]
-    public async Task<IActionResult> GetManager(int employeeId, CancellationToken cancellationToken)
+    [HttpGet("/api/v1/employees/{employeeId:guid}/manager")]
+    public async Task<IActionResult> GetManager(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetManagerAsync(employeeId, cancellationToken);
         return OkOrNotFound(result, "Employee manager retrieved successfully.");
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(int employeeId, [FromBody] CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(Guid employeeId, [FromBody] CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -62,8 +62,8 @@ public class EmployeeRelationshipsController : SdxControllerBase
             new ApiResponse<EmployeeRelationshipResponse>(result, "Employee relationship added successfully."));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -72,8 +72,8 @@ public class EmployeeRelationshipsController : SdxControllerBase
         return Ok(new ApiResponse<EmployeeRelationshipResponse>(result, "Employee relationship updated successfully."));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid employeeId, Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -82,8 +82,8 @@ public class EmployeeRelationshipsController : SdxControllerBase
         return OkOrNotFound(result, "Employee relationship status updated successfully.");
     }
 
-    [HttpPatch("{id}/set-primary")]
-    public async Task<IActionResult> SetPrimary(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/set-primary")]
+    public async Task<IActionResult> SetPrimary(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.SetPrimaryAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Employee relationship set as primary successfully.");

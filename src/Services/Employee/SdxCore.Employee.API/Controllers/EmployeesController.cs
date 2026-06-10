@@ -28,9 +28,9 @@ public class EmployeesController : SdxControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] PaginationFilter filter,
-        [FromQuery] int? departmentId,
-        [FromQuery] int? locationId,
-        [FromQuery] int? legalEntityId,
+        [FromQuery] Guid? departmentId,
+        [FromQuery] Guid? locationId,
+        [FromQuery] Guid? legalEntityId,
         [FromQuery] string? employmentType,
         [FromQuery] bool? isActive,
         CancellationToken cancellationToken)
@@ -51,8 +51,8 @@ public class EmployeesController : SdxControllerBase
             new ApiResponse<EmployeeResponse>(result, "Employee created successfully."));
     }
 
-    [HttpGet("{id}/full-profile")]
-    public async Task<IActionResult> GetFullProfile(int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/full-profile")]
+    public async Task<IActionResult> GetFullProfile(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetFullProfileAsync(id, cancellationToken);
         return OkOrNotFound(result, "Profile fetched successfully.");
@@ -83,15 +83,15 @@ public class EmployeesController : SdxControllerBase
         return Ok(response);
     }
 
-    [HttpGet("{id}/summary")]
-    public async Task<IActionResult> GetSummary(int id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}/summary")]
+    public async Task<IActionResult> GetSummary(Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetSummaryAsync(id, cancellationToken);
         return OkOrNotFound(result, "Summary fetched successfully.");
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateEmployeeRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -100,8 +100,8 @@ public class EmployeesController : SdxControllerBase
         return OkOrNotFound(result, "Employee updated successfully.");
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -110,8 +110,8 @@ public class EmployeesController : SdxControllerBase
         return OkOrNotFound(result, "Status updated successfully.");
     }
 
-    [HttpPatch("{id}/photo")]
-    public async Task<IActionResult> UpdatePhoto(int id, [FromBody] UpdateEmployeePhotoRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/photo")]
+    public async Task<IActionResult> UpdatePhoto(Guid id, [FromBody] UpdateEmployeePhotoRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -120,8 +120,8 @@ public class EmployeesController : SdxControllerBase
         return OkOrNotFound(result, "Photo updated successfully.");
     }
 
-    [HttpPatch("{id}/about")]
-    public async Task<IActionResult> UpdateAbout(int id, [FromBody] UpdateEmployeeAboutRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/about")]
+    public async Task<IActionResult> UpdateAbout(Guid id, [FromBody] UpdateEmployeeAboutRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -143,9 +143,9 @@ public class EmployeesController : SdxControllerBase
     /// </summary>
     [HttpGet("by-designation")]
     public async Task<IActionResult> GetByDesignation(
-        [FromQuery] List<short> designationIds,
-        [FromQuery] short? scopeTypeId,
-        [FromQuery] int? scopeReferenceId,
+        [FromQuery] List<Guid> designationIds,
+        [FromQuery] string? scopeCode,
+        [FromQuery] Guid? scopeReferenceId,
         CancellationToken cancellationToken)
     {
         if (designationIds is null || designationIds.Count == 0)
@@ -156,7 +156,7 @@ public class EmployeesController : SdxControllerBase
             });
 
         var result = await _service.GetEmployeesByDesignationInScopeAsync(
-            designationIds, scopeTypeId, scopeReferenceId, cancellationToken);
+            designationIds, scopeCode, scopeReferenceId, cancellationToken);
 
         return Ok(new ApiResponse<IEnumerable<EmployeesByDesignationResponse>>(
             result, "Employees fetched successfully."));

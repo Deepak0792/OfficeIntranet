@@ -1,13 +1,11 @@
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.Extensions.Logging;
+using SdxCore.Common.Enums.Workflow;
 using SdxCore.Workflow.Application.Contracts.Resolver;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Resolver;
 using SdxCore.Workflow.Application.DTOs.Response;
 using SdxCore.Workflow.Domain.Entities;
-using SdxCore.Workflow.Domain.Enums;
 using SdxCore.Workflow.Domain.Exceptions;
-using SdxCore.Workflow.Domain.Repositories;
 
 namespace SdxCore.Workflow.Application.Resolver;
 
@@ -19,7 +17,7 @@ public class WorkflowApproverResolver(
     ILogger<WorkflowApproverResolver> logger) : IWorkflowApproverResolver
 {
     public async Task<IEnumerable<ResolvedApprover>> ResolveApproverAsync(
-        short workflowStepId, int initiatorEmployeeId)
+        Guid workflowStepId, Guid initiatorEmployeeId)
     {
         var stepApprovers = await workflowStepApproverService.GetByStepIdAsync(workflowStepId);
         var activeStepApprovers = stepApprovers.Where(r => r.IsActive).OrderBy(r => r.PriorityOrder).ToList();
@@ -74,7 +72,7 @@ public class WorkflowApproverResolver(
     public async Task<WorkflowAssignmentSummary> ResolveDefinitionAsync(
     string moduleCode,
     string workflowCode,
-    int initiatorEmployeeId)
+    Guid initiatorEmployeeId)
     {
         var employeeSummary = await employeeQueryService.GetEmployeeByIdAsync(initiatorEmployeeId)
             ?? throw new InvalidOperationException($"Employee service returned null for Employee Id {initiatorEmployeeId}");
@@ -103,7 +101,7 @@ public class WorkflowApproverResolver(
     // ── Resolution strategies ────────────────────────────────
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveReportingManagerAsync(
-        short approverId, int initiatorEmployeeId)
+        Guid approverId, Guid initiatorEmployeeId)
     {
         var manager = await employeeQueryService.GetReportingManagerAsync(initiatorEmployeeId);
 
@@ -119,7 +117,7 @@ public class WorkflowApproverResolver(
     }
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveSkipManagerAsync(
-        short approverId, int initiatorEmployeeId)
+        Guid approverId, Guid initiatorEmployeeId)
     {
         // Get reporting manager first, then their reporting manager
         var manager = await employeeQueryService.GetReportingManagerAsync(initiatorEmployeeId);
@@ -138,11 +136,11 @@ public class WorkflowApproverResolver(
     }
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveFixedEmployeeAsync(
-        short approverId, short? scopeReferenceId)
+        Guid approverId, Guid? scopeReferenceId)
     {
         if (scopeReferenceId is null) return [];
 
-        var emp = await employeeQueryService.GetEmployeeByIdAsync((int)scopeReferenceId);
+        var emp = await employeeQueryService.GetEmployeeByIdAsync(scopeReferenceId.Value);
         if (emp is null) return [];
 
         return [new ResolvedApprover(
@@ -155,21 +153,27 @@ public class WorkflowApproverResolver(
     }
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveByDesignationAsync(
-        short approverId, short? scopeTypeId, short? scopeReferenceId, int initiatorEmployeeId)
+        Guid approverId, Guid? scopeTypeId, Guid? scopeReferenceId, Guid initiatorEmployeeId)
     {
         // Get qualifying designation IDs for this approver rule
         var designationIds = await workflowStepApproverService.GetDesignationIdsAsync(approverId);
         if (!designationIds.Any()) return [];
 
+        var scopeTypes = await timeQueryService.GetAllScopeTypeAsync();
+
+        string? scopeCode = scopeTypes
+            .FirstOrDefault(x => scopeTypeId.HasValue && x.Id == scopeTypeId.Value)
+            ?.ScopeCode;
+
         // Determine scope: null ScopeReferenceId = use initiator's own scope
-        int? resolvedScopeId = scopeReferenceId.HasValue
-            ? (int)scopeReferenceId
+        Guid? resolvedScopeId = scopeReferenceId.HasValue
+            ? scopeReferenceId
             : scopeTypeId.HasValue
-                ? await employeeQueryService.GetScopeReferenceIdAsync(initiatorEmployeeId, scopeTypeId)
+                ? await employeeQueryService.GetScopeReferenceIdAsync(initiatorEmployeeId, scopeCode)
                 : null;
 
         var employees = await employeeQueryService.GetEmployeesByDesignationInScopeAsync(
-            designationIds, scopeTypeId, resolvedScopeId);
+            designationIds, scopeCode, resolvedScopeId);
 
         return employees.Select(e => new ResolvedApprover(
             approverId,
@@ -225,7 +229,7 @@ public class WorkflowApproverResolver(
         string moduleCode,
         string workflowCode,
         IEnumerable<ScopeTypeResponse> scopeTypeResponses,
-        Dictionary<short, HashSet<int>> employeeScopes,
+        Dictionary<Guid, HashSet<Guid>> employeeScopes,
         CancellationToken cancellationToken = default)
     {
         // 1. Fetch ALL assignments for this module
@@ -274,7 +278,7 @@ public class WorkflowApproverResolver(
     /// Maps each ScopeTypeId → ReferenceIds the employee belongs to.
     /// Uses fields already on EmployeeSummaryResponse — zero extra DB calls.
     /// </summary>
-    private static Dictionary<short, HashSet<int>> BuildEmployeeScopes(
+    private static Dictionary<Guid, HashSet<Guid>> BuildEmployeeScopes(
         EmployeeSummaryResponse employeeSummary,
         IEnumerable<ScopeTypeResponse> scopeTypeResponses)
     {
@@ -282,13 +286,13 @@ public class WorkflowApproverResolver(
         var scopeTypeMap = scopeTypeResponses
             .ToDictionary(s => s.ScopeCode, s => s.Id, StringComparer.OrdinalIgnoreCase);
 
-        var scopes = new Dictionary<short, HashSet<int>>();
+        var scopes = new Dictionary<Guid, HashSet<Guid>>();
 
-        void Add(string scopeCode, int? referenceId)
+        void Add(string scopeCode, Guid? referenceId)
         {
             if (referenceId is null) return;
             if (!scopeTypeMap.TryGetValue(scopeCode, out var scopeTypeId)) return;
-            scopes.TryAdd(scopeTypeId, new HashSet<int>());
+            scopes.TryAdd(scopeTypeId, new HashSet<Guid>());
             scopes[scopeTypeId].Add(referenceId.Value);
         }
 
@@ -297,7 +301,7 @@ public class WorkflowApproverResolver(
         Add(ScopeTypeCodes.Department, employeeSummary.PrimaryDepartmentId);
         Add(ScopeTypeCodes.Office, employeeSummary.PrimaryLocationId);
         Add(ScopeTypeCodes.LegalEntity, employeeSummary.PrimaryLegalEntityId);
-        Add(ScopeTypeCodes.Global, 1); // GLOBAL always uses ref=1
+        Add(ScopeTypeCodes.Global, employeeSummary.PrimaryLegalEntityId); // GLOBAL always uses ref=1
 
         return scopes;
     }

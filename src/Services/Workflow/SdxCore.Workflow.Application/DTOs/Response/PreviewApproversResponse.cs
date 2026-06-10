@@ -1,9 +1,9 @@
 namespace SdxCore.Workflow.Application.DTOs.Response;
 
 public record PreviewApproversResponse(
-    short  WorkflowStepApproverId,
+    Guid WorkflowStepApproverId,
     string ApproverType,
-    int    ResolvedEmployeeId,
+    Guid ResolvedEmployeeId,
     string ResolvedEmployeeName,
-    short? ResolvedDesignationId,
-    short? ResolvedDepartmentId);
+    Guid? ResolvedDesignationId,
+    Guid? ResolvedDepartmentId);

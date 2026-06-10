@@ -8,9 +8,9 @@ using SdxCore.Workflow.Persistence.Data;
 namespace SdxCore.Workflow.Persistence.Repositories;
 
 public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowInstance, int, WorkflowDbContext>(dbContext, requestContext), IWorkflowInstanceRepository
+    : BaseRepository<WorkflowInstance, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowInstanceRepository
 {
-    public async Task<WorkflowInstance?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default) =>
+    public async Task<WorkflowInstance?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Definition)
             .Include(x => x.Module)
@@ -18,7 +18,7 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContex
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public async Task<WorkflowInstance?> GetByTransactionAsync(
-        string moduleCode, int referenceTransactionId, CancellationToken cancellationToken = default) =>
+        string moduleCode, Guid referenceTransactionId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Definition)
             .Include(x => x.Module)
@@ -32,7 +32,7 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContex
     public async Task<(IEnumerable<WorkflowInstance> Items, int TotalCount)> GetPagedAsync(
         int pageNumber, int pageSize,
         string? moduleCode, string? status,
-        int? initiatedBy, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+        Guid? initiatedBy, DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
     {
         var q = _dbSet
             .Include(x => x.Definition)
@@ -61,7 +61,7 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContex
         return (items, total);
     }
 
-    public async Task<IEnumerable<WorkflowInstance>> GetMySubmissionsAsync(int employeeId, CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<WorkflowInstance>> GetMySubmissionsAsync(Guid employeeId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Definition)
             .Include(x => x.Module)
@@ -70,6 +70,8 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContex
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 
-    public Task<bool> CancelAsync(int id, int actionBy, CancellationToken cancellationToken = default) => Task.FromResult(true); // handled by engine
-    public Task<bool> WithdrawAsync(int id, int actionBy, CancellationToken cancellationToken = default) => Task.FromResult(true); // handled by engine
+    public Task<bool> CancelAsync(Guid id, Guid actionBy, CancellationToken cancellationToken = default) 
+        => Task.FromResult(true); // handled by engine
+    public Task<bool> WithdrawAsync(Guid id, Guid actionBy, CancellationToken cancellationToken = default) 
+        => Task.FromResult(true); // handled by engine
 }

@@ -1,7 +1,7 @@
 namespace SdxCore.Workflow.Application.DTOs.Request;
 
 public record CreateWorkflowDefinitionRequest(
-    short  WorkflowModuleId,
+    Guid WorkflowModuleId,
     string WorkflowCode,
     string WorkflowName,
     short  VersionNo,

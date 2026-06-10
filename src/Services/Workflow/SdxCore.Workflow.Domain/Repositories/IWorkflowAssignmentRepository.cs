@@ -3,10 +3,10 @@ using SdxCore.Workflow.Domain.Entities;
 
 namespace SdxCore.Workflow.Domain.Repositories;
 
-public interface IWorkflowAssignmentRepository : IRepository<WorkflowAssignment, short>
+public interface IWorkflowAssignmentRepository : IRepository<WorkflowAssignment, Guid>
 {
-    Task<IEnumerable<WorkflowAssignment>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(short id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowAssignment>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Resolves which WorkflowDefinition applies for a given module + employee.
@@ -15,7 +15,7 @@ public interface IWorkflowAssignmentRepository : IRepository<WorkflowAssignment,
     /// </summary>
     Task<WorkflowDefinition?> ResolveDefinitionAsync(
         string moduleCode,
-        int employeeId,
+        Guid employeeId,
         DateOnly effectiveDate,
         CancellationToken cancellationToken = default);
 }

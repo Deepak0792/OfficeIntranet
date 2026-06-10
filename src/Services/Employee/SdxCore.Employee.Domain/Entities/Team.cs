@@ -3,7 +3,7 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class Team : BaseAuditEntity<short>, IPublishableEntity
+public class Team : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public required string TeamCode { get; set; }
     public required string TeamName { get; set; }

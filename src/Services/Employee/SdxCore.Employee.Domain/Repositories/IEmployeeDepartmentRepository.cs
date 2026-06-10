@@ -3,6 +3,6 @@ using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 
 namespace SdxCore.Employee.Domain.Repositories;
 
-public interface IEmployeeDepartmentRepository : IRepository<EmployeeDepartment, int>
+public interface IEmployeeDepartmentRepository : IRepository<EmployeeDepartment, Guid>
 {
 }

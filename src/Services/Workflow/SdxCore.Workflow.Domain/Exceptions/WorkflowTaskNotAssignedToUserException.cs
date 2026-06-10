@@ -1,6 +1,6 @@
 namespace SdxCore.Workflow.Domain.Exceptions;
 
-public class WorkflowTaskNotAssignedToUserException(int taskId, int employeeId)
+public class WorkflowTaskNotAssignedToUserException(Guid taskId, Guid employeeId)
     : Exception($"WorkflowTask '{taskId}' {employeeId}")
 {
 }

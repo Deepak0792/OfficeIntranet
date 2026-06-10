@@ -34,8 +34,11 @@ public static class JwtTokenUtilities
             var claims = jwtToken.Claims.ToList();
 
             // Extract common claims using multiple possible claim types
-            var userId = Convert.ToInt32(ExtractClaimValue(claims,
-                ClaimTypes.NameIdentifier, "sub", "user_id", "userId"));
+            var userIdValue = ExtractClaimValue(claims, ClaimTypes.NameIdentifier, "sub", "user_id", "userId");
+
+            Guid userId = Guid.TryParse(userIdValue, out var id)
+                ? id
+                : throw new UnauthorizedAccessException("Invalid user ID claim.");
 
             var username = ExtractClaimValue(claims,
                 ClaimTypes.Name, "username", "preferred_username");

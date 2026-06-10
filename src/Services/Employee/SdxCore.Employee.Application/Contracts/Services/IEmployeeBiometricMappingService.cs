@@ -5,10 +5,10 @@ namespace SdxCore.Employee.Application.Contracts.Services;
 
 public interface IEmployeeBiometricMappingService
 {
-    Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeBiometricMappingResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default);
-    Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByDeviceIdAsync(int deviceId, CancellationToken cancellationToken = default);
-    Task<EmployeeBiometricMappingResponse> AddAsync(int employeeId, CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default);
-    Task<EmployeeBiometricMappingResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
+    Task<EmployeeBiometricMappingResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByDeviceIdAsync(Guid deviceId, CancellationToken cancellationToken = default);
+    Task<EmployeeBiometricMappingResponse> AddAsync(Guid employeeId, CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default);
+    Task<EmployeeBiometricMappingResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default);
 }

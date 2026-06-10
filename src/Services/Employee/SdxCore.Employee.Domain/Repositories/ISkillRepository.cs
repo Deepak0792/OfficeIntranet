@@ -3,6 +3,6 @@ using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 
 namespace SdxCore.Employee.Domain.Repositories;
 
-public interface ISkillRepository : IRepository<Skill, short>
+public interface ISkillRepository : IRepository<Skill, Guid>
 {
 }

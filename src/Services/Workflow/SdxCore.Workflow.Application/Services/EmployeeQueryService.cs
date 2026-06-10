@@ -1,4 +1,5 @@
-﻿using SdxCore.Workflow.Application.Contracts.Clients;
+﻿using SdxCore.Common.Enums.Workflow;
+using SdxCore.Workflow.Application.Contracts.Clients;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Response;
 
@@ -13,12 +14,12 @@ public class EmployeeQueryService : IEmployeeQueryService
         _employeeClient = employeeClient;
     }
 
-    public async Task<EmployeeSummaryResponse?> GetEmployeeByIdAsync(int employeeId, CancellationToken cancellationToken = default!)
+    public async Task<EmployeeSummaryResponse?> GetEmployeeByIdAsync(Guid employeeId, CancellationToken cancellationToken = default!)
     {
         return await _employeeClient.GetEmployeeeSummaryAsync(employeeId, cancellationToken);
     }
 
-    public async Task<EmployeeSummaryResponse?> GetReportingManagerAsync(int employeeId, CancellationToken cancellationToken = default!)
+    public async Task<EmployeeSummaryResponse?> GetReportingManagerAsync(Guid employeeId, CancellationToken cancellationToken = default!)
     {
         var employee = await GetEmployeeByIdAsync(employeeId)
             ?? throw new InvalidOperationException($"Employee service returned null for Employee Id {employeeId}");
@@ -30,16 +31,16 @@ public class EmployeeQueryService : IEmployeeQueryService
     }
 
     public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
-        IEnumerable<short> designationIds,
-        short? scopeTypeId,
-        int? scopeReferenceId)
+        IEnumerable<Guid> designationIds,
+        string? scopeCode,
+        Guid? scopeReferenceId)
     {
         // Since this is cross-service filtering,
         // delegate to Employee API search endpoint
 
         return await _employeeClient.GetEmployeesByDesignationInScopeAsync(
             designationIds,
-            scopeTypeId,
+            scopeCode,
             scopeReferenceId,
             CancellationToken.None);
     }
@@ -56,21 +57,21 @@ public class EmployeeQueryService : IEmployeeQueryService
     //        CancellationToken.None);
     //}
 
-    public async Task<int?> GetScopeReferenceIdAsync(int employeeId, short? scopeTypeId, CancellationToken cancellationToken = default!)
+    public async Task<Guid?> GetScopeReferenceIdAsync(Guid employeeId, string? scopeCode, CancellationToken cancellationToken = default!)
     {
         var employee = await _employeeClient.GetEmployeeeSummaryAsync(employeeId, cancellationToken);
 
         if (employee == null)
             return null;
 
-        return scopeTypeId switch
+        return scopeCode switch
         {
-            2 => 1,//TO DO Office Location CountryId
-            3 => employee.PrimaryLegalEntityId,
-            4 => employee.PrimaryLocationId,
-            5 => employee.PrimaryDepartmentId,
-            6 => employee.PrimaryTeamId,
-            7 => employee.EmployeeId,
+            ScopeTypeCodes.Country => employee.PrimaryLocationId,//TO DO Office Location CountryId
+            ScopeTypeCodes.LegalEntity => employee.PrimaryLegalEntityId,
+            ScopeTypeCodes.Office => employee.PrimaryLocationId,
+            ScopeTypeCodes.Department => employee.PrimaryDepartmentId,
+            ScopeTypeCodes.Team => employee.PrimaryTeamId,
+            ScopeTypeCodes.Employee => employee.EmployeeId,
             _ => null
         };
     }

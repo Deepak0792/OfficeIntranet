@@ -7,7 +7,7 @@ namespace SdxCore.Employee.Persistence.Data;
 
 public class EmployeeDbContext : SdxDbContext
 {
-    public EmployeeDbContext(DbContextOptions<EmployeeDbContext> options) 
+    public EmployeeDbContext(DbContextOptions<EmployeeDbContext> options)
         : base(options)
     {
     }
@@ -38,6 +38,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("Employee");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.Property(e => e.EmployeeCode).HasMaxLength(50).IsRequired();
         });
 
@@ -51,6 +52,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeSkill");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne(d => d.Employee).WithMany().HasForeignKey(d => d.EmployeeId);
             entity.HasOne(d => d.Skill).WithMany(p => p.EmployeeSkills).HasForeignKey(d => d.SkillId);
         });
@@ -59,12 +61,14 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("Team");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<EmployeeTeam>(entity =>
         {
             entity.ToTable("EmployeeTeam");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne(d => d.Employee).WithMany().HasForeignKey(d => d.EmployeeId);
             entity.HasOne(d => d.Team).WithMany(p => p.EmployeeTeams).HasForeignKey(d => d.TeamId);
         });
@@ -73,6 +77,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeBiometricMapping");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -80,6 +85,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeLegalEntity");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -87,6 +93,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeDepartment");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -94,6 +101,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeLocation");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -101,6 +109,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeRelationship");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.ParentEmployeeId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.ChildEmployeeId).OnDelete(DeleteBehavior.Restrict);
         });
@@ -109,6 +118,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeContact");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -116,6 +126,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeDocument");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -123,6 +134,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("EmployeeAddress");
             entity.HasKey(e => e.Id);
+            entity.Property(x => x.Id).ValueGeneratedNever();
             entity.HasOne<Domain.Entities.Employee>().WithMany().HasForeignKey(d => d.EmployeeId);
         });
 
@@ -130,7 +142,7 @@ public class EmployeeDbContext : SdxDbContext
         {
             entity.ToTable("OutboxMessages", "employee");
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+            entity.Property(x => x.Id).ValueGeneratedNever();
         });
     }
 }

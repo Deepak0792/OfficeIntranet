@@ -5,12 +5,12 @@ namespace SdxCore.Workflow.Application.Contracts.Services;
 
 public interface IWorkflowStepService
 {
-    Task<IEnumerable<WorkflowStepResponse>> GetByDefinitionIdAsync(short definitionId, CancellationToken cancellationToken = default);
-    Task<WorkflowStepResponse> GetByIdAsync(short definitionId, short id, CancellationToken cancellationToken = default);
-    Task<WorkflowStepResponse> GetByIdAsync(short id, CancellationToken cancellationToken = default);
-    Task<WorkflowStepResponse?> GetNextStepAsync(short definitionId, short currentStepNo, CancellationToken cancellationToken = default);
-    Task<WorkflowStepResponse> CreateAsync(short definitionId, CreateWorkflowStepRequest request, CancellationToken cancellationToken = default);
-    Task<WorkflowStepResponse> UpdateAsync(short definitionId, short id, UpdateWorkflowStepRequest request, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(short definitionId, short id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
-    Task<bool> ReorderAsync(short definitionId, short id, ReorderWorkflowStepRequest request, CancellationToken cancellationToken = default);
+    Task<IEnumerable<WorkflowStepResponse>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default);
+    Task<WorkflowStepResponse> GetByIdAsync(Guid definitionId, Guid id, CancellationToken cancellationToken = default);
+    Task<WorkflowStepResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<WorkflowStepResponse?> GetNextStepAsync(Guid definitionId, short currentStepNo, CancellationToken cancellationToken = default);
+    Task<WorkflowStepResponse> CreateAsync(Guid definitionId, CreateWorkflowStepRequest request, CancellationToken cancellationToken = default);
+    Task<WorkflowStepResponse> UpdateAsync(Guid definitionId, Guid id, UpdateWorkflowStepRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid definitionId, Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ReorderAsync(Guid definitionId, Guid id, ReorderWorkflowStepRequest request, CancellationToken cancellationToken = default);
 }

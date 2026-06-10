@@ -16,14 +16,14 @@ public class EmployeeLocationService : IEmployeeLocationService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<EmployeeLocationResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeLocationResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
         return entities.Select(e => PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeLocationResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLocationResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
@@ -31,7 +31,7 @@ public class EmployeeLocationService : IEmployeeLocationService
         return PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(entity);
     }
 
-    public async Task<EmployeeLocationResponse> AddAsync(int employeeId, CreateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLocationResponse> AddAsync(Guid employeeId, CreateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimaryLocation)
         {
@@ -53,7 +53,7 @@ public class EmployeeLocationService : IEmployeeLocationService
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
     }
 
-    public async Task<EmployeeLocationResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLocationResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) throw new KeyNotFoundException("Employee location not found");
@@ -67,7 +67,7 @@ public class EmployeeLocationService : IEmployeeLocationService
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return false;
@@ -78,7 +78,7 @@ public class EmployeeLocationService : IEmployeeLocationService
         return true;
     }
 
-    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = entities.FirstOrDefault(x => x.Id == id);

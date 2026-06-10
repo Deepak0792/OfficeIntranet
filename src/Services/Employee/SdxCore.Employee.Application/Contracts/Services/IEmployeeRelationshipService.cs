@@ -5,12 +5,12 @@ namespace SdxCore.Employee.Application.Contracts.Services;
 
 public interface IEmployeeRelationshipService
 {
-    Task<IEnumerable<EmployeeRelationshipResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeRelationshipResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default);
-    Task<IEnumerable<EmployeeRelationshipResponse>> GetDirectReportsAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeRelationshipResponse?> GetManagerAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeRelationshipResponse> AddAsync(int employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
-    Task<EmployeeRelationshipResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default);
-    Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeRelationshipResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
+    Task<EmployeeRelationshipResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeRelationshipResponse>> GetDirectReportsAsync(Guid employeeId, CancellationToken cancellationToken = default);
+    Task<EmployeeRelationshipResponse?> GetManagerAsync(Guid employeeId, CancellationToken cancellationToken = default);
+    Task<EmployeeRelationshipResponse> AddAsync(Guid employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
+    Task<EmployeeRelationshipResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default);
+    Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
 }

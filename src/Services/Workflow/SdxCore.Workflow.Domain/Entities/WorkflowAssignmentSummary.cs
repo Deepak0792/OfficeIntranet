@@ -8,11 +8,11 @@ namespace SdxCore.Workflow.Domain.Entities
 {
     public class WorkflowAssignmentSummary
     {
-        public short WorkflowModuleId { get; set; }
+        public Guid WorkflowModuleId { get; set; }
 
         public string ModuleCode { get; set; } = string.Empty;
 
-        public short WorkflowDefinitionId { get; set; }
+        public Guid WorkflowDefinitionId { get; set; }
 
         public string WorkflowCode { get; set; } = string.Empty;
 
@@ -20,11 +20,11 @@ namespace SdxCore.Workflow.Domain.Entities
 
         public short VersionNo { get; set; }
 
-        public short WorkflowAssignmentId { get; set; }
+        public Guid WorkflowAssignmentId { get; set; }
 
-        public short ScopeTypeId { get; set; }
+        public Guid ScopeTypeId { get; set; }
 
-        public int ScopeReferenceId { get; set; }
+        public Guid ScopeReferenceId { get; set; }
 
         public short PriorityOrder { get; set; }
     }

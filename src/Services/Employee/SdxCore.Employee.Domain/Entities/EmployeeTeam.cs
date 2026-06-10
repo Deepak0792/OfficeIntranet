@@ -3,10 +3,10 @@ using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
 
-public class EmployeeTeam : BaseAuditEntity<int>, IPublishableEntity
+public class EmployeeTeam : BaseAuditEntity<Guid>, IPublishableEntity
 {
-    public int EmployeeId { get; set; }
-    public short TeamId { get; set; }
+    public Guid EmployeeId { get; set; }
+    public Guid TeamId { get; set; }
     public string? RoleInTeam { get; set; }
     public decimal? AllocationPercentage { get; set; }
     public DateOnly? StartDate { get; set; }

@@ -16,14 +16,14 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<EmployeeDepartmentResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeDepartmentResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
         return entities.Select(e => PropertyMapper.Map<EmployeeDepartment, EmployeeDepartmentResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeDepartmentResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDepartmentResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
@@ -31,14 +31,14 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         return PropertyMapper.Map<EmployeeDepartment, EmployeeDepartmentResponse>(entity);
     }
 
-    private async Task ValidateAllocationPercentageAsync(int employeeId, int? currentId, decimal? additionalAllocation, CancellationToken cancellationToken)
+    private async Task ValidateAllocationPercentageAsync(Guid employeeId, Guid? currentId, decimal? additionalAllocation, CancellationToken cancellationToken)
     {
         var activeDepartments = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         if (currentId.HasValue)
         {
             activeDepartments = activeDepartments.Where(x => x.Id != currentId.Value);
         }
-        
+
         var currentTotal = activeDepartments.Sum(x => x.AllocationPercentage ?? 0);
         if (currentTotal + (additionalAllocation ?? 0) > 100)
         {
@@ -46,7 +46,7 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         }
     }
 
-    public async Task<EmployeeDepartmentResponse> AddAsync(int employeeId, CreateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDepartmentResponse> AddAsync(Guid employeeId, CreateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         await ValidateAllocationPercentageAsync(employeeId, null, request.AllocationPercentage, cancellationToken);
 
@@ -70,7 +70,7 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
     }
 
-    public async Task<EmployeeDepartmentResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDepartmentResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         await ValidateAllocationPercentageAsync(employeeId, id, request.AllocationPercentage, cancellationToken);
 
@@ -83,11 +83,11 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
 
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return false;
@@ -98,7 +98,7 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         return true;
     }
 
-    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = entities.FirstOrDefault(x => x.Id == id);

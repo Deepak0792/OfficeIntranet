@@ -1,10 +1,10 @@
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
-public class EmployeeBiometricMapping : BaseAuditEntity<int>
+public class EmployeeBiometricMapping : BaseAuditEntity<Guid>
 {
-    public int EmployeeId { get; set; }
-    public int BiometricDeviceId { get; set; }
+    public Guid EmployeeId { get; set; }
+    public Guid BiometricDeviceId { get; set; }
     public required string DeviceEmployeeCode { get; set; }
     public bool IsActive { get; set; } = true;
 

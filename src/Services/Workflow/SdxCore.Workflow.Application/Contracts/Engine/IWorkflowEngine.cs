@@ -15,8 +15,8 @@ public interface IWorkflowEngine
     Task<WorkflowInstance> SubmitAsync(
         string moduleCode,
         string workflowCode,
-        int referenceTransactionId,
-        int initiatorEmployeeId,
+        Guid referenceTransactionId,
+        Guid initiatorEmployeeId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -24,33 +24,33 @@ public interface IWorkflowEngine
     /// If all mandatory tasks for the current step are approved → advance to next step.
     /// If this is the final step → mark instance APPROVED and publish event.
     /// </summary>
-    Task ProcessApproveAsync(int taskId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task ProcessApproveAsync(Guid taskId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Processes a REJECT action. Terminates the instance with status REJECTED.
     /// </summary>
-    Task ProcessRejectAsync(int taskId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task ProcessRejectAsync(Guid taskId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Processes a DELEGATE action.
     /// Marks original task DELEGATED, creates new task for delegate employee.
     /// </summary>
-    Task ProcessDelegateAsync(int taskId, int delegateToEmployeeId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task ProcessDelegateAsync(Guid taskId, Guid delegateToEmployeeId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns a task to the initiator for clarification.
     /// Instance stays IN_PROGRESS; step reset to allow resubmit.
     /// </summary>
-    Task ProcessReturnAsync(int taskId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task ProcessReturnAsync(Guid taskId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Admin reassigns a pending task to a different employee.
     /// </summary>
-    Task ProcessReassignAsync(int taskId, int reassignToEmployeeId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task ProcessReassignAsync(Guid taskId, Guid reassignToEmployeeId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>Cancels an in-progress instance. Admin/system only.</summary>
-    Task CancelAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task CancelAsync(Guid instanceId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 
     /// <summary>Withdrawn by the initiator. Only allowed when still PENDING.</summary>
-    Task WithdrawAsync(int instanceId, int actionBy, string? remarks, CancellationToken cancellationToken = default);
+    Task WithdrawAsync(Guid instanceId, Guid actionBy, string? remarks, CancellationToken cancellationToken = default);
 }

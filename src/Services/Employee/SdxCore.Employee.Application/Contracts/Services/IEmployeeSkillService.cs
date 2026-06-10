@@ -5,10 +5,10 @@ namespace SdxCore.Employee.Application.Contracts.Services;
 
 public interface IEmployeeSkillService
 {
-    Task<IEnumerable<EmployeeSkillResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default);
-    Task<EmployeeSkillResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default);
-    Task<EmployeeSkillResponse> AddAsync(int employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default);
-    Task<EmployeeSkillResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeSkillRequest request, CancellationToken cancellationToken = default);
-    Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default);
-    Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default);
+    Task<IEnumerable<EmployeeSkillResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default);
+    Task<EmployeeSkillResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
+    Task<EmployeeSkillResponse> AddAsync(Guid employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default);
+    Task<EmployeeSkillResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeSkillRequest request, CancellationToken cancellationToken = default);
+    Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default);
+    Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default);
 }

@@ -9,42 +9,42 @@ namespace SdxCore.Workflow.API.Controllers;
 
 
 [ApiController]
-[Route("api/v1/workflow/definitions/{definitionId:short}/steps")]
+[Route("api/v1/workflow/definitions/{definitionId:guid}/steps")]
 [GatewayOnly]
 public class WorkflowStepController(IWorkflowStepService svc) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll(short definitionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(Guid definitionId, CancellationToken cancellationToken)
     {
         var data = await svc.GetByDefinitionIdAsync(definitionId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<WorkflowStepResponse>>(data, "Successfully fetched workflow steps."));
     }
 
-    [HttpGet("{id:short}")]
-    public async Task<IActionResult> GetById(short definitionId, short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid definitionId, Guid id, CancellationToken cancellationToken)
     {
         var data = await svc.GetByIdAsync(definitionId, id, cancellationToken);
         return Ok(new ApiResponse<WorkflowStepResponse>(data, "Successfully fetched workflow step."));
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(short definitionId,
+    public async Task<IActionResult> Create(Guid definitionId,
         [FromBody] CreateWorkflowStepRequest request, CancellationToken cancellationToken)
     {
         var data = await svc.CreateAsync(definitionId, request, cancellationToken);
         return Ok(new ApiResponse<WorkflowStepResponse>(data, "Workflow step created successfully."));
     }
 
-    [HttpPut("{id:short}")]
-    public async Task<IActionResult> Update(short definitionId, short id,
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid definitionId, Guid id,
         [FromBody] UpdateWorkflowStepRequest request, CancellationToken cancellationToken)
     {
         var data = await svc.UpdateAsync(definitionId, id, request, cancellationToken);
         return Ok(new ApiResponse<WorkflowStepResponse>(data, "Workflow step updated successfully."));
     }
 
-    [HttpPatch("{id:short}/status")]
-    public async Task<IActionResult> ToggleStatus(short definitionId, short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid definitionId, Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         var updated = await svc.ToggleStatusAsync(definitionId, id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Workflow definition not found." });
@@ -53,8 +53,8 @@ public class WorkflowStepController(IWorkflowStepService svc) : ControllerBase
         return Ok(new ApiResponse<bool>(true, $"Workflow step {statusStr} successfully."));
     }
 
-    [HttpPatch("{id:short}/reorder")]
-    public async Task<IActionResult> Reorder(short definitionId, short id,
+    [HttpPatch("{id:guid}/reorder")]
+    public async Task<IActionResult> Reorder(Guid definitionId, Guid id,
         [FromBody] ReorderWorkflowStepRequest request, CancellationToken cancellationToken)
     {
         var result = await svc.ReorderAsync(definitionId, id, request, cancellationToken);

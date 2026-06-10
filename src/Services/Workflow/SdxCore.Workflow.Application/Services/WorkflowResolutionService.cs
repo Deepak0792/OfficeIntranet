@@ -21,7 +21,7 @@ public class WorkflowResolutionService(
     }
 
     public async Task<ResolveDefinitionResponse> ResolveDefinitionAsync(
-        string moduleCode, int employeeId, DateOnly? effectiveDate)
+        string moduleCode, Guid employeeId, DateOnly? effectiveDate)
     {
         var date = effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
         var def = await assignmentRepo.ResolveDefinitionAsync(moduleCode, employeeId, date)

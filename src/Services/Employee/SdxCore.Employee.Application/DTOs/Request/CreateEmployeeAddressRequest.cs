@@ -11,7 +11,7 @@ public class CreateEmployeeAddressRequest
     public string City { get; set; } = null!;
     public string? StateProvince { get; set; }
     public string? PostalCode { get; set; }
-    public short CountryId { get; set; }
-    public short? RegionId { get; set; }
-    public bool IsPrimary { get; set; }
+    public Guid CountryId { get; set; }
+    public Guid? RegionId { get; set; }
+    public bool IsPrimaryAddress { get; set; }
 }

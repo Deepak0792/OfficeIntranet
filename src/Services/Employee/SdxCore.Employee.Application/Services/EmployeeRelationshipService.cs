@@ -16,29 +16,29 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<EmployeeRelationshipResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeRelationshipResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.ChildEmployeeId == employeeId, cancellationToken);
 
         return entities.Select(e => PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeRelationshipResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeRelationshipResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.ChildEmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
 
         return PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(entity);
     }
-    
-    public async Task<IEnumerable<EmployeeRelationshipResponse>> GetDirectReportsAsync(int employeeId, CancellationToken cancellationToken = default)
+
+    public async Task<IEnumerable<EmployeeRelationshipResponse>> GetDirectReportsAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.ParentEmployeeId == employeeId && x.RelationshipType == "DIRECT_MANAGER" && x.IsActive, cancellationToken);
 
         return entities.Select(e => PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeRelationshipResponse?> GetManagerAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<EmployeeRelationshipResponse?> GetManagerAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.ChildEmployeeId == employeeId && x.RelationshipType == "DIRECT_MANAGER" && x.IsPrimaryRelationship && x.IsActive, cancellationToken)).FirstOrDefault();
         if (entity == null) return null;
@@ -46,7 +46,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         return PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(entity);
     }
 
-    public async Task<EmployeeRelationshipResponse> AddAsync(int employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeRelationshipResponse> AddAsync(Guid employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
     {
         if (request.ChildEmployeeId == employeeId)
         {
@@ -72,7 +72,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         return await GetByIdAsync(request.ChildEmployeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
     }
 
-    public async Task<EmployeeRelationshipResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeRelationshipResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.ChildEmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) throw new KeyNotFoundException("Employee relationship not found");
@@ -84,11 +84,11 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
 
         _repository.Update(entity);
         await _repository.SaveChangesAsync(cancellationToken);
-        
+
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.ChildEmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (entity == null) return false;
@@ -99,7 +99,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         return true;
     }
 
-    public async Task<bool> SetPrimaryAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<bool> SetPrimaryAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.ChildEmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = entities.FirstOrDefault(x => x.Id == id);

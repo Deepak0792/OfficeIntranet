@@ -3,7 +3,7 @@ using System;
 
 public class CreateEmployeeSkillRequest
 {
-    public short SkillId { get; set; }
+    public Guid SkillId { get; set; }
     public string? SkillLevel { get; set; }
     public decimal? YearsOfExperience { get; set; }
     public bool IsPrimarySkill { get; set; }

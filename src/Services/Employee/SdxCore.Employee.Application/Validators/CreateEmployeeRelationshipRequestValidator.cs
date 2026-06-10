@@ -8,7 +8,7 @@ public class CreateEmployeeRelationshipRequestValidator : AbstractValidator<Crea
     public CreateEmployeeRelationshipRequestValidator()
     {
         RuleFor(x => x.ChildEmployeeId)
-            .GreaterThan(0).WithMessage("Child Employee ID must be valid.");
+            .NotEmpty().WithMessage("Child Employee ID must be valid.");
 
         RuleFor(x => x.RelationshipType)
             .NotEmpty().WithMessage("Relationship Type is required.");

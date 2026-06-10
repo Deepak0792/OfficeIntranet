@@ -10,6 +10,7 @@ namespace SdxCore.Employee.API.Controllers;
 
 [ApiController]
 [GatewayOnly]
+[Route("api/v1")]
 public class BiometricMappingsController : SdxControllerBase
 {
     private readonly IEmployeeBiometricMappingService _service;
@@ -19,29 +20,29 @@ public class BiometricMappingsController : SdxControllerBase
         _service = service;
     }
 
-    [HttpGet("api/v1/employees/{employeeId}/biometric-mappings")]
-    public async Task<IActionResult> GetByEmployeeId(int employeeId, CancellationToken cancellationToken)
+    [HttpGet("employees/{employeeId:guid}/biometric-mappings")]
+    public async Task<IActionResult> GetByEmployeeId(Guid employeeId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByEmployeeIdAsync(employeeId, cancellationToken);
         return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>(result, "Biometric mappings fetched successfully."));
     }
 
-    [HttpGet("api/v1/employees/{employeeId}/biometric-mappings/{id}")]
-    public async Task<IActionResult> GetById(int employeeId, int id, CancellationToken cancellationToken)
+    [HttpGet("employees/{employeeId:guid}/biometric-mappings/{id:guid}")]
+    public async Task<IActionResult> GetById(Guid employeeId, Guid id, CancellationToken cancellationToken)
     {
         var result = await _service.GetByIdAsync(employeeId, id, cancellationToken);
         return OkOrNotFound(result, "Biometric mapping fetched successfully.");
     }
 
-    [HttpGet("api/v1/biometric-mappings/by-device/{deviceId}")]
-    public async Task<IActionResult> GetByDeviceId(int deviceId, CancellationToken cancellationToken)
+    [HttpGet("biometric-mappings/by-device/{deviceId:guid}")]
+    public async Task<IActionResult> GetByDeviceId(Guid deviceId, CancellationToken cancellationToken)
     {
         var result = await _service.GetByDeviceIdAsync(deviceId, cancellationToken);
         return Ok(new ApiResponse<System.Collections.Generic.IEnumerable<EmployeeBiometricMappingResponse>>(result, "Biometric mappings fetched successfully."));
     }
 
-    [HttpPost("api/v1/employees/{employeeId}/biometric-mappings")]
-    public async Task<IActionResult> Add(int employeeId, [FromBody] CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
+    [HttpPost("employees/{employeeId:guid}/biometric-mappings")]
+    public async Task<IActionResult> Add(Guid employeeId, [FromBody] CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -50,8 +51,8 @@ public class BiometricMappingsController : SdxControllerBase
         return CreatedAtAction(nameof(GetById), new { employeeId, id = result.Id }, new ApiResponse<EmployeeBiometricMappingResponse>(result, "Biometric mapping created successfully."));
     }
 
-    [HttpPut("api/v1/employees/{employeeId}/biometric-mappings/{id}")]
-    public async Task<IActionResult> Update(int employeeId, int id, [FromBody] UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
+    [HttpPut("employees/{employeeId:guid}/biometric-mappings/{id:guid}")]
+    public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
@@ -60,8 +61,8 @@ public class BiometricMappingsController : SdxControllerBase
         return Ok(new ApiResponse<EmployeeBiometricMappingResponse>(result, "Biometric mapping updated successfully."));
     }
 
-    [HttpPatch("api/v1/employees/{employeeId}/biometric-mappings/{id}/status")]
-    public async Task<IActionResult> ToggleStatus(int employeeId, int id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("employees/{employeeId:guid}/biometric-mappings/{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid employeeId, Guid id, [FromBody] UpdateEmployeeStatusRequest request, CancellationToken cancellationToken)
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;

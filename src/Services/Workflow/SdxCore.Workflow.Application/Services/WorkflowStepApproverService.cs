@@ -15,7 +15,7 @@ public class WorkflowStepApproverService(
     ICacheService cacheService,
     ICacheKeyBuilder cacheKeyBuilder) : IWorkflowStepApproverService
 {
-    public async Task<IEnumerable<WorkflowStepApproverResponse>> GetByStepIdAsync(short stepId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WorkflowStepApproverResponse>> GetByStepIdAsync(Guid stepId, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStepApprover), $"step_{stepId}");
         return await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -25,7 +25,7 @@ public class WorkflowStepApproverService(
         }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowStepApproverResponse>();
     }
 
-    public async Task<WorkflowStepApproverResponse> GetByIdAsync(short stepId, short id, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepApproverResponse> GetByIdAsync(Guid stepId, Guid id, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStepApprover), id.ToString());
         var res = await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -37,7 +37,7 @@ public class WorkflowStepApproverService(
         return res!;
     }
 
-    public async Task<IEnumerable<short>> GetDesignationIdsAsync(short approverId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Guid>> GetDesignationIdsAsync(Guid approverId, CancellationToken cancellationToken = default)
     {
         var cacheKey = cacheKeyBuilder.BuildKey(nameof(WorkflowStepApprover), $"designation{approverId}");
         return await cacheService.GetOrSetAsync(cacheKey, async (ct) =>
@@ -46,7 +46,7 @@ public class WorkflowStepApproverService(
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<WorkflowStepApproverResponse> CreateAsync(short stepId, CreateWorkflowStepApproverRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepApproverResponse> CreateAsync(Guid stepId, CreateWorkflowStepApproverRequest request, CancellationToken cancellationToken = default)
     {
         _ = await stepRepo.GetByIdAsync(stepId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStep", stepId);
@@ -66,7 +66,7 @@ public class WorkflowStepApproverService(
         return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(entity);
     }
 
-    public async Task<WorkflowStepApproverResponse> UpdateAsync(short stepId, short id, UpdateWorkflowStepApproverRequest request, CancellationToken cancellationToken = default)
+    public async Task<WorkflowStepApproverResponse> UpdateAsync(Guid stepId, Guid id, UpdateWorkflowStepApproverRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await approverRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStepApprover", id);
@@ -81,7 +81,7 @@ public class WorkflowStepApproverService(
         return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(entity);
     }
 
-    public async Task<bool> ToggleStatusAsync(short stepId, short id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid stepId, Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await approverRepository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;

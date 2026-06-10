@@ -4,7 +4,7 @@ namespace SdxCore.Workflow.Application.DTOs.Response;
 public class EmployeeSummaryResponse
 {
     private string? _displayName;
-    public int EmployeeId { get; set; }
+    public Guid EmployeeId { get; set; }
     public string EmployeeCode { get; set; } = null!;
     public string FirstName { get; set; } = null!;
     public string? LastName { get; set; }
@@ -21,13 +21,13 @@ public class EmployeeSummaryResponse
     public DateOnly? DateOfJoining { get; set; }
     public string EmploymentType { get; set; } = null!;
     public bool IsActive { get; set; }
-    public short? PrimaryDepartmentId { get; set; }
-    public short? PrimaryTeamId { get; set; }
-    public short? DesignationId { get; set; }
-    public short? PrimaryLocationId { get; set; }
-    public short? PrimaryLegalEntityId { get; set; }
+    public Guid? PrimaryDepartmentId { get; set; }
+    public Guid? PrimaryTeamId { get; set; }
+    public Guid? DesignationId { get; set; }
+    public Guid? PrimaryLocationId { get; set; }
+    public Guid? PrimaryLegalEntityId { get; set; }
 
-    public int? DirectManagerId { get; set; }
+    public Guid? DirectManagerId { get; set; }
     public string? DirectManagerName { get; set; }
 
     // -------------------------------

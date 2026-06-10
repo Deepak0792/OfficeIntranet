@@ -8,7 +8,7 @@ public sealed record TokenClaims
     /// <summary>
     /// User identifier from the token.
     /// </summary>
-    public int UserId { get; init; }
+    public Guid UserId { get; init; }
 
     /// <summary>
     /// Username from the token.

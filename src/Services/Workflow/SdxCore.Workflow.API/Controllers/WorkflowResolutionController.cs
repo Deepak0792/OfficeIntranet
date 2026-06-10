@@ -30,7 +30,7 @@ public class WorkflowResolutionController(IWorkflowResolutionService svc) : Cont
     [HttpGet("definition")]
     public async Task<IActionResult> ResolveDefinition(
         [FromQuery] string moduleCode,
-        [FromQuery] int employeeId,
+        [FromQuery] Guid employeeId,
         [FromQuery] DateOnly? effectiveDate)
     {
         var data = await svc.ResolveDefinitionAsync(moduleCode, employeeId, effectiveDate);

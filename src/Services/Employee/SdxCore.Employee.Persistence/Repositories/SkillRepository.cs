@@ -6,7 +6,7 @@ using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Employee.Persistence.Repositories;
 
-public class SkillRepository : BaseRepository<Skill, short, EmployeeDbContext>, ISkillRepository
+public class SkillRepository : BaseRepository<Skill, Guid, EmployeeDbContext>, ISkillRepository
 {
     public SkillRepository(EmployeeDbContext dbContext, IUserContext requestContext)
         : base(dbContext, requestContext)

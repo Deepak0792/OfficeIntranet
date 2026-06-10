@@ -3,7 +3,7 @@ using System;
 
 public class TeamResponse
 {
-    public short Id { get; set; }
+    public Guid Id { get; set; }
     public required string TeamCode { get; set; }
     public required string TeamName { get; set; }
     public string? TeamType { get; set; }

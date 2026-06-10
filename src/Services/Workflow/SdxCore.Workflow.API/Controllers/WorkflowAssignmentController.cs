@@ -27,15 +27,15 @@ public class WorkflowAssignmentController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<WorkflowAssignmentResponse>>(data, "Successfully fetched workflow assignments."));
     }
 
-    [HttpGet("{id:short}")]
-    public async Task<IActionResult> GetById(short id, CancellationToken cancellationToken)
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var data = await _workflowAssignmentService.GetByIdAsync(id, cancellationToken);
         return Ok(new ApiResponse<WorkflowAssignmentResponse>(data, "Successfully fetched workflow assignment."));
     }
 
-    [HttpGet("by-definition/{definitionId:short}")]
-    public async Task<IActionResult> GetByDefinition(short definitionId, CancellationToken cancellationToken)
+    [HttpGet("by-definition/{definitionId:guid}")]
+    public async Task<IActionResult> GetByDefinition(Guid definitionId, CancellationToken cancellationToken)
     {
         var data = await _workflowAssignmentService.GetByDefinitionIdAsync(definitionId, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<WorkflowAssignmentResponse>>(data, "Successfully fetched workflow assignments."));
@@ -44,7 +44,7 @@ public class WorkflowAssignmentController : ControllerBase
     [HttpGet("resolve")]
     public async Task<IActionResult> Resolve(
         [FromQuery] string moduleCode,
-        [FromQuery] int employeeId,
+        [FromQuery] Guid employeeId,
         [FromQuery] DateOnly? effectiveDate, CancellationToken cancellationToken)
     {
         var data = await _workflowAssignmentService.ResolveAsync(moduleCode, employeeId, effectiveDate, cancellationToken);
@@ -58,16 +58,16 @@ public class WorkflowAssignmentController : ControllerBase
         return Ok(new ApiResponse<WorkflowAssignmentResponse>(data, "Workflow assignment created successfully."));
     }
 
-    [HttpPut("{id:short}")]
-    public async Task<IActionResult> Update(short id,
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id,
         [FromBody] UpdateWorkflowAssignmentRequest request, CancellationToken cancellationToken)
     {
         var data = await _workflowAssignmentService.UpdateAsync(id, request, cancellationToken);
         return Ok(new ApiResponse<WorkflowAssignmentResponse>(data, "Workflow assignment updated successfully."));
     }
 
-    [HttpPatch("{id:short}/status")]
-    public async Task<IActionResult> ToggleStatus(short id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         var updated = await _workflowAssignmentService.ToggleStatusAsync(id, request, cancellationToken);
         

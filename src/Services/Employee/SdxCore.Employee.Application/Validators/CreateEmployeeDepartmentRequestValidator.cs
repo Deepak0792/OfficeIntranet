@@ -8,7 +8,7 @@ public class CreateEmployeeDepartmentRequestValidator : AbstractValidator<Create
     public CreateEmployeeDepartmentRequestValidator()
     {
         RuleFor(x => x.DepartmentId)
-            .GreaterThan((short)0).WithMessage("Department ID must be valid.");
+            .NotEmpty().WithMessage("Department ID must be valid.");
 
         RuleFor(x => x.AllocationPercentage)
             .InclusiveBetween(0, 100).When(x => x.AllocationPercentage.HasValue)

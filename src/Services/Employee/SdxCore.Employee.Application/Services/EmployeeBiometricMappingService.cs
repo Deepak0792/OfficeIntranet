@@ -16,14 +16,14 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
         _repository = repository;
     }
 
-    public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByEmployeeIdAsync(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var mappings = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
         return mappings.Select(e => PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeBiometricMappingResponse?> GetByIdAsync(int employeeId, int id, CancellationToken cancellationToken = default)
+    public async Task<EmployeeBiometricMappingResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var mapping = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (mapping == null) return null;
@@ -31,14 +31,14 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mapping);
     }
 
-    public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByDeviceIdAsync(int deviceId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByDeviceIdAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {
         var mappings = await _repository.FindAsync(x => x.BiometricDeviceId == deviceId && x.IsActive, cancellationToken);
 
         return mappings.Select(e => PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(e)).ToList();
     }
 
-    public async Task<EmployeeBiometricMappingResponse> AddAsync(int employeeId, CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeBiometricMappingResponse> AddAsync(Guid employeeId, CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default)
     {
         var mapping = PropertyMapper.Map<CreateEmployeeBiometricMappingRequest, EmployeeBiometricMapping>(request);
         mapping.EmployeeId = employeeId;
@@ -50,7 +50,7 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(created);
     }
 
-    public async Task<EmployeeBiometricMappingResponse> UpdateAsync(int employeeId, int id, UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeBiometricMappingResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default)
     {
         var mapping = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (mapping == null) throw new KeyNotFoundException("Mapping not found");
@@ -62,7 +62,7 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mapping);
     }
 
-    public async Task<bool> ToggleStatusAsync(int employeeId, int id, bool isActive, CancellationToken cancellationToken = default)
+    public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var mapping = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
         if (mapping == null) return false;

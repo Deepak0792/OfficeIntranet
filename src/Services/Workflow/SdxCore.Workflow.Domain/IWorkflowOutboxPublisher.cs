@@ -3,12 +3,12 @@
     public interface IWorkflowOutboxPublisher
     {
         Task PublishStatusChangedAsync(
-       int workflowInstanceId,
+       Guid workflowInstanceId,
        string moduleCode,
-       int referenceTransactionId,
+       Guid referenceTransactionId,
        string newStatus,
        string actionType,
-       int actionBy,
+       Guid actionBy,
        string? remarks,
        CancellationToken cancellationToken = default);
     }
