@@ -3,6 +3,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
@@ -13,7 +14,8 @@ public class WorkflowStepApproverService(
     IWorkflowStepApproverRepository approverRepository,
     IWorkflowStepRepository stepRepo,
     ICacheService cacheService,
-    ICacheKeyBuilder cacheKeyBuilder) : IWorkflowStepApproverService
+    ICacheKeyBuilder cacheKeyBuilder,
+    IWorkflowUnitOfWork _unitOfWork) : IWorkflowStepApproverService
 {
     public async Task<IEnumerable<WorkflowStepApproverResponse>> GetByStepIdAsync(Guid stepId, CancellationToken cancellationToken = default)
     {
@@ -62,7 +64,8 @@ public class WorkflowStepApproverService(
             IsActive = true
         };
         await approverRepository.AddAsync(entity, cancellationToken);
-        await approverRepository.SaveChangesAsync(cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(entity);
     }
 
@@ -77,7 +80,8 @@ public class WorkflowStepApproverService(
         entity.IsMandatory = request.IsMandatory;
 
         approverRepository.Update(entity);
-        await approverRepository.SaveChangesAsync(cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(entity);
     }
 
@@ -88,7 +92,8 @@ public class WorkflowStepApproverService(
 
         entity.IsActive = request.IsActive;
         approverRepository.Update(entity);
-        await approverRepository.SaveChangesAsync(cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

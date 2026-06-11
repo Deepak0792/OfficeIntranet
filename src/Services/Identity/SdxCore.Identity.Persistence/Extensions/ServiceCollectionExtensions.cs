@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.Identity.Domain;
 using SdxCore.Identity.Domain.Repositories;
 using SdxCore.Identity.Persistence.Data;
 using SdxCore.Identity.Persistence.Repositories;
+using SdxCore.SharedKernel.Persistence;
+using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 
 namespace SdxCore.Identity.Persistence.Extensions;
 
@@ -31,19 +34,28 @@ public static class ServiceCollectionExtensions
         if (configuration is null)
             throw new ArgumentNullException(nameof(configuration));
 
-        // Read connection string from configuration
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "Database connection string 'DefaultConnection' is not configured. " +
-                "Please set 'ConnectionStrings:DefaultConnection' in appsettings.json");
-        }
+        services.AddHttpContextAccessor();
+        services.AddScoped<AuditInterceptor>();
 
         // Register DbContext with SQL Server provider
-        services.AddDbContext<IdentityDbContext>(options =>
-            options.UseSqlServer(connectionString));
+        services.AddDbContext<IdentityDbContext>((sp, options) =>
+        {
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions =>
+                {
+                    sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null);
+                });
+            options.AddInterceptors(
+                sp.GetRequiredService<AuditInterceptor>());
+        });
+
+        services.AddScoped<IIdentityUnitOfWork, IdentityUnitOfWork>();
+        services.AddScoped<IUnitOfWork>(
+            sp => sp.GetRequiredService<IIdentityUnitOfWork>());
 
         // Register repository implementations
         services.AddScoped<IUserRepository, UserRepository>();

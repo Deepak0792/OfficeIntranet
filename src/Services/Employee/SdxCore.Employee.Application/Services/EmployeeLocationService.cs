@@ -2,6 +2,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -10,10 +11,14 @@ namespace SdxCore.Employee.Application.Services;
 public class EmployeeLocationService : IEmployeeLocationService
 {
     private readonly IEmployeeLocationRepository _repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
-    public EmployeeLocationService(IEmployeeLocationRepository repository)
+    public EmployeeLocationService(
+       IEmployeeLocationRepository repository,
+       IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<EmployeeLocationResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
@@ -48,7 +53,7 @@ public class EmployeeLocationService : IEmployeeLocationService
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
     }
@@ -62,8 +67,8 @@ public class EmployeeLocationService : IEmployeeLocationService
         entity.EndDate = request.EndDate;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
-        
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
@@ -74,7 +79,7 @@ public class EmployeeLocationService : IEmployeeLocationService
 
         entity.IsActive = isActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -92,7 +97,7 @@ public class EmployeeLocationService : IEmployeeLocationService
 
         target.IsPrimaryLocation = true;
         _repository.Update(target);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

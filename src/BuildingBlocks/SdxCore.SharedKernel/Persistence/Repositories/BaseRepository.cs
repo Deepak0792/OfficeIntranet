@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 using System.Linq.Expressions;
 
@@ -13,49 +12,11 @@ public abstract class BaseRepository<TEntity, TKey, TDbContext>
 {
     protected readonly TDbContext _dbContext;
     protected readonly DbSet<TEntity> _dbSet;
-    protected readonly IUserContext _requestContext;
 
-    protected BaseRepository(
-        TDbContext dbContext,
-        IUserContext requestContext)
+    protected BaseRepository(TDbContext dbContext)
     {
         _dbContext = dbContext;
         _dbSet = dbContext.Set<TEntity>();
-        _requestContext = requestContext;
-    }
-
-    protected virtual void ApplyAuditFields(TEntity entity, bool isUpdate = false)
-    {
-        var userId = _requestContext?.UserId;
-        var now = DateTime.UtcNow;
-        var type = entity.GetType();
-
-        if (!isUpdate)
-        {
-            SetProperty(entity, type, "CreatedAt", now);
-            SetPropertyIfNull(entity, type, "CreatedBy", userId);
-        }
-
-        SetProperty(entity, type, "LastUpdatedAt", now);
-        SetPropertyIfNull(entity, type, "LastUpdatedBy", userId);
-    }
-
-    private static void SetProperty(object entity, Type type, string name, object value)
-    {
-        var prop = type.GetProperty(name);
-        if (prop?.CanWrite == true)
-            prop.SetValue(entity, value);
-    }
-
-    private static void SetPropertyIfNull(object entity, Type type, string name, object? value)
-    {
-        var prop = type.GetProperty(name);
-        if (prop?.CanWrite == true)
-        {
-            var current = prop.GetValue(entity);
-            if (current == null)
-                prop.SetValue(entity, value);
-        }
     }
 
     public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
@@ -87,22 +48,17 @@ public abstract class BaseRepository<TEntity, TKey, TDbContext>
 
     public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        ApplyAuditFields(entity, false);
         await _dbSet.AddAsync(entity, cancellationToken);
         return entity;
     }
 
     public virtual async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
     {
-        foreach (var entity in entities)
-            ApplyAuditFields(entity, false);
-
         await _dbSet.AddRangeAsync(entities, cancellationToken);
     }
 
     public virtual void Update(TEntity entity)
     {
-        ApplyAuditFields(entity, true);
         _dbSet.Update(entity);
     }
 

@@ -2,6 +2,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -11,11 +12,16 @@ public class EmployeeTeamService : IEmployeeTeamService
 {
     private readonly IEmployeeTeamRepository _repository;
     private readonly ITeamRepository _teamRepository;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
-    public EmployeeTeamService(IEmployeeTeamRepository repository, ITeamRepository teamRepository)
+    public EmployeeTeamService(
+        IEmployeeTeamRepository repository, 
+        ITeamRepository teamRepository,
+        IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
         _teamRepository = teamRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<EmployeeTeamResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
@@ -55,7 +61,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created team");
     }
 
@@ -70,7 +76,7 @@ public class EmployeeTeamService : IEmployeeTeamService
         team.EndDate = request.EndDate;
 
         _repository.Update(team);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(employeeId, team.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated team");
     }
 
@@ -81,7 +87,7 @@ public class EmployeeTeamService : IEmployeeTeamService
 
         team.IsActive = isActive;
         _repository.Update(team);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -99,7 +105,7 @@ public class EmployeeTeamService : IEmployeeTeamService
 
         target.IsPrimaryTeam = true;
         _repository.Update(target);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

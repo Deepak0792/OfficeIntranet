@@ -1,17 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// SdxCore.SharedKernel.Persistence
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using SdxCore.SharedKernel.Constant;
 using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Entities;
 using SdxCore.SharedKernel.Events;
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 namespace SdxCore.SharedKernel.Persistence;
 
 public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
 {
-    private readonly List<(EntityEntry Entry, string Operation)> _pendingEntries = [];
+    // Keyed by context instance — safe for singleton interceptor with multiple scoped contexts
+    private readonly ConcurrentDictionary<DbContext, List<(EntityEntry Entry, string Operation)>>
+        _pendingEntries = new();
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
@@ -22,18 +26,16 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
         if (context is null)
             return base.SavingChangesAsync(eventData, result, cancellationToken);
 
-        _pendingEntries.Clear();
-
         var entries = context.ChangeTracker
             .Entries()
             .Where(e =>
                 e.Entity is IPublishableEntity &&
                 e.Entity is not OutboxMessage &&
                 e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+            .Select(e => (e, GetOperation(e)))
             .ToList();
 
-        foreach (var entry in entries)
-            _pendingEntries.Add((entry, GetOperation(entry)));
+        _pendingEntries[context] = entries;
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
     }
@@ -44,11 +46,10 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
         CancellationToken cancellationToken = default)
     {
         var context = eventData.Context;
-        if (context is null || _pendingEntries.Count == 0)
+        if (context is null || !_pendingEntries.TryRemove(context, out var pending) || pending.Count == 0)
             return await base.SavedChangesAsync(eventData, result, cancellationToken);
 
-        var outboxMessages = BuildOutboxMessages(_pendingEntries);
-        _pendingEntries.Clear();
+        var outboxMessages = BuildOutboxMessages(pending);
 
         if (outboxMessages.Count > 0)
         {
@@ -67,9 +68,7 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
         foreach (var (entry, operation) in pendingEntries)
         {
             var entity = entry.Entity;
-
-            var idProperty = entity.GetType().GetProperty("Id");
-            var entityId = idProperty?.GetValue(entity);
+            var entityId = entity.GetType().GetProperty("Id")?.GetValue(entity);
 
             if (entityId is null)
                 continue;
@@ -78,7 +77,7 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
                 Id: entityId.ToString()!,
                 EntityName: entity.GetType().Name,
                 Operation: operation,
-                OccurredOnUtc: DateTime.UtcNow);
+                CreatedAt: DateTime.UtcNow);
 
             outboxMessages.Add(new OutboxMessage
             {
@@ -86,11 +85,11 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
                 EventType = typeof(EntityChangedEvent).AssemblyQualifiedName!,
                 Payload = JsonSerializer.Serialize(integrationEvent),
                 Exchange = "sdxcore.events",
-                Status = "PENDING",
+                RoutingKey = $"sdxcore.events.{entity.GetType().Name.ToLower()}",
+                Status = OutboxStatus.Pending,
                 StatusGroup = "OUTBOX_STATUS",
                 IsActive = true,
                 RetryCount = 0,
-                RoutingKey = $"sdxcore.events.{entity.GetType().Name.ToLower()}",
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = SystemUser.SystemUserId,
                 LastUpdatedAt = DateTime.UtcNow,
@@ -101,27 +100,19 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
         return outboxMessages;
     }
 
-    private static string GetOperation(EntityEntry entry)
+    private static string GetOperation(EntityEntry entry) => entry.State switch
     {
-        return entry.State switch
-        {
-            EntityState.Added => "Created",
-            EntityState.Modified => IsSoftDeleted(entry) ? "SoftDeleted" : "Updated",
-            EntityState.Deleted => "Deleted",
-            _ => throw new InvalidOperationException(
-                $"Unsupported entity state {entry.State}")
-        };
-    }
+        EntityState.Added => "Created",
+        EntityState.Modified => IsSoftDeleted(entry) ? "SoftDeleted" : "Updated",
+        EntityState.Deleted => "Deleted",
+        _ => throw new InvalidOperationException($"Unsupported entity state {entry.State}")
+    };
 
     private static bool IsSoftDeleted(EntityEntry entry)
     {
-        var property = entry.Properties
-            .FirstOrDefault(p => p.Metadata.Name == "IsActive");
-
-        if (property is null)
-            return false;
-
-        return property.IsModified &&
+        var property = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "IsActive");
+        return property is not null &&
+               property.IsModified &&
                property.OriginalValue is true &&
                property.CurrentValue is false;
     }

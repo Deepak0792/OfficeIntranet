@@ -2,7 +2,9 @@ using System.Linq.Expressions;
 
 namespace SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 
-public interface IRepository<TEntity, TKey> where TEntity : class
+public interface IRepository<TEntity, TKey> 
+    where TEntity : class
+    where TKey : struct
 {
     Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default);
     Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
@@ -15,10 +17,4 @@ public interface IRepository<TEntity, TKey> where TEntity : class
     void Update(TEntity entity);
     void Remove(TEntity entity);
     void RemoveRange(IEnumerable<TEntity> entities);
-
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-}
-
-public interface IRepository<TEntity> : IRepository<TEntity, long> where TEntity : class
-{
 }

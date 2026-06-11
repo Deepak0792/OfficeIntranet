@@ -3,6 +3,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Contracts.Services;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
+using SdxCore.Time.Domain;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Repositories;
 
@@ -13,12 +14,18 @@ public class LegalEntityService : ILegalEntityService
     private readonly ILegalEntityRepository _repository;
     private readonly ICacheService _cacheService;
     private readonly ICacheKeyBuilder _cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork;
 
-    public LegalEntityService(ILegalEntityRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder)
+    public LegalEntityService(
+        ILegalEntityRepository repository, 
+        ICacheService cacheService, 
+        ICacheKeyBuilder cacheKeyBuilder,
+        ITimeUnitOfWork unitOfWork)
     {
         _repository = repository;
         _cacheService = cacheService;
         _cacheKeyBuilder = cacheKeyBuilder;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<LegalEntityResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -49,7 +56,7 @@ public class LegalEntityService : ILegalEntityService
         entity.IsActive = true;
 
         await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
@@ -62,7 +69,7 @@ public class LegalEntityService : ILegalEntityService
         PropertyMapper.MapProperties(dto, entity);
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -73,7 +80,7 @@ public class LegalEntityService : ILegalEntityService
 
         entity.IsActive = request.IsActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

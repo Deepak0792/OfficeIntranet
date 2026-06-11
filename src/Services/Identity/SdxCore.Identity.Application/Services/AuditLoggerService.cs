@@ -1,150 +1,107 @@
+using System.Threading.Channels;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SdxCore.Common.Helpers;
 using SdxCore.Identity.Application.Contracts.Services;
+using SdxCore.Identity.Domain;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Repositories;
-using SdxCore.SharedKernel.Contracts;
-using System.Threading.Channels;
 
 namespace SdxCore.Identity.Application.Providers;
 
-public sealed class AuditLoggerService : IAuditLoggerService, IDisposable
+public sealed class AuditBackgroundService : BackgroundService, IAuditLoggerService
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly IUserContext _requestContext;
-    private readonly ILogger<AuditLoggerService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<AuditBackgroundService> _logger;
 
     private readonly Channel<AuditEvent> _channel;
-    private readonly CancellationTokenSource _shutdownCts;
-    private readonly Task _processingTask;
 
-    private bool _disposed;
-
-    public AuditLoggerService(
-        IAuditRepository auditRepository,
-        IUserContext requestContext,
-        ILogger<AuditLoggerService> logger)
+    public AuditBackgroundService(
+        IServiceScopeFactory scopeFactory,
+        ILogger<AuditBackgroundService> logger)
     {
-        _auditRepository = auditRepository ?? throw new ArgumentNullException(nameof(auditRepository));
-        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _scopeFactory = scopeFactory;
+        _logger = logger;
 
-        var channelOptions = new BoundedChannelOptions(1000)
+        var options = new BoundedChannelOptions(1000)
         {
             FullMode = BoundedChannelFullMode.DropOldest,
             SingleReader = true,
             SingleWriter = false
         };
 
-        _channel = Channel.CreateBounded<AuditEvent>(channelOptions);
+        _channel = Channel.CreateBounded<AuditEvent>(options);
 
-        _shutdownCts = new CancellationTokenSource();
-
-        _processingTask = Task.Run(() => ProcessAuditEventsAsync(_shutdownCts.Token));
-
-        _logger.LogInformation(
-            "AuditLoggerService initialized with bounded channel (capacity: {Capacity})",
-            1000);
+        _logger.LogInformation("AuditBackgroundService initialized.");
     }
 
-    public Task LogAsync(
-        AuditEventRequest auditEventRequest,
-        CancellationToken ct = default)
+    // ---------------------------
+    // Public API (enqueue only)
+    // ---------------------------
+    public Task LogAsync(AuditEventRequest request, CancellationToken ct = default)
     {
         try
         {
-            var auditEvent = PropertyMapper.Map<AuditEventRequest, AuditEvent>(auditEventRequest);
-            auditEvent.Id = Guid.NewGuid();
-            auditEvent.Protocol = auditEventRequest.Protocol.ToString();
+            var auditEvent = new AuditEvent
+            {
+                Id = Guid.NewGuid(),
+                EventType = request.EventType,
+                Username = request.Username,
+                EmployeeId = request.EmployeeId,
+                Protocol = request.Protocol.ToString(),
+                IpAddress = request.IpAddress,
+                CreatedAt = DateTime.UtcNow
+            };
 
             if (!_channel.Writer.TryWrite(auditEvent))
             {
                 _logger.LogWarning(
-                    "Failed to enqueue audit event {EventType} for user {Username}",
+                    "Audit queue full. Dropping event {EventType} for {Username}",
                     auditEvent.EventType,
                     auditEvent.Username ?? "unknown");
             }
         }
         catch (Exception ex)
         {
-            // Never break authentication flow because of audit failures.
-            _logger.LogError(
-                ex,
-                "Failed to enqueue audit event: {EventType}",
-                auditEventRequest.EventType);
+            _logger.LogError(ex, "Failed to enqueue audit event");
         }
 
         return Task.CompletedTask;
     }
 
-    private async Task ProcessAuditEventsAsync(CancellationToken ct)
+    // ---------------------------
+    // Background consumer loop
+    // ---------------------------
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Audit event processor started");
+        _logger.LogInformation("Audit background processor started.");
 
-        try
+        await foreach (var auditEvent in _channel.Reader.ReadAllAsync(stoppingToken))
         {
-            await foreach (AuditEvent auditEvent in _channel.Reader.ReadAllAsync(ct))
+            try
             {
-                try
-                {
-                    await _auditRepository.AddAsync(auditEvent, ct);
-                    await _auditRepository.SaveChangesAsync(ct);
+                await using var scope = _scopeFactory.CreateAsyncScope();
 
-                    _logger.LogDebug(
-                        "Audit event persisted: {EventType}, User: {Username}",
-                        auditEvent.EventType,
-                        auditEvent.Username ?? "unknown");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        ex,
-                        "Failed to persist audit event: {EventType}, User: {Username}",
-                        auditEvent.EventType,
-                        auditEvent.Username ?? "unknown");
-                }
+                var repo = scope.ServiceProvider.GetRequiredService<IAuditRepository>();
+                var uow = scope.ServiceProvider.GetRequiredService<IIdentityUnitOfWork>();
+
+                await repo.AddAsync(auditEvent, stoppingToken);
+                await uow.SaveChangesAsync(stoppingToken);
+
+                _logger.LogDebug(
+                    "Audit persisted: {EventType} - {Username}",
+                    auditEvent.EventType,
+                    auditEvent.Username ?? "unknown");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to persist audit event {EventType}",
+                    auditEvent.EventType);
             }
         }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Audit event processor cancelled");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical(
-                ex,
-                "Audit event processor terminated unexpectedly");
-        }
-    }
 
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-
-        _logger.LogInformation("Shutting down AuditLoggerService");
-
-        _channel.Writer.Complete();
-
-        try
-        {
-            _processingTask.Wait(TimeSpan.FromSeconds(10));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(
-                ex,
-                "AuditLoggerService shutdown timed out");
-        }
-        finally
-        {
-            _shutdownCts.Cancel();
-            _shutdownCts.Dispose();
-        }
+        _logger.LogInformation("Audit background processor stopping.");
     }
 }

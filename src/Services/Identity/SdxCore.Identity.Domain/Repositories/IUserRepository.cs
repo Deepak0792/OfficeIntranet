@@ -61,5 +61,7 @@ public interface IUserRepository : IRepository<User, Guid>
     /// <param name="newPasswordHash">New password hash.</param>
     /// <param name="ct">Cancellation token.</param>
     Task UpdatePasswordHashAsync(Guid employeeId, string newPasswordHash, CancellationToken ct = default);
+
+    Task<User?> GetByEmployeeIdAsync(Guid employeeId, CancellationToken ct);
 }
 

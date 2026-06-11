@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Repositories;
@@ -7,8 +6,9 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowInstance, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowInstanceRepository
+public class WorkflowInstanceRepository(WorkflowDbContext dbContext) :
+    BaseRepository<WorkflowInstance, Guid, WorkflowDbContext>(dbContext),
+    IWorkflowInstanceRepository
 {
     public async Task<WorkflowInstance?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _dbSet
@@ -70,8 +70,8 @@ public class WorkflowInstanceRepository(WorkflowDbContext dbContext, IUserContex
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 
-    public Task<bool> CancelAsync(Guid id, Guid actionBy, CancellationToken cancellationToken = default) 
+    public Task<bool> CancelAsync(Guid id, Guid actionBy, CancellationToken cancellationToken = default)
         => Task.FromResult(true); // handled by engine
-    public Task<bool> WithdrawAsync(Guid id, Guid actionBy, CancellationToken cancellationToken = default) 
+    public Task<bool> WithdrawAsync(Guid id, Guid actionBy, CancellationToken cancellationToken = default)
         => Task.FromResult(true); // handled by engine
 }

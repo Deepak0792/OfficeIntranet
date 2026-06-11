@@ -18,7 +18,7 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// <param name="dbContext">The database context.</param>
 public class AuditRepository : BaseRepository<AuditEvent, Guid, IdentityDbContext>, IAuditRepository
 {
-    public AuditRepository(IdentityDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
+    public AuditRepository(IdentityDbContext dbContext) : base(dbContext) { }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<AuditEvent>> GetByUsernameAsync(string username, CancellationToken ct = default)

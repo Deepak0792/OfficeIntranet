@@ -13,4 +13,5 @@ public class EmployeeRelationship : BaseAuditEntity<Guid>, IPublishableEntity
     public DateOnly? EffectiveFrom { get; set; }
     public DateOnly? EffectiveTo { get; set; }
     public bool IsActive { get; set; } = true;
+    public Employee Employee { get; set; } = null!;
 }

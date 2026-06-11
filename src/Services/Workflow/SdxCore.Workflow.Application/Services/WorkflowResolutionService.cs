@@ -2,6 +2,7 @@ using SdxCore.Workflow.Application.Contracts.Resolver;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
 

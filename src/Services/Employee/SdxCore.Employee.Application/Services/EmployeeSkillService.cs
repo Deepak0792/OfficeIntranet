@@ -2,6 +2,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -11,11 +12,15 @@ public class EmployeeSkillService : IEmployeeSkillService
 {
     private readonly IEmployeeSkillRepository _repository;
     private readonly ISkillRepository _skillRepository;
-
-    public EmployeeSkillService(IEmployeeSkillRepository repository, ISkillRepository skillRepository)
+    private readonly IEmployeeUnitOfWork _unitOfWork;
+    public EmployeeSkillService(
+        IEmployeeSkillRepository repository, 
+        ISkillRepository skillRepository, 
+        IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
         _skillRepository = skillRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<EmployeeSkillResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
@@ -53,7 +58,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created skill");
     }
 
@@ -67,7 +72,7 @@ public class EmployeeSkillService : IEmployeeSkillService
         skill.LastUsedDate = request.LastUsedDate;
 
         _repository.Update(skill);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return await GetByIdAsync(employeeId, skill.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated skill");
     }
 
@@ -78,7 +83,7 @@ public class EmployeeSkillService : IEmployeeSkillService
 
         skill.IsActive = isActive;
         _repository.Update(skill);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -96,7 +101,7 @@ public class EmployeeSkillService : IEmployeeSkillService
 
         target.IsPrimarySkill = true;
         _repository.Update(target);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SdxCore.Common.Security;
 using SdxCore.Identity.Application.Contracts.Providers;
 using SdxCore.Identity.Application.Enums;
+using SdxCore.Identity.Domain;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
@@ -14,207 +15,212 @@ namespace SdxCore.Identity.Application.Providers;
 /// <summary>
 /// Built-in authentication provider backed by SQL Server credential storage.
 /// Handles username/password authentication with account lockout protection.
+///
+/// Commit ownership inside AuthenticateAsync:
+///   - Failed attempt tracking + optional lockout - single commit (must persist
+///     regardless of what happens next in the auth flow)
+///   - Successful login (reset attempts + last login) - single commit
+///
+/// All other operations (CreateUserAsync, ChangePasswordAsync, DeactivateUserAsync)
+/// are standalone admin operations that each own their own commit.
 /// </summary>
 public sealed class InHouseProvider : IInHouseProvider
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
-
+    private readonly IIdentityUnitOfWork _unitOfWork;
     private readonly ILogger<InHouseProvider> _logger;
 
-    // Configuration keys
     private const string MaxFailedAttemptsKey = "Authentication:MaxFailedAttempts";
     private const string LockoutDurationKey = "Authentication:LockoutDuration";
-
-    // Default values
     private const int DefaultMaxFailedAttempts = 5;
     private static readonly TimeSpan DefaultLockoutDuration = TimeSpan.FromMinutes(15);
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="InHouseProvider"/> class.
-    /// </summary>
-    /// <param name="userRepository">Repository for user data access.</param>
-    /// <param name="passwordHasher">Service for password hashing and verification.</param>
-    /// <param name="configuration">Application configuration.</param>
-    /// <param name="logger">Logger instance.</param>
     public InHouseProvider(
         IUserRepository userRepository,
         IConfiguration configuration,
-        ILogger<InHouseProvider> logger)
+        ILogger<InHouseProvider> logger,
+        IIdentityUnitOfWork unitOfWork)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
-    /// <inheritdoc />
     public AuthProtocol Protocol => AuthProtocol.InHouse;
 
-    /// <inheritdoc />
-    public async Task<ProviderResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    // -- AuthenticateAsync ------------------------------------
+    // Two possible commits:
+    //   A) Password wrong: stage failed-attempt increment + optional lockout - commit
+    //   B) Password correct: stage reset + last-login update - commit
+    // These are intentionally separate from the refresh token commit in
+    // AuthenticationService — they must persist regardless of token issuance.
+    public async Task<ProviderResponse> AuthenticateAsync(
+        AuthenticationRequest request,
+        CancellationToken ct = default)
     {
-        // 1. Validate inputs
-        if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(request.Username) ||
+            string.IsNullOrWhiteSpace(request.Password))
         {
-            _logger.LogWarning("Authentication attempt with missing username or password");
+            _logger.LogWarning("Authentication attempt with missing username or password.");
             return Fail("Username and password are required.");
         }
 
-        // 2. Load user from SQL Server
-        User? user = await _userRepository.GetByUsernameAsync(request.Username, ct);
+        var user = await _userRepository.GetByUsernameAsync(request.Username, ct);
         if (user is null)
         {
-            _logger.LogWarning("Authentication attempt for non-existent employee");
-            // Use generic error message to prevent user enumeration
+            _logger.LogWarning("Authentication attempt for non-existent user.");
             return Fail("Invalid credentials.");
         }
 
-        // 3. Check account status
         if (!user.IsActive)
         {
-            _logger.LogWarning("Authentication attempt for inactive account: {EmployeeId}", user.EmployeeId);
+            _logger.LogWarning("Authentication attempt for inactive account: {EmployeeId}.", user.EmployeeId);
             return Fail("Account is inactive.");
         }
 
         if (user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
         {
-            _logger.LogWarning("Authentication attempt for locked account: {EmployeeId}, locked until {LockedUntil}",
+            _logger.LogWarning(
+                "Authentication attempt for locked account: {EmployeeId}, locked until {LockedUntil}.",
                 user.EmployeeId, user.LockedUntil);
             return Fail("Account is temporarily locked.");
         }
 
-        // 4. Verify password hash (Argon2id)
         bool passwordValid = PasswordHasher.Verify(request.Password, user.PasswordHash);
 
         if (!passwordValid)
         {
-            _logger.LogWarning("Failed authentication attempt for employee: {EmployeeId}", user.EmployeeId);
+            _logger.LogWarning("Failed password attempt for employee: {EmployeeId}.", user.EmployeeId);
 
-            // Check if we need to lock the account after incrementing
-            int maxFailedAttempts = _configuration.GetValue<int>(MaxFailedAttemptsKey, DefaultMaxFailedAttempts);
-            int newFailedAttempts = user.FailedAttempts + 1;
+            int maxAttempts = _configuration.GetValue(MaxFailedAttemptsKey, DefaultMaxFailedAttempts);
+            int newAttempts = user.FailedAttempts + 1;
 
-            // Increment failed attempts
+            // Stage: increment failed attempts
             await _userRepository.IncrementFailedAttemptsAsync(user.EmployeeId, ct);
 
-            // Lock account if threshold reached
-            if (newFailedAttempts >= maxFailedAttempts)
+            if (newAttempts >= maxAttempts)
             {
-                TimeSpan lockoutDuration = _configuration.GetValue<TimeSpan>(LockoutDurationKey, DefaultLockoutDuration);
-                DateTime lockedUntil = DateTime.UtcNow.Add(lockoutDuration);
+                var lockoutDuration = _configuration.GetValue(LockoutDurationKey, DefaultLockoutDuration);
+                var lockedUntil = DateTime.UtcNow.Add(lockoutDuration);
+
+                // Stage: lock account
                 await _userRepository.LockAccountAsync(user.EmployeeId, lockedUntil, ct);
 
-                _logger.LogWarning("Account {EmployeeId} locked until {LockedUntil} after {FailedAttempts} failed attempts",
-                    user.EmployeeId, lockedUntil, newFailedAttempts);
+                _logger.LogWarning(
+                    "Account {EmployeeId} locked until {LockedUntil} after {Attempts} failed attempts.",
+                    user.EmployeeId, lockedUntil, newAttempts);
             }
 
-            // Use generic error message to prevent user enumeration
+            // -- Commit A: failed attempt tracking ------------
+            await _unitOfWork.SaveChangesAsync(ct);
+
             return Fail("Invalid credentials.");
         }
 
-        // 5. Reset failed attempts on success
+        // Stage: reset failed attempts + record last login
         await _userRepository.ResetFailedAttemptsAsync(user.EmployeeId, ct);
         await _userRepository.UpdateLastLoginAsync(user.EmployeeId, DateTime.UtcNow, ct);
 
-        _logger.LogInformation("Successful authentication for employee: {EmployeeId}", user.EmployeeId);
+        // -- Commit B: successful login updates ----------------
+        await _unitOfWork.SaveChangesAsync(ct);
 
-        // 6. Build claims
-        IReadOnlyList<Claim> claims = BuildClaims(user);
+        _logger.LogInformation("Successful authentication for employee: {EmployeeId}.", user.EmployeeId);
 
-        return new ProviderResponse { IsSuccess = true, Claims = claims };
+        return new ProviderResponse { IsSuccess = true, Claims = BuildClaims(user) };
     }
 
-    /// <inheritdoc />
-    public async Task<User> CreateUserAsync(CreateUserRequest request, CancellationToken ct = default)
+    // -- CreateUserAsync --------------------------------------
+    // Standalone admin operation — owns its own commit.
+    public async Task<User> CreateUserAsync(
+        CreateUserRequest request,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         if (request.EmployeeId == Guid.Empty)
             throw new ArgumentException("EmployeeId cannot be empty.", nameof(request));
-
         if (string.IsNullOrWhiteSpace(request.Username))
             throw new ArgumentException("Username cannot be null or empty.", nameof(request));
-
         if (string.IsNullOrWhiteSpace(request.Password))
             throw new ArgumentException("Password cannot be null or empty.", nameof(request));
-
         if (string.IsNullOrWhiteSpace(request.Email))
             throw new ArgumentException("Email cannot be null or empty.", nameof(request));
 
-        // Validate uniqueness
-        User? existingUser = await _userRepository.GetByUsernameAsync(request.Username, ct);
-        if (existingUser is not null)
+        var existing = await _userRepository.GetByUsernameAsync(request.Username, ct);
+        if (existing is not null)
         {
-            _logger.LogWarning("Attempt to create user with duplicate username: {Username}", request.Username);
+            _logger.LogWarning("Attempt to create user with duplicate username: {Username}.", request.Username);
             throw new InvalidOperationException($"Username '{request.Username}' is already taken.");
         }
 
-        // Hash password
-        string passwordHash = PasswordHasher.Hash(request.Password);
-
-        // Create User with defaults
         var user = new User
         {
             Id = Guid.NewGuid(),
             EmployeeId = request.EmployeeId,
             Username = request.Username,
-            PasswordHash = passwordHash,
+            PasswordHash = PasswordHasher.Hash(request.Password),
             Email = request.Email,
             IsActive = true,
             FailedAttempts = 0
         };
 
-        User createdUser = await _userRepository.AddAsync(user, ct);
-        await _userRepository.SaveChangesAsync(ct);
+        var created = await _userRepository.AddAsync(user, ct);
 
-        _logger.LogInformation("Created new employee: {EmployeeId}, Username: {Username}", createdUser.EmployeeId, createdUser.Username);
+        // Standalone — owns commit
+        await _unitOfWork.SaveChangesAsync(ct);
 
-        return createdUser;
+        _logger.LogInformation(
+            "Created user: {EmployeeId}, Username: {Username}.",
+            created.EmployeeId, created.Username);
+
+        return created;
     }
 
-    /// <inheritdoc />
-    public async Task<bool> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default)
+    // -- ChangePasswordAsync ----------------------------------
+    // Standalone admin operation — owns its own commit.
+    public async Task<bool> ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         if (request.EmployeeId == Guid.Empty)
             throw new ArgumentException("EmployeeId cannot be empty.", nameof(request));
-
         if (string.IsNullOrWhiteSpace(request.CurrentPassword))
             throw new ArgumentException("CurrentPassword cannot be null or empty.", nameof(request));
-
         if (string.IsNullOrWhiteSpace(request.NewPassword))
             throw new ArgumentException("NewPassword cannot be null or empty.", nameof(request));
 
-        // Load user
-        User? user = await _userRepository.GetByIdAsync(request.EmployeeId, ct);
+        var user = await _userRepository.GetByEmployeeIdAsync(request.EmployeeId, ct);
         if (user is null)
         {
-            _logger.LogWarning("Employee not found: {EmployeeId}", request.EmployeeId);
+            _logger.LogWarning("Employee not found: {EmployeeId}.", request.EmployeeId);
             return false;
         }
 
-        // Verify current password
-        bool currentPasswordValid = PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash);
-        if (!currentPasswordValid)
+        if (!PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash))
         {
-            _logger.LogWarning("Invalid current password for employee: {EmployeeId}", request.EmployeeId);
+            _logger.LogWarning("Invalid current password for employee: {EmployeeId}.", request.EmployeeId);
             return false;
         }
 
-        // Hash new password
-        string newPasswordHash = PasswordHasher.Hash(request.NewPassword);
+        var newHash = PasswordHasher.Hash(request.NewPassword);
+        await _userRepository.UpdatePasswordHashAsync(request.EmployeeId, newHash, ct);
 
-        // Update password in database
-        await _userRepository.UpdatePasswordHashAsync(request.EmployeeId, newPasswordHash, ct);
+        // Standalone — owns commit
+        await _unitOfWork.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Password changed successfully for employee: {EmployeeId}", request.EmployeeId);
-
+        _logger.LogInformation("Password changed for employee: {EmployeeId}.", request.EmployeeId);
         return true;
     }
 
-    /// <inheritdoc />
-    public async Task<bool> DeactivateUserAsync(Guid employeeId, CancellationToken ct = default)
+    // -- DeactivateUserAsync ----------------------------------
+    // Standalone admin operation — owns its own commit.
+    public async Task<bool> DeactivateUserAsync(
+        Guid employeeId,
+        CancellationToken ct = default)
     {
         if (employeeId == Guid.Empty)
             throw new ArgumentException("EmployeeId cannot be empty.", nameof(employeeId));
@@ -222,42 +228,27 @@ public sealed class InHouseProvider : IInHouseProvider
         try
         {
             await _userRepository.DeactivateAsync(employeeId, ct);
-            _logger.LogInformation("Deactivated employee: {EmployeeId}", employeeId);
+
+            // Standalone — owns commit
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Deactivated employee: {EmployeeId}.", employeeId);
             return true;
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to deactivate employee: {EmployeeId}", employeeId);
+            _logger.LogWarning(ex, "Failed to deactivate employee: {EmployeeId}.", employeeId);
             return false;
         }
     }
 
-    /// <summary>
-    /// Builds a failure result with the specified reason.
-    /// </summary>
-    /// <param name="reason">Failure reason.</param>
-    /// <returns>Provider result indicating failure.</returns>
-    private static ProviderResponse Fail(string reason)
-    {
-        return new ProviderResponse
-        {
-            IsSuccess = false,
-            FailureReason = reason
-        };
-    }
+    private static ProviderResponse Fail(string reason) =>
+        new() { IsSuccess = false, FailureReason = reason };
 
-    /// <summary>
-    /// Builds standard claims from a user record.
-    /// </summary>
-    /// <param name="user">User record.</param>
-    /// <returns>List of claims.</returns>
-    private static IReadOnlyList<Claim> BuildClaims(User user)
-    {
-        return new List<Claim>
-        {
-            new ("sub", user.EmployeeId.ToString()),
-            new ("username", user.Username),
-            new ("email", user.Email)
-        };
-    }
+    private static IReadOnlyList<Claim> BuildClaims(User user) =>
+    [
+        new("sub",      user.EmployeeId.ToString()),
+        new("username", user.Username),
+        new("email",    user.Email)
+    ];
 }

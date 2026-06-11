@@ -5,6 +5,7 @@ using SdxCore.Common.Models;
 using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 using System.Linq.Expressions;
@@ -17,17 +18,20 @@ public class EmployeeService : IEmployeeService
     private readonly IEmployeeViewRepository _viewRepository;
     private readonly ICacheService _cacheService;
     private readonly ICacheKeyBuilder _cacheKeyBuilder;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
     public EmployeeService(
         IEmployeeRepository repository,
         IEmployeeViewRepository viewRepository,
         ICacheService cacheService,
-        ICacheKeyBuilder cacheKeyBuilder)
+        ICacheKeyBuilder cacheKeyBuilder,
+        IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
         _viewRepository = viewRepository;
         _cacheService = cacheService;
         _cacheKeyBuilder = cacheKeyBuilder;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> GetAllAsync(PaginationFilter filter,
@@ -120,7 +124,7 @@ public class EmployeeService : IEmployeeService
         entity.DisplayName = request.DisplayName ?? $"{entity.FirstName} {entity.LastName}";
 
         await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(entity);
     }
@@ -141,7 +145,7 @@ public class EmployeeService : IEmployeeService
         entity.EmploymentType = request.EmploymentType;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;
     }
@@ -154,7 +158,7 @@ public class EmployeeService : IEmployeeService
         entity.IsActive = request.IsActive;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
 
         return true;
@@ -168,7 +172,7 @@ public class EmployeeService : IEmployeeService
         entity.ProfilePhotoUrl = request.ProfilePhotoUrl;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
 
         return true;
@@ -182,7 +186,7 @@ public class EmployeeService : IEmployeeService
         entity.AboutMe = request.AboutMe;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
 
         return true;

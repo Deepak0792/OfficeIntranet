@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Repositories;
@@ -7,10 +6,12 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowActionHistoryRepository(WorkflowDbContext dbContext, IUserContext requestContext)
-    : BaseRepository<WorkflowActionHistory, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowActionHistoryRepository
+public class WorkflowActionHistoryRepository(WorkflowDbContext dbContext)
+    : BaseRepository<WorkflowActionHistory, Guid, WorkflowDbContext>(dbContext), 
+    IWorkflowActionHistoryRepository
 {
-    public async Task<IEnumerable<WorkflowActionHistory>> GetByInstanceIdAsync(Guid instanceId, CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<WorkflowActionHistory>> GetByInstanceIdAsync(
+        Guid instanceId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Step)
             .Include(x => x.Task)
@@ -18,7 +19,8 @@ public class WorkflowActionHistoryRepository(WorkflowDbContext dbContext, IUserC
             .OrderBy(x => x.ActionAt)
             .ToListAsync(cancellationToken);
 
-    public async Task<IEnumerable<WorkflowActionHistory>> GetByTaskIdAsync(Guid taskId, CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<WorkflowActionHistory>> GetByTaskIdAsync(
+        Guid taskId, CancellationToken cancellationToken = default) =>
         await _dbSet
             .Include(x => x.Step)
             .Where(x => x.WorkflowTaskId == taskId && x.IsActive)

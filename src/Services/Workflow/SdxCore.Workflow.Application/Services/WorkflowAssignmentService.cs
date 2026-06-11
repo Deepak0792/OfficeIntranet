@@ -2,13 +2,17 @@ using SdxCore.Common.Helpers;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
 
 namespace SdxCore.Workflow.Application.Services;
 
-public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository) : IWorkflowAssignmentService
+public class WorkflowAssignmentService(
+    IWorkflowAssignmentRepository _repository, 
+    IWorkflowUnitOfWork _unitOfWork) 
+    : IWorkflowAssignmentService
 {
     public async Task<IEnumerable<WorkflowAssignmentResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -50,7 +54,8 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository
             IsActive = true
         };
         await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(entity);
     }
 
@@ -64,7 +69,8 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository
         entity.PriorityOrder = request.PriorityOrder;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(entity);
     }
 
@@ -75,7 +81,7 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository _repository
 
         entity.IsActive = request.IsActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

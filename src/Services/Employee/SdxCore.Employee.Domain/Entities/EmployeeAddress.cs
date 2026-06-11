@@ -21,4 +21,5 @@ public class EmployeeAddress : BaseAuditEntity<Guid>, IPublishableEntity
     public Guid? VerifiedByEmployeeId { get; set; }
     public DateTime? VerifiedAt { get; set; }
     public bool IsActive { get; set; } = true;
+    public Employee Employee { get; set; } = null!;
 }

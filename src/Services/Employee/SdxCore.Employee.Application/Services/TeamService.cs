@@ -3,6 +3,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -13,12 +14,18 @@ public class TeamService : ITeamService
     private readonly ITeamRepository _repository;
     private readonly ICacheService _cacheService;
     private readonly ICacheKeyBuilder _cacheKeyBuilder;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
-    public TeamService(ITeamRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder)
+    public TeamService(
+        ITeamRepository repository, 
+        ICacheService cacheService, 
+        ICacheKeyBuilder cacheKeyBuilder,
+        IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
         _cacheService = cacheService;
         _cacheKeyBuilder = cacheKeyBuilder;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<TeamResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -51,7 +58,7 @@ public class TeamService : ITeamService
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return PropertyMapper.Map<Team, TeamResponse>(created);
     }
@@ -66,7 +73,7 @@ public class TeamService : ITeamService
         entity.Description = request.Description;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return PropertyMapper.Map<Team, TeamResponse>(entity);
     }
@@ -78,7 +85,7 @@ public class TeamService : ITeamService
 
         entity.IsActive = isActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

@@ -45,7 +45,10 @@ public static class ServiceCollectionExtensions
 
         // Register IAuthenticationService as scoped (per-request lifetime)
         // Requirement 12.2: IAuthenticationService registered as scoped service             
-        services.AddScoped<IAuditLoggerService, AuditLoggerService>();
+        //services.AddScoped<IAuditLoggerService, AuditLoggerService>();
+        services.AddSingleton<AuditBackgroundService>();
+        services.AddHostedService(sp => sp.GetRequiredService<AuditBackgroundService>());
+        services.AddSingleton<IAuditLoggerService>(sp => sp.GetRequiredService<AuditBackgroundService>());
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
 

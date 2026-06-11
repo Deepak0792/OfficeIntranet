@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.SharedKernel\SdxCore.SharedKernel.csproj" />
     <ProjectReference Include="..\SdxCore.Employee.Application\SdxCore.Employee.Application.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
+    <ProjectReference Include="..\SdxCore.Employee.Persistence\SdxCore.Employee.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

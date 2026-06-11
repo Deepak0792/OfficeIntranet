@@ -10,4 +10,6 @@ public class EmployeeContact : BaseAuditEntity<Guid>, IPublishableEntity
     public string ContactValue { get; set; } = null!;
     public bool IsPrimaryContact { get; set; }
     public bool IsActive { get; set; } = true;
+
+    public Employee Employee { get; set; } = null!;
 }

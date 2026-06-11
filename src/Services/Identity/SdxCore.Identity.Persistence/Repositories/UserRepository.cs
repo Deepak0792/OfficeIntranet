@@ -11,13 +11,16 @@ namespace SdxCore.Identity.Persistence.Repositories;
 /// Repository implementation for user account data access.
 /// Uses Entity Framework Core to manage User entities in SQL Server.
 /// </summary>
-public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUserRepository
+public class UserRepository :
+    BaseRepository<User, Guid, IdentityDbContext>,
+    IUserRepository
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="UserRepository"/> class.
     /// </summary>
     /// <param name="context">The database context.</param>
-    public UserRepository(IdentityDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
+    public UserRepository(IdentityDbContext dbContext)
+        : base(dbContext) { }
 
 
     /// <inheritdoc />
@@ -39,7 +42,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
 
         user.FailedAttempts++;
         Update(user);
-        await _dbContext.SaveChangesAsync(ct);
+        //await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -56,7 +59,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
 
         user.LockedUntil = lockedUntil;
         Update(user);
-        await _dbContext.SaveChangesAsync(ct);
+        //await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -76,7 +79,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
 
         user.PasswordHash = newPasswordHash;
         Update(user);
-        await _dbContext.SaveChangesAsync(ct);
+        //await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <inheritdoc />
@@ -89,7 +92,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
         user.FailedAttempts = 0;
         user.LockedUntil = null;
         Update(user);
-        await _dbContext.SaveChangesAsync(ct);
+        //await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <inheritdoc />
@@ -100,7 +103,7 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
             throw new InvalidOperationException($"Employee with ID {employeeId} not found.");
         user.LastLoginAt = loginTime;
         Update(user);
-        await _dbContext.SaveChangesAsync(ct);
+        //await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <inheritdoc />
@@ -112,10 +115,10 @@ public class UserRepository : BaseRepository<User, Guid, IdentityDbContext>, IUs
 
         user.IsActive = false;
         Update(user);
-        await _dbContext.SaveChangesAsync(ct);
+        //await _dbContext.SaveChangesAsync(ct);
     }
 
-    private Task<User?> GetByEmployeeIdAsync(Guid employeeId, CancellationToken ct)
+    public Task<User?> GetByEmployeeIdAsync(Guid employeeId, CancellationToken ct)
     {
         return _dbContext.Users
             .SingleOrDefaultAsync(u => u.EmployeeId == employeeId, ct);

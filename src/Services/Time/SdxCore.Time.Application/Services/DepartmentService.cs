@@ -3,6 +3,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Time.Application.Contracts.Services;
 using SdxCore.Time.Application.DTOs.Request;
 using SdxCore.Time.Application.DTOs.Response;
+using SdxCore.Time.Domain;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Repositories;
 
@@ -13,14 +14,20 @@ public class DepartmentService : IDepartmentService
     private readonly IDepartmentRepository _repository;
     private readonly ICacheService _cacheService;
     private readonly ICacheKeyBuilder _cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork;
 
-    public DepartmentService(IDepartmentRepository repository, ICacheService cacheService, ICacheKeyBuilder cacheKeyBuilder)
+    public DepartmentService(
+        IDepartmentRepository repository,
+        ICacheService cacheService, 
+        ICacheKeyBuilder cacheKeyBuilder,
+        ITimeUnitOfWork unitOfWork)
     {
         _repository = repository;
         _cacheService = cacheService;
         _cacheKeyBuilder = cacheKeyBuilder;
+        _unitOfWork = unitOfWork;
     }
-
+    
     public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Department), "all");
@@ -50,7 +57,7 @@ public class DepartmentService : IDepartmentService
         entity.IsActive = true;
 
         await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
@@ -66,7 +73,7 @@ public class DepartmentService : IDepartmentService
         entity.Description = dto.Description;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -77,7 +84,7 @@ public class DepartmentService : IDepartmentService
 
         entity.IsActive = request.IsActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -138,7 +145,7 @@ public class DepartmentService : IDepartmentService
 
         entity.ParentDepartmentId = request.ParentId;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

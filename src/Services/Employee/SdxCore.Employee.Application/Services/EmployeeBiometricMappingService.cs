@@ -1,7 +1,8 @@
 using SdxCore.Common.Helpers;
+using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
-using SdxCore.Employee.Application.Contracts.Services;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -10,10 +11,14 @@ namespace SdxCore.Employee.Application.Services;
 public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
 {
     private readonly IEmployeeBiometricMappingRepository _repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
-    public EmployeeBiometricMappingService(IEmployeeBiometricMappingRepository repository)
+    public EmployeeBiometricMappingService(
+        IEmployeeBiometricMappingRepository repository,
+        IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
@@ -45,7 +50,7 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
         mapping.IsActive = true;
 
         var created = await _repository.AddAsync(mapping, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(created);
     }
@@ -58,7 +63,7 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
         mapping.DeviceEmployeeCode = request.DeviceEmployeeCode;
         _repository.Update(mapping);
 
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mapping);
     }
 
@@ -69,7 +74,7 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
 
         mapping.IsActive = isActive;
         _repository.Update(mapping);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

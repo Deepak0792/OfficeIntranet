@@ -1,20 +1,22 @@
-using SdxCore.Common.Security;
+﻿using SdxCore.Common.Security;
 using SdxCore.Identity.Application.Contracts.Security;
 using SdxCore.Identity.Application.Contracts.Services;
 using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Application.Exceptions;
+using SdxCore.Identity.Domain;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
 using SdxCore.Identity.Domain.Entities;
 using SdxCore.Identity.Domain.Repositories;
-using SdxCore.SharedKernel.Contexts;
 using SdxCore.SharedKernel.Contracts;
 using System.Security.Claims;
 using System.Security.Cryptography;
 
 namespace SdxCore.Identity.Application.Services;
+
 public class RefreshTokenService : IRefreshTokenService
 {
+    private readonly IIdentityUnitOfWork _unitOfWork;
     private readonly IAuditLoggerService _auditLoggerService;
     private readonly IUserContext _userContext;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -26,79 +28,64 @@ public class RefreshTokenService : IRefreshTokenService
         IUserContext userContext,
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
-        ITokenFactory tokenFactory)
+        ITokenFactory tokenFactory,
+        IIdentityUnitOfWork unitOfWork)
     {
-        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(userContext));
+        _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(auditLoggerService));
         _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         _refreshTokenRepository = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-        _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory)); ;
+        _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
-    public async Task<AuthenticationResponse> RefreshTokenAsync(RefreshTokenRequest refreshTokenRequest, CancellationToken ct = default)
+    // -- RefreshTokenAsync ------------------------------------
+    // Owns a single SaveChangesAsync that commits both:
+    //   1. New refresh token (staged by StageNewRefreshTokenAsync)
+    //   2. Rotation of old token  (staged by StageRotateToken)
+    public async Task<AuthenticationResponse> RefreshTokenAsync(
+        RefreshTokenRequest refreshTokenRequest,
+        CancellationToken ct = default)
     {
         if (refreshTokenRequest is null)
-        {
             throw new ArgumentNullException(nameof(refreshTokenRequest));
-        }
 
         if (string.IsNullOrWhiteSpace(refreshTokenRequest.RefreshToken))
-        {
             return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "INVALID_REFRESH_TOKEN",
                 ErrorMessage = "Refresh token is required"
             };
-        }
 
         var existingToken = await ValidateAsync(refreshTokenRequest.RefreshToken, ct);
-
         if (existingToken is null)
-        {
             return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "INVALID_REFRESH_TOKEN",
                 ErrorMessage = "Refresh token is invalid or expired"
             };
-        }
 
-        // Build claims (IMPORTANT: ideally load user from DB here)
-        User? user = await _userRepository.GetByIdAsync(existingToken.EmployeeId, ct);
-
-        if (user is null)
-        {
-            throw new RecordNotFoundException($"User with Id {existingToken.EmployeeId} not found.");
-        }
+        var user = await _userRepository.GetByEmployeeIdAsync(existingToken.EmployeeId, ct)
+            ?? throw new RecordNotFoundException(
+                $"User with Id {existingToken.EmployeeId} not found.");
 
         var claims = BuildClaims(user);
+        var newAccessToken = _tokenFactory.IssueToken(claims)
+            ?? throw new InvalidOperationException("Token generation failed.");
 
-        // Issue new access token
-        var newAccessToken = _tokenFactory.IssueToken(claims);
+        // Stage new refresh token — no SaveChangesAsync inside
+        var refreshTokenResult = await StageNewRefreshTokenAsync(existingToken.EmployeeId, ct);
 
-        if (newAccessToken is null)
-            throw new ArgumentNullException("Token Generation failed");
+        // Stage rotation of old token — no SaveChangesAsync inside
+        StageRotateToken(existingToken, refreshTokenResult.RawToken!);
 
-        // Generate new refresh token
-        // Store new refresh token
-        var refreshTokenResult =
-            await CreateAsync(
-                existingToken.EmployeeId,
-                ct);
-
-        if (refreshTokenResult.RawToken is null)
-            throw new ArgumentNullException("Refresh Token is null");
+        // -- Single commit: new token + rotation --------------
+        await _unitOfWork.SaveChangesAsync(ct);
 
         newAccessToken.RefreshToken = refreshTokenResult.RawToken;
         newAccessToken.RefreshTokenExpiresAt = refreshTokenResult.ExpiresAt;
-
-        // Rotate old token
-        await RotateAsync(
-            existingToken,
-            refreshTokenResult.RawToken,
-            _userContext.IpAddress,
-            ct);
 
         await _auditLoggerService.LogAsync(new AuditEventRequest
         {
@@ -117,40 +104,61 @@ public class RefreshTokenService : IRefreshTokenService
         };
     }
 
-    /// <summary>
-    /// Generate raw refresh token
-    /// </summary>
-    /// <returns>return the refresh token</returns>
-    public string GenerateRefreshToken()
-    {
-        var bytes = new byte[64];
-
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(bytes);
-
-        return Convert.ToBase64String(bytes);
-    }
-
-    /// <summary>
-    /// Create new refresh token entry
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="ipAddress"></param>
-    /// <param name="userAgent"></param>
-    /// <param name="rawRefreshToken"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
+    // -- CreateAsync ------------------------------------------
+    // Stages a new RefreshToken entity only — does NOT call SaveChangesAsync.
+    // Caller (AuthenticationService) owns the commit.
     public async Task<RefreshTokenResponse> CreateAsync(
         Guid employeeId,
         CancellationToken ct = default)
     {
-        string rawRefreshToken = GenerateRefreshToken();
+        return await StageNewRefreshTokenAsync(employeeId, ct);
+    }
+
+    // -- RevokeRefreshTokenAsync ------------------------------
+    // Standalone operation (logout) — owns its own commit.
+    public async Task RevokeRefreshTokenAsync(
+        string refreshToken,
+        CancellationToken ct = default)
+    {
+        var hash = PasswordHasher.HashToken(refreshToken);
+        var token = await _refreshTokenRepository.GetByHashAsync(hash, ct);
+        if (token is null) return;
+
+        token.RevokedAt = DateTime.UtcNow;
+        token.RevokedByIp = _userContext.IpAddress;
+
+        _refreshTokenRepository.Update(token);
+
+        // Standalone logout — owns its commit
+        await _unitOfWork.SaveChangesAsync(ct);
+    }
+
+    // -- GenerateRefreshToken ---------------------------------
+    public string GenerateRefreshToken()
+    {
+        var bytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        return Convert.ToBase64String(bytes);
+    }
+
+    // -- Private helpers --------------------------------------
+
+    /// <summary>
+    /// Stages a new RefreshToken entity via AddAsync.
+    /// Does NOT call SaveChangesAsync — caller owns the commit.
+    /// </summary>
+    private async Task<RefreshTokenResponse> StageNewRefreshTokenAsync(
+        Guid employeeId,
+        CancellationToken ct)
+    {
+        string rawToken = GenerateRefreshToken();
 
         var entity = new RefreshToken
         {
             Id = Guid.NewGuid(),
             EmployeeId = employeeId,
-            HashToken = PasswordHasher.HashToken(rawRefreshToken),
+            HashToken = PasswordHasher.HashToken(rawToken),
             IsActive = true,
             CreatedBy = employeeId,
             LastUpdatedBy = employeeId,
@@ -161,98 +169,51 @@ public class RefreshTokenService : IRefreshTokenService
         };
 
         await _refreshTokenRepository.AddAsync(entity, ct);
-        await _refreshTokenRepository.SaveChangesAsync(ct);
 
-        var result = new RefreshTokenResponse
+        return new RefreshTokenResponse
         {
             Id = entity.Id,
             EmployeeId = entity.EmployeeId,
-            RawToken = rawRefreshToken,
+            RawToken = rawToken,
             HashToken = entity.HashToken,
             ExpiresAt = entity.ExpiresAt
         };
-
-        return result;
     }
+
     /// <summary>
-    /// Validate refresh token
+    /// Stages rotation of an existing token via Update.
+    /// Does NOT call SaveChangesAsync — caller owns the commit.
     /// </summary>
-    /// <param name="refreshToken"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    private async Task<RefreshToken?> ValidateAsync(string refreshToken, CancellationToken ct = default)
+    private void StageRotateToken(
+        RefreshToken existingToken,
+        string newRawToken)
+    {
+        existingToken.RevokedAt = DateTime.UtcNow;
+        existingToken.RevokedByIp = _userContext.IpAddress;
+        existingToken.ReplacedByHashToken = PasswordHasher.HashToken(newRawToken);
+
+        _refreshTokenRepository.Update(existingToken);
+    }
+
+    private async Task<RefreshToken?> ValidateAsync(
+        string refreshToken,
+        CancellationToken ct)
     {
         var hash = PasswordHasher.HashToken(refreshToken);
-
-        if (hash is null)
-            return null;
+        if (hash is null) return null;
 
         var entity = await _refreshTokenRepository.GetByHashAsync(hash, ct);
-
-        if (entity == null)
-            return null;
-
-        if (entity.RevokedAt != null)
-            return null;
-
-        if (entity.ExpiresAt <= DateTime.UtcNow)
-            return null;
+        if (entity is null) return null;
+        if (entity.RevokedAt is not null) return null;
+        if (entity.ExpiresAt <= DateTime.UtcNow) return null;
 
         return entity;
     }
 
-    /// <summary>
-    /// Rotate refresh token
-    /// </summary>
-    /// <param name="existingToken"></param>
-    /// <param name="rawRefreshToken"></param>
-    /// <param name="ipAddress"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    private async Task RotateAsync(
-        RefreshToken existingToken,
-        string rawRefreshToken,
-        string? ipAddress,
-        CancellationToken ct = default)
-    {
-        existingToken.RevokedAt = DateTime.UtcNow;
-        existingToken.RevokedByIp = ipAddress;
-        existingToken.ReplacedByHashToken = PasswordHasher.HashToken(rawRefreshToken);
-
-        _refreshTokenRepository.Update(existingToken);
-        await _refreshTokenRepository.SaveChangesAsync(ct);
-    }
-
-    /// <summary>
-    /// Revoke token (logout)
-    /// </summary>
-    /// <param name="refreshToken"></param>
-    /// <param name="ipAddress"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    public async Task RevokeRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
-    {
-        var hash = PasswordHasher.HashToken(refreshToken);
-
-        var token = await _refreshTokenRepository.GetByHashAsync(hash, ct);
-
-        if (token == null)
-            return;
-
-        token.RevokedAt = DateTime.UtcNow;
-        token.RevokedByIp = _userContext.IpAddress;
-
-        _refreshTokenRepository.Update(token);
-        await _refreshTokenRepository.SaveChangesAsync(ct);
-    }
-
-    private static IReadOnlyList<Claim> BuildClaims(User user)
-    {
-        return new List<Claim>
-        {
-            new ("sub", user.EmployeeId.ToString()),
-            new ("username", user.Username),
-            new ("email", user.Email)
-        };
-    }
+    private static IReadOnlyList<Claim> BuildClaims(User user) =>
+    [
+        new("sub",      user.EmployeeId.ToString()),
+        new("username", user.Username),
+        new("email",    user.Email)
+    ];
 }

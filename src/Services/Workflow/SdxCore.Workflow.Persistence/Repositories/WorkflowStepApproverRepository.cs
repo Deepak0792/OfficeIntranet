@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Repositories;
@@ -7,8 +6,9 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowStepApproverRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowStepApprover, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowStepApproverRepository
+public class WorkflowStepApproverRepository(WorkflowDbContext dbContext) :
+    BaseRepository<WorkflowStepApprover, Guid, WorkflowDbContext>(dbContext),
+    IWorkflowStepApproverRepository
 {
     public async Task<IEnumerable<WorkflowStepApprover>> GetByStepIdAsync(Guid stepId, CancellationToken cancellationToken = default) =>
         await _dbSet

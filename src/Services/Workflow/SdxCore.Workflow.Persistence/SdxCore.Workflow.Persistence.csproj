@@ -18,5 +18,7 @@
 		<ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.SharedKernel\SdxCore.SharedKernel.csproj" />
 		<ProjectReference Include="..\SdxCore.Workflow.Domain\SdxCore.Workflow.Domain.csproj" />
 	</ItemGroup>
-
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 </Project>

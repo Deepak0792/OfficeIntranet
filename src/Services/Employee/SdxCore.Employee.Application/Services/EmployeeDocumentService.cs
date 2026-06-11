@@ -1,7 +1,8 @@
 using SdxCore.Common.Helpers;
+using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
-using SdxCore.Employee.Application.Contracts.Services;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -10,12 +11,15 @@ namespace SdxCore.Employee.Application.Services;
 public class EmployeeDocumentService : IEmployeeDocumentService
 {
     private readonly IEmployeeDocumentRepository _repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
-    public EmployeeDocumentService(IEmployeeDocumentRepository repository)
+    public EmployeeDocumentService(
+       IEmployeeDocumentRepository repository,
+       IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
-
     public async Task<IEnumerable<EmployeeDocumentResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
@@ -46,7 +50,7 @@ public class EmployeeDocumentService : IEmployeeDocumentService
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(employeeId, created.Id, cancellationToken) 
             ?? throw new Exception("Failed to retrieve created entity");
@@ -63,8 +67,8 @@ public class EmployeeDocumentService : IEmployeeDocumentService
         entity.Remarks = request.Remarks;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
-        
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
 
@@ -75,7 +79,7 @@ public class EmployeeDocumentService : IEmployeeDocumentService
 
         entity.IsActive = isActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

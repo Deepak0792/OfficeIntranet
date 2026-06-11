@@ -1,4 +1,3 @@
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Time.Domain.Entities;
 using SdxCore.Time.Domain.Repositories;
@@ -6,7 +5,9 @@ using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;
 
-public class BiometricDeviceRepository : BaseRepository<BiometricDevice, Guid, TimeDbContext>, IBiometricDeviceRepository
+public class BiometricDeviceRepository
+    : BaseRepository<BiometricDevice, Guid, TimeDbContext>, IBiometricDeviceRepository
 {
-    public BiometricDeviceRepository(TimeDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
+    public BiometricDeviceRepository(TimeDbContext dbContext)
+        : base(dbContext) { }
 }

@@ -1,13 +1,12 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Application.Contracts.Providers;
 using SdxCore.Identity.Application.Contracts.Security;
 using SdxCore.Identity.Application.Contracts.Services;
 using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Application.Exceptions;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Domain;
 using SdxCore.Identity.Domain.DTOs.Request;
 using SdxCore.Identity.Domain.DTOs.Response;
-using SdxCore.SharedKernel.Contexts;
 using SdxCore.SharedKernel.Contracts;
 using System.Security.Claims;
 
@@ -15,7 +14,14 @@ namespace SdxCore.Identity.Application.Services;
 
 /// <summary>
 /// Central authentication service that orchestrates authentication operations.
-/// Resolves providers, delegates authentication, issues tokens, and records audit events.
+/// 
+/// Commit ownership:
+///   - InHouseProvider.AuthenticateAsync owns its own commit for
+///     failed-attempt tracking and successful login updates. This is
+///     intentional — those writes must be persisted immediately,
+///     independent of token issuance.
+///   - AuthenticationService owns ONE commit for the refresh token
+///     staged by RefreshTokenService.CreateAsync.
 /// </summary>
 public sealed class AuthenticationService : IAuthenticationService
 {
@@ -23,8 +29,9 @@ public sealed class AuthenticationService : IAuthenticationService
     private readonly IProviderRegistry _providerRegistry;
     private readonly ITokenFactory _tokenFactory;
     private readonly IAuditLoggerService _auditLoggerService;
-    private readonly ILogger<AuthenticationService> _logger;
     private readonly IRefreshTokenService _refreshTokenService;
+    private readonly IIdentityUnitOfWork _unitOfWork;
+    private readonly ILogger<AuthenticationService> _logger;
 
     public AuthenticationService(
         IUserContext userContext,
@@ -32,6 +39,7 @@ public sealed class AuthenticationService : IAuthenticationService
         ITokenFactory tokenFactory,
         IAuditLoggerService auditLoggerService,
         IRefreshTokenService refreshTokenService,
+        IIdentityUnitOfWork unitOfWork,
         ILogger<AuthenticationService> logger)
     {
         _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
@@ -39,50 +47,45 @@ public sealed class AuthenticationService : IAuthenticationService
         _tokenFactory = tokenFactory ?? throw new ArgumentNullException(nameof(tokenFactory));
         _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(auditLoggerService));
         _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    /// <summary>
-    /// Authenticates a user based on the provided request.
-    /// </summary>
-    /// <param name="request">Authentication request containing credentials and protocol-specific parameters.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Authentication result containing success status, token, and claims.</returns>
-    public async Task<AuthenticationResponse> AuthenticateAsync(AuthenticationRequest request, CancellationToken ct = default)
+    // -- AuthenticateAsync ------------------------------------
+    // Commit flow:
+    //   1. provider.AuthenticateAsync()          - InHouseProvider owns its commit
+    //   2. _refreshTokenService.CreateAsync()    - stages only, no commit
+    //   3. _unitOfWork.SaveChangesAsync()        - single commit for refresh token
+    public async Task<AuthenticationResponse> AuthenticateAsync(
+        AuthenticationRequest request,
+        CancellationToken ct = default)
     {
         if (request is null)
-        {
             throw new ArgumentNullException(nameof(request));
-        }
 
         IAuthenticationProvider? provider = null;
-        AuthProtocol protocol = AuthProtocol.InHouse; // Default for logging purposes
+        AuthProtocol protocol = AuthProtocol.InHouse;
 
         try
         {
-            // 1. Resolve provider from configuration
             provider = _providerRegistry.ResolveFromConfiguration();
             protocol = provider.Protocol;
 
             _logger.LogDebug("Resolved authentication provider: {Protocol}", protocol);
 
-            // 2. Validate request based on protocol
             ValidateRequest(request, protocol);
 
-            // 3. Delegate authentication to provider
             ProviderResponse providerResult = await provider.AuthenticateAsync(request, ct);
 
-            // 4. Handle authentication failure
             if (!providerResult.IsSuccess)
             {
                 _logger.LogWarning(
-                    "Authentication failed for user {Username} using protocol {Protocol}: {Reason} {IpAddress}",
+                    "Authentication failed for user {Username} via {Protocol}: {Reason} from {IpAddress}",
                     request.Username ?? "unknown",
                     protocol,
                     providerResult.FailureReason,
                     _userContext.IpAddress);
 
-                // Log audit event for failure
                 await _auditLoggerService.LogAsync(new AuditEventRequest
                 {
                     EventType = "LOGIN_FAILURE",
@@ -100,33 +103,27 @@ public sealed class AuthenticationService : IAuthenticationService
                 };
             }
 
-            // 5. Issue token from claims
-            AuthToken token = _tokenFactory.IssueToken(providerResult.Claims);
+            var token = _tokenFactory.IssueToken(providerResult.Claims)
+                ?? throw new InvalidOperationException("Token generation failed.");
 
-            if (token is null)
-                throw new ArgumentNullException("Token Generation failed");
-
-            Guid employeeId = ExtractSubjectFromClaims(providerResult.Claims);
-
+            var employeeId = ExtractSubjectFromClaims(providerResult.Claims);
             if (employeeId == Guid.Empty)
                 throw new ArgumentException("EmployeeId cannot be empty.");
 
-            _logger.LogInformation(
-               "Authentication successful for user {Username} using protocol {Protocol}",
-               request.Username ?? ExtractSubjectFromClaims(providerResult.Claims).ToString(),
-            protocol);
+            // Stage new refresh token - CreateAsync does NOT call SaveChangesAsync
+            var refreshTokenResult = await _refreshTokenService.CreateAsync(employeeId, ct);
 
-            // 5.1 Generate refresh token
-            // Store new refresh token
-            var refreshTokenResult =
-                await _refreshTokenService.CreateAsync(
-                    employeeId,
-                    ct);
+            // -- Single commit for refresh token --------------
+            await _unitOfWork.SaveChangesAsync(ct);
 
             token.RefreshToken = refreshTokenResult.RawToken;
             token.RefreshTokenExpiresAt = refreshTokenResult.ExpiresAt;
 
-            // 6. Log audit event for success
+            _logger.LogInformation(
+                "Authentication successful for user {Username} via {Protocol}",
+                request.Username ?? employeeId.ToString(),
+                protocol);
+
             await _auditLoggerService.LogAsync(new AuditEventRequest
             {
                 EventType = "LOGIN_SUCCESS",
@@ -136,7 +133,6 @@ public sealed class AuthenticationService : IAuthenticationService
                 IpAddress = _userContext.IpAddress
             }, ct);
 
-            // 7. Return successful result
             return new AuthenticationResponse
             {
                 IsSuccess = true,
@@ -146,9 +142,8 @@ public sealed class AuthenticationService : IAuthenticationService
         }
         catch (ConfigurationException ex)
         {
-            _logger.LogError(ex, "Configuration error during authentication");
+            _logger.LogError(ex, "Configuration error during authentication.");
 
-            // Log audit event for configuration error
             await _auditLoggerService.LogAsync(new AuditEventRequest
             {
                 EventType = "LOGIN_FAILURE",
@@ -162,14 +157,13 @@ public sealed class AuthenticationService : IAuthenticationService
             {
                 IsSuccess = false,
                 ErrorCode = "CONFIGURATION_ERROR",
-                ErrorMessage = "Authentication service is not properly configured"
+                ErrorMessage = "Authentication service is not properly configured."
             };
         }
         catch (ProviderNotFoundException ex)
         {
-            _logger.LogError(ex, "Provider not found during authentication");
+            _logger.LogError(ex, "Provider not found during authentication.");
 
-            // Log audit event for provider not found
             await _auditLoggerService.LogAsync(new AuditEventRequest
             {
                 EventType = "LOGIN_FAILURE",
@@ -183,14 +177,13 @@ public sealed class AuthenticationService : IAuthenticationService
             {
                 IsSuccess = false,
                 ErrorCode = "PROVIDER_NOT_FOUND",
-                ErrorMessage = "Authentication provider is not available"
+                ErrorMessage = "Authentication provider is not available."
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during authentication");
+            _logger.LogError(ex, "Unexpected error during authentication.");
 
-            // Log audit event for unexpected error
             await _auditLoggerService.LogAsync(new AuditEventRequest
             {
                 EventType = "LOGIN_FAILURE",
@@ -200,27 +193,22 @@ public sealed class AuthenticationService : IAuthenticationService
                 IpAddress = _userContext.IpAddress
             }, ct);
 
-
             return new AuthenticationResponse
             {
                 IsSuccess = false,
                 ErrorCode = "INTERNAL_ERROR",
-                ErrorMessage = "An unexpected error occurred during authentication"
+                ErrorMessage = "An unexpected error occurred during authentication."
             };
         }
     }
 
-    /// <summary>
-    /// Validates a JWT token.
-    /// </summary>
-    /// <param name="token">JWT token to validate.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>True if the token is valid, not expired, and not revoked; otherwise false.</returns>
+    // -- ValidateTokenAsync -----------------------------------
+    // Read-only — no persistence, no commit needed.
     public Task<bool> ValidateTokenAsync(string token, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
-            _logger.LogWarning("Token validation failed: token is null or empty");
+            _logger.LogWarning("Token validation failed: token is null or empty.");
             return Task.FromResult(false);
         }
 
@@ -230,36 +218,29 @@ public sealed class AuthenticationService : IAuthenticationService
             bool isValid = principal is not null;
 
             if (isValid)
-            {
-                _logger.LogDebug("Token validation successful");
-            }
+                _logger.LogDebug("Token validation successful.");
             else
-            {
-                _logger.LogWarning("Token validation failed");
-            }
+                _logger.LogWarning("Token validation failed.");
 
             return Task.FromResult(isValid);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during token validation");
+            _logger.LogError(ex, "Error during token validation.");
             return Task.FromResult(false);
         }
     }
 
-
-    /// <summary>
-    /// Revokes a JWT token before its expiration.
-    /// </summary>
-    /// <param name="token">JWT token to revoke.</param>
-    /// <param name="ct">Cancellation token.</param>
+    // -- RevokeTokenAsync -------------------------------------
+    // Delegates to RefreshTokenService.RevokeRefreshTokenAsync which
+    // owns its own commit (standalone logout operation).
     public async Task RevokeTokenAsync(RevokeTokenRequest request, CancellationToken ct = default)
     {
-        if (request == null ||
-           string.IsNullOrWhiteSpace(request.Token) ||
-           string.IsNullOrWhiteSpace(request.RefreshToken))
+        if (request is null ||
+            string.IsNullOrWhiteSpace(request.Token) ||
+            string.IsNullOrWhiteSpace(request.RefreshToken))
         {
-            throw new ArgumentNullException("Token cannot be null or empty", nameof(request));
+            throw new ArgumentNullException(nameof(request), "Token and RefreshToken are required.");
         }
 
         try
@@ -268,76 +249,82 @@ public sealed class AuthenticationService : IAuthenticationService
 
             if (!string.IsNullOrEmpty(request.RefreshToken))
             {
-                await _refreshTokenService.RevokeRefreshTokenAsync(request.RefreshToken);
+                // RevokeRefreshTokenAsync owns its own commit
+                await _refreshTokenService.RevokeRefreshTokenAsync(request.RefreshToken, ct);
             }
-            _logger.LogInformation("Token revoked successfully");
+
+            _logger.LogInformation("Token revoked successfully.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during token revocation");
+            _logger.LogError(ex, "Error during token revocation.");
             throw;
         }
     }
 
-    /// <summary>
-    /// Validates the authentication request based on the protocol.
-    /// </summary>
+    // -- Private helpers --------------------------------------
+
     private void ValidateRequest(AuthenticationRequest request, AuthProtocol protocol)
     {
         switch (protocol)
         {
             case AuthProtocol.InHouse:
                 if (string.IsNullOrWhiteSpace(request.Username))
-                    throw new ArgumentNullException("Username is required for InHouse authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "Username is required for InHouse authentication.");
                 if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ArgumentNullException("Password is required for InHouse authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "Password is required for InHouse authentication.");
                 break;
 
             case AuthProtocol.Saml:
                 if (string.IsNullOrWhiteSpace(request.SamlAssertion))
-                    throw new ArgumentNullException("SAML assertion is required for SAML authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "SAML assertion is required for SAML authentication.");
                 break;
 
             case AuthProtocol.OAuth:
                 if (string.IsNullOrWhiteSpace(request.OAuthCode))
-                    throw new ArgumentNullException("OAuth code is required for OAuth authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "OAuth code is required for OAuth authentication.");
                 break;
 
             case AuthProtocol.Oidc:
                 if (string.IsNullOrWhiteSpace(request.IdToken))
-                    throw new ArgumentNullException("ID token is required for OIDC authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "ID token is required for OIDC authentication.");
                 break;
 
             case AuthProtocol.Jwt:
                 if (string.IsNullOrWhiteSpace(request.BearerToken))
-                    throw new ArgumentNullException("Bearer token is required for JWT authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "Bearer token is required for JWT authentication.");
                 break;
 
             case AuthProtocol.Ldap:
                 if (string.IsNullOrWhiteSpace(request.Username))
-                    throw new ArgumentNullException("Username is required for LDAP authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "Username is required for LDAP authentication.");
                 if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ArgumentNullException("Password is required for LDAP authentication", nameof(request));
+                    throw new ArgumentNullException(nameof(request),
+                        "Password is required for LDAP authentication.");
                 break;
 
             default:
-                throw new ArgumentNullException($"Unsupported authentication protocol: {protocol}", nameof(protocol));
+                throw new ArgumentException(
+                    $"Unsupported authentication protocol: {protocol}", nameof(protocol));
         }
     }
 
-    /// <summary>
-    /// Extracts the subject (user ID) from claims.
-    /// </summary>
-    private Guid ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
+    private static Guid ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
     {
         var subjectValue = claims
             .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")
             ?.Value;
 
         if (!Guid.TryParse(subjectValue, out var subjectId))
-        {
-            throw new InvalidOperationException("Subject claim is missing or is not a valid GUID.");
-        }
+            throw new InvalidOperationException(
+                "Subject claim is missing or is not a valid GUID.");
 
         return subjectId;
     }

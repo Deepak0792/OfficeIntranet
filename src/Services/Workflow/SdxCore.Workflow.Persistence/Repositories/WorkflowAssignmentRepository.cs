@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Repositories;
@@ -7,8 +6,9 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowAssignmentRepository(WorkflowDbContext dbContext, IUserContext requestContext) 
-    : BaseRepository<WorkflowAssignment, Guid, WorkflowDbContext>(dbContext, requestContext), IWorkflowAssignmentRepository
+public class WorkflowAssignmentRepository(WorkflowDbContext dbContext) :
+    BaseRepository<WorkflowAssignment, Guid, WorkflowDbContext>(dbContext),
+    IWorkflowAssignmentRepository
 {
     public async Task<IEnumerable<WorkflowAssignment>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default) =>
         await _dbSet

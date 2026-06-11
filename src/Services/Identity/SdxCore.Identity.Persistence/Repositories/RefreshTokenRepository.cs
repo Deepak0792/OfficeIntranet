@@ -6,9 +6,12 @@ using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Identity.Persistence.Repositories;
-public sealed class RefreshTokenRepository : BaseRepository<RefreshToken, Guid, IdentityDbContext>, IRefreshTokenRepository
+public sealed class RefreshTokenRepository :
+    BaseRepository<RefreshToken, Guid, IdentityDbContext>, 
+    IRefreshTokenRepository
 {
-    public RefreshTokenRepository(IdentityDbContext dbContext, IUserContext requestContext) : base(dbContext, requestContext) { }
+    public RefreshTokenRepository(IdentityDbContext dbContext) 
+        : base(dbContext) { }
 
     /// <summary>
     /// Gets refresh token by hashed value.

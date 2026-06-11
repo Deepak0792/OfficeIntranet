@@ -2,6 +2,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Employee.Application.Contracts.Services;
 using SdxCore.Employee.Application.DTOs.Request;
 using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Employee.Domain;
 using SdxCore.Employee.Domain.Entities;
 using SdxCore.Employee.Domain.Repositories;
 
@@ -10,12 +11,15 @@ namespace SdxCore.Employee.Application.Services;
 public class EmployeeRelationshipService : IEmployeeRelationshipService
 {
     private readonly IEmployeeRelationshipRepository _repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork;
 
-    public EmployeeRelationshipService(IEmployeeRelationshipRepository repository)
+    public EmployeeRelationshipService(
+       IEmployeeRelationshipRepository repository,
+       IEmployeeUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
-
     public async Task<IEnumerable<EmployeeRelationshipResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.ChildEmployeeId == employeeId, cancellationToken);
@@ -67,7 +71,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(request.ChildEmployeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
     }
@@ -83,7 +87,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
         entity.EffectiveTo = request.EffectiveTo;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
     }
@@ -95,7 +99,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
 
         entity.IsActive = isActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 
@@ -113,7 +117,7 @@ public class EmployeeRelationshipService : IEmployeeRelationshipService
 
         target.IsPrimaryRelationship = true;
         _repository.Update(target);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

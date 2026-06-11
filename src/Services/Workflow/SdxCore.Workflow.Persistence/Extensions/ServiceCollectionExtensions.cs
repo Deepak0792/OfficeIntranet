@@ -15,6 +15,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddSdxCoreWorkflowPersistence(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
+        services.AddSingleton<AuditInterceptor>();
         services.AddSingleton<OutboxSaveChangesInterceptor>();
 
         services.AddDbContext<WorkflowDbContext>((sp, options) =>
@@ -28,8 +30,14 @@ public static class ServiceCollectionExtensions
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorNumbersToAdd: null);
                 });
-            options.AddInterceptors(sp.GetRequiredService<OutboxSaveChangesInterceptor>());
+            options.AddInterceptors(
+                sp.GetRequiredService<AuditInterceptor>(),
+                sp.GetRequiredService<OutboxSaveChangesInterceptor>());
         });
+
+        services.AddScoped<IWorkflowUnitOfWork, WorkflowUnitOfWork>();
+        services.AddScoped<IUnitOfWork>(
+            sp => sp.GetRequiredService<IWorkflowUnitOfWork>());
 
         services.AddScoped<IWorkflowActionHistoryRepository, WorkflowActionHistoryRepository>();
         services.AddScoped<IWorkflowAssignmentRepository, WorkflowAssignmentRepository>();

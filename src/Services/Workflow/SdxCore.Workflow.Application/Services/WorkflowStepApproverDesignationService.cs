@@ -3,6 +3,7 @@ using SdxCore.Common.Helpers;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
@@ -13,7 +14,8 @@ public class WorkflowStepApproverDesignationService(
     IWorkflowStepApproverDesignationRepository repo,
     IWorkflowStepApproverRepository approverRepo,
     ICacheService cacheService,
-    ICacheKeyBuilder cacheKeyBuilder) : IWorkflowStepApproverDesignationService
+    ICacheKeyBuilder cacheKeyBuilder,
+    IWorkflowUnitOfWork _unitOfWork) : IWorkflowStepApproverDesignationService
 {
     public async Task<IEnumerable<WorkflowStepApproverDesignationResponse>> GetByApproverIdAsync(Guid approverId, CancellationToken cancellationToken = default)
     {
@@ -41,7 +43,8 @@ public class WorkflowStepApproverDesignationService(
             IsActive = true
         };
         await repo.AddAsync(entity, cancellationToken);
-        await repo.SaveChangesAsync(cancellationToken);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowStepApproverDesignationResponse>(entity);
     }
 
@@ -50,7 +53,7 @@ public class WorkflowStepApproverDesignationService(
         var deleted = await repo.DeleteAsync(approverId, designationId, cancellationToken);
         if (deleted)
         {
-            await repo.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
         return deleted;
     }

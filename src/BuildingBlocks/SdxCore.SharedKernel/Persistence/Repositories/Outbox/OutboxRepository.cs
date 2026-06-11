@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SdxCore.SharedKernel.Constant;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Entities;
 using SdxCore.SharedKernel.Persistence.Repositories;
 
@@ -9,10 +8,8 @@ namespace SdxCore.SharedKernel.Persistence.Outbox;
 public class OutboxRepository<TDbContext> : BaseRepository<OutboxMessage, Guid, TDbContext>
     where TDbContext : DbContext
 {
-    public OutboxRepository(
-        TDbContext dbContext,
-        IUserContext requestContext)
-        : base(dbContext, requestContext)
+    public OutboxRepository(TDbContext dbContext)
+        : base(dbContext)
     {
     }
 
@@ -41,7 +38,7 @@ public class OutboxRepository<TDbContext> : BaseRepository<OutboxMessage, Guid, 
         message.LastUpdatedAt = DateTime.UtcNow;
         message.LastUpdatedBy = SystemUser.SystemUserId;
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        //await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task MarkFailedAsync(
@@ -60,6 +57,6 @@ public class OutboxRepository<TDbContext> : BaseRepository<OutboxMessage, Guid, 
         message.LastUpdatedAt = DateTime.UtcNow;
         message.LastUpdatedBy = SystemUser.SystemUserId;
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        //await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

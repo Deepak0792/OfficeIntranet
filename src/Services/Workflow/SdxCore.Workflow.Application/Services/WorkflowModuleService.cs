@@ -4,6 +4,7 @@ using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 using SdxCore.Workflow.Application.Contracts.Services;
 using SdxCore.Workflow.Application.DTOs.Request;
 using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
 using SdxCore.Workflow.Domain.Repositories;
@@ -13,7 +14,8 @@ namespace SdxCore.Workflow.Application.Services;
 public class WorkflowModuleService(
     IWorkflowModuleRepository _repository,
     ICacheService cacheService,
-    ICacheKeyBuilder cacheKeyBuilder) : IWorkflowModuleService
+    ICacheKeyBuilder cacheKeyBuilder,
+    IWorkflowUnitOfWork _unitOfWork) : IWorkflowModuleService
 {
     public async Task<IEnumerable<WorkflowModuleResponse>> GetAllAsync(bool activeOnly = true, CancellationToken cancellationToken = default)
     {
@@ -60,7 +62,7 @@ public class WorkflowModuleService(
         entity.IsActive = true;
 
         await _repository.AddAsync(entity, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
     }
 
@@ -73,7 +75,7 @@ public class WorkflowModuleService(
         entity.EntityName = request.EntityName;
 
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
     }
 
@@ -84,7 +86,7 @@ public class WorkflowModuleService(
 
         entity.IsActive = request.IsActive;
         _repository.Update(entity);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 

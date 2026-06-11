@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.SharedKernel.Persistence;
 using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+using SdxCore.Time.Domain;
 using SdxCore.Time.Domain.Repositories;
 using SdxCore.Time.Persistence.Data;
 using SdxCore.Time.Persistence.Repositories;
@@ -11,8 +12,11 @@ namespace SdxCore.Time.Persistence.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSdxCoreTimePersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddSdxCoreTimePersistence(
+        this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHttpContextAccessor();
+        services.AddSingleton<AuditInterceptor>();
         services.AddSingleton<OutboxSaveChangesInterceptor>();
 
         services.AddDbContext<TimeDbContext>((sp, options) =>
@@ -26,8 +30,13 @@ public static class ServiceCollectionExtensions
                         maxRetryDelay: TimeSpan.FromSeconds(10),
                         errorNumbersToAdd: null);
                 });
-            options.AddInterceptors(sp.GetRequiredService<OutboxSaveChangesInterceptor>());
+            options.AddInterceptors(
+                sp.GetRequiredService<AuditInterceptor>(),
+                sp.GetRequiredService<OutboxSaveChangesInterceptor>());
         });
+        services.AddScoped<ITimeUnitOfWork, TimeUnitOfWork>();
+        services.AddScoped<IUnitOfWork>(
+            sp => sp.GetRequiredService<ITimeUnitOfWork>());
 
         // Register Repositories
         services.AddScoped<IBiometricDeviceRepository, BiometricDeviceRepository>();

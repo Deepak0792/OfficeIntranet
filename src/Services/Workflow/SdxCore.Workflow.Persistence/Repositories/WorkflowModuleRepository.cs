@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Repositories;
@@ -7,10 +6,12 @@ using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;
 
-public class WorkflowModuleRepository : BaseRepository<WorkflowModule, Guid, WorkflowDbContext>, IWorkflowModuleRepository
+public class WorkflowModuleRepository :
+    BaseRepository<WorkflowModule, Guid, WorkflowDbContext>,
+    IWorkflowModuleRepository
 {
     private readonly WorkflowDbContext dbContext;
-    public WorkflowModuleRepository(WorkflowDbContext dbContext, IUserContext requestContext):base(dbContext, requestContext)
+    public WorkflowModuleRepository(WorkflowDbContext dbContext) : base(dbContext)
     {
         this.dbContext = dbContext;
     }
