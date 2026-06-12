@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Employee.Domain;
-using SdxCore.Employee.Domain.Repositories;
+using SdxCore.Employee.Domain.Abstractions;
+using SdxCore.Employee.Domain.Abstractions.Repositories;
 using SdxCore.Employee.Persistence.Data;
 using SdxCore.Employee.Persistence.Repositories;
-using SdxCore.SharedKernel.Persistence;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+using SdxCore.SharedKernel.Abstractions.Repositories;
+using SdxCore.SharedKernel.Persistence.Interceptors;
 
 namespace SdxCore.Employee.Persistence.Extensions;
 public static class ServiceCollectionExtensions

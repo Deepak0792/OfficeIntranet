@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Identity.Domain;
-using SdxCore.Identity.Domain.Repositories;
+using SdxCore.Identity.Domain.Abstractions;
+using SdxCore.Identity.Domain.Abstractions.Repositories;
 using SdxCore.Identity.Persistence.Data;
 using SdxCore.Identity.Persistence.Repositories;
-using SdxCore.SharedKernel.Persistence;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+using SdxCore.SharedKernel.Abstractions.Repositories;
+using SdxCore.SharedKernel.Persistence.Interceptors;
 
 namespace SdxCore.Identity.Persistence.Extensions;
 

@@ -1,12 +1,12 @@
 using SdxCore.Common.Enums.Workflow;
-using SdxCore.Workflow.Application.Contracts.Engine;
-using SdxCore.Workflow.Application.Contracts.Resolver;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Response;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
-using SdxCore.Workflow.Domain.Repositories;
-using SdxCore.Workflow.Domain;
+using SdxCore.Workflow.Domain.Abstractions;
+using SdxCore.Workflow.Domain.Abstractions.Repositories;
+using SdxCore.Workflow.Application.DTOs.Step.Response;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.Abstractions.Engine;
+using SdxCore.Workflow.Application.Abstractions.Resolver;
 
 namespace SdxCore.Workflow.Application.Engine;
 

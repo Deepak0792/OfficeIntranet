@@ -1,11 +1,13 @@
 using SdxCore.Common.Models;
-using SdxCore.Workflow.Application.Contracts.Engine;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Application.Abstractions.Engine;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.DTOs.ActionHistory.Response;
+using SdxCore.Workflow.Application.DTOs.Instance.Request;
+using SdxCore.Workflow.Application.DTOs.Instance.Response;
+using SdxCore.Workflow.Application.DTOs.Task.Response;
 using SdxCore.Workflow.Domain;
+using SdxCore.Workflow.Domain.Abstractions.Repositories;
 using SdxCore.Workflow.Domain.Exceptions;
-using SdxCore.Workflow.Domain.Repositories;
 
 namespace SdxCore.Workflow.Application.Services;
 

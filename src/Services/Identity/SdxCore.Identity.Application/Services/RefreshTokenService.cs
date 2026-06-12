@@ -1,14 +1,16 @@
-﻿using SdxCore.Common.Security;
-using SdxCore.Identity.Application.Contracts.Security;
-using SdxCore.Identity.Application.Contracts.Services;
+﻿using SdxCore.Common.Security.Cryptography;
+using SdxCore.Identity.Application.Abstractions.Security;
+using SdxCore.Identity.Application.Abstractions.Services;
+using SdxCore.Identity.Application.DTOs.Audit.Request;
+using SdxCore.Identity.Application.DTOs.Auth.Response;
+using SdxCore.Identity.Application.DTOs.Token.Request;
+using SdxCore.Identity.Application.DTOs.Token.Response;
 using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Application.Exceptions;
-using SdxCore.Identity.Domain;
-using SdxCore.Identity.Domain.DTOs.Request;
-using SdxCore.Identity.Domain.DTOs.Response;
+using SdxCore.Identity.Domain.Abstractions;
+using SdxCore.Identity.Domain.Abstractions.Repositories;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Repositories;
-using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Abstractions;
 using System.Security.Claims;
 using System.Security.Cryptography;
 

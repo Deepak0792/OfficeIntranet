@@ -1,5 +1,5 @@
 using System;
-namespace SdxCore.Workflow.Application.DTOs.Response;
+namespace SdxCore.Workflow.Application.DTOs.Employee;
 
 public class EmployeeSummaryResponse
 {

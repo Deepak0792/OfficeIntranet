@@ -1,16 +1,18 @@
+﻿using SdxCore.Common.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Time.Application.DTOs.Request;
-using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Contracts.Services;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Time.Application.DTOs.Shared.Request;
+using SdxCore.Time.Application.DTOs.TimeZoneMaster.Request;
+using SdxCore.Time.Application.DTOs.TimeZoneMaster.Response;
+using SdxCore.Time.Application.Abstractions.Services;
 
 namespace SdxCore.Time.API.Controllers;
 
 [ApiController]
 [Route("api/v1/time-zones")]
 [GatewayOnly]
-public class TimeZoneMastersController : ControllerBase
+public class TimeZoneMastersController : SdxControllerBase
 {
     private readonly ITimeZoneMasterService _service;
     private readonly ILogger<TimeZoneMastersController> _logger;
@@ -41,7 +43,8 @@ public class TimeZoneMastersController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateTimeZoneMasterRequest dto, CancellationToken cancellationToken)
     {
 
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var result = await _service.CreateAsync(dto, cancellationToken);
         var response = new ApiResponse<TimeZoneMasterResponse>(result, "TimeZoneMaster created successfully.");
@@ -53,7 +56,8 @@ public class TimeZoneMastersController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken)
     {
 
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _service.UpdateAsync(id, dto, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "TimeZoneMaster not found." });
@@ -65,7 +69,8 @@ public class TimeZoneMastersController : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(request, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "TimeZoneMaster not found." });

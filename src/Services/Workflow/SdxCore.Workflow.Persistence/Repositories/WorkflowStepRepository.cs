@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SdxCore.SharedKernel.Persistence.Repositories;
+using SdxCore.Workflow.Domain.Abstractions.Repositories;
 using SdxCore.Workflow.Domain.Entities;
-using SdxCore.Workflow.Domain.Repositories;
 using SdxCore.Workflow.Persistence.Data;
 
 namespace SdxCore.Workflow.Persistence.Repositories;

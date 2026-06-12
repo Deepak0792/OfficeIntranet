@@ -12,9 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.FileStorage\SdxCore.FileStorage.csproj" />
+    <!-- Application layer is the only direct dependency — storage is referenced transitively -->
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.SharedKernel\SdxCore.SharedKernel.csproj" />
+    <ProjectReference Include="..\SdxCore.File.Application\SdxCore.File.Application.csproj" />
   </ItemGroup>
 
 </Project>

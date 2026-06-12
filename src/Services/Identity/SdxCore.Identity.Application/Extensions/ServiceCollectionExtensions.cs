@@ -1,11 +1,13 @@
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SdxCore.Identity.Application.Contracts.Providers;
-using SdxCore.Identity.Application.Contracts.Security;
-using SdxCore.Identity.Application.Contracts.Services;
+using SdxCore.Identity.Application.Abstractions.Providers;
+using SdxCore.Identity.Application.Abstractions.Security;
+using SdxCore.Identity.Application.Abstractions.Services;
 using SdxCore.Identity.Application.Providers;
 using SdxCore.Identity.Application.Security;
 using SdxCore.Identity.Application.Services;
+using System.Reflection;
 
 namespace SdxCore.Identity.Application.Extensions;
 
@@ -42,6 +44,9 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        // Register FluentValidation validators
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         // Register IAuthenticationService as scoped (per-request lifetime)
         // Requirement 12.2: IAuthenticationService registered as scoped service             

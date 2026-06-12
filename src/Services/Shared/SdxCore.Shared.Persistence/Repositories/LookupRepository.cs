@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using SdxCore.Shared.Domain.Abstractions.Repositories;
 using SdxCore.Shared.Domain.Entities;
-using SdxCore.Shared.Domain.Repositories;
 using SdxCore.Shared.Persistence.Data;
 
 namespace SdxCore.Shared.Persistence.Repositories;

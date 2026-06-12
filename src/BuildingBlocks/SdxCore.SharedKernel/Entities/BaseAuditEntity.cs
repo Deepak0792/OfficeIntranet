@@ -1,3 +1,5 @@
+using SdxCore.SharedKernel.Abstractions;
+
 namespace SdxCore.SharedKernel.Entities;
 
 /// <summary>

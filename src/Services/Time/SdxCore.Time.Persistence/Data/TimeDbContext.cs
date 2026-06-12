@@ -31,15 +31,6 @@ public class TimeDbContext : SdxDbContext
 
         modelBuilder.HasDefaultSchema("time");
 
-        modelBuilder.Entity<OutboxMessage>(b =>
-        {
-            b.ToTable("OutboxMessages", "time");
-            b.HasKey(x => x.Id);
-
-            b.Property(x => x.Id)
-                .ValueGeneratedNever();
-        });
-
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(TimeDbContext).Assembly);
     }

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using SdxCore.Common.Controllers;
+using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Workflow.Application.DTOs.ActionHistory.Response;
+using SdxCore.Workflow.Application.DTOs.Task.Response;
+using SdxCore.Workflow.Application.Abstractions.Services;
 
 namespace SdxCore.Workflow.API.Controllers;
 
@@ -10,7 +12,7 @@ namespace SdxCore.Workflow.API.Controllers;
 [ApiController]
 [Route("api/v1/workflow")]
 [GatewayOnly]
-public class WorkflowActionHistoryController : ControllerBase
+public class WorkflowActionHistoryController : SdxControllerBase
 {
     private readonly IWorkflowInstanceService _workflowInstanceService;
     private readonly IWorkflowTaskService _workflowTaskService;

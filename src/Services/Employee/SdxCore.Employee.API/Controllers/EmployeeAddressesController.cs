@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Controllers;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Employee.Application.Contracts.Services;
-using SdxCore.Employee.Application.DTOs.Request;
-using SdxCore.Employee.Application.DTOs.Response;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Employee.Application.Abstractions.Services;
+using SdxCore.Employee.Application.DTOs.Employee.Request;
+using SdxCore.Employee.Application.DTOs.EmployeeAddress.Request;
+using SdxCore.Employee.Application.DTOs.EmployeeAddress.Response;
 
 namespace SdxCore.Employee.API.Controllers;
 

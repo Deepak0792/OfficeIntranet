@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using SdxCore.Common.Security;
+using SdxCore.Common.Security.Jwt;
 
 namespace SdxCore.Common.Extensions;
 

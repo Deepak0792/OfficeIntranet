@@ -1,16 +1,18 @@
+﻿using SdxCore.Common.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Time.Application.DTOs.Request;
-using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Contracts.Services;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Time.Application.DTOs.OfficeLocation.Request;
+using SdxCore.Time.Application.DTOs.OfficeLocation.Response;
+using SdxCore.Time.Application.DTOs.Shared.Request;
+using SdxCore.Time.Application.Abstractions.Services;
 
 namespace SdxCore.Time.API.Controllers;
 
 [ApiController]
 [Route("api/v1/office-locations")]
 [GatewayOnly]
-public class OfficeLocationsController : ControllerBase
+public class OfficeLocationsController : SdxControllerBase
 {
     private readonly IOfficeLocationService _service;
     private readonly ILogger<OfficeLocationsController> _logger;
@@ -40,7 +42,8 @@ public class OfficeLocationsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOfficeLocationRequest dto, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var result = await _service.CreateAsync(dto, cancellationToken);
         var response = new ApiResponse<OfficeLocationResponse>(result, "OfficeLocation created successfully.");
@@ -51,7 +54,8 @@ public class OfficeLocationsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOfficeLocationRequest dto, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _service.UpdateAsync(id, dto, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "OfficeLocation not found." });
@@ -62,7 +66,8 @@ public class OfficeLocationsController : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(request, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "OfficeLocation not found." });

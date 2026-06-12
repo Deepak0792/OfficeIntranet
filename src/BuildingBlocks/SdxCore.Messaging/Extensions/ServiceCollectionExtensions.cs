@@ -1,6 +1,9 @@
 using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.Messaging.Abstractions;
+using SdxCore.Messaging.Infrastructure;
+using SdxCore.Messaging.Options;
 
 namespace SdxCore.Messaging.Extensions;
 

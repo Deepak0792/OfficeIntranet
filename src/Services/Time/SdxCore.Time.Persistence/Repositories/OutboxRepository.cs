@@ -1,5 +1,5 @@
-﻿using SdxCore.SharedKernel.Persistence.Outbox;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+﻿using SdxCore.SharedKernel.Abstractions.Repositories;
+using SdxCore.SharedKernel.Persistence.Outbox;
 using SdxCore.Time.Persistence.Data;
 
 namespace SdxCore.Time.Persistence.Repositories;

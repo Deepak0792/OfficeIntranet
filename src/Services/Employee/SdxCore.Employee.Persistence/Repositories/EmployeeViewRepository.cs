@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using SdxCore.Employee.Domain.Abstractions.Repositories;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Repositories;
 using SdxCore.Employee.Persistence.Data;
 using System.Linq.Expressions;
 

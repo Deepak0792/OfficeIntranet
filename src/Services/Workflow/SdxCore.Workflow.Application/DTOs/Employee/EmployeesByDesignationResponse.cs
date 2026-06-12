@@ -1,4 +1,4 @@
-﻿namespace SdxCore.Workflow.Application.DTOs.Response;
+﻿namespace SdxCore.Workflow.Application.DTOs.Employee;
 /// <summary>
 /// Lightweight projection returned for approver resolution.
 /// Matches the ResolvedApprover record fields in the Workflow engine.

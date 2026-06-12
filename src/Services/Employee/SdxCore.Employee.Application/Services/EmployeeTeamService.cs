@@ -1,10 +1,10 @@
 using SdxCore.Common.Helpers;
-using SdxCore.Employee.Application.Contracts.Services;
-using SdxCore.Employee.Application.DTOs.Request;
-using SdxCore.Employee.Application.DTOs.Response;
-using SdxCore.Employee.Domain;
+using SdxCore.Employee.Application.Abstractions.Services;
+using SdxCore.Employee.Application.DTOs.EmployeeTeam.Request;
+using SdxCore.Employee.Application.DTOs.EmployeeTeam.Response;
+using SdxCore.Employee.Domain.Abstractions;
+using SdxCore.Employee.Domain.Abstractions.Repositories;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Repositories;
 
 namespace SdxCore.Employee.Application.Services;
 

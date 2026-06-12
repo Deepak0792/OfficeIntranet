@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Logging;
 using SdxCore.Common.Enums.Workflow;
-using SdxCore.Workflow.Application.Contracts.Resolver;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Resolver;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Application.Abstractions.Resolver;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.DTOs.Employee;
+using SdxCore.Workflow.Application.DTOs.Resolution.Response;
+using SdxCore.Workflow.Application.DTOs.Time;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
 

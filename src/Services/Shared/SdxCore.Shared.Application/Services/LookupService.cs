@@ -1,6 +1,6 @@
-using SdxCore.Shared.Application.Contracts.Services;
+using SdxCore.Shared.Application.Abstractions.Services;
+using SdxCore.Shared.Domain.Abstractions.Repositories;
 using SdxCore.Shared.Domain.Entities;
-using SdxCore.Shared.Domain.Repositories;
 
 namespace SdxCore.Shared.Application.Services;
 

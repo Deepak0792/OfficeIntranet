@@ -1,11 +1,12 @@
 using SdxCore.Caching;
 using SdxCore.Common.Helpers;
-using SdxCore.Time.Application.Contracts.Services;
-using SdxCore.Time.Application.DTOs.Request;
-using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Domain;
+using SdxCore.Time.Application.Abstractions.Services;
+using SdxCore.Time.Application.DTOs.DocumentType.Request;
+using SdxCore.Time.Application.DTOs.DocumentType.Response;
+using SdxCore.Time.Application.DTOs.Shared.Request;
+using SdxCore.Time.Domain.Abstractions;
+using SdxCore.Time.Domain.Abstractions.Repositories;
 using SdxCore.Time.Domain.Entities;
-using SdxCore.Time.Domain.Repositories;
 
 namespace SdxCore.Time.Application.Services;
 

@@ -1,6 +1,6 @@
 ﻿using SdxCore.Employee.Persistence.Data;
+using SdxCore.SharedKernel.Abstractions.Repositories;
 using SdxCore.SharedKernel.Persistence.Outbox;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
 
 namespace SdxCore.Employee.Persistence.Repositories;
 

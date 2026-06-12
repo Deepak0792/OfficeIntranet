@@ -1,16 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using SdxCore.Common.Controllers;
+using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Workflow.Application.DTOs.Definition.Response;
+using SdxCore.Workflow.Application.DTOs.Resolution.Request;
+using SdxCore.Workflow.Application.DTOs.Resolution.Response;
+using SdxCore.Workflow.Application.Abstractions.Services;
 
 namespace SdxCore.Workflow.API.Controllers;
 
 [ApiController]
 [Route("api/v1/workflow/resolve")]
 [GatewayOnly]
-public class WorkflowResolutionController(IWorkflowResolutionService svc) : ControllerBase
+public class WorkflowResolutionController(IWorkflowResolutionService svc) : SdxControllerBase
 {
     /// <summary>
     /// POST /api/v1/workflow/resolve/approvers

@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using SdxCore.Common.Controllers;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Shared.Application.Services;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Shared.Application.Abstractions.Services;
 using SdxCore.Shared.Domain.Entities;
-using SdxCore.Shared.Application.Contracts.Services;
 
 namespace SdxCore.Shared.API.Controllers;
 
 [ApiController]
 [Route("api/v1/lookups")]
 [GatewayOnly]
-public class LookupsController : ControllerBase
+public class LookupsController : SdxControllerBase
 {
     private readonly ILookupService _lookupService;
     private readonly ILogger<LookupsController> _logger;

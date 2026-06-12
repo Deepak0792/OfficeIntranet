@@ -1,4 +1,4 @@
-using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Abstractions;
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;
@@ -13,6 +13,6 @@ public class EmployeeTeam : BaseAuditEntity<Guid>, IPublishableEntity
     public DateOnly? EndDate { get; set; }
     public bool IsPrimaryTeam { get; set; } = false;
     public bool IsActive { get; set; } = true;
-    public Employee Employee { get; set; } = null!;to hav
+    public Employee Employee { get; set; } = null!;
     public Team Team { get; set; } = null!;
 }

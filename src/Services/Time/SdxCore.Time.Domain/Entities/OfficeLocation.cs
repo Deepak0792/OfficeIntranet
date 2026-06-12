@@ -1,7 +1,8 @@
-﻿using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Abstractions;
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Time.Domain.Entities;
+
 public class OfficeLocation : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public Guid LegalEntityId { get; set; }
@@ -20,8 +21,16 @@ public class OfficeLocation : BaseAuditEntity<Guid>, IPublishableEntity
     public Guid? TimeZoneId { get; set; }
     public bool IsHeadOffice { get; set; }
     public bool IsActive { get; set; } = true;
+
+    // ── Intra-schema navigation properties ────────────────────────────────────
     public LegalEntity? LegalEntity { get; set; }
     public Country? Country { get; set; }
     public Region? Region { get; set; }
     public TimeZoneMaster? TimeZone { get; set; }
+
+    /// <summary>GeoFences attached to this office location.</summary>
+    public ICollection<GeoFence> GeoFences { get; set; } = new List<GeoFence>();
+
+    /// <summary>Biometric devices installed at this office location.</summary>
+    public ICollection<BiometricDevice> BiometricDevices { get; set; } = new List<BiometricDevice>();
 }

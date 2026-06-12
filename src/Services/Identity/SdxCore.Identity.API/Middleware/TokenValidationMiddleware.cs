@@ -1,4 +1,4 @@
-using SdxCore.Identity.Application.Contracts.Services;
+using SdxCore.Identity.Application.Abstractions.Services;
 
 namespace SdxCore.Identity.API.Middleware;
 

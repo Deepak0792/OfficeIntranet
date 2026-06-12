@@ -3,10 +3,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Abstractions.Providers;
+using SdxCore.Identity.Application.DTOs.Auth.Request;
+using SdxCore.Identity.Application.DTOs.Auth.Response;
 using SdxCore.Identity.Application.Enums;
-using SdxCore.Identity.Domain.DTOs.Request;
-using SdxCore.Identity.Domain.DTOs.Response;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 

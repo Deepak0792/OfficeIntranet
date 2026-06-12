@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -8,5 +8,8 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Caching\SdxCore.Caching.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Messaging\SdxCore.Messaging.csproj" />
     <ProjectReference Include="..\SdxCore.Time.Domain\SdxCore.Time.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
   </ItemGroup>
 </Project>

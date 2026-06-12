@@ -1,10 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using SdxCore.SharedKernel.Abstractions.Repositories;
 
 namespace SdxCore.SharedKernel.Persistence;
 

@@ -1,16 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using SdxCore.Common.Controllers;
+using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Workflow.Application.DTOs.StepApprover.Request;
+using SdxCore.Workflow.Application.DTOs.StepApprover.Response;
+using SdxCore.Workflow.Application.Abstractions.Services;
 
 namespace SdxCore.Workflow.API.Controllers;
 
 [ApiController]
 [Route("api/v1/workflow/approvers/{approverId:guid}/designations")]
 [GatewayOnly]
-public class WorkflowStepApproverDesignationController(IWorkflowStepApproverDesignationService svc) : ControllerBase
+public class WorkflowStepApproverDesignationController(IWorkflowStepApproverDesignationService svc) : SdxControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(Guid approverId)

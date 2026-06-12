@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.WebUtilities;
 using SdxCore.Common.Models;
-using SdxCore.Workflow.Application.Contracts.Clients;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Application.Abstractions.Clients;
+using SdxCore.Workflow.Application.DTOs.Employee;
 using System.Net.Http.Json;
 
 namespace SdxCore.Workflow.Application.Clients;

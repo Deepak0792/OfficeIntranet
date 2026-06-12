@@ -3,10 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Tokens.Saml2;
-using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Abstractions.Providers;
+using SdxCore.Identity.Application.DTOs.Auth.Request;
+using SdxCore.Identity.Application.DTOs.Auth.Response;
 using SdxCore.Identity.Application.Enums;
-using SdxCore.Identity.Domain.DTOs.Request;
-using SdxCore.Identity.Domain.DTOs.Response;
 using System.Security.Claims;
 using System.Xml;
 

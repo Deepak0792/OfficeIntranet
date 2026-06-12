@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Application.Contracts.Providers;
+using SdxCore.Identity.Application.Abstractions.Providers;
 using SdxCore.Identity.Application.Enums;
 using SdxCore.Identity.Application.Exceptions;
 using System.Collections.Concurrent;

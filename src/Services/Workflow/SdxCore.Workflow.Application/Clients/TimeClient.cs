@@ -1,6 +1,6 @@
 ﻿using MassTransit.Middleware;
-using SdxCore.Workflow.Application.Contracts.Clients;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Application.Abstractions.Clients;
+using SdxCore.Workflow.Application.DTOs.Time;
 using System.Net.Http.Json;
 
 namespace SdxCore.Workflow.Application.Clients;

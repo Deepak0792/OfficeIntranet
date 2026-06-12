@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.SharedKernel.Abstractions;
 using SdxCore.SharedKernel.Contexts;
-using SdxCore.SharedKernel.Contracts;
 
 namespace SdxCore.SharedKernel.Extensions;
 

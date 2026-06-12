@@ -1,16 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using SdxCore.Common.Controllers;
+using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Workflow.Application.DTOs.Module.Request;
+using SdxCore.Workflow.Application.DTOs.Module.Response;
+using SdxCore.Workflow.Application.DTOs.Shared.Request;
+using SdxCore.Workflow.Application.Abstractions.Services;
 
 namespace SdxCore.Workflow.API.Controllers;
 
 [ApiController]
 [Route("api/v1/workflow/modules")]
 [GatewayOnly]
-public class WorkflowModuleController(IWorkflowModuleService workflowModuleService) : ControllerBase
+public class WorkflowModuleController(IWorkflowModuleService workflowModuleService) : SdxControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken cancellationToken = default)

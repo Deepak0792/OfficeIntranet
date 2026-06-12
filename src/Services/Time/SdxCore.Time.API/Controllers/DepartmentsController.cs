@@ -1,16 +1,18 @@
+using SdxCore.Common.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Time.Application.DTOs.Request;
-using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Contracts.Services;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Time.Application.DTOs.Department.Request;
+using SdxCore.Time.Application.DTOs.Department.Response;
+using SdxCore.Time.Application.DTOs.Shared.Request;
+using SdxCore.Time.Application.Abstractions.Services;
 
 namespace SdxCore.Time.API.Controllers;
 
 [ApiController]
 [Route("api/v1/departments")]
 [GatewayOnly]
-public class DepartmentsController : ControllerBase
+public class DepartmentsController : SdxControllerBase
 {
     private readonly IDepartmentService _departmentService;
     private readonly ILogger<DepartmentsController> _logger;
@@ -40,8 +42,8 @@ public class DepartmentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDepartmentRequest dto, CancellationToken cancellationToken)
     {
-
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var result = await _departmentService.CreateAsync(dto, cancellationToken);
         var response = new ApiResponse<DepartmentResponse>(result, "Department created successfully.");
@@ -52,8 +54,8 @@ public class DepartmentsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDepartmentRequest dto, CancellationToken cancellationToken)
     {
-
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _departmentService.UpdateAsync(id, dto, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });
@@ -64,7 +66,8 @@ public class DepartmentsController : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(request, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _departmentService.ToggleStatusAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Department not found." });

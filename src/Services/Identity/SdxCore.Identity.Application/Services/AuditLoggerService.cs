@@ -2,11 +2,11 @@ using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SdxCore.Identity.Application.Contracts.Services;
-using SdxCore.Identity.Domain;
-using SdxCore.Identity.Domain.DTOs.Request;
+using SdxCore.Identity.Application.Abstractions.Services;
+using SdxCore.Identity.Application.DTOs.Audit.Request;
+using SdxCore.Identity.Domain.Abstractions;
+using SdxCore.Identity.Domain.Abstractions.Repositories;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Repositories;
 
 namespace SdxCore.Identity.Application.Providers;
 

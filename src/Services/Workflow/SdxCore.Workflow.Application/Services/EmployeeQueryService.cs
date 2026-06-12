@@ -1,7 +1,7 @@
 ﻿using SdxCore.Common.Enums.Workflow;
-using SdxCore.Workflow.Application.Contracts.Clients;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Workflow.Application.Abstractions.Clients;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.DTOs.Employee;
 
 namespace SdxCore.Workflow.Application.Services;
 

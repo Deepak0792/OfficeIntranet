@@ -70,7 +70,10 @@ switch (protocol.ToLowerInvariant())
 
 var app = builder.Build();
 
-// Use Global Exception Middleware
+// Identity-specific exception middleware (maps domain exceptions precisely)
+app.UseGlobalExceptionHandler();
+
+// Common exception fallback
 app.UseGlobalExceptionHandling();
 
 if (app.Environment.IsDevelopment())

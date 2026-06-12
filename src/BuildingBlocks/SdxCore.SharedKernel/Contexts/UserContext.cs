@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Abstractions;
 namespace SdxCore.SharedKernel.Contexts;
 public class UserContext : IUserContext
 {

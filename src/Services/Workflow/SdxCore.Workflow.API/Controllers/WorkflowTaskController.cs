@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SdxCore.Common.Controllers;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.SharedKernel.Contracts;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
-using SdxCore.Workflow.Application.DTOs.Response;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.SharedKernel.Abstractions;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.DTOs.Task.Request;
+using SdxCore.Workflow.Application.DTOs.Task.Response;
 
 namespace SdxCore.Workflow.API.Controllers;
 
@@ -14,7 +15,7 @@ namespace SdxCore.Workflow.API.Controllers;
 [GatewayOnly]
 public class WorkflowTaskController(
     IWorkflowTaskService svc,
-    IUserContext requestContext) : ControllerBase
+    IUserContext requestContext) : SdxControllerBase
 {
     /// <summary>
     /// GET /api/v1/workflow/tasks/my-pending

@@ -1,5 +1,6 @@
 using SdxCore.Common.Http;
 using SdxCore.Common.Models;
+using SdxCore.Common.Models.Auth;
 using SdxCore.Common.Routing;
 using System.Net.Http.Headers;
 using System.Text.Json;

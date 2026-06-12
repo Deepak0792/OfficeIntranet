@@ -1,4 +1,4 @@
-﻿using SdxCore.Identity.Domain;
+﻿using SdxCore.Identity.Domain.Abstractions;
 using SdxCore.Identity.Persistence.Data;
 using SdxCore.SharedKernel.Persistence;
 

@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using SdxCore.Identity.Domain.Abstractions.Repositories;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Domain.Repositories;
 using SdxCore.Identity.Persistence.Data;
-using SdxCore.SharedKernel.Contracts;
 using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Identity.Persistence.Repositories;

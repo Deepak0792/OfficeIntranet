@@ -1,8 +1,8 @@
 ﻿using MassTransit;
 using Microsoft.Extensions.Logging;
 using SdxCore.SharedKernel.Events;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.DTOs.Instance.Request;
 
 namespace SdxCore.Workflow.Application.Consumers;
 

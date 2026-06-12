@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
+using SdxCore.SharedKernel.Abstractions.Repositories;
 using System.Linq.Expressions;
 
 namespace SdxCore.SharedKernel.Persistence.Repositories;

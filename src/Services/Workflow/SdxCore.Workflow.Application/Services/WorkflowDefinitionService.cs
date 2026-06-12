@@ -1,15 +1,15 @@
-using Microsoft.AspNetCore.Mvc;
 using SdxCore.Caching;
 using SdxCore.Common.Helpers;
 using SdxCore.Common.Models;
-using SdxCore.SharedKernel.Persistence.Repositories.Contracts;
-using SdxCore.Workflow.Application.Contracts.Services;
-using SdxCore.Workflow.Application.DTOs.Request;
-using SdxCore.Workflow.Application.DTOs.Response;
-using SdxCore.Workflow.Domain;
+using SdxCore.Workflow.Application.Abstractions.Services;
+using SdxCore.Workflow.Application.DTOs.Definition.Request;
+using SdxCore.Workflow.Application.DTOs.Definition.Response;
+using SdxCore.Workflow.Application.DTOs.Shared.Request;
+using SdxCore.Workflow.Application.DTOs.Step.Response;
+using SdxCore.Workflow.Domain.Abstractions;
+using SdxCore.Workflow.Domain.Abstractions.Repositories;
 using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
-using SdxCore.Workflow.Domain.Repositories;
 
 namespace SdxCore.Workflow.Application.Services;
 public class WorkflowDefinitionService(

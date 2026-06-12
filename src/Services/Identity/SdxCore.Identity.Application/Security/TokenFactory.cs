@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using SdxCore.Identity.Application.Contracts.Security;
-using SdxCore.Identity.Domain.DTOs;
+using SdxCore.Identity.Application.Abstractions.Security;
+using SdxCore.Identity.Application.DTOs.Auth.Response;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

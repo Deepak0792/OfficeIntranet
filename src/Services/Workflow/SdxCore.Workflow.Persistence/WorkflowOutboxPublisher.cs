@@ -1,7 +1,7 @@
 ﻿using SdxCore.SharedKernel.Constant;
 using SdxCore.SharedKernel.Entities;
 using SdxCore.SharedKernel.Events;
-using SdxCore.Workflow.Domain;
+using SdxCore.Workflow.Domain.Abstractions;
 using SdxCore.Workflow.Persistence.Repositories;
 using System.Text.Json;
 

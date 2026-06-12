@@ -1,4 +1,4 @@
-using SdxCore.SharedKernel.Contracts;
+using SdxCore.SharedKernel.Abstractions;
 using SdxCore.SharedKernel.Entities;
 
 namespace SdxCore.Employee.Domain.Entities;

@@ -1,16 +1,18 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using SdxCore.Common.Controllers;
 using SdxCore.Common.Models;
-using SdxCore.Common.Security;
-using SdxCore.Time.Application.DTOs.Request;
-using SdxCore.Time.Application.DTOs.Response;
-using SdxCore.Time.Application.Contracts.Services;
+using SdxCore.Common.Security.Attributes;
+using SdxCore.Time.Application.Abstractions.Services;
+using SdxCore.Time.Application.DTOs.Country.Request;
+using SdxCore.Time.Application.DTOs.Country.Response;
+using SdxCore.Time.Application.DTOs.Shared.Request;
 
 namespace SdxCore.Time.API.Controllers;
 
 [ApiController]
 [Route("api/v1/countries")]
 [GatewayOnly]
-public class CountriesController : ControllerBase
+public class CountriesController : SdxControllerBase
 {
     private readonly ICountryService _service;
     private readonly ILogger<CountriesController> _logger;
@@ -40,7 +42,8 @@ public class CountriesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCountryRequest dto, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var result = await _service.CreateAsync(dto, cancellationToken);
         var response = new ApiResponse<CountryResponse>(result, "Country created successfully.");
@@ -51,7 +54,8 @@ public class CountriesController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCountryRequest dto, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(dto, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _service.UpdateAsync(id, dto, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Country not found." });
@@ -62,7 +66,8 @@ public class CountriesController : ControllerBase
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var validation = await ValidateAsync(request, cancellationToken);
+        if (validation != null) return validation;
 
         var updated = await _service.ToggleStatusAsync(id, request, cancellationToken);
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Country not found." });

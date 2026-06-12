@@ -2,12 +2,12 @@ using SdxCore.Caching;
 using SdxCore.Common.Enums.Workflow;
 using SdxCore.Common.Helpers;
 using SdxCore.Common.Models;
-using SdxCore.Employee.Application.Contracts.Services;
-using SdxCore.Employee.Application.DTOs.Request;
-using SdxCore.Employee.Application.DTOs.Response;
-using SdxCore.Employee.Domain;
+using SdxCore.Employee.Application.Abstractions.Services;
+using SdxCore.Employee.Application.DTOs.Employee.Request;
+using SdxCore.Employee.Application.DTOs.Employee.Response;
+using SdxCore.Employee.Domain.Abstractions;
+using SdxCore.Employee.Domain.Abstractions.Repositories;
 using SdxCore.Employee.Domain.Entities;
-using SdxCore.Employee.Domain.Repositories;
 using System.Linq.Expressions;
 
 namespace SdxCore.Employee.Application.Services;

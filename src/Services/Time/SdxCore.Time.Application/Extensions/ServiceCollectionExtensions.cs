@@ -1,10 +1,12 @@
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Messaging.BackgroundServices;
 using SdxCore.Messaging.Extensions;
+using SdxCore.Time.Application.Abstractions.Services;
 using SdxCore.Time.Application.Consumers;
-using SdxCore.Time.Application.Contracts.Services;
 using SdxCore.Time.Application.Services;
+using System.Reflection;
 
 namespace SdxCore.Time.Application.Extensions;
 
@@ -12,6 +14,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddSdxCoreTimeApplication(this IServiceCollection services)
     {
+        // Register FluentValidation validators
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
         // Register Services
         
         services.AddScoped<IBiometricDeviceService, BiometricDeviceService>();
