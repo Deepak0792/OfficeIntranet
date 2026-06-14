@@ -2,6 +2,7 @@ PRINT 'Starting Base Schema Seed Data deployment...';
 
 -- Schema Changes (in dependency order)
 :r .\shared\seed-data.sql
+.r .\shared\lookup_definition_seed_data.sql
 :r .\time\seed-data.sql
 :r .\workflow\seed-data.sql
 :r .\employee\seed-data.sql

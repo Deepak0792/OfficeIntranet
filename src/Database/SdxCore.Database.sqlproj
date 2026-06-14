@@ -121,6 +121,7 @@
     <None Include="Generate-DeltaScript.ps1" />
     <None Include="Generate-FullScript.ps1" />
     <None Include="README.md" />
+    <None Include="Base\data\shared\lookup_definition_seed_data.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="_include.sql" />
