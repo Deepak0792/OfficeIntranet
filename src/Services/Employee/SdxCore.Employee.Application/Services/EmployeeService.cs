@@ -111,6 +111,7 @@ public class EmployeeService(
     public async Task<EmployeeResponse> CreateAsync(CreateEmployeeRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeRequest, Domain.Entities.Employee>(request);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
         entity.DisplayName = request.DisplayName ?? $"{entity.FirstName} {entity.LastName}";
 

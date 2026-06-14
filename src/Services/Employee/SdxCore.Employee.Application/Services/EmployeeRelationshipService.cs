@@ -48,7 +48,7 @@ public class EmployeeRelationshipService(
         return PropertyMapper.Map<EmployeeRelationship, EmployeeRelationshipResponse>(entity);
     }
 
-    public async Task<EmployeeRelationshipResponse> AddAsync(Guid employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeRelationshipResponse> CreateAsync(Guid employeeId, CreateEmployeeRelationshipRequest request, CancellationToken cancellationToken = default)
     {
         if (request.ChildEmployeeId == employeeId)
         {
@@ -65,6 +65,7 @@ public class EmployeeRelationshipService(
             }
         }
         var entity = PropertyMapper.Map<CreateEmployeeRelationshipRequest, EmployeeRelationship>(request);
+        entity.Id = Guid.NewGuid();
         entity.ParentEmployeeId = employeeId;
         entity.IsActive = true;
 

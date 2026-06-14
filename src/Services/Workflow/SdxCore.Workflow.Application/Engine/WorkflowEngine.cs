@@ -7,6 +7,7 @@ using SdxCore.Workflow.Application.DTOs.Step.Response;
 using SdxCore.Workflow.Application.Abstractions.Services;
 using SdxCore.Workflow.Application.Abstractions.Engine;
 using SdxCore.Workflow.Application.Abstractions.Resolver;
+using SdxCore.Common.Helpers;
 
 namespace SdxCore.Workflow.Application.Engine;
 
@@ -34,15 +35,14 @@ public class WorkflowEngine(
 
         var instance = new WorkflowInstance
         {
+            Id = Guid.NewGuid(),
             WorkflowDefinitionId = definition.WorkflowDefinitionId,
             WorkflowModuleId = definition.WorkflowModuleId,
             ReferenceTransactionId = referenceTransactionId,
             CurrentWorkflowStepId = firstStep.Id,
             WorkflowStatus = WorkflowStatus.Pending,
             CreatedBy = initiatorEmployeeId,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            LastUpdatedAt = DateTime.UtcNow
+            IsActive = true
         };
         await instanceRepository.AddAsync(instance, cancellationToken);
 
@@ -117,7 +117,6 @@ public class WorkflowEngine(
 
             instance.CurrentWorkflowStepId = nextStep.Id;
             instance.WorkflowStatus = WorkflowStatus.InProgress;
-            instance.LastUpdatedAt = DateTime.UtcNow;
             instanceRepository.Update(instance);
 
             await TrackTasksForStepAsync(instance, nextStep, cancellationToken);
@@ -166,6 +165,7 @@ public class WorkflowEngine(
 
         await taskRepository.AddAsync(new WorkflowTask
         {
+            Id = Guid.NewGuid(),
             WorkflowInstanceId = instance.Id,
             WorkflowStepId = task.WorkflowStepId,
             WorkflowStepApproverId = task.WorkflowStepApproverId,
@@ -208,7 +208,6 @@ public class WorkflowEngine(
         var firstStep = await workflowStepService.GetNextStepAsync(instance.WorkflowDefinitionId, 0, cancellationToken);
         instance.CurrentWorkflowStepId = firstStep?.Id;
         instance.WorkflowStatus = WorkflowStatus.Pending;
-        instance.LastUpdatedAt = DateTime.UtcNow;
         instanceRepository.Update(instance);
 
         await outboxPublisher.PublishStatusChangedAsync(
@@ -232,8 +231,10 @@ public class WorkflowEngine(
 
         TrackCompleteTask(task, WorkflowTaskStatus.Cancelled, actionBy, remarks);
 
+
         await taskRepository.AddAsync(new WorkflowTask
         {
+            Id = Guid.NewGuid(),
             WorkflowInstanceId = task.WorkflowInstanceId,
             WorkflowStepId = task.WorkflowStepId,
             WorkflowStepApproverId = task.WorkflowStepApproverId,
@@ -318,7 +319,7 @@ public class WorkflowEngine(
         var approvers = await workflowStepApproverService.GetByStepIdAsync(step.Id, cancellationToken);
         var activeApprovers = approvers.Where(a => a.IsActive).ToList();
 
-        if (!activeApprovers.Any())
+        if (activeApprovers.Count == 0)
             throw new WorkflowApproverResolutionException(step.Id,
                 $"No active approver rules found for step '{step.StepName}'.");
 
@@ -327,7 +328,7 @@ public class WorkflowEngine(
             : (DateTime?)null;
 
         Guid userId = instance.CreatedBy
-            ?? throw new ArgumentNullException(nameof(instance.CreatedBy));
+            ?? throw new WorkflowNotFoundException("WorkflowInstance", instance.Id);
 
         var allResolved = await resolver.ResolveApproverAsync(step.Id, userId);
         var resolvedByRule = allResolved.ToLookup(r => r.WorkflowStepApproverId);
@@ -336,7 +337,7 @@ public class WorkflowEngine(
         {
             var resolvedForRule = resolvedByRule[approverRule.Id].ToList();
 
-            if (!resolvedForRule.Any())
+            if (resolvedForRule.Count == 0)
             {
                 if (approverRule.IsMandatory)
                     throw new WorkflowApproverResolutionException(step.Id,
@@ -349,6 +350,7 @@ public class WorkflowEngine(
             {
                 await taskRepository.AddAsync(new WorkflowTask
                 {
+                    Id = Guid.NewGuid(),
                     WorkflowInstanceId = instance.Id,
                     WorkflowStepId = step.Id,
                     WorkflowStepApproverId = approverRule.Id,
@@ -395,7 +397,6 @@ public class WorkflowEngine(
         instance.CurrentWorkflowStepId = null;
         instance.CompletedAt = DateTime.UtcNow;
         instance.CompletedBy = actionBy;
-        instance.LastUpdatedAt = DateTime.UtcNow;
         instanceRepository.Update(instance);
         // no SaveChanges — caller commits
     }
@@ -407,6 +408,7 @@ public class WorkflowEngine(
     {
         historyRepository.AddAsync(new WorkflowActionHistory
         {
+            Id = Guid.NewGuid(),
             WorkflowInstanceId = instanceId,
             WorkflowTaskId = taskId,
             WorkflowStepId = stepId,

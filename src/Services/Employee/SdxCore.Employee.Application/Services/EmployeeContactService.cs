@@ -30,7 +30,7 @@ public class EmployeeContactService(
         return PropertyMapper.Map<EmployeeContact, EmployeeContactResponse>(entity);
     }
 
-    public async Task<EmployeeContactResponse> AddAsync(Guid employeeId, CreateEmployeeContactRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeContactResponse> CreateAsync(Guid employeeId, CreateEmployeeContactRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimaryContact)
         {
@@ -43,6 +43,7 @@ public class EmployeeContactService(
         }
 
         var entity = PropertyMapper.Map<CreateEmployeeContactRequest, EmployeeContact>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 
@@ -54,8 +55,8 @@ public class EmployeeContactService(
 
     public async Task<EmployeeContactResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeContactRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity is null) throw new KeyNotFoundException("Employee contact not found");
+        var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault()
+            ?? throw new KeyNotFoundException("Employee contact not found");
 
         PropertyMapper.Patch(request, entity);
         _repository.Update(entity);

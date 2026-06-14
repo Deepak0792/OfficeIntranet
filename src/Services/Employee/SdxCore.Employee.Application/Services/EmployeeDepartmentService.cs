@@ -42,7 +42,7 @@ public class EmployeeDepartmentService(
         }
     }
 
-    public async Task<EmployeeDepartmentResponse> AddAsync(Guid employeeId, CreateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDepartmentResponse> CreateAsync(Guid employeeId, CreateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         await ValidateAllocationPercentageAsync(employeeId, null, request.AllocationPercentage, cancellationToken);
 
@@ -57,6 +57,7 @@ public class EmployeeDepartmentService(
         }
 
         var entity = PropertyMapper.Map<CreateEmployeeDepartmentRequest, EmployeeDepartment>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 

@@ -29,7 +29,7 @@ public class EmployeeAddressService(
         return PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(entity);
     }
 
-    public async Task<EmployeeAddressResponse> AddAsync(Guid employeeId, CreateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeAddressResponse> CreateAsync(Guid employeeId, CreateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimaryAddress)
         {
@@ -42,6 +42,7 @@ public class EmployeeAddressService(
         }
 
         var entity = PropertyMapper.Map<CreateEmployeeAddressRequest, EmployeeAddress>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsVerified = false;
         entity.IsActive = true;

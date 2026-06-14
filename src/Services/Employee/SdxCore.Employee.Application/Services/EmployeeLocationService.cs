@@ -30,7 +30,7 @@ public class EmployeeLocationService(
         return PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(entity);
     }
 
-    public async Task<EmployeeLocationResponse> AddAsync(Guid employeeId, CreateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLocationResponse> CreateAsync(Guid employeeId, CreateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimaryLocation)
         {
@@ -43,6 +43,7 @@ public class EmployeeLocationService(
         }
 
         var entity = PropertyMapper.Map<CreateEmployeeLocationRequest, EmployeeLocation>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 

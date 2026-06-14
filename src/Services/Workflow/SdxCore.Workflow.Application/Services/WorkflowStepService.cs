@@ -64,6 +64,7 @@ public class WorkflowStepService(
             ?? throw new WorkflowNotFoundException("WorkflowDefinition", definitionId);
 
         var entity = PropertyMapper.Map<CreateWorkflowStepRequest, WorkflowStep>(request);
+        entity.Id = Guid.NewGuid();
         entity.WorkflowDefinitionId = definitionId;
         await repository.AddAsync(entity, cancellationToken);
 

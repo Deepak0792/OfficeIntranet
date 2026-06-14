@@ -48,6 +48,7 @@ public class TeamService(
     public async Task<TeamResponse> CreateAsync(CreateTeamRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateTeamRequest, Team>(request);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);

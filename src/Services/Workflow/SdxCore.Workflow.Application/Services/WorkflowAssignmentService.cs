@@ -43,6 +43,7 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository repository,
     public async Task<WorkflowAssignmentResponse> CreateAsync(CreateWorkflowAssignmentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateWorkflowAssignmentRequest, WorkflowAssignment>(request);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
         await repository.AddAsync(entity, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

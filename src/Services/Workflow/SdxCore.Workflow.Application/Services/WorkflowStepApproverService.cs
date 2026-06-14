@@ -55,6 +55,7 @@ public class WorkflowStepApproverService(
             ?? throw new WorkflowNotFoundException("WorkflowStep", stepId);
 
         var entity = PropertyMapper.Map<CreateWorkflowStepApproverRequest, WorkflowStepApprover>(request);
+        entity.Id = Guid.NewGuid();
         entity.WorkflowStepId = stepId;
         await approverRepository.AddAsync(entity, cancellationToken);
 

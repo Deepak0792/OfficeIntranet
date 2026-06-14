@@ -57,7 +57,7 @@ public class WorkflowModuleService(
             throw new DuplicateWorkflowModuleCodeException(request.ModuleCode);
 
         var entity = PropertyMapper.Map<CreateWorkflowModuleRequest, WorkflowModule>(request);
-
+        entity.Id = Guid.NewGuid();
         entity.ModuleCode = request.ModuleCode.ToUpperInvariant();
         entity.IsActive = true;
 

@@ -50,7 +50,7 @@ public class EmployeeDocumentsController : SdxControllerBase
     {
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
-        var result = await _service.AddAsync(employeeId, request, cancellationToken);
+        var result = await _service.CreateAsync(employeeId, request, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { employeeId, id = result.Id },
             new ApiResponse<EmployeeDocumentResponse>(result, "Employee document added successfully."));

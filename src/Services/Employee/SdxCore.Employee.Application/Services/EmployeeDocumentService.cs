@@ -38,9 +38,10 @@ public class EmployeeDocumentService(
         return PropertyMapper.MapList<EmployeeDocument, EmployeeDocumentResponse>(entities);
     }
 
-    public async Task<EmployeeDocumentResponse> AddAsync(Guid employeeId, CreateEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeDocumentResponse> CreateAsync(Guid employeeId, CreateEmployeeDocumentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeDocumentRequest, EmployeeDocument>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 

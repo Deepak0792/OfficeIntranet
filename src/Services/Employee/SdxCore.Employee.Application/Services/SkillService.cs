@@ -54,6 +54,7 @@ public class SkillService(
     public async Task<SkillResponse> CreateAsync(CreateSkillRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateSkillRequest, Skill>(request);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
         var created = await _repository.AddAsync(entity, cancellationToken);

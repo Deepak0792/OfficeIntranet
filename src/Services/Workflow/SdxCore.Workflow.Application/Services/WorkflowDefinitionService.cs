@@ -86,6 +86,7 @@ public class WorkflowDefinitionService(
             throw new DuplicateWorkflowCodeException(request.WorkflowCode);
 
         var entity = PropertyMapper.Map<CreateWorkflowDefinitionRequest, WorkflowDefinition>(request);
+        entity.Id = Guid.NewGuid();
         entity.IsActive = true;
         await _repository.AddAsync(entity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

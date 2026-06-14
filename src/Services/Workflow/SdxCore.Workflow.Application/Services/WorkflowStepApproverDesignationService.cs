@@ -37,6 +37,7 @@ public class WorkflowStepApproverDesignationService(
                 $"Designation {request.DesignationId} is already mapped to approver {approverId}.");
 
         var entity = PropertyMapper.Map<AddApproverDesignationRequest, WorkflowStepApproverDesignation>(request);
+        entity.Id = Guid.NewGuid();
         entity.WorkflowStepApproverId = approverId;
         entity.IsActive = true;
         await repo.AddAsync(entity, cancellationToken);

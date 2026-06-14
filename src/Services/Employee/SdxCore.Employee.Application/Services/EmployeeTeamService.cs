@@ -47,9 +47,10 @@ public class EmployeeTeamService(
         return employeeTeam;
     }
 
-    public async Task<EmployeeTeamResponse> AddAsync(Guid employeeId, CreateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeTeamResponse> CreateAsync(Guid employeeId, CreateEmployeeTeamRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeTeamRequest, EmployeeTeam>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 

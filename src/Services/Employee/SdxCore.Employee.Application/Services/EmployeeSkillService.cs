@@ -45,9 +45,10 @@ public class EmployeeSkillService(
         return employeeSkill;
     }
 
-    public async Task<EmployeeSkillResponse> AddAsync(Guid employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSkillResponse> CreateAsync(Guid employeeId, CreateEmployeeSkillRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateEmployeeSkillRequest, EmployeeSkill>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 

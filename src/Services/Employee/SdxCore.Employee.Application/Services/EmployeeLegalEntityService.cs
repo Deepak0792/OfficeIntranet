@@ -30,7 +30,7 @@ public class EmployeeLegalEntityService(
         return PropertyMapper.Map<EmployeeLegalEntity, EmployeeLegalEntityResponse>(entity);
     }
 
-    public async Task<EmployeeLegalEntityResponse> AddAsync(Guid employeeId, CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default)
+    public async Task<EmployeeLegalEntityResponse> CreateAsync(Guid employeeId, CreateEmployeeLegalEntityRequest request, CancellationToken cancellationToken = default)
     {
         if (request.IsPrimaryLegalEntity)
         {
@@ -43,6 +43,7 @@ public class EmployeeLegalEntityService(
         }
 
         var entity = PropertyMapper.Map<CreateEmployeeLegalEntityRequest, EmployeeLegalEntity>(request);
+        entity.Id = Guid.NewGuid();
         entity.EmployeeId = employeeId;
         entity.IsActive = true;
 
