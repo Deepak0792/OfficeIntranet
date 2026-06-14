@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
 using SdxCore.Identity.Application.Abstractions.Providers;
 using SdxCore.Identity.Application.Abstractions.Security;
 using SdxCore.Identity.Application.Abstractions.Services;
@@ -33,6 +34,7 @@ public sealed class AuthenticationService : IAuthenticationService
     private readonly IAuditLoggerService _auditLoggerService;
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IIdentityUnitOfWork _unitOfWork;
+    private readonly IValidator<AuthenticationRequest> _requestValidator;
     private readonly ILogger<AuthenticationService> _logger;
 
     public AuthenticationService(
@@ -42,6 +44,7 @@ public sealed class AuthenticationService : IAuthenticationService
         IAuditLoggerService auditLoggerService,
         IRefreshTokenService refreshTokenService,
         IIdentityUnitOfWork unitOfWork,
+        IValidator<AuthenticationRequest> requestValidator,
         ILogger<AuthenticationService> logger)
     {
         _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
@@ -50,6 +53,7 @@ public sealed class AuthenticationService : IAuthenticationService
         _auditLoggerService = auditLoggerService ?? throw new ArgumentNullException(nameof(auditLoggerService));
         _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _requestValidator = requestValidator ?? throw new ArgumentNullException(nameof(requestValidator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -62,20 +66,17 @@ public sealed class AuthenticationService : IAuthenticationService
         AuthenticationRequest request,
         CancellationToken ct = default)
     {
-        if (request is null)
-            throw new ArgumentNullException(nameof(request));
-
-        IAuthenticationProvider? provider = null;
-        AuthProtocol protocol = AuthProtocol.InHouse;
+        ArgumentNullException.ThrowIfNull(request);
+        var protocol = AuthProtocol.InHouse;
 
         try
         {
-            provider = _providerRegistry.ResolveFromConfiguration();
+            var provider = _providerRegistry.ResolveFromConfiguration();
             protocol = provider.Protocol;
 
             _logger.LogDebug("Resolved authentication provider: {Protocol}", protocol);
 
-            ValidateRequest(request, protocol);
+            _requestValidator.ValidateAndThrow(request);
 
             ProviderResponse providerResult = await provider.AuthenticateAsync(request, ct);
 
@@ -265,58 +266,6 @@ public sealed class AuthenticationService : IAuthenticationService
     }
 
     // -- Private helpers --------------------------------------
-
-    private void ValidateRequest(AuthenticationRequest request, AuthProtocol protocol)
-    {
-        switch (protocol)
-        {
-            case AuthProtocol.InHouse:
-                if (string.IsNullOrWhiteSpace(request.Username))
-                    throw new ArgumentNullException(nameof(request),
-                        "Username is required for InHouse authentication.");
-                if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ArgumentNullException(nameof(request),
-                        "Password is required for InHouse authentication.");
-                break;
-
-            case AuthProtocol.Saml:
-                if (string.IsNullOrWhiteSpace(request.SamlAssertion))
-                    throw new ArgumentNullException(nameof(request),
-                        "SAML assertion is required for SAML authentication.");
-                break;
-
-            case AuthProtocol.OAuth:
-                if (string.IsNullOrWhiteSpace(request.OAuthCode))
-                    throw new ArgumentNullException(nameof(request),
-                        "OAuth code is required for OAuth authentication.");
-                break;
-
-            case AuthProtocol.Oidc:
-                if (string.IsNullOrWhiteSpace(request.IdToken))
-                    throw new ArgumentNullException(nameof(request),
-                        "ID token is required for OIDC authentication.");
-                break;
-
-            case AuthProtocol.Jwt:
-                if (string.IsNullOrWhiteSpace(request.BearerToken))
-                    throw new ArgumentNullException(nameof(request),
-                        "Bearer token is required for JWT authentication.");
-                break;
-
-            case AuthProtocol.Ldap:
-                if (string.IsNullOrWhiteSpace(request.Username))
-                    throw new ArgumentNullException(nameof(request),
-                        "Username is required for LDAP authentication.");
-                if (string.IsNullOrWhiteSpace(request.Password))
-                    throw new ArgumentNullException(nameof(request),
-                        "Password is required for LDAP authentication.");
-                break;
-
-            default:
-                throw new ArgumentException(
-                    $"Unsupported authentication protocol: {protocol}", nameof(protocol));
-        }
-    }
 
     private static Guid ExtractSubjectFromClaims(IReadOnlyList<Claim> claims)
     {

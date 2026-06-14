@@ -1,9 +1,11 @@
 namespace SdxCore.Workflow.Application.DTOs.Resolution.Response;
 
-public record PreviewApproversResponse(
-    Guid WorkflowStepApproverId,
-    string ApproverType,
-    Guid ResolvedEmployeeId,
-    string ResolvedEmployeeName,
-    Guid? ResolvedDesignationId,
-    Guid? ResolvedDepartmentId);
+public sealed class PreviewApproversResponse
+{
+    public Guid WorkflowStepApproverId { get; set; }
+    public string ApproverType { get; set; } = default!;
+    public Guid ResolvedEmployeeId { get; set; }
+    public string ResolvedEmployeeName { get; set; } = default!;
+    public Guid? ResolvedDesignationId { get; set; }
+    public Guid? ResolvedDepartmentId { get; set; }
+}

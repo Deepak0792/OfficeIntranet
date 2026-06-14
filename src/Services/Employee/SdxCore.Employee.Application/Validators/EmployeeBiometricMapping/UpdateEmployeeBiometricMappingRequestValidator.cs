@@ -3,7 +3,7 @@ using SdxCore.Employee.Application.DTOs.EmployeeBiometricMapping.Request;
 
 namespace SdxCore.Employee.Application.Validators.EmployeeBiometricMapping;
 
-public class UpdateEmployeeBiometricMappingRequestValidator : AbstractValidator<UpdateEmployeeBiometricMappingRequest>
+public sealed class UpdateEmployeeBiometricMappingRequestValidator : AbstractValidator<UpdateEmployeeBiometricMappingRequest>
 {
     public UpdateEmployeeBiometricMappingRequestValidator()
     {

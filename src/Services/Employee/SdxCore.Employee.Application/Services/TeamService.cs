@@ -9,24 +9,16 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class TeamService : ITeamService
+public class TeamService(
+    ITeamRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    IEmployeeUnitOfWork unitOfWork) : ITeamService
 {
-    private readonly ITeamRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public TeamService(
-        ITeamRepository repository, 
-        ICacheService cacheService, 
-        ICacheKeyBuilder cacheKeyBuilder,
-        IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly ITeamRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<TeamResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -35,7 +27,7 @@ public class TeamService : ITeamService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(t => PropertyMapper.Map<Team, TeamResponse>(t)).ToList();
+            return PropertyMapper.MapList<Team, TeamResponse>(entities);
         }, CacheOptions.Default, cancellationToken) ?? new List<TeamResponse>();
     }
 
@@ -46,7 +38,8 @@ public class TeamService : ITeamService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);
-            if (entity == null) return null;
+
+            if (entity is null) return null;
 
             return PropertyMapper.Map<Team, TeamResponse>(entity);
         }, CacheOptions.Default, cancellationToken);
@@ -65,13 +58,10 @@ public class TeamService : ITeamService
 
     public async Task<TeamResponse> UpdateAsync(Guid id, UpdateTeamRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) throw new KeyNotFoundException($"Team with ID {id} not found.");
+        var entity = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Team with ID {id} not found.");
 
-        entity.TeamName = request.TeamName;
-        entity.TeamType = request.TeamType;
-        entity.Description = request.Description;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -80,8 +70,8 @@ public class TeamService : ITeamService
 
     public async Task<bool> ToggleStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        var entity = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Team with ID {id} not found.");
 
         entity.IsActive = isActive;
         _repository.Update(entity);

@@ -4,14 +4,9 @@ using SdxCore.Shared.Domain.Entities;
 
 namespace SdxCore.Shared.Application.Services;
 
-public class LookupService : ILookupService
+public class LookupService(ILookupRepository repository) : ILookupService
 {
-    private readonly ILookupRepository _repository;
-
-    public LookupService(ILookupRepository repository)
-    {
-        _repository = repository;
-    }
+    private readonly ILookupRepository _repository = repository;
 
     public async Task<IEnumerable<LookupItem>> GetLookupAsync(string code, Guid? parentId = null, CancellationToken cancellationToken = default)
     {

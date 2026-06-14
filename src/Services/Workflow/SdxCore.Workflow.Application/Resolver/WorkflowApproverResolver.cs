@@ -23,7 +23,7 @@ public class WorkflowApproverResolver(
         var stepApprovers = await workflowStepApproverService.GetByStepIdAsync(workflowStepId);
         var activeStepApprovers = stepApprovers.Where(r => r.IsActive).OrderBy(r => r.PriorityOrder).ToList();
 
-        if (!activeStepApprovers.Any())
+        if (activeStepApprovers.Count == 0)
             throw new WorkflowApproverResolutionException(workflowStepId,
                 "No active step approver rules found.");
 
@@ -57,7 +57,7 @@ public class WorkflowApproverResolver(
             results.AddRange(resolved);
         }
 
-        if (!results.Any())
+        if (results.Count == 0)
         {
             logger.LogWarning(
                 "No approvers resolved for WorkflowStep {StepId}, Initiator {EmployeeId}",
@@ -108,13 +108,7 @@ public class WorkflowApproverResolver(
 
         if (manager is null) return [];
 
-        return [new ResolvedApprover(
-            approverId,
-            WorkflowApproverType.ReportingManager,
-            manager.EmployeeId,
-            manager.DisplayName,
-            manager.DesignationId,
-            manager.PrimaryDepartmentId)];
+        return [new ResolvedApprover { WorkflowStepApproverId = approverId, ApproverType = WorkflowApproverType.ReportingManager, ResolvedEmployeeId = manager.EmployeeId, ResolvedEmployeeName = manager.DisplayName, ResolvedDesignationId = manager.DesignationId, ResolvedDepartmentId = manager.PrimaryDepartmentId }];
     }
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveSkipManagerAsync(
@@ -127,13 +121,7 @@ public class WorkflowApproverResolver(
         var skipManager = await employeeQueryService.GetReportingManagerAsync(manager.EmployeeId);
         if (skipManager is null) return [];
 
-        return [new ResolvedApprover(
-            approverId,
-            WorkflowApproverType.SkipManager,
-            skipManager.EmployeeId,
-            skipManager.DisplayName,
-            skipManager.DesignationId,
-            skipManager.PrimaryDepartmentId)];
+        return [new ResolvedApprover { WorkflowStepApproverId = approverId, ApproverType = WorkflowApproverType.SkipManager, ResolvedEmployeeId = skipManager.EmployeeId, ResolvedEmployeeName = skipManager.DisplayName, ResolvedDesignationId = skipManager.DesignationId, ResolvedDepartmentId = skipManager.PrimaryDepartmentId }];
     }
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveFixedEmployeeAsync(
@@ -144,13 +132,7 @@ public class WorkflowApproverResolver(
         var emp = await employeeQueryService.GetEmployeeByIdAsync(scopeReferenceId.Value);
         if (emp is null) return [];
 
-        return [new ResolvedApprover(
-            approverId,
-            WorkflowApproverType.Employee,
-            emp.EmployeeId,
-            emp.DisplayName,
-            emp.DesignationId,
-            emp.PrimaryDepartmentId)];
+        return [new ResolvedApprover { WorkflowStepApproverId = approverId, ApproverType = WorkflowApproverType.Employee, ResolvedEmployeeId = emp.EmployeeId, ResolvedEmployeeName = emp.DisplayName, ResolvedDesignationId = emp.DesignationId, ResolvedDepartmentId = emp.PrimaryDepartmentId }];
     }
 
     private async Task<IEnumerable<ResolvedApprover>> ResolveByDesignationAsync(
@@ -176,13 +158,7 @@ public class WorkflowApproverResolver(
         var employees = await employeeQueryService.GetEmployeesByDesignationInScopeAsync(
             designationIds, scopeCode, resolvedScopeId);
 
-        return employees.Select(e => new ResolvedApprover(
-            approverId,
-            WorkflowApproverType.Designation,
-            e.EmployeeId,
-            e.DisplayName,
-            e.DesignationId,
-            e.PrimaryDepartmentId));
+        return employees.Select(e => new ResolvedApprover { WorkflowStepApproverId = approverId, ApproverType = WorkflowApproverType.Designation, ResolvedEmployeeId = e.EmployeeId, ResolvedEmployeeName = e.DisplayName, ResolvedDesignationId = e.DesignationId, ResolvedDepartmentId = e.PrimaryDepartmentId });
     }
 
     // TO DO Later
@@ -244,7 +220,7 @@ public class WorkflowApproverResolver(
                                       StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        if (!assignments.Any())
+        if (assignments.Count == 0)
             return null; // No assignment configured for this workflow code
 
         // 3. Build ScopeCode → ScopeTypeId lookup
@@ -293,8 +269,8 @@ public class WorkflowApproverResolver(
         {
             if (referenceId is null) return;
             if (!scopeTypeMap.TryGetValue(scopeCode, out var scopeTypeId)) return;
-            scopes.TryAdd(scopeTypeId, new HashSet<Guid>());
-            scopes[scopeTypeId].Add(referenceId.Value);
+            _ = scopes.TryAdd(scopeTypeId, []);
+            _ = scopes[scopeTypeId].Add(referenceId.Value);
         }
 
         Add(ScopeTypeCodes.Employee, employeeSummary.EmployeeId);

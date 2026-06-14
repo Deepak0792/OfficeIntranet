@@ -10,24 +10,16 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Application.Services;
 
-public class OfficeLocationService : IOfficeLocationService
+public class OfficeLocationService(
+    IOfficeLocationRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    ITimeUnitOfWork unitOfWork) : IOfficeLocationService
 {
-    private readonly IOfficeLocationRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly ITimeUnitOfWork _unitOfWork;
-
-    public OfficeLocationService(
-        IOfficeLocationRepository repository,
-        ICacheService cacheService, 
-        ICacheKeyBuilder cacheKeyBuilder,
-        ITimeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IOfficeLocationRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<OfficeLocationResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -35,7 +27,7 @@ public class OfficeLocationService : IOfficeLocationService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<OfficeLocation, OfficeLocationResponse>(e));
+            return PropertyMapper.MapList<OfficeLocation, OfficeLocationResponse>(entities);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -45,14 +37,14 @@ public class OfficeLocationService : IOfficeLocationService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);
-            if (entity == null) return null;
+            if (entity is null) return null;
             return PropertyMapper.Map<OfficeLocation, OfficeLocationResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<OfficeLocationResponse> CreateAsync(CreateOfficeLocationRequest dto, CancellationToken cancellationToken = default)
+    public async Task<OfficeLocationResponse> CreateAsync(CreateOfficeLocationRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = PropertyMapper.Map<CreateOfficeLocationRequest, OfficeLocation>(dto);
+        var entity = PropertyMapper.Map<CreateOfficeLocationRequest, OfficeLocation>(request);
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
@@ -62,12 +54,12 @@ public class OfficeLocationService : IOfficeLocationService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateOfficeLocationRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateOfficeLocationRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        PropertyMapper.MapProperties(dto, entity);
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -79,7 +71,7 @@ public class OfficeLocationService : IOfficeLocationService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.IsActive = request.IsActive;
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;

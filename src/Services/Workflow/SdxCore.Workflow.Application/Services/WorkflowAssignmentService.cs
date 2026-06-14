@@ -11,79 +11,66 @@ using SdxCore.Workflow.Domain.Exceptions;
 
 namespace SdxCore.Workflow.Application.Services;
 
-public class WorkflowAssignmentService(
-    IWorkflowAssignmentRepository _repository, 
-    IWorkflowUnitOfWork _unitOfWork) 
-    : IWorkflowAssignmentService
+public class WorkflowAssignmentService(IWorkflowAssignmentRepository repository, IWorkflowUnitOfWork unitOfWork) : IWorkflowAssignmentService
 {
     public async Task<IEnumerable<WorkflowAssignmentResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var items = await _repository.GetAllAsync(cancellationToken);
+        var items = await repository.GetAllAsync(cancellationToken);
         return PropertyMapper.MapList<WorkflowAssignment, WorkflowAssignmentResponse>(items);
     }
 
     public async Task<WorkflowAssignmentResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var e = await _repository.GetByIdAsync(id, cancellationToken)
+        var e = await repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowAssignment", id);
-        return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(e);
+        return PropertyMapper.Map<WorkflowAssignment, WorkflowAssignmentResponse>(e);
     }
 
     public async Task<IEnumerable<WorkflowAssignmentResponse>> GetByDefinitionIdAsync(Guid definitionId, CancellationToken cancellationToken = default)
     {
-        var items = await _repository.GetByDefinitionIdAsync(definitionId, cancellationToken);
+        var items = await repository.GetByDefinitionIdAsync(definitionId, cancellationToken);
         return PropertyMapper.MapList<WorkflowAssignment, WorkflowAssignmentResponse>(items);
     }
 
     public async Task<ResolveDefinitionResponse> ResolveAsync(string moduleCode, Guid employeeId, DateOnly? effectiveDate, CancellationToken cancellationToken = default)
     {
         var date = effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        var def = await _repository.ResolveDefinitionAsync(moduleCode, employeeId, date, cancellationToken)
+        var def = await repository.ResolveDefinitionAsync(moduleCode, employeeId, date, cancellationToken)
             ?? throw new WorkflowDefinitionNotFoundException(moduleCode);
-        return new ResolveDefinitionResponse(def.Id, def.WorkflowCode, def.WorkflowName, def.VersionNo);
+        return PropertyMapper.Map<WorkflowDefinition, ResolveDefinitionResponse>(def);
     }
 
     public async Task<WorkflowAssignmentResponse> CreateAsync(CreateWorkflowAssignmentRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = new WorkflowAssignment
-        {
-            WorkflowDefinitionId = request.WorkflowDefinitionId,
-            ScopeTypeId = request.ScopeTypeId,
-            ScopeReferenceId = request.ScopeReferenceId,
-            EffectiveFrom = request.EffectiveFrom,
-            EffectiveTo = request.EffectiveTo,
-            PriorityOrder = request.PriorityOrder,
-            IsActive = true
-        };
-        await _repository.AddAsync(entity, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var entity = PropertyMapper.Map<CreateWorkflowAssignmentRequest, WorkflowAssignment>(request);
+        entity.IsActive = true;
+        await repository.AddAsync(entity, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(entity);
+        return PropertyMapper.Map<WorkflowAssignment, WorkflowAssignmentResponse>(entity);
     }
 
     public async Task<WorkflowAssignmentResponse> UpdateAsync(Guid id, UpdateWorkflowAssignmentRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken)
+        var entity = await repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowAssignment", id);
 
-        entity.EffectiveFrom = request.EffectiveFrom;
-        entity.EffectiveTo = request.EffectiveTo;
-        entity.PriorityOrder = request.PriorityOrder;
+        PropertyMapper.Patch<UpdateWorkflowAssignmentRequest, WorkflowAssignment>(request, entity);
 
-        _repository.Update(entity);
+        repository.Update(entity);
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowAssignmentResponse>(entity);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return PropertyMapper.Map<WorkflowAssignment, WorkflowAssignmentResponse>(entity);
     }
 
     public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
+        var entity = await repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
         entity.IsActive = request.IsActive;
-        _repository.Update(entity);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        repository.Update(entity);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

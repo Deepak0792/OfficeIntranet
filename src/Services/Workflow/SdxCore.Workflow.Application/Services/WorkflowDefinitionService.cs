@@ -32,7 +32,7 @@ public class WorkflowDefinitionService(
         {
             var e = await _repository.GetByIdAsync(id, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowDefinition", id);
-            return PropertyMapper.MapToRecord<WorkflowDefinitionResponse>(e);
+            return PropertyMapper.Map<WorkflowDefinition, WorkflowDefinitionResponse>(e);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -44,7 +44,7 @@ public class WorkflowDefinitionService(
         {
             var e = await _repository.GetByCodeAsync(workflowCode, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowDefinition", workflowCode);
-            return PropertyMapper.MapToRecord<WorkflowDefinitionResponse>(e);
+            return PropertyMapper.Map<WorkflowDefinition, WorkflowDefinitionResponse>(e);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -67,9 +67,15 @@ public class WorkflowDefinitionService(
             var e = await _repository.GetWithStepsAsync(id, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowDefinition", id);
 
-            return new WorkflowDefinitionWithStepsResponse(
-                e.Id, e.WorkflowCode, e.WorkflowName, e.VersionNo, e.IsActive,
-                e.Steps.OrderBy(s => s.StepNo).Select(s => PropertyMapper.MapToRecord<WorkflowStepResponse>(s)));
+            return new WorkflowDefinitionWithStepsResponse
+            {
+                Id = e.Id,
+                WorkflowCode = e.WorkflowCode,
+                WorkflowName = e.WorkflowName,
+                VersionNo = e.VersionNo,
+                IsActive = e.IsActive,
+                Steps = e.Steps.OrderBy(s => s.StepNo).Select(s => PropertyMapper.Map<WorkflowStep, WorkflowStepResponse>(s))
+            };
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -79,32 +85,21 @@ public class WorkflowDefinitionService(
         if (await _repository.GetByCodeAsync(request.WorkflowCode, cancellationToken) is not null)
             throw new DuplicateWorkflowCodeException(request.WorkflowCode);
 
-        var entity = new WorkflowDefinition
-        {
-            WorkflowModuleId = request.WorkflowModuleId,
-            WorkflowCode = request.WorkflowCode.ToUpperInvariant(),
-            WorkflowName = request.WorkflowName,
-            VersionNo = request.VersionNo,
-            Description = request.Description,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateWorkflowDefinitionRequest, WorkflowDefinition>(request);
+        entity.IsActive = true;
         await _repository.AddAsync(entity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowDefinitionResponse>(entity);
+        return PropertyMapper.Map<WorkflowDefinition, WorkflowDefinitionResponse>(entity);
     }
 
     public async Task<WorkflowDefinitionResponse> UpdateAsync(Guid id, UpdateWorkflowDefinitionRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowDefinition", id);
-
-        entity.WorkflowName = request.WorkflowName;
-        entity.VersionNo = request.VersionNo;
-        entity.Description = request.Description;
-
+        PropertyMapper.Patch<UpdateWorkflowDefinitionRequest, WorkflowDefinition>(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowDefinitionResponse>(entity);
+        return PropertyMapper.Map<WorkflowDefinition, WorkflowDefinitionResponse>(entity);
     }
 
     public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)

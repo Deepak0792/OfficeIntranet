@@ -8,30 +8,24 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class EmployeeLocationService : IEmployeeLocationService
+public class EmployeeLocationService(
+   IEmployeeLocationRepository repository,
+   IEmployeeUnitOfWork unitOfWork) : IEmployeeLocationService
 {
-    private readonly IEmployeeLocationRepository _repository;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public EmployeeLocationService(
-       IEmployeeLocationRepository repository,
-       IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IEmployeeLocationRepository _repository = repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<EmployeeLocationResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
-        return entities.Select(e => PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(e)).ToList();
+        return PropertyMapper.MapList<EmployeeLocation, EmployeeLocationResponse>(entities);
     }
 
     public async Task<EmployeeLocationResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) return null;
+        if (entity is null) return null;
 
         return PropertyMapper.Map<EmployeeLocation, EmployeeLocationResponse>(entity);
     }
@@ -55,27 +49,26 @@ public class EmployeeLocationService : IEmployeeLocationService
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
+        return await GetByIdAsync(employeeId, created.Id, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to retrieve created entity");
     }
 
     public async Task<EmployeeLocationResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeLocationRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) throw new KeyNotFoundException("Employee location not found");
+        var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault()
+            ?? throw new KeyNotFoundException("Employee location not found");
 
-        entity.StartDate = request.StartDate;
-        entity.EndDate = request.EndDate;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
+        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new InvalidOperationException("Failed to retrieve updated entity");
     }
 
     public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) return false;
+        if (entity is null) return false;
 
         entity.IsActive = isActive;
         _repository.Update(entity);
@@ -87,7 +80,7 @@ public class EmployeeLocationService : IEmployeeLocationService
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
         var target = entities.FirstOrDefault(x => x.Id == id);
-        if (target == null) return false;
+        if (target is null) return false;
 
         foreach (var e in entities.Where(x => x.IsPrimaryLocation))
         {

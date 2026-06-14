@@ -5,29 +5,22 @@ using SdxCore.Workflow.Application.DTOs.Employee;
 
 namespace SdxCore.Workflow.Application.Services;
 
-public class EmployeeQueryService : IEmployeeQueryService
+public class EmployeeQueryService(IEmployeeClient employeeClient) : IEmployeeQueryService
 {
-    private readonly IEmployeeClient _employeeClient;
-
-    public EmployeeQueryService(IEmployeeClient employeeClient)
-    {
-        _employeeClient = employeeClient;
-    }
-
     public async Task<EmployeeSummaryResponse?> GetEmployeeByIdAsync(Guid employeeId, CancellationToken cancellationToken = default!)
     {
-        return await _employeeClient.GetEmployeeeSummaryAsync(employeeId, cancellationToken);
+        return await employeeClient.GetEmployeeeSummaryByIdAsync(employeeId, cancellationToken);
     }
 
     public async Task<EmployeeSummaryResponse?> GetReportingManagerAsync(Guid employeeId, CancellationToken cancellationToken = default!)
     {
-        var employee = await GetEmployeeByIdAsync(employeeId)
+        var employee = await GetEmployeeByIdAsync(employeeId, cancellationToken)
             ?? throw new InvalidOperationException($"Employee service returned null for Employee Id {employeeId}");
 
         var managerId = employee.DirectManagerId
             ?? throw new InvalidOperationException($"Employee Reporting Manager is not configured for Employee Id {employeeId}");
 
-        return await GetEmployeeByIdAsync(managerId);
+        return await GetEmployeeByIdAsync(managerId, cancellationToken);
     }
 
     public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
@@ -38,7 +31,7 @@ public class EmployeeQueryService : IEmployeeQueryService
         // Since this is cross-service filtering,
         // delegate to Employee API search endpoint
 
-        return await _employeeClient.GetEmployeesByDesignationInScopeAsync(
+        return await employeeClient.GetEmployeesByDesignationInScopeAsync(
             designationIds,
             scopeCode,
             scopeReferenceId,
@@ -59,7 +52,7 @@ public class EmployeeQueryService : IEmployeeQueryService
 
     public async Task<Guid?> GetScopeReferenceIdAsync(Guid employeeId, string? scopeCode, CancellationToken cancellationToken = default!)
     {
-        var employee = await _employeeClient.GetEmployeeeSummaryAsync(employeeId, cancellationToken);
+        var employee = await employeeClient.GetEmployeeeSummaryByIdAsync(employeeId, cancellationToken);
 
         if (employee == null)
             return null;

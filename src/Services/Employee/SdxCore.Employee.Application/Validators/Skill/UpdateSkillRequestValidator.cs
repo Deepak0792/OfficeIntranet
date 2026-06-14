@@ -3,7 +3,7 @@ using SdxCore.Employee.Application.DTOs.Skill.Request;
 
 namespace SdxCore.Employee.Application.Validators.Skill;
 
-public class UpdateSkillRequestValidator : AbstractValidator<UpdateSkillRequest>
+public sealed class UpdateSkillRequestValidator : AbstractValidator<UpdateSkillRequest>
 {
     public UpdateSkillRequestValidator()
     {

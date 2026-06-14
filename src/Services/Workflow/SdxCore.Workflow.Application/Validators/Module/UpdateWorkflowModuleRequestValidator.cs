@@ -8,5 +8,7 @@ public sealed class UpdateWorkflowModuleRequestValidator : AbstractValidator<Upd
     public UpdateWorkflowModuleRequestValidator()
     {
         RuleFor(x => x.ModuleName).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Schema).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.EntityName).NotEmpty().MaximumLength(100);
     }
 }

@@ -8,46 +8,37 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class EmployeeDepartmentService : IEmployeeDepartmentService
+public class EmployeeDepartmentService(
+   IEmployeeDepartmentRepository repository,
+   IEmployeeUnitOfWork unitOfWork) : IEmployeeDepartmentService
 {
-    private readonly IEmployeeDepartmentRepository _repository;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public EmployeeDepartmentService(
-       IEmployeeDepartmentRepository repository,
-       IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IEmployeeDepartmentRepository _repository = repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<EmployeeDepartmentResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
-        return entities.Select(e => PropertyMapper.Map<EmployeeDepartment, EmployeeDepartmentResponse>(e)).ToList();
+        return PropertyMapper.MapList<EmployeeDepartment, EmployeeDepartmentResponse>(entities);
     }
 
     public async Task<EmployeeDepartmentResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) return null;
+        if (entity is null) return null;
 
         return PropertyMapper.Map<EmployeeDepartment, EmployeeDepartmentResponse>(entity);
     }
 
     private async Task ValidateAllocationPercentageAsync(Guid employeeId, Guid? currentId, decimal? additionalAllocation, CancellationToken cancellationToken)
     {
-        var activeDepartments = await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken);
-        if (currentId.HasValue)
-        {
-            activeDepartments = activeDepartments.Where(x => x.Id != currentId.Value);
-        }
+        var activeDepartments = (await _repository.FindAsync(x => x.EmployeeId == employeeId && x.IsActive, cancellationToken))
+            .Where(x => currentId != x.Id);
 
         var currentTotal = activeDepartments.Sum(x => x.AllocationPercentage ?? 0);
         if (currentTotal + (additionalAllocation ?? 0) > 100)
         {
-            throw new Exception($"Total allocation percentage cannot exceed 100. Current total for other departments is {currentTotal}%.");
+            throw new InvalidOperationException($"Total allocation percentage cannot exceed 100. Current total for other departments is {currentTotal}%.");
         }
     }
 
@@ -72,24 +63,21 @@ public class EmployeeDepartmentService : IEmployeeDepartmentService
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
+        return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new InvalidOperationException("Failed to retrieve created entity");
     }
 
     public async Task<EmployeeDepartmentResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         await ValidateAllocationPercentageAsync(employeeId, id, request.AllocationPercentage, cancellationToken);
 
-        var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) throw new KeyNotFoundException("Employee department not found");
+        var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault()
+            ?? throw new KeyNotFoundException("Employee department not found");
 
-        entity.AllocationPercentage = request.AllocationPercentage;
-        entity.StartDate = request.StartDate;
-        entity.EndDate = request.EndDate;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
+        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new InvalidOperationException("Failed to retrieve updated entity");
     }
 
     public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)

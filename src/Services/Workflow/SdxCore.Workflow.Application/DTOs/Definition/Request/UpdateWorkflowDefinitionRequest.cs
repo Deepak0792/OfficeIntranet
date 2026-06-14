@@ -1,6 +1,8 @@
 namespace SdxCore.Workflow.Application.DTOs.Definition.Request;
 
-public record UpdateWorkflowDefinitionRequest(
-    string WorkflowName,
-    short VersionNo,
-    string? Description);
+public sealed class UpdateWorkflowDefinitionRequest
+{
+    public string WorkflowName { get; set; } = default!;
+    public short VersionNo { get; set; }
+    public string? Description { get; set; }
+}

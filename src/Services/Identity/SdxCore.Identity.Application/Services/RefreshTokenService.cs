@@ -49,8 +49,7 @@ public class RefreshTokenService : IRefreshTokenService
         RefreshTokenRequest refreshTokenRequest,
         CancellationToken ct = default)
     {
-        if (refreshTokenRequest is null)
-            throw new ArgumentNullException(nameof(refreshTokenRequest));
+        ArgumentNullException.ThrowIfNull(refreshTokenRequest);
 
         if (string.IsNullOrWhiteSpace(refreshTokenRequest.RefreshToken))
             return new AuthenticationResponse

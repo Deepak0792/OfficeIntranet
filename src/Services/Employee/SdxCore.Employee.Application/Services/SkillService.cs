@@ -9,24 +9,16 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class SkillService : ISkillService
+public class SkillService(
+    ISkillRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    IEmployeeUnitOfWork unitOfWork) : ISkillService
 {
-    private readonly ISkillRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public SkillService(
-        ISkillRepository repository, 
-        ICacheService cacheService, 
-        ICacheKeyBuilder cacheKeyBuilder,
-        IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly ISkillRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<SkillResponse>> GetAllAsync(string? category = null, CancellationToken cancellationToken = default)
     {
@@ -35,10 +27,10 @@ public class SkillService : ISkillService
         var items = await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<Skill, SkillResponse>(e)).ToList();
+            return PropertyMapper.MapList<Skill, SkillResponse>(entities);
         }, CacheOptions.Default, cancellationToken);
 
-        if (!string.IsNullOrEmpty(category) && items != null)
+        if (!string.IsNullOrEmpty(category) && items is not null)
         {
             return items.Where(s => s.SkillCategory == category);
         }
@@ -72,13 +64,10 @@ public class SkillService : ISkillService
 
     public async Task<SkillResponse> UpdateAsync(Guid id, UpdateSkillRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) throw new KeyNotFoundException($"Skill with ID {id} not found.");
+        var entity = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Skill with ID {id} not found.");
 
-        entity.SkillName = request.SkillName;
-        entity.SkillCategory = request.SkillCategory;
-        entity.Description = request.Description;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -87,8 +76,8 @@ public class SkillService : ISkillService
 
     public async Task<bool> ToggleStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
     {
-        var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        var entity = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Skill with ID {id} not found.");
 
         entity.IsActive = isActive;
         _repository.Update(entity);

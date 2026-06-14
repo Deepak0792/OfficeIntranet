@@ -1,3 +1,6 @@
 namespace SdxCore.Workflow.Application.DTOs.Shared.Request;
 
-public record ToggleStatusRequest(bool IsActive);
+public sealed class ToggleStatusRequest
+{
+    public bool IsActive { get; set; }
+}

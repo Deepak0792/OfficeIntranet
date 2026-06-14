@@ -39,9 +39,8 @@ public class BiometricDeviceService : IBiometricDeviceService
         //    return new PagedResponse<IEnumerable<BiometricDeviceResponse>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
         //}, CacheOptions.StaticMasterData, cancellationToken);
 
-        var result = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
-        var dtos = result.Items.Select(e => PropertyMapper.Map<BiometricDevice, BiometricDeviceResponse>(e));
-        return new PagedResponse<IEnumerable<BiometricDeviceResponse>>(dtos, filter.PageNumber, filter.PageSize, result.TotalCount);
+        var (items, totalCount) = await _repository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, cancellationToken);
+        return new PagedResponse<IEnumerable<BiometricDeviceResponse>>(PropertyMapper.MapList<BiometricDevice, BiometricDeviceResponse>(items), filter.PageNumber, filter.PageSize, totalCount);
     }
 
     public async Task<BiometricDeviceResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -54,13 +53,13 @@ public class BiometricDeviceService : IBiometricDeviceService
         //    return PropertyMapper.Map<BiometricDevice, BiometricDeviceResponse>(entity);
         //}, CacheOptions.StaticMasterData, cancellationToken);
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return null;
+        if (entity is null) return null;
         return PropertyMapper.Map<BiometricDevice, BiometricDeviceResponse>(entity);
     }
 
-    public async Task<BiometricDeviceResponse> CreateAsync(CreateBiometricDeviceRequest dto, CancellationToken cancellationToken = default)
+    public async Task<BiometricDeviceResponse> CreateAsync(CreateBiometricDeviceRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = PropertyMapper.Map<CreateBiometricDeviceRequest, BiometricDevice>(dto);
+        var entity = PropertyMapper.Map<CreateBiometricDeviceRequest, BiometricDevice>(request);
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
@@ -70,12 +69,12 @@ public class BiometricDeviceService : IBiometricDeviceService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateBiometricDeviceRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateBiometricDeviceRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        PropertyMapper.MapProperties(dto, entity);
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

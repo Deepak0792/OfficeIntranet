@@ -3,17 +3,19 @@ using SdxCore.Workflow.Application.DTOs.Task.Response;
 
 namespace SdxCore.Workflow.Application.DTOs.Instance.Response;
 
-public record WorkflowInstanceDetailResponse(
-    Guid Id,
-    string WorkflowCode,
-    string WorkflowName,
-    string ModuleCode,
-    Guid ReferenceTransactionId,
-    Guid? CurrentWorkflowStepId,
-    string? CurrentStepName,
-    string WorkflowStatus,
-    Guid? CreatedBy,
-    DateTime CreatedAt,
-    DateTime? CompletedAt,
-    IEnumerable<WorkflowTaskResponse> Tasks,
-    IEnumerable<WorkflowActionHistoryResponse> History);
+public sealed class WorkflowInstanceDetailResponse
+{
+    public Guid Id { get; set; }
+    public string WorkflowCode { get; set; } = default!;
+    public string WorkflowName { get; set; } = default!;
+    public string ModuleCode { get; set; } = default!;
+    public Guid ReferenceTransactionId { get; set; }
+    public Guid? CurrentWorkflowStepId { get; set; }
+    public string? CurrentStepName { get; set; }
+    public string WorkflowStatus { get; set; } = default!;
+    public Guid? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public IEnumerable<WorkflowTaskResponse> Tasks { get; set; } = [];
+    public IEnumerable<WorkflowActionHistoryResponse> History { get; set; } = [];
+}

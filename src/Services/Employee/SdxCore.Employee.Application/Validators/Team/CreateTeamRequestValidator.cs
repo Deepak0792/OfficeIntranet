@@ -3,7 +3,7 @@ using SdxCore.Employee.Application.DTOs.Team.Request;
 
 namespace SdxCore.Employee.Application.Validators.Team;
 
-public class CreateTeamRequestValidator : AbstractValidator<CreateTeamRequest>
+public sealed class CreateTeamRequestValidator : AbstractValidator<CreateTeamRequest>
 {
     public CreateTeamRequestValidator()
     {

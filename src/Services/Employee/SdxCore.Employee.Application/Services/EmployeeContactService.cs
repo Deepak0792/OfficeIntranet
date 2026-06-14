@@ -8,24 +8,18 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class EmployeeContactService : IEmployeeContactService
+public class EmployeeContactService(
+   IEmployeeContactRepository repository,
+   IEmployeeUnitOfWork unitOfWork) : IEmployeeContactService
 {
-    private readonly IEmployeeContactRepository _repository;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public EmployeeContactService(
-       IEmployeeContactRepository repository,
-       IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IEmployeeContactRepository _repository = repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<EmployeeContactResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
-        return entities.Select(e => PropertyMapper.Map<EmployeeContact, EmployeeContactResponse>(e)).ToList();
+        return PropertyMapper.MapList<EmployeeContact, EmployeeContactResponse>(entities);
     }
 
     public async Task<EmployeeContactResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
@@ -55,20 +49,19 @@ public class EmployeeContactService : IEmployeeContactService
         var created = await _repository.AddAsync(entity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new Exception("Failed to retrieve created entity");
+        return await GetByIdAsync(employeeId, created.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
     public async Task<EmployeeContactResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeContactRequest request, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) throw new KeyNotFoundException("Employee contact not found");
+        if (entity is null) throw new KeyNotFoundException("Employee contact not found");
 
-        entity.ContactValue = request.ContactValue;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
+        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
     public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)

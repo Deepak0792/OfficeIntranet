@@ -35,7 +35,7 @@ public class WorkflowStepService(
         {
             var step = await repository.GetWithApproversAsync(id, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowStep", id);
-            return PropertyMapper.MapToRecord<WorkflowStepResponse>(step);
+            return PropertyMapper.Map<WorkflowStep, WorkflowStepResponse>(step);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -47,7 +47,7 @@ public class WorkflowStepService(
         {
             var step = await repository.GetWithApproversAsync(id, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowStep", id);
-            return PropertyMapper.MapToRecord<WorkflowStepResponse>(step);
+            return PropertyMapper.Map<WorkflowStep, WorkflowStepResponse>(step);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -63,21 +63,12 @@ public class WorkflowStepService(
         _ = await defRepository.GetByIdAsync(definitionId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowDefinition", definitionId);
 
-        var entity = new WorkflowStep
-        {
-            WorkflowDefinitionId = definitionId,
-            StepNo = request.StepNo,
-            StepName = request.StepName,
-            WorkflowStepType = request.WorkflowStepType,
-            IsFinalStep = request.IsFinalStep,
-            AllowDelegation = request.AllowDelegation,
-            EscalationAfterHours = request.EscalationAfterHours,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateWorkflowStepRequest, WorkflowStep>(request);
+        entity.WorkflowDefinitionId = definitionId;
         await repository.AddAsync(entity, cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowStepResponse>(entity);
+        return PropertyMapper.Map<WorkflowStep, WorkflowStepResponse>(entity);
     }
 
     public async Task<WorkflowStepResponse> UpdateAsync(Guid definitionId, Guid id, UpdateWorkflowStepRequest request, CancellationToken cancellationToken = default)
@@ -85,16 +76,10 @@ public class WorkflowStepService(
         var entity = await repository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStep", id);
 
-        entity.StepName = request.StepName;
-        entity.WorkflowStepType = request.WorkflowStepType;
-        entity.IsFinalStep = request.IsFinalStep;
-        entity.AllowDelegation = request.AllowDelegation;
-        entity.EscalationAfterHours = request.EscalationAfterHours;
-
+        PropertyMapper.Patch(request, entity);
         repository.Update(entity);
-        
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowStepResponse>(entity);
+        return PropertyMapper.Map<WorkflowStep, WorkflowStepResponse>(entity);
     }
 
     public async Task<bool> ToggleStatusAsync(Guid definitionId, Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)

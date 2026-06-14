@@ -9,5 +9,7 @@ public sealed class CreateWorkflowModuleRequestValidator : AbstractValidator<Cre
     {
         RuleFor(x => x.ModuleCode).NotEmpty().MaximumLength(100);
         RuleFor(x => x.ModuleName).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Schema).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.EntityName).NotEmpty().MaximumLength(100);
     }
 }

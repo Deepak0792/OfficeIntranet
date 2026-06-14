@@ -3,7 +3,7 @@ using SdxCore.Employee.Application.DTOs.Employee.Request;
 
 namespace SdxCore.Employee.Application.Validators.Employee;
 
-public class UpdateEmployeeAboutRequestValidator : AbstractValidator<UpdateEmployeeAboutRequest>
+public sealed class UpdateEmployeeAboutRequestValidator : AbstractValidator<UpdateEmployeeAboutRequest>
 {
     public UpdateEmployeeAboutRequestValidator()
     {

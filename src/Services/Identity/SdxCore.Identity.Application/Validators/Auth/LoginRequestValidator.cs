@@ -3,11 +3,14 @@ using SdxCore.Identity.Application.DTOs.Auth.Request;
 
 namespace SdxCore.Identity.Application.Validators.Auth;
 
+/// <summary>
+/// Validates <see cref="LoginRequest"/> for presence of at least one credential field.
+/// Protocol-specific field requirements are validated in <see cref="AuthenticationRequestValidator"/>.
+/// </summary>
 public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
     public LoginRequestValidator()
     {
-        // At least one auth credential must be present — protocol-specific logic handled by service
         RuleFor(x => x).Must(r =>
             !string.IsNullOrWhiteSpace(r.Username) ||
             !string.IsNullOrWhiteSpace(r.SamlAssertion) ||

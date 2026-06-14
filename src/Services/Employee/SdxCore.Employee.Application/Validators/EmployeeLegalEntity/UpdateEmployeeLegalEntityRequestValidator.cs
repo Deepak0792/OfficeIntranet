@@ -1,14 +1,15 @@
-﻿using FluentValidation;
+using FluentValidation;
 using SdxCore.Employee.Application.DTOs.EmployeeLegalEntity.Request;
 
 namespace SdxCore.Employee.Application.Validators.EmployeeLegalEntity;
 
-public class UpdateEmployeeLegalEntityRequestValidator : AbstractValidator<UpdateEmployeeLegalEntityRequest>
+public sealed class UpdateEmployeeLegalEntityRequestValidator : AbstractValidator<UpdateEmployeeLegalEntityRequest>
 {
     public UpdateEmployeeLegalEntityRequestValidator()
     {
         RuleFor(x => x.EndDate)
-            .GreaterThanOrEqualTo(x => x.StartDate).When(x => x.StartDate.HasValue && x.EndDate.HasValue)
+            .GreaterThanOrEqualTo(x => x.StartDate)
+            .When(x => x.StartDate.HasValue && x.EndDate.HasValue)
             .WithMessage("End Date cannot be before Start Date.");
     }
 }

@@ -1,3 +1,4 @@
+using SdxCore.Common.Helpers;
 using SdxCore.Common.Models;
 using SdxCore.Workflow.Application.Abstractions.Engine;
 using SdxCore.Workflow.Application.Abstractions.Services;
@@ -5,8 +6,8 @@ using SdxCore.Workflow.Application.DTOs.ActionHistory.Response;
 using SdxCore.Workflow.Application.DTOs.Instance.Request;
 using SdxCore.Workflow.Application.DTOs.Instance.Response;
 using SdxCore.Workflow.Application.DTOs.Task.Response;
-using SdxCore.Workflow.Domain;
 using SdxCore.Workflow.Domain.Abstractions.Repositories;
+using SdxCore.Workflow.Domain.Entities;
 using SdxCore.Workflow.Domain.Exceptions;
 
 namespace SdxCore.Workflow.Application.Services;
@@ -25,7 +26,7 @@ public class WorkflowInstanceService(
         var (items, total) = await instanceRepo.GetPagedAsync(
            filter.PageNumber, filter.PageSize, moduleCode, status, initiatedBy, fromDate, toDate, cancellationToken);
         return new PagedResponse<IEnumerable<WorkflowInstanceResponse>>(
-            items.Select(MapSummary), filter.PageNumber, filter.PageSize, total);
+            PropertyMapper.MapList<WorkflowInstance, WorkflowInstanceResponse>(items), filter.PageNumber, filter.PageSize, total);
     }
 
     public async Task<WorkflowInstanceDetailResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -36,32 +37,34 @@ public class WorkflowInstanceService(
         var tasks = await taskRepo.GetByInstanceIdAsync(id, cancellationToken);
         var history = await historyRepo.GetByInstanceIdAsync(id, cancellationToken);
 
-        return new WorkflowInstanceDetailResponse(
-            e.Id,
-            e.Definition?.WorkflowCode ?? string.Empty,
-            e.Definition?.WorkflowName ?? string.Empty,
-            e.Module?.ModuleCode ?? string.Empty,
-            e.ReferenceTransactionId,
-            e.CurrentWorkflowStepId,
-            e.CurrentStep?.StepName,
-            e.WorkflowStatus,
-            e.CreatedBy, // enriched by persistence layer via join
-            e.CreatedAt,
-            e.CompletedAt,
-            tasks.Select(MapTask),
-            history.OrderBy(h => h.ActionAt).Select(MapHistory));
+        return new WorkflowInstanceDetailResponse
+        {
+            Id = e.Id,
+            WorkflowCode = e.Definition?.WorkflowCode ?? string.Empty,
+            WorkflowName = e.Definition?.WorkflowName ?? string.Empty,
+            ModuleCode = e.Module?.ModuleCode ?? string.Empty,
+            ReferenceTransactionId = e.ReferenceTransactionId,
+            CurrentWorkflowStepId = e.CurrentWorkflowStepId,
+            CurrentStepName = e.CurrentStep?.StepName,
+            WorkflowStatus = e.WorkflowStatus,
+            CreatedBy = e.CreatedBy,
+            CreatedAt = e.CreatedAt,
+            CompletedAt = e.CompletedAt,
+            Tasks = PropertyMapper.MapList<WorkflowTask, WorkflowTaskResponse>(tasks),
+            History = PropertyMapper.MapList<WorkflowActionHistory, WorkflowActionHistoryResponse>(history.OrderBy(h => h.ActionAt))
+        };
     }
 
     public async Task<IEnumerable<WorkflowActionHistoryResponse>> GetHistoryAsync(Guid instanceId, CancellationToken cancellationToken = default)
     {
         var history = await historyRepo.GetByInstanceIdAsync(instanceId, cancellationToken);
-        return history.OrderBy(h => h.ActionAt).Select(MapHistory);
+        return PropertyMapper.MapList<WorkflowActionHistory, WorkflowActionHistoryResponse>(history.OrderBy(h => h.ActionAt));
     }
 
     public async Task<IEnumerable<WorkflowTaskResponse>> GetTasksAsync(Guid instanceId, CancellationToken cancellationToken = default)
     {
         var tasks = await taskRepo.GetByInstanceIdAsync(instanceId, cancellationToken);
-        return tasks.Select(MapTask);
+        return tasks.Select(PropertyMapper.Map<WorkflowTask, WorkflowTaskResponse>);
     }
 
     public async Task<WorkflowInstanceResponse> GetByTransactionAsync(
@@ -71,13 +74,14 @@ public class WorkflowInstanceService(
             ?? throw new WorkflowNotFoundException(
                 "WorkflowInstance",
                 $"module={moduleCode}&transactionId={referenceTransactionId}");
-        return MapSummary(e);
+
+        return PropertyMapper.Map<WorkflowInstance, WorkflowInstanceResponse>(e);
     }
 
     public async Task<IEnumerable<WorkflowInstanceResponse>> GetMySubmissionsAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var items = await instanceRepo.GetMySubmissionsAsync(employeeId, cancellationToken);
-        return items.Select(MapSummary);
+        return items.Select(PropertyMapper.Map<WorkflowInstance, WorkflowInstanceResponse>);
     }
 
     public async Task<WorkflowInstanceResponse> CreateAsync(SubmitWorkflowInstanceRequest request, CancellationToken cancellationToken = default)
@@ -87,7 +91,7 @@ public class WorkflowInstanceService(
             request.WorkflowCode,
             request.ReferenceTransactionId,
             request.InitiatedByEmployeeId, cancellationToken);
-        return MapSummary(instance);
+        return PropertyMapper.Map<WorkflowInstance, WorkflowInstanceResponse>(instance);
     }
 
     public async Task<bool> CancelAsync(Guid id, Guid actionBy, string? remarks, CancellationToken cancellationToken = default)
@@ -101,43 +105,4 @@ public class WorkflowInstanceService(
         await engine.WithdrawAsync(id, actionBy, remarks, cancellationToken);
         return true;
     }
-
-    // ── Mappers ──────────────────────────────────────────────
-    private static WorkflowInstanceResponse MapSummary(Domain.Entities.WorkflowInstance e) =>
-        new(e.Id,
-            e.WorkflowDefinitionId,
-            e.Definition?.WorkflowCode ?? string.Empty,
-            e.Definition?.WorkflowName ?? string.Empty,
-            e.WorkflowModuleId,
-            e.Module?.ModuleCode ?? string.Empty,
-            e.ReferenceTransactionId,
-            e.CurrentWorkflowStepId,
-            e.CurrentStep?.StepName,
-            e.CurrentStep?.StepNo,
-            e.WorkflowStatus,
-            e.CreatedBy,
-            e.CreatedAt,
-            e.CompletedAt);
-
-    private static WorkflowTaskResponse MapTask(Domain.Entities.WorkflowTask t) =>
-        new(t.Id, t.WorkflowInstanceId,
-            t.WorkflowStepId,
-            t.Step?.StepName ?? string.Empty,
-            t.Step?.StepNo ?? 0,
-            t.WorkflowStepApproverId,
-            t.AssignedToEmployeeId, string.Empty,
-            t.DelegatedFromEmployeeId, null,
-            t.TaskStatus, t.Remarks,
-            t.ParentWorkflowTaskId,
-            t.AssignedAt, t.DueAt, t.ActionAt,
-            t.Instance?.Module?.ModuleCode ?? string.Empty,
-            t.Instance?.ReferenceTransactionId ?? Guid.Empty,
-            t.Instance?.WorkflowStatus ?? string.Empty);
-
-    private static WorkflowActionHistoryResponse MapHistory(Domain.Entities.WorkflowActionHistory h) =>
-        new(h.Id, h.WorkflowInstanceId, h.WorkflowTaskId,
-            h.WorkflowStepId, h.Step?.StepName,
-            h.WorkflowActionType, h.Remarks,
-            h.FromWorkflowStatus, h.ToWorkflowStatus,
-            h.ActionBy, string.Empty, h.ActionAt);
 }

@@ -10,23 +10,16 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Application.Services;
 
-public class TimeZoneMasterService : ITimeZoneMasterService
+public class TimeZoneMasterService(
+    ITimeZoneMasterRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    ITimeUnitOfWork unitOfWork) : ITimeZoneMasterService
 {
-    private readonly ITimeZoneMasterRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly ITimeUnitOfWork _unitOfWork;
-    public TimeZoneMasterService(
-        ITimeZoneMasterRepository repository,
-        ICacheService cacheService,
-        ICacheKeyBuilder cacheKeyBuilder,
-        ITimeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly ITimeZoneMasterRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<TimeZoneMasterResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -34,7 +27,7 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<TimeZoneMaster, TimeZoneMasterResponse>(e));
+            return PropertyMapper.MapList<TimeZoneMaster, TimeZoneMasterResponse>(entities);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -44,14 +37,14 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);
-            if (entity == null) return null;
+            if (entity is null) return null;
             return PropertyMapper.Map<TimeZoneMaster, TimeZoneMasterResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<TimeZoneMasterResponse> CreateAsync(CreateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default)
+    public async Task<TimeZoneMasterResponse> CreateAsync(CreateTimeZoneMasterRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = PropertyMapper.Map<CreateTimeZoneMasterRequest, TimeZoneMaster>(dto);
+        var entity = PropertyMapper.Map<CreateTimeZoneMasterRequest, TimeZoneMaster>(request);
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
@@ -61,12 +54,12 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateTimeZoneMasterRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateTimeZoneMasterRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        PropertyMapper.MapProperties(dto, entity);
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -78,7 +71,7 @@ public class TimeZoneMasterService : ITimeZoneMasterService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.IsActive = request.IsActive;
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;

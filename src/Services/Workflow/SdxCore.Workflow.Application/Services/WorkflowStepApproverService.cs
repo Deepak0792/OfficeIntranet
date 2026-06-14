@@ -35,7 +35,7 @@ public class WorkflowStepApproverService(
         {
             var e = await approverRepository.GetWithDesignationsAsync(id, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowStepApprover", id);
-            return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(e);
+            return PropertyMapper.Map<WorkflowStepApprover, WorkflowStepApproverResponse>(e);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -54,20 +54,12 @@ public class WorkflowStepApproverService(
         _ = await stepRepo.GetByIdAsync(stepId, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStep", stepId);
 
-        var entity = new WorkflowStepApprover
-        {
-            WorkflowStepId = stepId,
-            WorkflowApproverType = request.WorkflowApproverType,
-            ScopeTypeId = request.ScopeTypeId,
-            ScopeReferenceId = request.ScopeReferenceId,
-            PriorityOrder = request.PriorityOrder,
-            IsMandatory = request.IsMandatory,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<CreateWorkflowStepApproverRequest, WorkflowStepApprover>(request);
+        entity.WorkflowStepId = stepId;
         await approverRepository.AddAsync(entity, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(entity);
+        return PropertyMapper.Map<WorkflowStepApprover, WorkflowStepApproverResponse>(entity);
     }
 
     public async Task<WorkflowStepApproverResponse> UpdateAsync(Guid stepId, Guid id, UpdateWorkflowStepApproverRequest request, CancellationToken cancellationToken = default)
@@ -75,15 +67,11 @@ public class WorkflowStepApproverService(
         var entity = await approverRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new WorkflowNotFoundException("WorkflowStepApprover", id);
 
-        entity.ScopeTypeId = request.ScopeTypeId;
-        entity.ScopeReferenceId = request.ScopeReferenceId;
-        entity.PriorityOrder = request.PriorityOrder;
-        entity.IsMandatory = request.IsMandatory;
-
+        PropertyMapper.Patch(request, entity);
         approverRepository.Update(entity);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowStepApproverResponse>(entity);
+        return PropertyMapper.Map<WorkflowStepApprover, WorkflowStepApproverResponse>(entity);
     }
 
     public async Task<bool> ToggleStatusAsync(Guid stepId, Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)

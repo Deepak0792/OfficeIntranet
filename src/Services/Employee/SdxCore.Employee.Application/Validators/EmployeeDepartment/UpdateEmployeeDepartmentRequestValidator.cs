@@ -1,17 +1,17 @@
-﻿using FluentValidation;
+using FluentValidation;
 using SdxCore.Employee.Application.DTOs.EmployeeDepartment.Request;
 
 namespace SdxCore.Employee.Application.Validators.EmployeeDepartment;
-public class UpdateEmployeeDepartmentRequestValidator : AbstractValidator<UpdateEmployeeDepartmentRequest>
+
+public sealed class UpdateEmployeeDepartmentRequestValidator : AbstractValidator<UpdateEmployeeDepartmentRequest>
 {
     public UpdateEmployeeDepartmentRequestValidator()
     {
         RuleFor(x => x.AllocationPercentage)
-            .InclusiveBetween(0, 100).When(x => x.AllocationPercentage.HasValue)
-            .WithMessage("Allocation percentage must be between 0 and 100.");
-
+            .InclusiveBetween(0, 100).When(x => x.AllocationPercentage.HasValue);
         RuleFor(x => x.EndDate)
-            .GreaterThanOrEqualTo(x => x.StartDate).When(x => x.StartDate.HasValue && x.EndDate.HasValue)
+            .GreaterThanOrEqualTo(x => x.StartDate)
+            .When(x => x.StartDate.HasValue && x.EndDate.HasValue)
             .WithMessage("End Date cannot be before Start Date.");
     }
 }

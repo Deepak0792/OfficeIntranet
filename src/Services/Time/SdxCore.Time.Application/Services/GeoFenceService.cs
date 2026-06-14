@@ -10,24 +10,16 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Application.Services;
 
-public class GeoFenceService : IGeoFenceService
+public class GeoFenceService(
+    IGeoFenceRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    ITimeUnitOfWork unitOfWork) : IGeoFenceService
 {
-    private readonly IGeoFenceRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly ITimeUnitOfWork _unitOfWork;
-
-    public GeoFenceService(
-        IGeoFenceRepository repository,
-        ICacheService cacheService,
-        ICacheKeyBuilder cacheKeyBuilder,
-        ITimeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IGeoFenceRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<GeoFenceResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -35,7 +27,7 @@ public class GeoFenceService : IGeoFenceService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<GeoFence, GeoFenceResponse>(e));
+            return PropertyMapper.MapList<GeoFence, GeoFenceResponse>(entities);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -45,14 +37,14 @@ public class GeoFenceService : IGeoFenceService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);
-            if (entity == null) return null;
+            if (entity is null) return null;
             return PropertyMapper.Map<GeoFence, GeoFenceResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<GeoFenceResponse> CreateAsync(CreateGeoFenceRequest dto, CancellationToken cancellationToken = default)
+    public async Task<GeoFenceResponse> CreateAsync(CreateGeoFenceRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = PropertyMapper.Map<CreateGeoFenceRequest, GeoFence>(dto);
+        var entity = PropertyMapper.Map<CreateGeoFenceRequest, GeoFence>(request);
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
@@ -62,12 +54,12 @@ public class GeoFenceService : IGeoFenceService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateGeoFenceRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateGeoFenceRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        PropertyMapper.MapProperties(dto, entity);
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -79,7 +71,7 @@ public class GeoFenceService : IGeoFenceService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.IsActive = request.IsActive;
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;

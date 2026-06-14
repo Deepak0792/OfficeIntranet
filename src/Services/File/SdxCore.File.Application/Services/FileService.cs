@@ -8,18 +8,11 @@ namespace SdxCore.File.Application.Services;
 /// <summary>
 /// Orchestrates file operations: maps Application DTOs to storage-layer models and delegates to IFileStorageService.
 /// </summary>
-public sealed class FileService : IFileService
+public class FileService(IFileStorageService storageService, ILogger<FileService> logger) : IFileService
 {
-    private readonly IFileStorageService _storageService;
-    private readonly ILogger<FileService> _logger;
+    private readonly IFileStorageService _storageService = storageService;
+    private readonly ILogger<FileService> _logger = logger;
 
-    public FileService(IFileStorageService storageService, ILogger<FileService> logger)
-    {
-        _storageService = storageService;
-        _logger = logger;
-    }
-
-    /// <inheritdoc />
     public async Task<UploadFileResponse> UploadAsync(UploadFileRequest request, CancellationToken cancellationToken = default)
     {
         var result = await _storageService.UploadAsync(request, cancellationToken);

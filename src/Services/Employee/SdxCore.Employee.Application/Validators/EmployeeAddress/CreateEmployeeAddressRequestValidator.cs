@@ -3,21 +3,17 @@ using SdxCore.Employee.Application.DTOs.EmployeeAddress.Request;
 
 namespace SdxCore.Employee.Application.Validators.EmployeeAddress;
 
-public class CreateEmployeeAddressRequestValidator : AbstractValidator<CreateEmployeeAddressRequest>
+public sealed class CreateEmployeeAddressRequestValidator : AbstractValidator<CreateEmployeeAddressRequest>
 {
     public CreateEmployeeAddressRequestValidator()
     {
-        RuleFor(x => x.AddressType)
-            .NotEmpty().WithMessage("Address Type is required.");
-
-        RuleFor(x => x.AddressLine1)
-            .NotEmpty().WithMessage("Address Line 1 is required.");
-
-        RuleFor(x => x.City)
-            .NotEmpty().WithMessage("City is required.");
-
-        RuleFor(x => x.CountryId)
-             .NotEmpty()
-             .WithMessage("Country ID must be valid.");
+        RuleFor(x => x.AddressType).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.AddressLine1).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.AddressLine2).MaximumLength(500);
+        RuleFor(x => x.Landmark).MaximumLength(200);
+        RuleFor(x => x.City).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.StateProvince).MaximumLength(100);
+        RuleFor(x => x.PostalCode).MaximumLength(20);
+        RuleFor(x => x.CountryId).NotEmpty();
     }
 }

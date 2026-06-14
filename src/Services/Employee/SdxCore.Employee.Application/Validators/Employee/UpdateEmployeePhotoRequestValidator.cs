@@ -3,7 +3,7 @@ using SdxCore.Employee.Application.DTOs.Employee.Request;
 
 namespace SdxCore.Employee.Application.Validators.Employee;
 
-public class UpdateEmployeePhotoRequestValidator : AbstractValidator<UpdateEmployeePhotoRequest>
+public sealed class UpdateEmployeePhotoRequestValidator : AbstractValidator<UpdateEmployeePhotoRequest>
 {
     public UpdateEmployeePhotoRequestValidator()
     {

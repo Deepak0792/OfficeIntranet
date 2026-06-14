@@ -1,7 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Common.Middleware;
+using SdxCore.Common.Validators;
 
 namespace SdxCore.Common.Extensions;
 
@@ -11,23 +13,20 @@ namespace SdxCore.Common.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Extension methods for registering Common module services with dependency injection. 
+    /// Registers SdxCore common infrastructure services.
+    /// Installs the centralized <see cref="ValidationLanguageManager"/> globally so that
+    /// all FluentValidation validators across every microservice use consistent error messages
+    /// without any per-service configuration.
     /// </summary>
-    /// <param name="services"></param>
-    /// <param name="configuration"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
     public static IServiceCollection AddSdxCoreCommon(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        if (services is null)
-            throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
 
-        if (configuration is null)
-            throw new ArgumentNullException(nameof(configuration));
-
-        //services.AddScoped<IRequestContext, RequestContext>();
+        // Install centralized validation messages once — applies to all validators project-wide
+        ValidatorOptions.Global.LanguageManager = new ValidationLanguageManager();
 
         return services;
     }

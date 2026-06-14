@@ -1,7 +1,9 @@
 namespace SdxCore.Workflow.Application.DTOs.Definition.Response;
 
-public record ResolveDefinitionResponse(
-    Guid WorkflowDefinitionId,
-    string WorkflowCode,
-    string WorkflowName,
-    short VersionNo);
+public sealed class ResolveDefinitionResponse
+{
+    public Guid WorkflowDefinitionId { get; set; }
+    public string WorkflowCode { get; set; } = default!;
+    public string WorkflowName { get; set; } = default!;
+    public short VersionNo { get; set; }
+}

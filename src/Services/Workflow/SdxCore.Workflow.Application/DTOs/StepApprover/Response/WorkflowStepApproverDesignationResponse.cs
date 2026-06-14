@@ -1,8 +1,10 @@
 namespace SdxCore.Workflow.Application.DTOs.StepApprover.Response;
 
-public record WorkflowStepApproverDesignationResponse(
-    Guid Id,
-    Guid WorkflowStepApproverId,
-    Guid DesignationId,
-    string DesignationCode,
-    string DesignationName);
+public sealed class WorkflowStepApproverDesignationResponse
+{
+    public Guid Id { get; set; }
+    public Guid WorkflowStepApproverId { get; set; }
+    public Guid DesignationId { get; set; }
+    public string DesignationCode { get; set; } = default!;
+    public string DesignationName { get; set; } = default!;
+}

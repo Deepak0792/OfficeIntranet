@@ -18,8 +18,8 @@ public class DocumentTypeService : IDocumentTypeService
     private readonly ITimeUnitOfWork _unitOfWork;
 
     public DocumentTypeService(
-        IDocumentTypeRepository repository, 
-        ICacheService cacheService, 
+        IDocumentTypeRepository repository,
+        ICacheService cacheService,
         ICacheKeyBuilder cacheKeyBuilder,
         ITimeUnitOfWork unitOfWork)
     {
@@ -35,7 +35,7 @@ public class DocumentTypeService : IDocumentTypeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<DocumentType, DocumentTypeResponse>(e));
+            return PropertyMapper.MapList<DocumentType, DocumentTypeResponse>(entities);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -45,14 +45,14 @@ public class DocumentTypeService : IDocumentTypeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);
-            if (entity == null) return null;
+            if (entity is null) return null;
             return PropertyMapper.Map<DocumentType, DocumentTypeResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<DocumentTypeResponse> CreateAsync(CreateDocumentTypeRequest dto, CancellationToken cancellationToken = default)
+    public async Task<DocumentTypeResponse> CreateAsync(CreateDocumentTypeRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = PropertyMapper.Map<CreateDocumentTypeRequest, DocumentType>(dto);
+        var entity = PropertyMapper.Map<CreateDocumentTypeRequest, DocumentType>(request);
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
@@ -62,12 +62,12 @@ public class DocumentTypeService : IDocumentTypeService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateDocumentTypeRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateDocumentTypeRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        PropertyMapper.MapProperties(dto, entity);
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -79,7 +79,7 @@ public class DocumentTypeService : IDocumentTypeService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.IsActive = request.IsActive;
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;

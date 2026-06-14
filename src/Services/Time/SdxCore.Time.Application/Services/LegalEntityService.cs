@@ -10,24 +10,16 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Application.Services;
 
-public class LegalEntityService : ILegalEntityService
+public class LegalEntityService(
+    ILegalEntityRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    ITimeUnitOfWork unitOfWork) : ILegalEntityService
 {
-    private readonly ILegalEntityRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly ITimeUnitOfWork _unitOfWork;
-
-    public LegalEntityService(
-        ILegalEntityRepository repository, 
-        ICacheService cacheService, 
-        ICacheKeyBuilder cacheKeyBuilder,
-        ITimeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly ILegalEntityRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<LegalEntityResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -35,7 +27,7 @@ public class LegalEntityService : ILegalEntityService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<LegalEntity, LegalEntityResponse>(e));
+            return PropertyMapper.MapList<LegalEntity, LegalEntityResponse>(entities);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -45,14 +37,14 @@ public class LegalEntityService : ILegalEntityService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entity = await _repository.GetByIdAsync(id, ct);
-            if (entity == null) return null;
+            if (entity is null) return null;
             return PropertyMapper.Map<LegalEntity, LegalEntityResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
-    public async Task<LegalEntityResponse> CreateAsync(CreateLegalEntityRequest dto, CancellationToken cancellationToken = default)
+    public async Task<LegalEntityResponse> CreateAsync(CreateLegalEntityRequest request, CancellationToken cancellationToken = default)
     {
-        var entity = PropertyMapper.Map<CreateLegalEntityRequest, LegalEntity>(dto);
+        var entity = PropertyMapper.Map<CreateLegalEntityRequest, LegalEntity>(request);
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
 
@@ -62,12 +54,12 @@ public class LegalEntityService : ILegalEntityService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateLegalEntityRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateLegalEntityRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        PropertyMapper.MapProperties(dto, entity);
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -79,7 +71,7 @@ public class LegalEntityService : ILegalEntityService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.IsActive = request.IsActive;
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;

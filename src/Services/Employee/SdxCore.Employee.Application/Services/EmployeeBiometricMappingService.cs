@@ -8,30 +8,24 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
+public class EmployeeBiometricMappingService(
+    IEmployeeBiometricMappingRepository repository,
+    IEmployeeUnitOfWork unitOfWork) : IEmployeeBiometricMappingService
 {
-    private readonly IEmployeeBiometricMappingRepository _repository;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public EmployeeBiometricMappingService(
-        IEmployeeBiometricMappingRepository repository,
-        IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IEmployeeBiometricMappingRepository _repository = repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var mappings = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
 
-        return mappings.Select(e => PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(e)).ToList();
+        return PropertyMapper.MapList<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mappings);
     }
 
     public async Task<EmployeeBiometricMappingResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var mapping = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (mapping == null) return null;
+        if (mapping is null) return null;
 
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mapping);
     }
@@ -39,8 +33,7 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
     public async Task<IEnumerable<EmployeeBiometricMappingResponse>> GetByDeviceIdAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {
         var mappings = await _repository.FindAsync(x => x.BiometricDeviceId == deviceId && x.IsActive, cancellationToken);
-
-        return mappings.Select(e => PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(e)).ToList();
+        return PropertyMapper.MapList<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mappings);
     }
 
     public async Task<EmployeeBiometricMappingResponse> AddAsync(Guid employeeId, CreateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default)
@@ -57,13 +50,14 @@ public class EmployeeBiometricMappingService : IEmployeeBiometricMappingService
 
     public async Task<EmployeeBiometricMappingResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeBiometricMappingRequest request, CancellationToken cancellationToken = default)
     {
-        var mapping = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (mapping == null) throw new KeyNotFoundException("Mapping not found");
+        var mapping = (await _repository
+            .FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken))
+            .FirstOrDefault() ?? throw new KeyNotFoundException("Mapping not found");
 
         mapping.DeviceEmployeeCode = request.DeviceEmployeeCode;
         _repository.Update(mapping);
-
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return PropertyMapper.Map<EmployeeBiometricMapping, EmployeeBiometricMappingResponse>(mapping);
     }
 

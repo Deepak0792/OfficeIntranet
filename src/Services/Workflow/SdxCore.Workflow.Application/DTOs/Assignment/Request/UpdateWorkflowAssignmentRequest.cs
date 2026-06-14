@@ -1,6 +1,8 @@
 namespace SdxCore.Workflow.Application.DTOs.Assignment.Request;
 
-public record UpdateWorkflowAssignmentRequest(
-    DateOnly EffectiveFrom,
-    DateOnly? EffectiveTo,
-    short PriorityOrder);
+public class UpdateWorkflowAssignmentRequest
+{
+    public DateOnly EffectiveFrom { get; set; }
+    public DateOnly? EffectiveTo { get; set; }
+    public short PriorityOrder { get; set; }
+}

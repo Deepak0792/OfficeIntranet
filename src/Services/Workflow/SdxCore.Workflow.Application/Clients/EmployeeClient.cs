@@ -14,7 +14,7 @@ public class EmployeeClient : IEmployeeClient
         _httpClient = httpClient;
     }
 
-    public async Task<EmployeeSummaryResponse?> GetEmployeeeSummaryAsync(
+    public async Task<EmployeeSummaryResponse?> GetEmployeeeSummaryByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default!)
     {

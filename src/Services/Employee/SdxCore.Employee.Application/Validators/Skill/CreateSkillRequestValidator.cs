@@ -3,7 +3,7 @@ using SdxCore.Employee.Application.DTOs.Skill.Request;
 
 namespace SdxCore.Employee.Application.Validators.Skill;
 
-public class CreateSkillRequestValidator : AbstractValidator<CreateSkillRequest>
+public sealed class CreateSkillRequestValidator : AbstractValidator<CreateSkillRequest>
 {
     public CreateSkillRequestValidator()
     {

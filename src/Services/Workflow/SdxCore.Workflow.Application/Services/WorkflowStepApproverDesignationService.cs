@@ -24,7 +24,7 @@ public class WorkflowStepApproverDesignationService(
         {
             var items = await repo.GetByApproverIdAsync(approverId, ct);
             return PropertyMapper.MapList<WorkflowStepApproverDesignation, WorkflowStepApproverDesignationResponse>(items);
-        }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowStepApproverDesignationResponse>();
+        }, CacheOptions.StaticMasterData, cancellationToken) ?? [];
     }
 
     public async Task<WorkflowStepApproverDesignationResponse> AddAsync(Guid approverId, AddApproverDesignationRequest request, CancellationToken cancellationToken = default)
@@ -36,16 +36,13 @@ public class WorkflowStepApproverDesignationService(
             throw new InvalidOperationException(
                 $"Designation {request.DesignationId} is already mapped to approver {approverId}.");
 
-        var entity = new WorkflowStepApproverDesignation
-        {
-            WorkflowStepApproverId = approverId,
-            DesignationId = request.DesignationId,
-            IsActive = true
-        };
+        var entity = PropertyMapper.Map<AddApproverDesignationRequest, WorkflowStepApproverDesignation>(request);
+        entity.WorkflowStepApproverId = approverId;
+        entity.IsActive = true;
         await repo.AddAsync(entity, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowStepApproverDesignationResponse>(entity);
+        return PropertyMapper.Map<WorkflowStepApproverDesignation, WorkflowStepApproverDesignationResponse>(entity);
     }
 
     public async Task<bool> DeleteAsync(Guid approverId, Guid designationId, CancellationToken cancellationToken = default)

@@ -24,7 +24,7 @@ public class WorkflowModuleService(
         {
             var items = await _repository.GetAllAsync(activeOnly, ct);
             return PropertyMapper.MapList<WorkflowModule, WorkflowModuleResponse>(items);
-        }, CacheOptions.StaticMasterData, cancellationToken) ?? Enumerable.Empty<WorkflowModuleResponse>();
+        }, CacheOptions.StaticMasterData, cancellationToken) ?? [];
     }
 
     public async Task<WorkflowModuleResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -34,7 +34,7 @@ public class WorkflowModuleService(
         {
             var entity = await _repository.GetByIdAsync(id, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowModule", id);
-            return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
+            return PropertyMapper.Map<WorkflowModule, WorkflowModuleResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -46,7 +46,7 @@ public class WorkflowModuleService(
         {
             var entity = await _repository.GetByCodeAsync(moduleCode, ct)
                 ?? throw new WorkflowNotFoundException("WorkflowModule", moduleCode);
-            return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
+            return PropertyMapper.Map<WorkflowModule, WorkflowModuleResponse>(entity);
         }, CacheOptions.StaticMasterData, cancellationToken);
         return res!;
     }
@@ -63,7 +63,7 @@ public class WorkflowModuleService(
 
         await _repository.AddAsync(entity, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
+        return PropertyMapper.Map<WorkflowModule, WorkflowModuleResponse>(entity);
     }
 
     public async Task<WorkflowModuleResponse> UpdateAsync(Guid id, UpdateWorkflowModuleRequest request, CancellationToken cancellationToken = default)
@@ -76,7 +76,7 @@ public class WorkflowModuleService(
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return PropertyMapper.MapToRecord<WorkflowModuleResponse>(entity);
+        return PropertyMapper.Map<WorkflowModule, WorkflowModuleResponse>(entity);
     }
 
     public async Task<bool> ToggleStatusAsync(Guid id, ToggleStatusRequest request, CancellationToken cancellationToken = default)

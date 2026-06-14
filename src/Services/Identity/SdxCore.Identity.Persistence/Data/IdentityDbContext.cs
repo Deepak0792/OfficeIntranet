@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using SdxCore.Identity.Domain.Entities;
-using SdxCore.Identity.Persistence.Configurations;
 
 namespace SdxCore.Identity.Persistence.Data;
 
@@ -43,8 +42,8 @@ public class IdentityDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Apply entity configurations
-        modelBuilder.ApplyConfiguration(new UserConfiguration());
-        modelBuilder.ApplyConfiguration(new AuditEventConfiguration());
+        // All entity configurations are in Configurations/
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(IdentityDbContext).Assembly);
     }
 }

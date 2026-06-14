@@ -8,29 +8,23 @@ using SdxCore.Employee.Domain.Entities;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class EmployeeAddressService : IEmployeeAddressService
+public class EmployeeAddressService(
+    IEmployeeAddressRepository repository,
+    IEmployeeUnitOfWork unitOfWork) : IEmployeeAddressService
 {
-    private readonly IEmployeeAddressRepository _repository;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public EmployeeAddressService(
-        IEmployeeAddressRepository repository,
-        IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IEmployeeAddressRepository _repository = repository;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<EmployeeAddressResponse>> GetByEmployeeIdAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var entities = await _repository.FindAsync(x => x.EmployeeId == employeeId, cancellationToken);
-        return entities.Select(e => PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(e)).ToList();      
+        return PropertyMapper.MapList<EmployeeAddress, EmployeeAddressResponse>(entities);
     }
 
     public async Task<EmployeeAddressResponse?> GetByIdAsync(Guid employeeId, Guid id, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) return null;
+        if (entity is null) return null;
 
         return PropertyMapper.Map<EmployeeAddress, EmployeeAddressResponse>(entity);
     }
@@ -61,21 +55,13 @@ public class EmployeeAddressService : IEmployeeAddressService
     public async Task<EmployeeAddressResponse> UpdateAsync(Guid employeeId, Guid id, UpdateEmployeeAddressRequest request, CancellationToken cancellationToken = default)
     {
         var entity = (await _repository.FindAsync(x => x.Id == id && x.EmployeeId == employeeId, cancellationToken)).FirstOrDefault();
-        if (entity == null) throw new KeyNotFoundException("Employee address not found");
+        if (entity is null) throw new KeyNotFoundException("Employee address not found");
 
-        entity.AddressLine1 = request.AddressLine1;
-        entity.AddressLine2 = request.AddressLine2;
-        entity.Landmark = request.Landmark;
-        entity.City = request.City;
-        entity.StateProvince = request.StateProvince;
-        entity.PostalCode = request.PostalCode;
-        entity.CountryId = request.CountryId;
-        entity.RegionId = request.RegionId;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new Exception("Failed to retrieve updated entity");
+        return await GetByIdAsync(employeeId, entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
     public async Task<bool> ToggleStatusAsync(Guid employeeId, Guid id, bool isActive, CancellationToken cancellationToken = default)

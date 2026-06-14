@@ -10,32 +10,24 @@ using SdxCore.Time.Domain.Entities;
 
 namespace SdxCore.Time.Application.Services;
 
-public class DepartmentService : IDepartmentService
+public class DepartmentService(
+    IDepartmentRepository repository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    ITimeUnitOfWork unitOfWork) : IDepartmentService
 {
-    private readonly IDepartmentRepository _repository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly ITimeUnitOfWork _unitOfWork;
+    private readonly IDepartmentRepository _repository = repository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly ITimeUnitOfWork _unitOfWork = unitOfWork;
 
-    public DepartmentService(
-        IDepartmentRepository repository,
-        ICacheService cacheService, 
-        ICacheKeyBuilder cacheKeyBuilder,
-        ITimeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
-    
     public async Task<IEnumerable<DepartmentResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var cacheKey = _cacheKeyBuilder.BuildKey(nameof(Department), "all");
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var entities = await _repository.GetAllAsync(ct);
-            return entities.Select(e => PropertyMapper.Map<Department, DepartmentResponse>(e));
+            return PropertyMapper.MapList<Department, DepartmentResponse>(entities);
         }, CacheOptions.StaticMasterData, cancellationToken);
     }
 
@@ -63,16 +55,12 @@ public class DepartmentService : IDepartmentService
         return await GetByIdAsync(entity.Id, cancellationToken) ?? throw new InvalidOperationException();
     }
 
-    public async Task<bool> UpdateAsync(Guid id, UpdateDepartmentRequest dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.DepartmentCode = dto.DepartmentCode;
-        entity.DepartmentName = dto.DepartmentName;
-        entity.ParentDepartmentId = dto.ParentDepartmentId;
-        entity.Description = dto.Description;
-
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
@@ -83,7 +71,7 @@ public class DepartmentService : IDepartmentService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null) return false;
 
-        entity.IsActive = request.IsActive;
+        PropertyMapper.Patch(request, entity);
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
@@ -100,10 +88,10 @@ public class DepartmentService : IDepartmentService
             foreach (var dto in dtos)
             {
                 var children = lookup[dto.Id].ToList();
-                if (children.Any()) dto.Children = children;
+                if (children.Count > 0) dto.Children = children;
             }
 
-            return lookup[null].ToList();
+            return [.. lookup[null]];
         }
         catch (Exception)
         {

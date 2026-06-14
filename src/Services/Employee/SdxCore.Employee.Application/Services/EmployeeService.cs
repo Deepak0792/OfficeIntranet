@@ -12,27 +12,18 @@ using System.Linq.Expressions;
 
 namespace SdxCore.Employee.Application.Services;
 
-public class EmployeeService : IEmployeeService
+public class EmployeeService(
+    IEmployeeRepository repository,
+    IEmployeeViewRepository viewRepository,
+    ICacheService cacheService,
+    ICacheKeyBuilder cacheKeyBuilder,
+    IEmployeeUnitOfWork unitOfWork) : IEmployeeService
 {
-    private readonly IEmployeeRepository _repository;
-    private readonly IEmployeeViewRepository _viewRepository;
-    private readonly ICacheService _cacheService;
-    private readonly ICacheKeyBuilder _cacheKeyBuilder;
-    private readonly IEmployeeUnitOfWork _unitOfWork;
-
-    public EmployeeService(
-        IEmployeeRepository repository,
-        IEmployeeViewRepository viewRepository,
-        ICacheService cacheService,
-        ICacheKeyBuilder cacheKeyBuilder,
-        IEmployeeUnitOfWork unitOfWork)
-    {
-        _repository = repository;
-        _viewRepository = viewRepository;
-        _cacheService = cacheService;
-        _cacheKeyBuilder = cacheKeyBuilder;
-        _unitOfWork = unitOfWork;
-    }
+    private readonly IEmployeeRepository _repository = repository;
+    private readonly IEmployeeViewRepository _viewRepository = viewRepository;
+    private readonly ICacheService _cacheService = cacheService;
+    private readonly ICacheKeyBuilder _cacheKeyBuilder = cacheKeyBuilder;
+    private readonly IEmployeeUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<PagedResponse<IEnumerable<EmployeeSummaryResponse>>> GetAllAsync(PaginationFilter filter,
         Guid? departmentId, Guid? locationId, Guid? legalEntityId, string? employmentType, bool? isActive,
@@ -43,12 +34,12 @@ public class EmployeeService : IEmployeeService
         {
             var (items, count) = await _viewRepository.GetAllPagedAsync(filter.PageNumber, filter.PageSize, ct);
 
-            var responses = items.Select(e => PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(e)).ToList();
+            var responses = PropertyMapper.MapList<EmployeeSummary, EmployeeSummaryResponse>(items);
 
             return new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(responses, filter.PageNumber, filter.PageSize, count);
         }, CacheOptions.Default, cancellationToken)
             ?? new PagedResponse<IEnumerable<EmployeeSummaryResponse>>(
-                new List<EmployeeSummaryResponse>(), filter.PageNumber, filter.PageSize, 0);
+                [], filter.PageNumber, filter.PageSize, 0);
     }
 
     public async Task<EmployeeSummaryResponse?> GetFullProfileAsync(Guid id, CancellationToken cancellationToken = default)
@@ -57,7 +48,7 @@ public class EmployeeService : IEmployeeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var profile = await _viewRepository.GetByIdAsync(id, ct);
-            if (profile == null) return null;
+            if (profile is null) return null;
 
             return PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(profile);
         }, CacheOptions.Default, cancellationToken);
@@ -70,7 +61,7 @@ public class EmployeeService : IEmployeeService
         {
             var entities = await _repository.FindAsync(e => e.EmployeeCode == employeeCode, cancellationToken);
             var e = entities.FirstOrDefault();
-            if (e == null) return null;
+            if (e is null) return null;
 
             return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
         }, CacheOptions.Default, cancellationToken);
@@ -83,7 +74,7 @@ public class EmployeeService : IEmployeeService
         {
             var entities = await _repository.FindAsync(e => e.Email == email, cancellationToken);
             var e = entities.FirstOrDefault();
-            if (e == null) return null;
+            if (e is null) return null;
 
             return PropertyMapper.Map<Domain.Entities.Employee, EmployeeResponse>(e);
         }, CacheOptions.Default, cancellationToken);
@@ -111,7 +102,7 @@ public class EmployeeService : IEmployeeService
         return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
         {
             var profile = await _viewRepository.GetByIdAsync(id, cancellationToken);
-            if (profile == null) return null;
+            if (profile is null) return null;
 
             return PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(profile);
         }, CacheOptions.Default, cancellationToken);
@@ -132,17 +123,9 @@ public class EmployeeService : IEmployeeService
     public async Task<bool> UpdateAsync(Guid id, UpdateEmployeeRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity is null) return false;
 
-        entity.FirstName = request.FirstName;
-        entity.LastName = request.LastName;
-        entity.DisplayName = request.DisplayName;
-        entity.MobileNumber = request.MobileNumber;
-        entity.DesignationId = request.DesignationId;
-        entity.PreferredLanguage = request.PreferredLanguage;
-        entity.PreferredTimeZoneId = request.PreferredTimeZoneId;
-        entity.DateOfJoining = request.DateOfJoining;
-        entity.EmploymentType = request.EmploymentType;
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -153,7 +136,7 @@ public class EmployeeService : IEmployeeService
     public async Task<bool> ToggleStatusAsync(Guid id, UpdateEmployeeStatusRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity is null) return false;
 
         entity.IsActive = request.IsActive;
 
@@ -167,9 +150,9 @@ public class EmployeeService : IEmployeeService
     public async Task<bool> UpdatePhotoAsync(Guid id, UpdateEmployeePhotoRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity is null) return false;
 
-        entity.ProfilePhotoUrl = request.ProfilePhotoUrl;
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -181,9 +164,9 @@ public class EmployeeService : IEmployeeService
     public async Task<bool> UpdateAboutAsync(Guid id, UpdateEmployeeAboutRequest request, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
-        if (entity == null) return false;
+        if (entity is null) return false;
 
-        entity.AboutMe = request.AboutMe;
+        PropertyMapper.Patch(request, entity);
 
         _repository.Update(entity);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -219,7 +202,7 @@ public class EmployeeService : IEmployeeService
             ScopeTypeCodes.Employee when scopeReferenceId.HasValue =>   // EMPLOYEE (single)
                 e => e.EmployeeId == scopeReferenceId.Value,
 
-            _ => e => true  // GLOBAL or no scope — no restriction
+            _ => e => true  // GLOBAL or no scope ï¿½ no restriction
         };
 
         var employees = await _viewRepository.FindAsync(

@@ -9,23 +9,18 @@ namespace SdxCore.Identity.Domain.Entities;
 public sealed class User : BaseAuditEntity<Guid>
 {
     /// <summary>
-    /// Unique identifier for the user account.
+    /// Cross-schema FK to employee.Employee — the employee this user account belongs to.
+    /// Unique constraint ensures one account per employee.
     /// </summary>
     public Guid EmployeeId { get; set; }
 
-    /// <summary>
-    /// Username for authentication. Must be unique across all users.
-    /// </summary>
+    /// <summary>Username for authentication. Must be unique across all users.</summary>
     public required string Username { get; set; }
 
-    /// <summary>
-    /// Argon2id hash of the user's password. Never stores plaintext passwords.
-    /// </summary>
+    /// <summary>Argon2id hash of the user's password. Never stores plaintext passwords.</summary>
     public required string PasswordHash { get; set; }
 
-    /// <summary>
-    /// User's email address.
-    /// </summary>
+    /// <summary>User's email address.</summary>
     public required string Email { get; set; }
 
     /// <summary>
@@ -46,8 +41,11 @@ public sealed class User : BaseAuditEntity<Guid>
     /// </summary>
     public DateTime? LastLoginAt { get; set; }
 
-    /// <summary>
-    /// Indicates whether the account is active. Inactive accounts cannot authenticate.
-    /// </summary>
-    public bool IsActive { get; set; } = false;
+    /// <summary>Indicates whether the account is active. Inactive accounts cannot authenticate.</summary>
+    public bool IsActive { get; set; } = true;
+
+    // ── Intra-schema navigation properties ────────────────────────────────────
+
+    /// <summary>All refresh tokens issued for this user account.</summary>
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
