@@ -301,6 +301,9 @@ public sealed class WorkflowAssignmentSummaryConfiguration : IEntityTypeConfigur
         builder.Property(e => e.ScopeTypeId);
         builder.Property(e => e.ScopeReferenceId);
         builder.Property(e => e.PriorityOrder);
+        builder.Property(e => e.IsActive);
+        builder.Property(e => e.EffectiveFrom);
+        builder.Property(e => e.EffectiveTo);
     }
 }
 

@@ -42,7 +42,7 @@ public class WorkflowModuleRepository :
     string moduleCode, CancellationToken cancellationToken = default)
     {
         return await dbContext.WorkflowAssignmentSummaries
-            .Where(x => x.ModuleCode == moduleCode)
+            .Where(x => x.ModuleCode == moduleCode && x.IsActive)
             .OrderBy(x => x.PriorityOrder)
             .ToListAsync(cancellationToken);
     }

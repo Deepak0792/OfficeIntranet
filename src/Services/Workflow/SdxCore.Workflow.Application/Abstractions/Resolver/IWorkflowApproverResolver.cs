@@ -17,9 +17,4 @@ public interface IWorkflowApproverResolver
     Task<IEnumerable<ResolvedApprover>> ResolveApproverAsync(
         Guid workflowStepId,
         Guid initiatorEmployeeId);
-
-    Task<WorkflowAssignmentSummary> ResolveDefinitionAsync(
-        string moduleCode,
-        string workflowCode,
-        Guid initiatorEmployeeId);
 }

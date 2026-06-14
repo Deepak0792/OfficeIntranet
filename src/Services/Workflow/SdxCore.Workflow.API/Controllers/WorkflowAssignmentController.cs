@@ -1,12 +1,12 @@
-﻿using SdxCore.Common.Controllers;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using SdxCore.Common.Controllers;
 using SdxCore.Common.Models;
 using SdxCore.Common.Security.Attributes;
+using SdxCore.Workflow.Application.Abstractions.Services;
 using SdxCore.Workflow.Application.DTOs.Assignment.Request;
 using SdxCore.Workflow.Application.DTOs.Assignment.Response;
 using SdxCore.Workflow.Application.DTOs.Definition.Response;
 using SdxCore.Workflow.Application.DTOs.Shared.Request;
-using SdxCore.Workflow.Application.Abstractions.Services;
 
 namespace SdxCore.Workflow.API.Controllers;
 
@@ -17,10 +17,12 @@ public class WorkflowAssignmentController : SdxControllerBase
 {
 
     private readonly IWorkflowAssignmentService _workflowAssignmentService;
+    private readonly IWorkflowResolutionService _workflowResolutionService;
 
-    public WorkflowAssignmentController(IWorkflowAssignmentService workflowAssignmentService)
+    public WorkflowAssignmentController(IWorkflowAssignmentService workflowAssignmentService, IWorkflowResolutionService workflowResolutionService)
     {
         this._workflowAssignmentService = workflowAssignmentService;
+        this._workflowResolutionService = workflowResolutionService;
     }
 
     [HttpGet]
@@ -47,11 +49,12 @@ public class WorkflowAssignmentController : SdxControllerBase
     [HttpGet("resolve")]
     public async Task<IActionResult> Resolve(
         [FromQuery] string moduleCode,
+         [FromQuery] string workflowCode,
         [FromQuery] Guid employeeId,
         [FromQuery] DateOnly? effectiveDate, CancellationToken cancellationToken)
     {
-        var data = await _workflowAssignmentService.ResolveAsync(moduleCode, employeeId, effectiveDate, cancellationToken);
-        return Ok(new ApiResponse<ResolveDefinitionResponse>(data, "Successfully resolved workflow assignment."));
+        var data = await _workflowResolutionService.ResolveDefinitionByEffectiveDateAsync(moduleCode, workflowCode, employeeId, effectiveDate, cancellationToken);
+        return Ok(new ApiResponse<WorkflowDefinitionResponse>(data, "Successfully resolved workflow assignment."));
     }
 
     [HttpPost]
@@ -73,7 +76,7 @@ public class WorkflowAssignmentController : SdxControllerBase
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] ToggleStatusRequest request, CancellationToken cancellationToken)
     {
         var updated = await _workflowAssignmentService.ToggleStatusAsync(id, request, cancellationToken);
-        
+
         if (!updated) return NotFound(new ErrorResponse { ErrorCode = "NOT_FOUND", ErrorMessage = "Workflow assignment not found." });
 
         var statusStr = request.IsActive ? "activated" : "deactivated";

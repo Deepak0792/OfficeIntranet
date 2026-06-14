@@ -19,6 +19,7 @@ public class WorkflowEngine(
     IWorkflowActionHistoryRepository historyRepository,
     IWorkflowUnitOfWork unitOfWork,
     IWorkflowApproverResolver resolver,
+    IWorkflowResolutionService workflowResolutionService,
     IWorkflowOutboxPublisher outboxPublisher) : IWorkflowEngine
 {
     // ── Submit ───────────────────────────────────────────────
@@ -27,7 +28,7 @@ public class WorkflowEngine(
         Guid referenceTransactionId, Guid initiatorEmployeeId,
         CancellationToken cancellationToken = default)
     {
-        var definition = await resolver.ResolveDefinitionAsync(moduleCode, workflowCode, initiatorEmployeeId);
+        var definition = await workflowResolutionService.ResolveWorkflowDefinitionAsync(moduleCode, workflowCode, initiatorEmployeeId);
 
         var firstStep = await workflowStepService.GetNextStepAsync(definition.WorkflowDefinitionId, 0, cancellationToken)
             ?? throw new WorkflowApproverResolutionException(

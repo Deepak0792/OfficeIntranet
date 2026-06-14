@@ -32,14 +32,6 @@ public class WorkflowAssignmentService(IWorkflowAssignmentRepository repository,
         return PropertyMapper.MapList<WorkflowAssignment, WorkflowAssignmentResponse>(items);
     }
 
-    public async Task<ResolveDefinitionResponse> ResolveAsync(string moduleCode, Guid employeeId, DateOnly? effectiveDate, CancellationToken cancellationToken = default)
-    {
-        var date = effectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        var def = await repository.ResolveDefinitionAsync(moduleCode, employeeId, date, cancellationToken)
-            ?? throw new WorkflowDefinitionNotFoundException(moduleCode);
-        return PropertyMapper.Map<WorkflowDefinition, ResolveDefinitionResponse>(def);
-    }
-
     public async Task<WorkflowAssignmentResponse> CreateAsync(CreateWorkflowAssignmentRequest request, CancellationToken cancellationToken = default)
     {
         var entity = PropertyMapper.Map<CreateWorkflowAssignmentRequest, WorkflowAssignment>(request);
