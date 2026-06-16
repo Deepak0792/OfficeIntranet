@@ -2,41 +2,61 @@
 
 ## Purpose
 
-This document is a complete specification for generating the **SdxCore.Attendance** microservice — a .NET 9 Clean Architecture service responsible for Leave Management, Shift Scheduling, Attendance Tracking, Roster Management, and Holiday Calendars within the SdxCore HRMS platform.
+This document is a **complete, self-contained specification** for generating the `SdxCore.Attendance` microservice using .NET 9 Clean Architecture. It covers Leave Management, Shift Scheduling, Attendance Tracking, Roster Management, Holiday Calendars, Comp-Off, and Shift Swap — with full Workflow integration via RabbitMQ.
 
-Provide this document to an AI code generator as a single self-contained prompt.
+**Do not ask for clarification. Generate everything described. One class per file.**
 
 ---
 
 ## Platform Architecture Context
 
-SdxCore is a .NET 9 microservices platform. All services follow the same Clean Architecture pattern:
-
 ```
-SdxCore.<Service>/
-├── Domain/          Entities, Interfaces, Exceptions
-├── Application/     Services, DTOs, Abstractions, Consumers, BackgroundServices, Validators
-├── Persistence/     DbContext, Repositories, Interceptors
-└── API/             Controllers, Middleware
+SdxCore.Attendance/
+├── Domain/
+│   ├── Entities/                    One file per entity
+│   ├── Abstractions/Repositories/   Repository interfaces
+│   └── Exceptions/                  Domain-specific exceptions
+├── Application/
+│   ├── DTOs/
+│   │   ├── {EntityName}/
+│   │   │   ├── Request/             CreateXRequest.cs, UpdateXRequest.cs
+│   │   │   └── Response/            XResponse.cs
+│   ├── Abstractions/
+│   │   ├── Services/                Application service interfaces
+│   │   └── Clients/                 HTTP client interfaces
+│   ├── Services/                    Application service implementations
+│   ├── Consumers/                   MassTransit consumers
+│   ├── BackgroundServices/          Scheduled jobs
+│   ├── Extensions/                  ServiceCollectionExtensions
+│   └── Validators/                  FluentValidation validators (one per request DTO)
+├── Persistence/
+│   ├── Data/                        AttendanceDbContext
+│   ├── Repositories/                EF Core repository implementations
+│   └── Interceptors/                OutboxSaveChangesInterceptor, AttendanceWorkflowOutboxInterceptor
+└── API/
+    ├── Controllers/                 One controller per aggregate
+    └── Middleware/                  AttendanceExceptionMiddleware
 ```
 
-### Shared Packages (NuGet — already built, just reference)
+---
+
+## Shared NuGet Packages (already built — just reference)
 
 | Package | Purpose |
 |---|---|
 | `SdxCore.SharedKernel` | `BaseEntity<T>`, `BaseAuditEntity<T>`, `IPublishableEntity`, `OutboxMessage`, `IOutboxRepository`, `OutboxRepository<TDbContext>`, `SdxDbContext`, `OutboxSaveChangesInterceptor`, `IRequestContext` |
 | `SdxCore.Messaging` | `IEventPublisher`, `AddSdxMessaging()`, `OutboxProcessorBackgroundService` |
 | `SdxCore.Caching` | `ICacheService`, `ICacheKeyBuilder`, `CacheOptions` |
-| `SdxCore.Common` | `PagedResponse<T>`, `ApiResponse<T>`, `PaginationFilter`, `PropertyMapper`, `PasswordHasher` |
+| `SdxCore.Common` | `PagedResponse<T>`, `ApiResponse<T>`, `PaginationFilter` |
+| `SdxCore.Common.Helpers` | `PropertyMapper` — use for all DTO ↔ Entity mapping |
 | `SdxCore.Common.Security` | `[GatewayOnly]`, `SdxControllerBase` |
 
 ### Key Shared Patterns
 
-**BaseAuditEntity<TKey>** — all domain entities extend this:
+**BaseAuditEntity<TKey>:**
 ```csharp
 public abstract class BaseAuditEntity<TKey> : BaseEntity<TKey>, IAuditableEntity
 {
-    public Guid?     Id            { get; set; }
     public DateTime  CreatedAt     { get; set; }
     public Guid?     CreatedBy     { get; set; }
     public DateTime  LastUpdatedAt { get; set; }
@@ -44,125 +64,178 @@ public abstract class BaseAuditEntity<TKey> : BaseEntity<TKey>, IAuditableEntity
 }
 ```
 
-**IPublishableEntity** — mark entities whose changes should trigger outbox events:
-```csharp
-public interface IPublishableEntity { }
-```
+**IPublishableEntity** — mark entities whose Add/Update/Delete auto-writes `EntityChangedEvent` to outbox via `OutboxSaveChangesInterceptor`.
 
-**SdxDbContext** — base DbContext with transaction + execution strategy:
-```csharp
-public abstract class SdxDbContext : DbContext
-{
-    public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
-    {
-        // Wraps in transaction via CreateExecutionStrategy
-        // If a transaction is already open, just saves normally
-    }
-}
-```
+**SdxDbContext** — wraps every `SaveChangesAsync` in a transaction via `CreateExecutionStrategy`. If transaction already open, saves normally.
 
-**OutboxSaveChangesInterceptor** — automatically writes `EntityChangedEvent` to `OutboxMessages` for every `IPublishableEntity` Add/Update/Delete.
+**OutboxSaveChangesInterceptor** — singleton, registered globally. Fires for any `IPublishableEntity` change. Writes `EntityChangedEvent` to `OutboxMessages`. Does NOT call `SaveChangesAsync`.
 
-**OutboxProcessorBackgroundService** — polls `OutboxMessages` and publishes to RabbitMQ via `IEventPublisher`. Registered once via `AddSdxMessaging()`.
+**AttendanceWorkflowOutboxInterceptor** — custom interceptor. Watches newly ADDED workflow-triggering entities (`LeaveRequest`, `AttendanceRegularization`, `ShiftSwapRequest`, `CompOffBalance` with `RequiresApproval=true`). Writes domain-specific submitted events. Does NOT call `SaveChangesAsync`. Caller owns the commit.
 
-**GatewayOnly** — all endpoints require `X-Internal-ApiKey` header (injected by YARP Gateway). Also injects `X-User-Id`, `X-User-Name`, `X-Roles` headers.
+**OutboxProcessorBackgroundService** — in `SdxCore.Messaging`. Polls `OutboxMessages`, resolves `EventType` via `Type.GetType()`, deserializes, publishes to RabbitMQ. Auto-registered by `AddSdxMessaging()`.
+
+**SdxControllerBase** — provides `OkOrNotFound`, `ValidationError`, `ValidateAsync<T>` (resolves `IValidator<T>` from DI). All controllers inherit this.
+
+**GatewayOnly** — all endpoints require `X-Internal-ApiKey`. Gateway injects `X-User-Id`, `X-User-Name`, `X-Roles`.
+
+**PropertyMapper** — use `PropertyMapper.Map<TSource, TDest>(source)` for all DTO↔Entity mapping. Never write manual mapping code.
 
 ---
 
-## Database Schema
+## Namespaces
 
-Schema name: `attendance`  
-Primary keys: `UNIQUEIDENTIFIER` → `Guid` in C#  
-Audit columns: `CreatedAt`, `CreatedBy`, `LastUpdatedAt`, `LastUpdatedBy` on every table  
-Status columns: FK to `shared.StatusLookup (StatusCode, StatusGroup)` — enforced via computed persisted `*Group` column  
-Cross-schema dependencies: `employee.Employee`, `time.ScopeType`, `time.GeoFence`, `workflow.WorkflowInstance`, `shared.StatusLookup`
-
-### Tables
-
-| Table | Description |
+| Layer | Namespace Pattern |
 |---|---|
-| `AttendanceStatus` | Lookup — PRESENT, ABSENT, LEAVE, HOLIDAY, WEEKLY_OFF, etc. |
-PRINT 'Inserting AttendanceStatus...';
-INSERT INTO attendance.AttendanceStatus (Id, StatusCode, StatusName, IsPresent, IsAbsent, IsPaid, CountsAsWorkingDay, DisplayOrder, IsSystemStatus) VALUES
-(NEWID(), 'PRESENT',         'Present',                              1, 0, 1, 1, 1, 1),
-(NEWID(), 'ABSENT',          'Absent',                               0, 1, 0, 0, 2, 1),
-(NEWID(), 'ON_LEAVE',        'On Approved Leave',                    0, 0, 1, 0, 3, 1),
-(NEWID(), 'WORK_FROM_HOME',  'Work From Home',                       1, 0, 1, 1, 4, 1),
-(NEWID(), 'HALF_DAY',        'Half Day Present',                     1, 0, 1, 1, 5, 1),
-(NEWID(), 'LATE',            'Late Arrival',                         1, 0, 1, 1, 6, 1),
-(NEWID(), 'HOLIDAY',         'Public Holiday',                       0, 0, 1, 0, 7, 1),
-(NEWID(), 'WEEKEND',         'Weekend / Off Day',                    0, 0, 0, 0, 8, 1),
-(NEWID(), 'ON_DUTY',         'On Official Duty',                     1, 0, 1, 1, 9, 1),
-(NEWID(), 'COMP_OFF',        'Compensatory Off',                     0, 0, 1, 0, 10, 1),
-(NEWID(), 'REGULARIZED',     'Attendance Regularized',               1, 0, 1, 1, 11, 1);
+| Domain Entities | `SdxCore.Attendance.Domain.Entities` |
+| Domain Repository Interfaces | `SdxCore.Attendance.Domain.Abstractions.Repositories` |
+| Application Service Interfaces | `SdxCore.Attendance.Application.Abstractions.Services` |
+| Application HTTP Client Interfaces | `SdxCore.Attendance.Application.Abstractions.Clients` |
+| Application Service Implementations | `SdxCore.Attendance.Application.Services` |
+| DTOs — Requests | `SdxCore.Attendance.Application.DTOs.{EntityName}.Request` |
+| DTOs — Responses | `SdxCore.Attendance.Application.DTOs.{EntityName}.Response` |
+| Consumers | `SdxCore.Attendance.Application.Consumers` |
+| Validators | `SdxCore.Attendance.Application.Validators.{EntityName}` |
+| Extensions | `SdxCore.Attendance.Application.Extensions` |
+| DbContext | `SdxCore.Attendance.Persistence.Data` |
+| Repositories | `SdxCore.Attendance.Persistence.Repositories` |
+| Interceptors | `SdxCore.Attendance.Persistence.Interceptors` |
+| Controllers | `SdxCore.Attendance.API.Controllers` |
+| Middleware | `SdxCore.Attendance.API.Middleware` |
 
-| `Shift` | Shift definitions with timings, grace, overtime rules |
-| `ShiftAssignment` | Assigns shifts to scopes (Dept/Office/Employee) with effective dates |
-| `EmployeeShiftRoster` | Daily roster per employee: shift, off-day, holiday, planned/actual times |
-| `WorkSession` | Raw check-in/check-out sessions linked to roster |
-| `AttendanceRecord` | Processed daily attendance: status, worked minutes, overtime, leave flags |
-| `AttendanceLog` | Raw biometric device punches |
-| `MobileAttendanceLog` | GPS mobile punches with geofence validation |
-| `LeaveType` | Leave type master: ANNUAL, SICK, EMERGENCY, COMP_OFF, etc. |
-INSERT INTO attendance.LeaveType (Id, LeaveCode, LeaveName, IsPaid, MaxDaysPerYear, AllowCarryForward, RequiresApproval, AllowHalfDay) VALUES
-(NEWID(), 'CL',      'Casual Leave',                         1, 12.00, 0, 1, 1),
-(NEWID(), 'SL',      'Sick Leave',                           1, 12.00, 0, 1, 1),
-(NEWID(), 'EL',      'Earned Leave / Privilege Leave',       1, 18.00, 1, 1, 1),
-(NEWID(), 'ML',      'Maternity Leave',                      1, 182.00,0, 1, 0),
-(NEWID(), 'PL',      'Paternity Leave',                      1, 15.00, 0, 1, 0),
-(NEWID(), 'OL',      'Optional / Restricted Holiday Leave',  0, 2.00,  0, 1, 1),
-(NEWID(), 'LWP',     'Leave Without Pay',                    0, NULL,  0, 1, 0),
-(NEWID(), 'COMPOFF', 'Compensatory Off Leave',               1, NULL,  0, 1, 1),
-(NEWID(), 'BL',      'Bereavement Leave',                    1, 5.00,  0, 1, 0),
-(NEWID(), 'STUDYLEAVE','Study / Exam Leave',                 1, 5.00,  0, 1, 0);
+---
 
-| `LeaveRequest` | Employee leave requests with workflow integration |
-| `LeaveBalance` | Per-employee, per-type, per-year balance tracking |
-| `CompOffType` | Comp-off type master with expiry rules |
-| `CompOffBalance` | Earned comp-off days per employee with expiry |
-| `AttendanceRegularization` | Request to correct missed/wrong attendance entries |
-| `RotationShift` | Rotation shift cycle master |
-| `RotationShiftDetail` | Day-by-day shift sequence within a rotation cycle |
-| `RotationShiftAssignment` | Assigns rotation shift to scopes |
-| `HolidayCalendar` | Holiday calendar master |
-| `HolidayType` | Holiday type: NATIONAL, REGIONAL, OPTIONAL, RESTRICTED |
-| `Holiday` | Individual holiday entries per calendar |
-| `HolidayCalendarAssignment` | Assigns calendars to scopes (GLOBAL/COUNTRY/DEPT/etc.) |
-| `WorkWeekPolicy` | Working days configuration (Mon-Fri, Sun-Thu, etc.) |
-| `WorkWeekPolicyDay` | Per-day config within a policy |
-| `WorkWeekPolicyAssignment` | Assigns work week policy to scopes |
-| `ShiftSwapRequest` | Swap shift request between two employees |
-| `EmployeeRosterGenerationTracker` | Tracks roster generation status per employee/month |
-| `OutboxMessages` | RabbitMQ outbox for this service |
+## DTO File Structure
 
-### Key Column Details
+```
+Application/DTOs/
+├── Leave/
+│   ├── Request/
+│   │   ├── CreateLeaveRequestRequest.cs
+│   │   ├── UpdateLeaveRequestRequest.cs
+│   │   └── LeaveBalanceQueryRequest.cs
+│   └── Response/
+│       ├── LeaveRequestResponse.cs
+│       └── LeaveBalanceResponse.cs
+├── LeaveType/
+│   ├── Request/
+│   │   ├── CreateLeaveTypeRequest.cs
+│   │   └── UpdateLeaveTypeRequest.cs
+│   └── Response/
+│       └── LeaveTypeResponse.cs
+├── Shift/
+│   ├── Request/
+│   │   ├── CreateShiftRequest.cs
+│   │   └── UpdateShiftRequest.cs
+│   └── Response/
+│       └── ShiftResponse.cs
+├── Roster/
+│   ├── Request/
+│   │   ├── GenerateRosterRequest.cs
+│   │   ├── UpdateRosterRequest.cs
+│   │   ├── RosterUploadRequest.cs
+│   │   └── RosterRow.cs
+│   └── Response/
+│       ├── RosterResponse.cs
+│       ├── RosterGenerationResult.cs
+│       └── RosterUploadResult.cs
+├── Attendance/
+│   ├── Request/
+│   │   ├── CheckInRequest.cs
+│   │   ├── CheckOutRequest.cs
+│   │   └── CreateRegularizationRequest.cs
+│   └── Response/
+│       ├── AttendanceRecordResponse.cs
+│       └── RegularizationResponse.cs
+├── Holiday/
+│   ├── Request/
+│   │   ├── CreateHolidayRequest.cs
+│   │   ├── UpdateHolidayRequest.cs
+│   │   └── CreateHolidayCalendarRequest.cs
+│   └── Response/
+│       ├── HolidayResponse.cs
+│       └── HolidayCalendarResponse.cs
+├── ShiftSwap/
+│   ├── Request/
+│   │   └── CreateShiftSwapRequest.cs
+│   └── Response/
+│       └── ShiftSwapResponse.cs
+├── CompOff/
+│   ├── Request/
+│   │   ├── EarnCompOffRequest.cs
+│   │   └── RedeemCompOffRequest.cs
+│   └── Response/
+│       └── CompOffBalanceResponse.cs
+└── RotationShift/
+    ├── Request/
+    │   ├── CreateRotationShiftRequest.cs
+    │   └── AssignRotationShiftRequest.cs
+    └── Response/
+        └── RotationShiftResponse.cs
+```
 
-**LeaveRequest:**
-- `WorkflowInstanceId UNIQUEIDENTIFIER NULL` — FK to `workflow.WorkflowInstance`
-- `LeaveStatus NVARCHAR(50)` + computed `LeaveStatusGroup` → FK to `shared.StatusLookup`
-- Status values: `PENDING`, `IN_PROGRESS`, `APPROVED`, `REJECTED`, `WITHDRAWN`, `CANCELLED`
+---
 
-**AttendanceRegularization:**
-- `WorkflowInstanceId UNIQUEIDENTIFIER NULL` — FK to `workflow.WorkflowInstance`
-- `RegularizationStatus` + computed `RegularizationStatusGroup` → FK to `shared.StatusLookup`
-- Status values: `PENDING`, `IN_PROGRESS`, `APPROVED`, `REJECTED`, `WITHDRAWN`
+## Validator File Structure
 
-**ShiftSwapRequest:**
-- `WorkflowInstanceId UNIQUEIDENTIFIER NULL` — FK to `workflow.WorkflowInstance`
-- `ShiftSwapStatus` + computed `ShiftSwapStatusGroup` → FK to `shared.StatusLookup`
+```
+Application/Validators/
+├── Leave/
+│   ├── CreateLeaveRequestRequestValidator.cs
+│   └── UpdateLeaveRequestRequestValidator.cs
+├── Shift/
+│   ├── CreateShiftRequestValidator.cs
+│   └── UpdateShiftRequestValidator.cs
+├── Roster/
+│   ├── GenerateRosterRequestValidator.cs
+│   └── RosterUploadRequestValidator.cs
+├── Attendance/
+│   ├── CheckInRequestValidator.cs
+│   ├── CheckOutRequestValidator.cs
+│   └── CreateRegularizationRequestValidator.cs
+├── Holiday/
+│   ├── CreateHolidayRequestValidator.cs
+│   └── CreateHolidayCalendarRequestValidator.cs
+├── ShiftSwap/
+│   └── CreateShiftSwapRequestValidator.cs
+└── CompOff/
+    ├── EarnCompOffRequestValidator.cs
+    └── RedeemCompOffRequestValidator.cs
+```
 
-**CompOffBalance:**
-- `WorkflowInstanceId UNIQUEIDENTIFIER NULL` — FK to `workflow.WorkflowInstance`
+**Validator example following Employee service pattern:**
+```csharp
+// Application/Validators/Leave/CreateLeaveRequestRequestValidator.cs
+using FluentValidation;
+using SdxCore.Attendance.Application.DTOs.Leave.Request;
 
-**ShiftAssignment / WorkWeekPolicyAssignment / HolidayCalendarAssignment / RotationShiftAssignment:**
-- `ScopeTypeId UNIQUEIDENTIFIER` FK to `time.ScopeType` (GLOBAL=1, COUNTRY=2, LEGAL_ENTITY=3, OFFICE=4, DEPARTMENT=5, TEAM=6, EMPLOYEE=7)
-- `ScopeReferenceId UNIQUEIDENTIFIER NULL` — the actual entity ID for the scope
+namespace SdxCore.Attendance.Application.Validators.Leave;
+
+public sealed class CreateLeaveRequestRequestValidator : AbstractValidator<CreateLeaveRequestRequest>
+{
+    public CreateLeaveRequestRequestValidator()
+    {
+        RuleFor(x => x.LeaveTypeId).NotEmpty();
+        RuleFor(x => x.FromDate).NotEmpty();
+        RuleFor(x => x.ToDate).NotEmpty()
+            .GreaterThanOrEqualTo(x => x.FromDate)
+            .WithMessage("ToDate must be >= FromDate.");
+        RuleFor(x => x.Reason).MaximumLength(1000);
+        RuleFor(x => x.HalfDaySession)
+            .MaximumLength(20)
+            .When(x => x.IsHalfDay);
+    }
+}
+```
 
 ---
 
 ## Status Code Constants
 
+**Put files at: `src/SdxCore.Common/Enum/Attendance/`**
+
 ```csharp
+// src/SdxCore.Common/Enum/Attendance/LeaveStatus.cs
+namespace SdxCore.Common.Enum.Attendance;
 public static class LeaveStatus
 {
     public const string Pending    = "PENDING";
@@ -173,6 +246,8 @@ public static class LeaveStatus
     public const string Withdrawn  = "WITHDRAWN";
 }
 
+// src/SdxCore.Common/Enum/Attendance/RegularizationStatus.cs
+namespace SdxCore.Common.Enum.Attendance;
 public static class RegularizationStatus
 {
     public const string Pending    = "PENDING";
@@ -182,6 +257,8 @@ public static class RegularizationStatus
     public const string Withdrawn  = "WITHDRAWN";
 }
 
+// src/SdxCore.Common/Enum/Attendance/ShiftSwapStatus.cs
+namespace SdxCore.Common.Enum.Attendance;
 public static class ShiftSwapStatus
 {
     public const string Pending    = "PENDING";
@@ -191,6 +268,25 @@ public static class ShiftSwapStatus
     public const string Cancelled  = "CANCELLED";
 }
 
+// src/SdxCore.Common/Enum/Attendance/AttendanceStatusCodes.cs
+namespace SdxCore.Common.Enum.Attendance;
+public static class AttendanceStatusCodes
+{
+    public const string Present      = "PRESENT";
+    public const string Absent       = "ABSENT";
+    public const string OnLeave      = "ON_LEAVE";
+    public const string WorkFromHome = "WORK_FROM_HOME";
+    public const string HalfDay      = "HALF_DAY";
+    public const string Late         = "LATE";
+    public const string Holiday      = "HOLIDAY";
+    public const string Weekend      = "WEEKEND";
+    public const string OnDuty       = "ON_DUTY";
+    public const string CompOff      = "COMP_OFF";
+    public const string Regularized  = "REGULARIZED";
+}
+
+// src/SdxCore.Common/Enum/Attendance/WorkflowModuleCodes.cs
+namespace SdxCore.Common.Enum.Attendance;
 public static class WorkflowModuleCodes
 {
     public const string Leave                    = "LEAVE_REQUEST";
@@ -199,396 +295,926 @@ public static class WorkflowModuleCodes
     public const string CompOff                  = "COMP_OFF_REDEMPTION";
 }
 
+// src/SdxCore.Common/Enum/Attendance/RosterGenerationType.cs
+namespace SdxCore.Common.Enum.Attendance;
 public static class RosterGenerationType
 {
-    public const string Shift       = "SHIFT";
-    public const string Rotation    = "ROTATION";
-    public const string Manual      = "MANUAL";
+    public const string Monthly = "MONTHLY";
+    public const string Weekly  = "WEEKLY";
+    public const string Adhoc   = "ADHOC";
+}
+
+// src/SdxCore.Common/Enum/Attendance/ScopeHierarchyLevel.cs
+namespace SdxCore.Common.Enum.Attendance;
+public static class ScopeHierarchyLevel
+{
+    public const int Global      = 1;
+    public const int Country     = 2;
+    public const int LegalEntity = 3;
+    public const int Office      = 4;
+    public const int Department  = 5;
+    public const int Team        = 6;
+    public const int Employee    = 7;
 }
 ```
 
 ---
 
+## Database Schema
+
+- Schema: `attendance`
+- PKs: `UNIQUEIDENTIFIER` → `Guid`
+- Audit columns on every table: `CreatedAt`, `CreatedBy`, `LastUpdatedAt`, `LastUpdatedBy`
+- Status FK pattern: computed persisted `*Group` column → FK to `shared.StatusLookup(StatusCode, StatusGroup)`
+- Cross-schema: `employee.Employee`, `time.ScopeType`, `time.GeoFence`, `workflow.WorkflowInstance`
+
+### Tables
+
+| Table | Description |
+|---|---|
+| `AttendanceStatus` | Lookup: PRESENT, ABSENT, ON_LEAVE, HOLIDAY, WEEKEND, LATE, HALF_DAY, REGULARIZED, WORK_FROM_HOME, ON_DUTY, COMP_OFF |
+| `Shift` | Shift master with timings, grace, night-shift, cross-midnight, overtime flags |
+| `ShiftAssignment` | Assigns fixed shifts to scopes with effective dates and priority |
+| `RotationShift` | Rotation cycle master with CycleLengthDays |
+| `RotationShiftDetail` | Ordered shift segments within cycle (SequenceNo, DurationDays, IsOffDay) |
+| `RotationShiftAssignment` | Assigns rotation to scopes with RotationStartDate + RotationOffsetDays |
+| `EmployeeShiftRoster` | One row per employee per date. `IsLocked=true` protects from overwrite |
+| `EmployeeRosterGenerationTracker` | Tracks what period was generated, how, and whether locked |
+| `WorkSession` | Raw check-in/check-out sessions per employee per day |
+| `AttendanceRecord` | Processed daily record: status, worked minutes, overtime, leave flags |
+| `AttendanceLog` | Raw biometric punches from devices |
+| `MobileAttendanceLog` | GPS mobile punches with geofence validation |
+| `LeaveType` | Leave master: CL, SL, EL, ML, PL, COMPOFF, LWP, BL — with `WorkflowCode` column |
+| `LeaveRequest` | Leave requests with workflow instance link |
+| `LeaveBalance` | Per-employee, per-type, per-year. `ClosingBalance` is computed column |
+| `CompOffType` | Comp-off types with expiry rules |
+| `CompOffBalance` | Earned comp-off per employee. `RemainingDays` is computed column |
+| `AttendanceRegularization` | Request to correct missed attendance with workflow |
+| `HolidayCalendar` | Calendar master (National, State, Optional) |
+| `HolidayType` | NATIONAL, STATE, RELIGIOUS, OPTIONAL |
+| `Holiday` | Individual holiday entries per calendar. `IsRecurring` skips year match |
+| `HolidayCalendarAssignment` | Assigns calendars to scopes with `MergeStrategy` (MERGE / REPLACE) |
+| `WorkWeekPolicy` | Working days policy per scope |
+| `WorkWeekPolicyDay` | Per-day config within a policy |
+| `WorkWeekPolicyAssignment` | Assigns policy to scopes with effective dates |
+| `ShiftSwapRequest` | Swap request between two employees with workflow |
+| `OutboxMessages` | RabbitMQ outbox for this service |
+
+### Key Column Notes
+
+**LeaveType** — add column beyond schema:
+```sql
+WorkflowCode NVARCHAR(200) NULL  -- "STANDARD_LEAVE_V1", "EMERGENCY_LEAVE_V1"
+```
+
+**EmployeeShiftRoster:**
+- `IsLocked BIT` — `true` = never overwritten by `GenerateRosterAsync`
+
+**EmployeeRosterGenerationTracker:**
+- `GenerationType` → FK to `shared.StatusLookup` group `ROSTER_GENERATION_TYPE`
+- Values: `MONTHLY`, `WEEKLY`, `ADHOC`
+- Unique: `(EmployeeId, RosterYear, RosterMonth, GenerationType)`
+
+**RotationShiftDetail:**
+- CHECK: `(IsOffDay=1 AND ShiftId IS NULL) OR (IsOffDay=0 AND ShiftId IS NOT NULL)`
+- UNIQUE: `(RotationShiftId, SequenceNo)`
+
+**HolidayCalendarAssignment:**
+- `MergeStrategy`: `MERGE` = union all calendars; `REPLACE` = override lower-scope
+
+**Scope assignments:** `ScopeTypeId` FK to `time.ScopeType`. Hierarchy: GLOBAL(1) → COUNTRY(2) → LEGAL_ENTITY(3) → OFFICE(4) → DEPARTMENT(5) → TEAM(6) → EMPLOYEE(7).
+
+---
+
 ## Domain Entities
 
-Generate one C# class per entity. All extend `BaseAuditEntity<Guid>`. Entities that should publish change events implement `IPublishableEntity`.
+One C# file per entity. All extend `BaseAuditEntity<Guid>`. File path: `Domain/Entities/{EntityName}.cs`.
 
 ### Entities implementing `IPublishableEntity`
-- `LeaveType`
-- `Shift`
-- `HolidayCalendar`
-- `Holiday`
-- `WorkWeekPolicy`
+`LeaveType`, `Shift`, `HolidayCalendar`, `Holiday`, `WorkWeekPolicy`
 
-### Entity Relationships
+### Extra Properties Beyond DB Schema
 
-```
-LeaveRequest       → LeaveType (FK LeaveTypeId)
-LeaveRequest       → WorkflowInstance (FK WorkflowInstanceId, nullable)
-LeaveBalance       → Employee (FK EmployeeId), LeaveType (FK LeaveTypeId)
-AttendanceRecord   → Employee, EmployeeShiftRoster, WorkSession, Shift, AttendanceStatus
-EmployeeShiftRoster → Employee, Shift
-WorkSession        → Employee, EmployeeShiftRoster
-AttendanceLog      → Employee
-MobileAttendanceLog → Employee, GeoFence (time schema)
-AttendanceRegularization → Employee, WorkflowInstance (nullable)
-ShiftSwapRequest   → Employee (Requester), Employee (Target), EmployeeShiftRoster (×2), WorkflowInstance (nullable)
-CompOffBalance     → Employee, CompOffType, AttendanceRecord (nullable), WorkflowInstance (nullable)
-RotationShiftDetail → RotationShift, Shift
-Holiday            → HolidayCalendar, HolidayType
-WorkWeekPolicyDay  → WorkWeekPolicy
-EmployeeRosterGenerationTracker → Employee
+```csharp
+// LeaveType — add:
+public string? WorkflowCode { get; set; }
+
+// RotationShift — add navigation:
+public ICollection<RotationShiftDetail> Details { get; set; } = [];
+
+// WorkWeekPolicy — add navigation:
+public ICollection<WorkWeekPolicyDay> Days { get; set; } = [];
 ```
 
 ---
 
-## Application Services
+## Holiday Assignment and Resolution
 
-### ILeaveService
-```csharp
-Task<PagedResponse<IEnumerable<LeaveRequestResponse>>> GetAllAsync(PaginationFilter filter, Guid? employeeId, string? status, CancellationToken ct);
-Task<LeaveRequestResponse?> GetByIdAsync(Guid id, CancellationToken ct);
-Task<IEnumerable<LeaveBalanceResponse>> GetBalanceAsync(Guid employeeId, int year, CancellationToken ct);
-Task<LeaveRequestResponse> SubmitAsync(CreateLeaveRequestRequest request, CancellationToken ct);
-Task<bool> CancelAsync(Guid id, CancellationToken ct);
-Task<bool> WithdrawAsync(Guid id, CancellationToken ct);
-Task<LeaveRequestResponse?> GetByWorkflowInstanceAsync(Guid workflowInstanceId, CancellationToken ct);
-Task UpdateStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+Holidays are **never assigned directly to employees** — assigned to scopes via `HolidayCalendarAssignment`.
+
+**Seed example:**
+```
+HC-INDIA-NATIONAL → COUNTRY/India     (MergeStrategy=MERGE, Priority=1)
+HC-MH-STATE       → OFFICE/Mumbai     (MergeStrategy=MERGE, Priority=2)
+HC-KA-STATE       → OFFICE/Bangalore  (MergeStrategy=MERGE, Priority=2)
 ```
 
-### IShiftService
+**Resolution algorithm (in `IScopeResolutionService`):**
 ```csharp
-Task<PagedResponse<IEnumerable<ShiftResponse>>> GetAllAsync(PaginationFilter filter, CancellationToken ct);
-Task<ShiftResponse?> GetByIdAsync(Guid id, CancellationToken ct);
-Task<ShiftResponse> CreateAsync(CreateShiftRequest request, CancellationToken ct);
-Task<bool> UpdateAsync(Guid id, UpdateShiftRequest request, CancellationToken ct);
-Task<bool> ToggleStatusAsync(Guid id, CancellationToken ct);
-Task<ShiftResponse?> ResolveForEmployeeAsync(Guid employeeId, DateOnly date, CancellationToken ct);
+// ResolveHolidaysAsync(EmployeeSummaryResponse employee, DateOnly from, DateOnly to)
+// 1. Build scope chain: EMPLOYEE→TEAM→DEPT→OFFICE→LEGAL_ENTITY→COUNTRY→GLOBAL
+// 2. For each scope: query HolidayCalendarAssignment (IsActive, effective dates)
+// 3. Apply MergeStrategy:
+//    MERGE  → union holidays from this calendar into result set
+//    REPLACE → clear result, start fresh with this calendar
+// 4. Return final merged holiday list
+
+// Example: nurse in Mumbai ICU
+//   COUNTRY/India  → HC-INDIA-NATIONAL → 14 national holidays (MERGE)
+//   OFFICE/Mumbai  → HC-MH-STATE       → +2 Maharashtra holidays (MERGE)
+//   Result = 16 applicable holidays
 ```
 
-### IRosterService
-```csharp
-Task<IEnumerable<RosterResponse>> GetByEmployeeAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct);
-Task<RosterResponse?> GetByDateAsync(Guid employeeId, DateOnly date, CancellationToken ct);
-Task GenerateAsync(GenerateRosterRequest request, CancellationToken ct);
-Task<bool> LockAsync(Guid id, CancellationToken ct);
-Task<bool> UnlockAsync(Guid id, CancellationToken ct);
-Task<bool> UpdateAsync(Guid id, UpdateRosterRequest request, CancellationToken ct);
+**When applied:**
+
+| Operation | Holiday Used |
+|---|---|
+| Roster Generation | Resolved holidays → `IsHoliday=true` on roster row |
+| Attendance Processing | Reads `IsHoliday` from pre-generated roster |
+| Leave Balance Calc | Holiday dates within leave period excluded from `TotalDays` |
+| On-demand API | `GET /api/v1/holidays/applicable?employeeId=&from=&to=` |
+
+---
+
+## Shift Assignment to Employees
+
+Resolution priority (highest wins):
+```
+1.  EmployeeShiftRoster IsLocked=true     ← manual upload, never overwritten
+2.  RotationShiftAssignment EMPLOYEE scope
+3.  RotationShiftAssignment TEAM scope
+4.  RotationShiftAssignment DEPARTMENT scope
+5.  RotationShiftAssignment OFFICE scope
+6.  ShiftAssignment EMPLOYEE scope
+7.  ShiftAssignment TEAM scope
+8.  ShiftAssignment DEPARTMENT scope
+9.  ShiftAssignment OFFICE scope
+10. ShiftAssignment LEGAL_ENTITY scope
+11. ShiftAssignment COUNTRY scope
+12. ShiftAssignment GLOBAL scope          ← company-wide default
 ```
 
-### IAttendanceService
+### Fixed Shift Resolution
 ```csharp
-Task<PagedResponse<IEnumerable<AttendanceRecordResponse>>> GetAllAsync(PaginationFilter filter, Guid? employeeId, DateOnly? from, DateOnly? to, CancellationToken ct);
-Task<AttendanceRecordResponse?> GetByIdAsync(Guid id, CancellationToken ct);
-Task<AttendanceRecordResponse?> GetByEmployeeDateAsync(Guid employeeId, DateOnly date, CancellationToken ct);
-Task CheckInAsync(CheckInRequest request, CancellationToken ct);
-Task CheckOutAsync(CheckOutRequest request, CancellationToken ct);
-Task ProcessDailyAsync(DateOnly date, CancellationToken ct);
-Task RegularizeAsync(CreateRegularizationRequest request, CancellationToken ct);
-Task UpdateRegularizationStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+// Walk scope from EMPLOYEE(7) → GLOBAL(1)
+// Find ShiftAssignment WHERE ScopeTypeId = level, ScopeReferenceId = employee's ID at that level
+// EffectiveFrom <= date AND (EffectiveTo IS NULL OR EffectiveTo >= date) AND IsActive = true
+// Return first match ordered by HierarchyLevel DESC, PriorityOrder ASC
 ```
 
-### IHolidayService
+### Rotation Shift Cycle Calculation
 ```csharp
-Task<IEnumerable<HolidayResponse>> GetByCalendarAsync(Guid calendarId, int year, CancellationToken ct);
-Task<IEnumerable<HolidayResponse>> GetApplicableAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct);
-Task<HolidayResponse> CreateAsync(CreateHolidayRequest request, CancellationToken ct);
-Task<bool> UpdateAsync(Guid id, UpdateHolidayRequest request, CancellationToken ct);
-Task<bool> ToggleStatusAsync(Guid id, CancellationToken ct);
-Task<HolidayCalendarResponse?> ResolveCalendarForEmployeeAsync(Guid employeeId, CancellationToken ct);
+// Seed: ROT-NURSING-3SHIFT, CycleLengthDays=19
+// EMP010: RotationOffsetDays=0, EMP011: RotationOffsetDays=3, EMP012: RotationOffsetDays=6
+// (offset prevents all nurses having same off-day simultaneously)
+
+int daysSinceStart  = (targetDate.DayNumber - assignment.RotationStartDate.DayNumber)
+                    + assignment.RotationOffsetDays;
+int positionInCycle = ((daysSinceStart % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
+
+int accumulated = 0;
+foreach (var detail in rotation.Details.OrderBy(d => d.SequenceNo))
+{
+    accumulated += detail.DurationDays;
+    if (positionInCycle < accumulated)
+        return detail.IsOffDay ? null : detail.Shift;
+}
 ```
 
-### IShiftSwapService
+---
+
+## Roster Generation
+
+### When Generated
+
+Roster is generated **in advance** by HR admin or scheduled job — not daily automatically. Daily attendance processing reads the pre-generated roster.
+
+### Database Handles All Frequencies
+
+The schema is date-level granular. Any frequency works:
+
+| Frequency | GenerationType | FromDate | ToDate |
+|---|---|---|---|
+| Monthly | `MONTHLY` | Jun 1 | Jun 30 |
+| Bi-weekly | `WEEKLY` | Jun 1 | Jun 14 |
+| Weekly | `WEEKLY` | Jun 1 | Jun 7 |
+| Single day | `ADHOC` | Jun 5 | Jun 5 |
+
+`EmployeeRosterGenerationTracker` unique constraint `(EmployeeId, RosterYear, RosterMonth, GenerationType)` allows coexisting `MONTHLY` + `WEEKLY` + `ADHOC` trackers for same month.
+
+### Full Generation Algorithm
+
 ```csharp
-Task<ShiftSwapResponse> RequestSwapAsync(CreateShiftSwapRequest request, CancellationToken ct);
-Task<bool> CancelAsync(Guid id, CancellationToken ct);
-Task<ShiftSwapResponse?> GetByIdAsync(Guid id, CancellationToken ct);
-Task<IEnumerable<ShiftSwapResponse>> GetMyRequestsAsync(Guid employeeId, CancellationToken ct);
-Task UpdateStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+// Application/Services/RosterService.cs — GenerateAsync
+public async Task<RosterGenerationResult> GenerateAsync(GenerateRosterRequest request, CancellationToken ct)
+{
+    var employees = await ResolveEmployeesInScopeAsync(request, ct);
+
+    foreach (var employee in employees)
+    {
+        var tracker = await trackerRepo.GetAsync(employee.Id, request.FromDate.Year, request.FromDate.Month, ct);
+        if (tracker?.IsLocked == true && !request.ForceRegenerate) continue;
+
+        var empSummary       = await employeeHttpClient.GetSummaryAsync(employee.Id, ct);
+        var holidays         = await scopeResolution.ResolveHolidaysAsync(empSummary, request.FromDate, request.ToDate, ct);
+        var holidayDates     = holidays.Select(h => h.HolidayDate).ToHashSet();
+        var workWeek         = await scopeResolution.ResolveWorkWeekPolicyAsync(empSummary, request.FromDate, ct);
+        var rotationAssign   = await scopeResolution.ResolveRotationAssignmentAsync(empSummary, request.FromDate, ct);
+
+        for (var date = request.FromDate; date <= request.ToDate; date = date.AddDays(1))
+        {
+            var existing = await rosterRepo.GetByEmployeeDateAsync(employee.Id, date, ct);
+            if (existing?.IsLocked == true && !request.ForceRegenerate) continue;
+
+            var roster = existing ?? new EmployeeShiftRoster
+            {
+                Id = Guid.NewGuid(), EmployeeId = employee.Id, RosterDate = date, IsActive = true
+            };
+
+            if (holidayDates.Contains(date))
+            {
+                SetHoliday(roster, request.LockAfterGenerate);
+            }
+            else if (!IsWorkingDay(workWeek, date))
+            {
+                SetOffDay(roster, request.LockAfterGenerate);
+            }
+            else
+            {
+                var shift = rotationAssign != null
+                    ? ResolveRotationShift(rotationAssign, date)
+                    : await scopeResolution.ResolveShiftAsync(empSummary, date, ct);
+
+                SetShift(roster, shift, date, request.LockAfterGenerate);
+            }
+
+            await UpsertRosterAsync(roster, existing, ct);
+        }
+
+        await trackerRepo.UpsertAsync(BuildTracker(employee.Id, request), ct);
+    }
+
+    await unitOfWork.SaveChangesAsync(ct);
+}
 ```
 
-### ICompOffService
+### Roster Change Handling (Mid-Period Shift Change)
+
+**Option A — Re-generate with ForceRegenerate:**
+```
+POST /api/v1/rosters/generate
+{ FromDate: Jun15, ToDate: Jun30, EmployeeIds: [empId], ForceRegenerate: true, GenerationType: "ADHOC" }
+→ Overwrites rows Jun 15-30, picks up new ShiftAssignment effective Jun 15
+→ Rows Jun 1-14 untouched
+```
+
+**Option B — Single row edit:**
+```
+PUT /api/v1/rosters/{id}
+→ Set ShiftId, PlannedStartTime, PlannedEndTime, IsLocked=true
+```
+
+**Option C — Bulk unlock + re-generate:**
+```
+PATCH /api/v1/rosters/bulk-unlock?employeeId=&from=Jun15&to=Jun30
+→ Sets IsLocked=false
+Then: POST /api/v1/rosters/generate (ForceRegenerate=false, picks up new assignment)
+```
+
+### Manual Roster Upload
+
 ```csharp
-Task<IEnumerable<CompOffBalanceResponse>> GetBalanceAsync(Guid employeeId, CancellationToken ct);
-Task<CompOffBalanceResponse> EarnAsync(EarnCompOffRequest request, CancellationToken ct);
-Task RedeemAsync(RedeemCompOffRequest request, CancellationToken ct);
-Task UpdateStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+// Application/DTOs/Roster/Request/RosterUploadRequest.cs
+namespace SdxCore.Attendance.Application.DTOs.Roster.Request;
+
+public record RosterUploadRequest(
+    DateOnly        FromDate,
+    DateOnly        ToDate,
+    string          GenerationType,     // "WEEKLY", "MONTHLY", "ADHOC"
+    List<RosterRow> Rows,
+    bool            LockAfterUpload = true,
+    string?         Remarks = null);
+
+// Application/DTOs/Roster/Request/RosterRow.cs
+public record RosterRow(
+    Guid     EmployeeId,
+    DateOnly Date,
+    Guid?    ShiftId,
+    bool     IsOffDay   = false,
+    bool     IsHoliday  = false,
+    string?  Remarks    = null);
+
+// Application/DTOs/Roster/Response/RosterUploadResult.cs
+public record RosterUploadResult(
+    int          TotalRows,
+    int          Created,
+    int          Updated,
+    int          Skipped,
+    List<string> Errors);
+```
+
+---
+
+## Attendance Calculation
+
+### Daily Processing Job
+
+`ProcessDailyAsync(DateOnly date)` — scheduled at 00:30 daily, runs after `AttendanceFinalizeBufferMinutes`.
+
+```csharp
+// Application/Services/AttendanceService.cs
+public async Task ProcessDailyAsync(DateOnly date, CancellationToken ct)
+{
+    var rosterRows = await rosterRepo.GetByDateAsync(date, ct);
+
+    foreach (var roster in rosterRows)
+    {
+        var existing = await attendanceRepo.GetByEmployeeDateAsync(roster.EmployeeId, date, ct);
+        if (existing?.IsAttendanceLocked == true) continue;
+
+        var session     = await workSessionRepo.GetByRosterAsync(roster.Id, ct);
+        var activeLeave = await leaveRepo.GetApprovedLeaveForDateAsync(roster.EmployeeId, date, ct);
+
+        var (statusCode, metrics) = CalculateAttendance(roster, session, activeLeave);
+
+        var record = existing ?? new AttendanceRecord
+        {
+            Id = Guid.NewGuid(), EmployeeId = roster.EmployeeId, AttendanceDate = date
+        };
+
+        record.EmployeeShiftRosterId = roster.Id;
+        record.WorkSessionId         = session?.Id;
+        record.ShiftId               = roster.ShiftId;
+        record.AttendanceStatusId    = await statusRepo.GetIdByCodeAsync(statusCode, ct);
+        record.CheckInTime           = session?.CheckInTime;
+        record.CheckOutTime          = session?.CheckOutTime;
+        record.WorkedMinutes         = metrics.WorkedMinutes;
+        record.LateByMinutes         = metrics.LateByMinutes;
+        record.EarlyExitMinutes      = metrics.EarlyExitMinutes;
+        record.OvertimeMinutes       = metrics.OvertimeMinutes;
+        record.BreakMinutes          = (short)(roster.Shift?.BreakDurationMinutes ?? 0);
+        record.IsNightShift          = roster.Shift?.IsNightShift ?? false;
+        record.IsCrossDayAttendance  = roster.Shift?.CrossesMidnight ?? false;
+        record.IsWeeklyOff           = roster.IsOffDay;
+        record.IsHoliday             = roster.IsHoliday;
+        record.IsOnLeave             = activeLeave != null;
+        record.IsAutoProcessed       = true;
+
+        await attendanceRepo.UpsertAsync(record, ct);
+    }
+
+    await unitOfWork.SaveChangesAsync(ct);
+}
+```
+
+### Attendance Metrics Calculation
+
+```csharp
+private (string StatusCode, AttendanceMetrics Metrics) CalculateAttendance(
+    EmployeeShiftRoster roster, WorkSession? session, LeaveRequest? activeLeave)
+{
+    var metrics = new AttendanceMetrics();
+
+    if (roster.IsHoliday) return (AttendanceStatusCodes.Holiday, metrics);
+    if (roster.IsOffDay)  return (AttendanceStatusCodes.Weekend, metrics);
+    if (activeLeave != null) return (AttendanceStatusCodes.OnLeave, metrics);
+
+    if (session == null || session.CheckInTime == default)
+        return (AttendanceStatusCodes.Absent, metrics);
+
+    var plannedStart = roster.PlannedStartTime ?? session.CheckInTime;
+    var plannedEnd   = roster.PlannedEndTime   ?? session.CheckOutTime ?? session.CheckInTime;
+    var graceIn      = TimeSpan.FromMinutes(roster.Shift?.GraceInMinutes  ?? 0);
+    var graceOut     = TimeSpan.FromMinutes(roster.Shift?.GraceOutMinutes ?? 0);
+    var breakMins    = roster.Shift?.BreakDurationMinutes ?? 0;
+
+    if (session.CheckInTime > plannedStart.Add(graceIn))
+        metrics = metrics with { LateByMinutes = (short)(session.CheckInTime - plannedStart.Add(graceIn)).TotalMinutes };
+
+    if (session.CheckOutTime.HasValue)
+    {
+        var earlyThreshold = plannedEnd.Subtract(graceOut);
+        if (session.CheckOutTime.Value < earlyThreshold)
+            metrics = metrics with { EarlyExitMinutes = (short)(earlyThreshold - session.CheckOutTime.Value).TotalMinutes };
+
+        var raw = (session.CheckOutTime.Value - session.CheckInTime).TotalMinutes - breakMins;
+        metrics = metrics with { WorkedMinutes = (short)Math.Max(0, raw) };
+
+        var stdMins = roster.Shift?.MaximumWorkingMinutes
+                   ?? (int)(plannedEnd - plannedStart).TotalMinutes - breakMins;
+        if (roster.Shift?.AllowOvertime == true && metrics.WorkedMinutes > stdMins)
+            metrics = metrics with { OvertimeMinutes = (short)(metrics.WorkedMinutes - stdMins) };
+    }
+
+    var minWorking = roster.Shift?.MinimumWorkingMinutes ?? 0;
+
+    if (session.CheckOutTime == null)      return (AttendanceStatusCodes.Present, metrics);
+    if (metrics.WorkedMinutes < minWorking / 2) return (AttendanceStatusCodes.Absent, metrics);
+    if (metrics.WorkedMinutes < minWorking)     return (AttendanceStatusCodes.HalfDay, metrics);
+    if (metrics.LateByMinutes > 0)              return (AttendanceStatusCodes.Late, metrics);
+
+    return (AttendanceStatusCodes.Present, metrics);
+}
+
+// Application/DTOs/Attendance/Response/AttendanceMetrics.cs (internal use)
+public record AttendanceMetrics(
+    short WorkedMinutes    = 0,
+    short LateByMinutes    = 0,
+    short EarlyExitMinutes = 0,
+    short OvertimeMinutes  = 0);
+```
+
+### Decision Tree
+
+```
+IsHoliday = true         → HOLIDAY
+IsOffDay = true          → WEEKEND
+ApprovedLeave exists     → ON_LEAVE
+No check-in after buffer → ABSENT
+CheckOut null            → PRESENT (tentative)
+WorkedMinutes < min/2    → ABSENT
+WorkedMinutes < min      → HALF_DAY
+LateByMinutes > 0        → LATE
+Otherwise                → PRESENT
+```
+
+### Night Shift Handling
+
+For `CrossesMidnight=true` (e.g. SHF-NIGHT 20:00-08:00):
+- `PlannedStartTime` = roster date at 20:00
+- `PlannedEndTime` = **next day** at 08:00 (`date.AddDays(1).ToDateTime(shift.EndTime)`)
+- `AttendanceRecord` credited to the **date the shift started**
+- `IsCrossDayAttendance = true`
+
+---
+
+## Application Service Interfaces
+
+File path: `Application/Abstractions/Services/I{Name}Service.cs`
+Namespace: `SdxCore.Attendance.Application.Abstractions.Services`
+
+```csharp
+// ILeaveService.cs
+public interface ILeaveService
+{
+    Task<PagedResponse<IEnumerable<LeaveRequestResponse>>> GetAllAsync(PaginationFilter filter, Guid? employeeId, string? status, CancellationToken ct);
+    Task<LeaveRequestResponse?> GetByIdAsync(Guid id, CancellationToken ct);
+    Task<IEnumerable<LeaveRequestResponse>> GetByEmployeeAsync(Guid employeeId, CancellationToken ct);
+    Task<IEnumerable<LeaveBalanceResponse>> GetBalanceAsync(Guid employeeId, int year, CancellationToken ct);
+    Task<LeaveRequestResponse> SubmitAsync(CreateLeaveRequestRequest request, CancellationToken ct);
+    Task<bool> CancelAsync(Guid id, CancellationToken ct);
+    Task<bool> WithdrawAsync(Guid id, CancellationToken ct);
+    Task<LeaveRequestResponse?> GetByWorkflowInstanceAsync(Guid workflowInstanceId, CancellationToken ct);
+    Task UpdateStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+}
+
+// IShiftService.cs
+public interface IShiftService
+{
+    Task<PagedResponse<IEnumerable<ShiftResponse>>> GetAllAsync(PaginationFilter filter, CancellationToken ct);
+    Task<ShiftResponse?> GetByIdAsync(Guid id, CancellationToken ct);
+    Task<ShiftResponse> CreateAsync(CreateShiftRequest request, CancellationToken ct);
+    Task<bool> UpdateAsync(Guid id, UpdateShiftRequest request, CancellationToken ct);
+    Task<bool> ToggleStatusAsync(Guid id, CancellationToken ct);
+    Task<ShiftResponse?> ResolveForEmployeeAsync(Guid employeeId, DateOnly date, CancellationToken ct);
+}
+
+// IRosterService.cs
+public interface IRosterService
+{
+    Task<IEnumerable<RosterResponse>> GetByEmployeeAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct);
+    Task<RosterResponse?> GetByDateAsync(Guid employeeId, DateOnly date, CancellationToken ct);
+    Task<RosterGenerationResult> GenerateAsync(GenerateRosterRequest request, CancellationToken ct);
+    Task<RosterUploadResult> UploadAsync(RosterUploadRequest request, CancellationToken ct);
+    Task<RosterUploadResult> UploadCsvAsync(Stream csvStream, bool lockAfterUpload, CancellationToken ct);
+    Task<bool> LockAsync(Guid id, CancellationToken ct);
+    Task<bool> UnlockAsync(Guid id, CancellationToken ct);
+    Task<bool> BulkUnlockAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct);
+    Task<bool> UpdateAsync(Guid id, UpdateRosterRequest request, CancellationToken ct);
+    Task ExecuteShiftSwapAsync(Guid workflowInstanceId, CancellationToken ct);
+}
+
+// IAttendanceService.cs
+public interface IAttendanceService
+{
+    Task<PagedResponse<IEnumerable<AttendanceRecordResponse>>> GetAllAsync(PaginationFilter filter, Guid? employeeId, DateOnly? from, DateOnly? to, CancellationToken ct);
+    Task<AttendanceRecordResponse?> GetByIdAsync(Guid id, CancellationToken ct);
+    Task<AttendanceRecordResponse?> GetByEmployeeDateAsync(Guid employeeId, DateOnly date, CancellationToken ct);
+    Task CheckInAsync(CheckInRequest request, CancellationToken ct);
+    Task CheckOutAsync(CheckOutRequest request, CancellationToken ct);
+    Task ProcessDailyAsync(DateOnly date, CancellationToken ct);
+    Task<bool> LockAsync(Guid id, CancellationToken ct);
+    Task RegularizeAsync(CreateRegularizationRequest request, CancellationToken ct);
+    Task ApplyRegularizationAsync(Guid workflowInstanceId, CancellationToken ct);
+    Task UpdateRegularizationStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+}
+
+// IHolidayService.cs
+public interface IHolidayService
+{
+    Task<IEnumerable<HolidayCalendarResponse>> GetAllCalendarsAsync(CancellationToken ct);
+    Task<IEnumerable<HolidayResponse>> GetByCalendarAsync(Guid calendarId, int year, CancellationToken ct);
+    Task<IEnumerable<HolidayResponse>> GetApplicableAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken ct);
+    Task<HolidayResponse> CreateAsync(CreateHolidayRequest request, CancellationToken ct);
+    Task<bool> UpdateAsync(Guid id, UpdateHolidayRequest request, CancellationToken ct);
+    Task<bool> ToggleStatusAsync(Guid id, CancellationToken ct);
+}
+
+// IShiftSwapService.cs
+public interface IShiftSwapService
+{
+    Task<ShiftSwapResponse> RequestSwapAsync(CreateShiftSwapRequest request, CancellationToken ct);
+    Task<bool> CancelAsync(Guid id, CancellationToken ct);
+    Task<ShiftSwapResponse?> GetByIdAsync(Guid id, CancellationToken ct);
+    Task<IEnumerable<ShiftSwapResponse>> GetMyRequestsAsync(Guid employeeId, CancellationToken ct);
+    Task UpdateStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+}
+
+// ICompOffService.cs
+public interface ICompOffService
+{
+    Task<IEnumerable<CompOffBalanceResponse>> GetBalanceAsync(Guid employeeId, CancellationToken ct);
+    Task<CompOffBalanceResponse> EarnAsync(EarnCompOffRequest request, CancellationToken ct);
+    Task RedeemAsync(RedeemCompOffRequest request, CancellationToken ct);
+    Task UpdateStatusFromWorkflowAsync(Guid workflowInstanceId, string newStatus, Guid actionBy, CancellationToken ct);
+}
+
+// IScopeResolutionService.cs (Domain Abstractions)
+// Namespace: SdxCore.Attendance.Domain.Abstractions.Services
+public interface IScopeResolutionService
+{
+    Task<Shift?> ResolveShiftAsync(EmployeeSummaryResponse employee, DateOnly date, CancellationToken ct);
+    Task<IEnumerable<Holiday>> ResolveHolidaysAsync(EmployeeSummaryResponse employee, DateOnly from, DateOnly to, CancellationToken ct);
+    Task<WorkWeekPolicy?> ResolveWorkWeekPolicyAsync(EmployeeSummaryResponse employee, DateOnly date, CancellationToken ct);
+    Task<RotationShiftAssignment?> ResolveRotationAssignmentAsync(EmployeeSummaryResponse employee, DateOnly date, CancellationToken ct);
+}
 ```
 
 ---
 
 ## Workflow Integration
 
-### Modules That Use Workflow
-
-| Module | WorkflowModuleCode | Entity | Status Field |
-|---|---|---|---|
-| Leave Request | `LEAVE_REQUEST` | `LeaveRequest` | `LeaveStatus` |
-| Attendance Regularization | `ATTENDANCE_REGULARIZATION` | `AttendanceRegularization` | `RegularizationStatus` |
-| Shift Swap | `SHIFT_SWAP_REQUEST` | `ShiftSwapRequest` | `ShiftSwapStatus` |
-| Comp-Off Redemption | `COMP_OFF_REDEMPTION` | `CompOffBalance` | (tracked via WorkflowInstanceId) |
-
 ### Submission Flow (Attendance → Workflow)
 
-When an employee submits a leave/regularization/swap/comp-off, the Attendance service publishes a domain event to RabbitMQ via the outbox pattern. The Workflow service consumes this and initiates a `WorkflowInstance`.
-
-**Step 1: Custom Outbox Interceptor**
-
-```csharp
-// SdxCore.Attendance.Persistence.Interceptors.AttendanceWorkflowOutboxInterceptor
-// Extends SaveChangesInterceptor
-// Watches for newly ADDED: LeaveRequest, AttendanceRegularization, ShiftSwapRequest, CompOffBalance
-// For each new entity, writes a LeaveRequestSubmittedEvent (or equivalent) to attendance.OutboxMessages
-// Does NOT call SaveChangesAsync — caller owns the commit
+```
+LeaveService.SubmitAsync()
+  → leaveRequestRepo.AddAsync(leaveRequest)     [staged]
+  → AttendanceWorkflowOutboxInterceptor fires
+       → Builds LeaveRequestSubmittedEvent
+       → outboxRepo.AddAsync(OutboxMessage)     [staged]
+  → unitOfWork.SaveChangesAsync()               [single commit]
+  → OutboxProcessorBackgroundService polls
+  → RabbitMQ → Workflow.LeaveRequestSubmittedConsumer
+       → WorkflowEngine.SubmitAsync(moduleCode, workflowCode, employeeId)
 ```
 
-**Step 2: Events to Publish**
+### Events Published (in `SdxCore.SharedKernel.Events`)
 
 ```csharp
-// In SdxCore.SharedKernel.Events:
-
 public record LeaveRequestSubmittedEvent(
     Guid     LeaveRequestId,
     Guid     EmployeeId,
-    string   LeaveTypeCode,    // e.g. "ANNUAL", "SICK"
-    string   WorkflowCode,     // e.g. "STANDARD_LEAVE_V1" — maps leave type to workflow
-    string   ModuleCode,       // "LEAVE_REQUEST"
+    string   LeaveTypeCode,
+    string   WorkflowCode,      // from LeaveType.WorkflowCode
+    string   ModuleCode,        // "LEAVE_REQUEST"
     DateOnly FromDate,
     DateOnly ToDate,
+    decimal  TotalDays,
     string?  Reason,
     DateTime OccurredOnUtc);
 
 public record AttendanceRegularizationSubmittedEvent(
-    Guid     RegularizationId,
-    Guid     EmployeeId,
-    string   WorkflowCode,     // "ATTENDANCE_REGULARIZATION_V1"
-    string   ModuleCode,       // "ATTENDANCE_REGULARIZATION"
-    DateOnly AttendanceDate,
-    string?  Reason,
-    DateTime OccurredOnUtc);
+    Guid      RegularizationId,
+    Guid      EmployeeId,
+    string    WorkflowCode,     // "ATTENDANCE_REGULARIZATION_V1"
+    string    ModuleCode,       // "ATTENDANCE_REGULARIZATION"
+    DateOnly  AttendanceDate,
+    DateTime? RequestedCheckIn,
+    DateTime? RequestedCheckOut,
+    string?   Reason,
+    DateTime  OccurredOnUtc);
 
 public record ShiftSwapRequestSubmittedEvent(
     Guid     ShiftSwapRequestId,
     Guid     RequesterEmployeeId,
     Guid     TargetEmployeeId,
-    string   WorkflowCode,     // "SHIFT_SWAP_V1"
-    string   ModuleCode,       // "SHIFT_SWAP_REQUEST"
+    Guid     RequesterRosterId,
+    Guid     TargetRosterId,
+    string   WorkflowCode,      // "SHIFT_SWAP_V1"
+    string   ModuleCode,        // "SHIFT_SWAP_REQUEST"
     DateOnly SwapDate,
     DateTime OccurredOnUtc);
 
 public record CompOffRedemptionSubmittedEvent(
     Guid     CompOffBalanceId,
     Guid     EmployeeId,
-    string   WorkflowCode,     // "COMP_OFF_REDEMPTION_V1"
-    string   ModuleCode,       // "COMP_OFF_REDEMPTION"
+    string   WorkflowCode,      // "COMP_OFF_REDEMPTION_V1"
+    string   ModuleCode,        // "COMP_OFF_REDEMPTION"
     decimal  RequestedDays,
     DateTime OccurredOnUtc);
 ```
 
-**Step 3: WorkflowCode Mapping**
-
-The `WorkflowCode` determines which workflow definition to use within the module. Store this on `LeaveType.WorkflowCode` so it's data-driven:
+### Event Consumed From Workflow
 
 ```csharp
-// LeaveType entity
-public string? WorkflowCode { get; set; }   // "STANDARD_LEAVE_V1", "EMERGENCY_LEAVE_V1"
-
-// In LeaveService.SubmitAsync — derive WorkflowCode from LeaveType
-string workflowCode = leaveType.WorkflowCode ?? "STANDARD_LEAVE_V1";
-```
-
-**Step 4: Back-channel — Workflow → Attendance**
-
-The Workflow service publishes `WorkflowInstanceStatusChangedEvent` when status changes. The Attendance service consumes this and updates the relevant entity.
-
-```csharp
-// In SdxCore.SharedKernel.Events:
 public record WorkflowInstanceStatusChangedEvent(
     Guid     WorkflowInstanceId,
-    string   ModuleCode,              // "LEAVE_REQUEST"
-    Guid     ReferenceTransactionId,  // LeaveRequestId / RegularizationId / etc.
-    string   NewStatus,               // "APPROVED", "REJECTED", etc.
-    string   EventType,               // "status_changed", "returned", "delegated"
+    string   ModuleCode,
+    Guid     ReferenceTransactionId,
+    string   NewStatus,
+    string   EventType,         // "status_changed" | "returned" | "delegated"
     Guid     ActionBy,
     string?  Remarks,
-    DateTime CreatedAt);
-```
-
-### Consumer: `WorkflowInstanceStatusChangedConsumer`
-
-```csharp
-// SdxCore.Attendance.Application.Consumers.WorkflowInstanceStatusChangedConsumer
-// IConsumer<WorkflowInstanceStatusChangedEvent>
-// Routes by ModuleCode to the correct service:
-
-public async Task Consume(ConsumeContext<WorkflowInstanceStatusChangedEvent> context)
-{
-    var evt = context.Message;
-
-    // Skip delegated — no entity status change needed
-    if (evt.EventType == "delegated") return;
-
-    switch (evt.ModuleCode)
-    {
-        case "LEAVE_REQUEST":
-            await leaveService.UpdateStatusFromWorkflowAsync(
-                evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
-            break;
-
-        case "ATTENDANCE_REGULARIZATION":
-            await attendanceService.UpdateRegularizationStatusFromWorkflowAsync(
-                evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
-            break;
-
-        case "SHIFT_SWAP_REQUEST":
-            await shiftSwapService.UpdateStatusFromWorkflowAsync(
-                evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
-            // If APPROVED: execute the actual shift swap on EmployeeShiftRoster
-            if (evt.NewStatus == "APPROVED")
-                await rosterService.ExecuteShiftSwapAsync(evt.WorkflowInstanceId, ct);
-            break;
-
-        case "COMP_OFF_REDEMPTION":
-            await compOffService.UpdateStatusFromWorkflowAsync(
-                evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
-            break;
-    }
-}
+    DateTime OccurredOnUtc);
 ```
 
 ---
 
-## RabbitMQ Messaging
+## RabbitMQ Consumers
 
-### Events Published by Attendance
-
-| Event | Routing Key | Consumed By |
-|---|---|---|
-| `LeaveRequestSubmittedEvent` | `sdxcore.events.leaverequest.submitted` | Workflow |
-| `AttendanceRegularizationSubmittedEvent` | `sdxcore.events.regularization.submitted` | Workflow |
-| `ShiftSwapRequestSubmittedEvent` | `sdxcore.events.shiftswap.submitted` | Workflow |
-| `CompOffRedemptionSubmittedEvent` | `sdxcore.events.compoff.submitted` | Workflow |
-| `EntityChangedEvent` (via `OutboxSaveChangesInterceptor`) | `sdxcore.events.{entityname}.lower` | Other services (cache invalidation) |
-
-### Events Consumed by Attendance
-
-| Event | Queue Name | Published By |
-|---|---|---|
-| `WorkflowInstanceStatusChangedEvent` | `attendance.workflow.status-changed` | Workflow |
-
-### Messaging Registration
+### Consumer Pattern (follow exactly)
 
 ```csharp
-// SdxCore.Attendance.Application.Extensions.ServiceCollectionExtensions
+// Application/Consumers/WorkflowInstanceStatusChangedConsumer.cs
+namespace SdxCore.Attendance.Application.Consumers;
 
-public static IServiceCollection AddSdxCoreAttendanceMessaging(
-    this IServiceCollection services,
-    IConfiguration configuration)
+public sealed class WorkflowInstanceStatusChangedConsumer(
+    ILeaveService      leaveService,
+    IAttendanceService attendanceService,
+    IShiftSwapService  shiftSwapService,
+    IRosterService     rosterService,
+    ICompOffService    compOffService,
+    ILogger<WorkflowInstanceStatusChangedConsumer> logger)
+    : IConsumer<WorkflowInstanceStatusChangedEvent>
 {
-    string serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "attendance";
+    public async Task Consume(ConsumeContext<WorkflowInstanceStatusChangedEvent> context)
+    {
+        var evt = context.Message;
+        var ct  = context.CancellationToken;
 
-    services.AddSdxMessaging(
-        configuration,
-        endpointPrefix: serviceName,
-        configureBus =>
+        if (evt.EventType == "delegated") return;
+
+        logger.LogInformation(
+            "Workflow status change. Module={Module}, Entity={EntityId}, Status={Status}",
+            evt.ModuleCode, evt.ReferenceTransactionId, evt.NewStatus);
+
+        try
         {
-            configureBus.AddConsumer<WorkflowInstanceStatusChangedConsumer>();
-        });
+            switch (evt.ModuleCode)
+            {
+                case WorkflowModuleCodes.Leave:
+                    await leaveService.UpdateStatusFromWorkflowAsync(
+                        evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
+                    break;
 
-    return services;
+                case WorkflowModuleCodes.AttendanceRegularization:
+                    await attendanceService.UpdateRegularizationStatusFromWorkflowAsync(
+                        evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
+                    if (evt.NewStatus == RegularizationStatus.Approved)
+                        await attendanceService.ApplyRegularizationAsync(evt.WorkflowInstanceId, ct);
+                    break;
+
+                case WorkflowModuleCodes.ShiftSwap:
+                    await shiftSwapService.UpdateStatusFromWorkflowAsync(
+                        evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
+                    if (evt.NewStatus == ShiftSwapStatus.Approved)
+                        await rosterService.ExecuteShiftSwapAsync(evt.WorkflowInstanceId, ct);
+                    break;
+
+                case WorkflowModuleCodes.CompOff:
+                    await compOffService.UpdateStatusFromWorkflowAsync(
+                        evt.WorkflowInstanceId, evt.NewStatus, evt.ActionBy, ct);
+                    break;
+
+                default:
+                    logger.LogDebug("Unhandled module '{Module}' — skipping.", evt.ModuleCode);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to process event for {Module}/{EntityId}",
+                evt.ModuleCode, evt.ReferenceTransactionId);
+            throw; // MassTransit handles retry → dead-letter
+        }
+    }
 }
 ```
 
-`AddSdxMessaging` automatically registers `OutboxProcessorBackgroundService` — no separate `AddHostedService` call needed.
+### Adding a New Consumer
+
+**Step 1:** Add event record to `SdxCore.SharedKernel.Events`
+**Step 2:** Create consumer in `Application/Consumers/{EventName}Consumer.cs`
+**Step 3:** Register in `AddSdxCoreAttendanceMessaging`:
+```csharp
+configureBus.AddConsumer<NewEventConsumer>(); // add here
+```
+**Step 4:** No other changes — `AddSdxMessaging` auto-creates queue from class name + prefix.
+
+### Consumer Rules
+
+1. **Always re-throw** — never swallow. MassTransit handles retry + dead-letter.
+2. **Idempotent** — guard: `if (entity.Status == newStatus) return;`
+3. **Never inject DbContext** — always via Application service interface.
+4. **Log Information on entry, Error on exception.**
+5. **Skip gracefully** if `ModuleCode` not owned by this service.
+6. **Use `context.CancellationToken`** — never `CancellationToken.None`.
+
+---
+
+## Inter-Service Communication
+
+### Pattern 1: HTTP (Synchronous)
+
+Use when data is needed **immediately** to complete the current request.
+
+```csharp
+// Application/Abstractions/Http/IEmployeeHttpClient.cs
+namespace SdxCore.Attendance.Application.Abstractions.Http;
+
+public interface IEmployeeHttpClient
+{
+    Task<EmployeeSummaryResponse?> GetSummaryAsync(Guid employeeId, CancellationToken ct);
+    Task<IEnumerable<EmployeesByDesignationResponse>> GetByDesignationInScopeAsync(
+        List<short> designationIds, short? scopeTypeId, int? scopeReferenceId, CancellationToken ct);
+}
+
+// Infrastructure/Http/EmployeeHttpClient.cs
+public class EmployeeHttpClient(HttpClient http, ILogger<EmployeeHttpClient> logger)
+    : IEmployeeHttpClient
+{
+    public async Task<EmployeeSummaryResponse?> GetSummaryAsync(Guid employeeId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await http.GetFromJsonAsync<ApiResponse<EmployeeSummaryResponse>>(
+                $"/api/v1/employees/{employeeId}/summary", ct);
+            return response?.Data;
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Failed to get employee summary for {EmployeeId}", employeeId);
+            return null;
+        }
+    }
+}
+```
+
+**Internal API Key Handler (add to all outbound HTTP clients):**
+```csharp
+// Infrastructure/Http/InternalApiKeyHandler.cs
+public class InternalApiKeyHandler(IConfiguration config) : DelegatingHandler
+{
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken ct)
+    {
+        request.Headers.Add("X-Internal-ApiKey", config["Gateway:InternalApiKey"]);
+        return await base.SendAsync(request, ct);
+    }
+}
+```
+
+### Pattern 2: RabbitMQ (Asynchronous)
+
+Use when **notifying** another service or **triggering** a long-running process.
+
+```
+Submit leave → outbox → RabbitMQ → Workflow initiates approval
+Approval done → RabbitMQ → Attendance updates status
+```
+
+**Never call Workflow HTTP to submit. Always via outbox → RabbitMQ.**
+
+### Service Communication Table
+
+| Source | Target | Pattern | When |
+|---|---|---|---|
+| Attendance | Employee | HTTP GET | Roster generation, shift/holiday resolution |
+| Attendance | Time | HTTP GET | Scope types |
+| Attendance | Workflow | **RabbitMQ** | Submit leave/regularization/swap/comp-off |
+| Workflow | Attendance | **RabbitMQ** | Approval status changes |
+| Workflow | Employee | HTTP GET | Resolve approvers |
 
 ---
 
 ## API Controllers
 
-All controllers:
-- Inherit `SdxControllerBase`
-- Decorated with `[GatewayOnly]`
-- Route prefix: `api/v1/`
-- Use `IRequestContext` to extract `UserId` (Guid) from `X-User-Id` header
+All inherit `SdxControllerBase`. All decorated `[GatewayOnly]`. Prefix `api/v1/`. Use `IRequestContext` for `UserId`.
 
-### Endpoints
+```csharp
+// Pattern from Employee service:
+[HttpPost]
+public async Task<IActionResult> Create([FromBody] CreateLeaveRequestRequest request, CancellationToken ct)
+{
+    var validation = await ValidateAsync(request, ct);   // resolves IValidator<T> from DI
+    if (validation != null) return validation;
 
-#### Leave Controller — `api/v1/leaves`
-```
-GET    /                          GetAll (filter, employeeId?, status?)
-GET    /{id}                      GetById
-GET    /employee/{employeeId}     GetByEmployee
-GET    /employee/{employeeId}/balance?year=  GetBalance
-POST   /                          Submit leave request
-PATCH  /{id}/cancel               Cancel
-PATCH  /{id}/withdraw             Withdraw
-GET    /workflow/{instanceId}     GetByWorkflowInstance
+    var result = await _service.SubmitAsync(request, ct);
+    return CreatedAtAction(nameof(GetById), new { id = result.Id },
+        new ApiResponse<LeaveRequestResponse>(result, "Leave submitted successfully."));
+}
 ```
 
-#### Attendance Controller — `api/v1/attendance`
+### Leave — `api/v1/leaves`
 ```
-GET    /                          GetAll (filter, employeeId?, from?, to?)
-GET    /{id}                      GetById
+GET    /                               GetAll (filter, employeeId?, status?)
+GET    /{id}                           GetById
+GET    /employee/{employeeId}          GetByEmployee
+GET    /employee/{employeeId}/balance  GetBalance (?year=)
+POST   /                               Submit
+PATCH  /{id}/cancel                    Cancel
+PATCH  /{id}/withdraw                  Withdraw
+GET    /workflow/{instanceId}          GetByWorkflowInstance
+```
+
+### Attendance — `api/v1/attendance`
+```
+GET    /                               GetAll (filter, employeeId?, from?, to?)
+GET    /{id}                           GetById
 GET    /employee/{employeeId}/date/{date}  GetByEmployeeDate
-POST   /check-in                  CheckIn
-POST   /check-out                 CheckOut
-POST   /process-daily             ProcessDaily (admin)
+POST   /check-in                       CheckIn
+POST   /check-out                      CheckOut
+POST   /process-daily                  ProcessDaily (admin, ?date=)
+PATCH  /{id}/lock                      Lock
 ```
 
-#### Regularization Controller — `api/v1/attendance/regularizations`
+### Regularization — `api/v1/attendance/regularizations`
 ```
-GET    /                          GetAll (filter, employeeId?)
-GET    /{id}                      GetById
-POST   /                          Submit regularization request
-PATCH  /{id}/withdraw             Withdraw
-GET    /workflow/{instanceId}     GetByWorkflowInstance
-```
-
-#### Shift Controller — `api/v1/shifts`
-```
-GET    /                          GetAll (paginated)
-GET    /{id}                      GetById
-GET    /resolve?employeeId=&date= ResolveForEmployee
-POST   /                          Create
-PUT    /{id}                      Update
-PATCH  /{id}/status               ToggleStatus
+GET    /                               GetAll (filter, employeeId?)
+GET    /{id}                           GetById
+POST   /                               Submit
+PATCH  /{id}/withdraw                  Withdraw
+GET    /workflow/{instanceId}          GetByWorkflowInstance
 ```
 
-#### Roster Controller — `api/v1/rosters`
+### Shift — `api/v1/shifts`
 ```
-GET    /employee/{employeeId}?from=&to=    GetByEmployee
+GET    /                               GetAll
+GET    /{id}                           GetById
+GET    /resolve                        ResolveForEmployee (?employeeId=&date=)
+POST   /                               Create
+PUT    /{id}                           Update
+PATCH  /{id}/status                    ToggleStatus
+```
+
+### Roster — `api/v1/rosters`
+```
+GET    /employee/{employeeId}          GetByEmployee (?from=&to=)
 GET    /employee/{employeeId}/date/{date}  GetByDate
-POST   /generate                  GenerateRoster
-PATCH  /{id}/lock                 Lock
-PATCH  /{id}/unlock               Unlock
-PUT    /{id}                      Update
+POST   /generate                       GenerateRoster
+POST   /upload                         UploadRoster (JSON)
+POST   /upload/csv                     UploadRosterCsv (multipart/form-data)
+PATCH  /{id}/lock                      Lock
+PATCH  /{id}/unlock                    Unlock
+PATCH  /bulk-unlock                    BulkUnlock (?employeeId=&from=&to=)
+PUT    /{id}                           Update
 ```
 
-#### Shift Swap Controller — `api/v1/shift-swaps`
+### Shift Swap — `api/v1/shift-swaps`
 ```
-GET    /                          GetMyRequests
-GET    /{id}                      GetById
-POST   /                          RequestSwap
-PATCH  /{id}/cancel               Cancel
-```
-
-#### Holiday Controller — `api/v1/holidays`
-```
-GET    /calendars                 GetAllCalendars
-GET    /calendars/{id}            GetCalendar
-POST   /calendars                 CreateCalendar
-GET    /calendars/{id}/holidays   GetHolidaysByCalendar
-POST   /calendars/{id}/holidays   CreateHoliday
-PUT    /holidays/{id}             UpdateHoliday
-PATCH  /holidays/{id}/status      ToggleStatus
-GET    /applicable?employeeId=&from=&to=  GetApplicableHolidays
+GET    /                               GetMyRequests
+GET    /{id}                           GetById
+POST   /                               RequestSwap
+PATCH  /{id}/cancel                    Cancel
 ```
 
-#### CompOff Controller — `api/v1/comp-offs`
+### Holiday — `api/v1/holidays`
 ```
-GET    /employee/{employeeId}     GetBalance
-POST   /earn                      EarnCompOff
-POST   /redeem                    RedeemCompOff
+GET    /calendars                      GetAllCalendars
+GET    /calendars/{id}                 GetCalendar
+POST   /calendars                      CreateCalendar
+GET    /calendars/{id}/holidays        GetByCalendar (?year=)
+POST   /calendars/{id}/holidays        CreateHoliday
+PUT    /holidays/{id}                  UpdateHoliday
+PATCH  /holidays/{id}/status           ToggleStatus
+GET    /applicable                     GetApplicable (?employeeId=&from=&to=)
+```
+
+### Comp-Off — `api/v1/comp-offs`
+```
+GET    /employee/{employeeId}          GetBalance
+POST   /earn                           Earn
+POST   /redeem                         Redeem
+```
+
+### Rotation Shift — `api/v1/rotation-shifts`
+```
+GET    /                               GetAll
+GET    /{id}                           GetById
+POST   /                               Create
+PUT    /{id}                           Update
+GET    /{id}/details                   GetDetails
+POST   /{id}/assignments               AssignToScope
 ```
 
 ---
@@ -598,151 +1224,93 @@ POST   /redeem                    RedeemCompOff
 ### AttendanceDbContext
 
 ```csharp
-// Extends SdxDbContext
-// Schema: attendance
-// Registers all DbSets
-// Configures:
-//   - Computed column: LeaveStatusGroup AS CAST('LEAVE_STATUS' AS NVARCHAR(50)) PERSISTED
-//   - Computed column: RegularizationStatusGroup AS CAST('ATTENDANCE_REGULARIZATION_STATUS' AS NVARCHAR(50)) PERSISTED
-//   - Computed column: ShiftSwapStatusGroup AS CAST('SHIFT_SWAP_STATUS' AS NVARCHAR(50)) PERSISTED
-//   - Computed column: GenerationTypeGroup AS CAST('ROSTER_GENERATION_TYPE' AS NVARCHAR(50)) PERSISTED
-//   - All computed columns: .HasComputedColumnSql("...", stored: true) — EF never writes these
-//   - OutboxMessages table: ToTable("OutboxMessages", "attendance")
-//   - Interceptors: OutboxSaveChangesInterceptor + AttendanceWorkflowOutboxInterceptor
-//   - Keyless view entity: EmployeeShiftRosterSummary → vwEmployeeShiftRoster (if view exists)
+// Persistence/Data/AttendanceDbContext.cs
+namespace SdxCore.Attendance.Persistence.Data;
+
+public class AttendanceDbContext(
+    DbContextOptions<AttendanceDbContext> options,
+    OutboxSaveChangesInterceptor outboxInterceptor,
+    AttendanceWorkflowOutboxInterceptor workflowInterceptor)
+    : SdxDbContext(options)
+{
+    // All DbSets...
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        => optionsBuilder.AddInterceptors(outboxInterceptor, workflowInterceptor);
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.HasDefaultSchema("attendance");
+
+        // Computed columns — NEVER written by EF:
+        modelBuilder.Entity<LeaveRequest>()
+            .Property(x => x.LeaveStatusGroup)
+            .HasComputedColumnSql("CAST('LEAVE_STATUS' AS NVARCHAR(50))", stored: true);
+
+        modelBuilder.Entity<AttendanceRegularization>()
+            .Property(x => x.RegularizationStatusGroup)
+            .HasComputedColumnSql("CAST('ATTENDANCE_REGULARIZATION_STATUS' AS NVARCHAR(50))", stored: true);
+
+        modelBuilder.Entity<ShiftSwapRequest>()
+            .Property(x => x.ShiftSwapStatusGroup)
+            .HasComputedColumnSql("CAST('SHIFT_SWAP_STATUS' AS NVARCHAR(50))", stored: true);
+
+        modelBuilder.Entity<EmployeeRosterGenerationTracker>()
+            .Property(x => x.GenerationTypeGroup)
+            .HasComputedColumnSql("CAST('ROSTER_GENERATION_TYPE' AS NVARCHAR(50))", stored: true);
+
+        modelBuilder.Entity<LeaveBalance>()
+            .Property(x => x.ClosingBalance)
+            .HasComputedColumnSql("(OpeningBalance + Allocated + CarryForward - Availed - Encashed)", stored: false);
+
+        modelBuilder.Entity<CompOffBalance>()
+            .Property(x => x.RemainingDays)
+            .HasComputedColumnSql("(TotalDays - AvailedDays)", stored: false);
+
+        modelBuilder.Entity<OutboxMessage>()
+            .ToTable("OutboxMessages", "attendance");
+    }
+}
 ```
 
-### Repositories
-
-Generate one repository per entity following the pattern:
+### Repository Interface Pattern
 
 ```csharp
-// Interface in Domain/Interfaces/
+// Domain/Interfaces/ILeaveRequestRepository.cs
+namespace SdxCore.Attendance.Domain.Interfaces;
+
 public interface ILeaveRequestRepository
 {
     Task<LeaveRequest?> GetByIdAsync(Guid id, CancellationToken ct);
-    Task<(IEnumerable<LeaveRequest> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, Guid? employeeId, string? status, CancellationToken ct);
+    Task<(IEnumerable<LeaveRequest> Items, int TotalCount)> GetPagedAsync(
+        int page, int pageSize, Guid? employeeId, string? status, CancellationToken ct);
     Task<LeaveRequest?> GetByWorkflowInstanceIdAsync(Guid workflowInstanceId, CancellationToken ct);
     Task<IEnumerable<LeaveRequest>> GetByEmployeeAsync(Guid employeeId, CancellationToken ct);
+    Task<LeaveRequest?> GetApprovedLeaveForDateAsync(Guid employeeId, DateOnly date, CancellationToken ct);
     Task<LeaveRequest> AddAsync(LeaveRequest entity, CancellationToken ct);
     void Update(LeaveRequest entity);
     Task<int> SaveChangesAsync(CancellationToken ct);
 }
-
 // Implementation extends BaseRepository<LeaveRequest, Guid, AttendanceDbContext>
-```
-
-### Outbox Repository
-
-```csharp
-// SdxCore.Attendance.Persistence.Repositories.OutboxRepository
-// Extends OutboxRepository<AttendanceDbContext>
-// Implements IOutboxRepository
-```
-
----
-
-## External Service Calls
-
-### Employee Service
-
-Called via HTTP client (`HttpClient` named `"employee"`):
-
-| Purpose | Endpoint | When Used |
-|---|---|---|
-| Get employee summary (org data) | `GET /api/v1/employees/{id}/summary` | Shift/Holiday resolution, Roster generation |
-| Get employees by designation in scope | `GET /api/v1/employees/by-designation?designationIds=&scopeTypeId=&scopeReferenceId=` | Workflow approver resolution |
-
-```csharp
-// SdxCore.Attendance.Application.Services.EmployeeHttpClient
-public interface IEmployeeHttpClient
-{
-    Task<EmployeeSummaryResponse?> GetSummaryAsync(Guid employeeId, CancellationToken ct);
-    Task<IEnumerable<EmployeesByDesignationResponse>> GetByDesignationInScopeAsync(List<short> designationIds, short? scopeTypeId, int? scopeReferenceId, CancellationToken ct);
-}
-```
-
-### Time Service
-
-Called via HTTP client (`HttpClient` named `"time"`):
-
-| Purpose | Endpoint | When Used |
-|---|---|---|
-| Get scope types | `GET /api/v1/scope-types` | Shift/Holiday/WorkWeek resolution |
-| Get designations | `GET /api/v1/designations` | Approver resolution |
-
----
-
-## Scope Resolution Pattern
-
-Used for resolving shift, holiday calendar, and work week policy for an employee. Same hierarchy as Workflow service:
-
-```
-EMPLOYEE (7) → TEAM (6) → DEPARTMENT (5) → OFFICE (4) → LEGAL_ENTITY (3) → COUNTRY (2) → GLOBAL (1)
-```
-
-Walk from most specific to most general; return first match by `PriorityOrder`.
-
-```csharp
-// SdxCore.Attendance.Application.Services.ScopeResolutionService
-public interface IScopeResolutionService
-{
-    Task<Shift?> ResolveShiftAsync(EmployeeSummaryResponse employee, DateOnly date, CancellationToken ct);
-    Task<HolidayCalendar?> ResolveHolidayCalendarAsync(EmployeeSummaryResponse employee, CancellationToken ct);
-    Task<WorkWeekPolicy?> ResolveWorkWeekPolicyAsync(EmployeeSummaryResponse employee, DateOnly date, CancellationToken ct);
-}
-```
-
----
-
-## Roster Generation Logic
-
-The `GenerateRosterAsync` method creates `EmployeeShiftRoster` records for a date range:
-
-```
-For each employee in scope, for each date in range:
-  1. Check EmployeeRosterGenerationTracker — skip if already locked
-  2. Determine if date is a holiday → IsHoliday = true, ShiftId = null
-  3. Determine if date is a weekly off (from WorkWeekPolicy) → IsOffDay = true, ShiftId = null
-  4. Resolve applicable Shift via ShiftAssignment scope hierarchy
-     OR check RotationShiftAssignment → derive shift from rotation cycle day
-  5. Create/Update EmployeeShiftRoster record
-  6. Update EmployeeRosterGenerationTracker
-```
-
-Generation types: `SHIFT` (standard), `ROTATION` (rotation-based), `MANUAL` (individual override).
-
----
-
-## Attendance Processing Logic
-
-`ProcessDailyAsync(DateOnly date)` runs as a background job:
-
-```
-For each employee with a roster on the given date:
-  1. Get EmployeeShiftRoster → get ShiftId, PlannedStartTime, IsOffDay, IsHoliday
-  2. Get WorkSession records for that day (CheckIn/CheckOut)
-  3. Calculate WorkedMinutes, LateByMinutes, EarlyExitMinutes, OvertimeMinutes
-  4. Determine AttendanceStatus:
-     - No check-in + working day → ABSENT
-     - On approved leave → LEAVE
-     - Weekly off → WEEKLY_OFF
-     - Holiday → HOLIDAY
-     - Check-in exists → PRESENT (or LATE_ARRIVAL based on grace)
-  5. Upsert AttendanceRecord
+// NEVER call SaveChangesAsync inside repository
 ```
 
 ---
 
 ## DI Registration
 
-### Program.cs
-
 ```csharp
-// DbContext
+// Program.cs
+
+builder.Services.AddSingleton<OutboxSaveChangesInterceptor>();
+builder.Services.AddSingleton<AttendanceWorkflowOutboxInterceptor>();
+builder.Services.AddTransient<InternalApiKeyHandler>();
+
 builder.Services.AddDbContext<AttendanceDbContext>((sp, options) =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("AttendanceDb"),
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("AttendanceDb"),
         sql => sql.EnableRetryOnFailure(3));
     options.AddInterceptors(
         sp.GetRequiredService<OutboxSaveChangesInterceptor>(),
@@ -750,45 +1318,207 @@ builder.Services.AddDbContext<AttendanceDbContext>((sp, options) =>
 });
 
 // Repositories
-builder.Services.AddScoped<ILeaveRequestRepository, LeaveRequestRepository>();
-builder.Services.AddScoped<IAttendanceRecordRepository, AttendanceRecordRepository>();
-builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
-builder.Services.AddScoped<IRosterRepository, RosterRepository>();
-builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
-builder.Services.AddScoped<IShiftSwapRepository, ShiftSwapRepository>();
-builder.Services.AddScoped<ICompOffRepository, CompOffRepository>();
-builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
-
-// Interceptors (singleton — no scoped dependencies)
-builder.Services.AddSingleton<OutboxSaveChangesInterceptor>();
-builder.Services.AddSingleton<AttendanceWorkflowOutboxInterceptor>();
+builder.Services.AddScoped<ILeaveRequestRepository,               LeaveRequestRepository>();
+builder.Services.AddScoped<ILeaveBalanceRepository,               LeaveBalanceRepository>();
+builder.Services.AddScoped<ILeaveTypeRepository,                  LeaveTypeRepository>();
+builder.Services.AddScoped<IAttendanceRecordRepository,           AttendanceRecordRepository>();
+builder.Services.AddScoped<IAttendanceLogRepository,              AttendanceLogRepository>();
+builder.Services.AddScoped<IWorkSessionRepository,                WorkSessionRepository>();
+builder.Services.AddScoped<IShiftRepository,                      ShiftRepository>();
+builder.Services.AddScoped<IShiftAssignmentRepository,            ShiftAssignmentRepository>();
+builder.Services.AddScoped<IRosterRepository,                     RosterRepository>();
+builder.Services.AddScoped<IRosterTrackerRepository,              RosterTrackerRepository>();
+builder.Services.AddScoped<IRotationShiftRepository,              RotationShiftRepository>();
+builder.Services.AddScoped<IRotationAssignmentRepository,         RotationAssignmentRepository>();
+builder.Services.AddScoped<IHolidayRepository,                   HolidayRepository>();
+builder.Services.AddScoped<IHolidayCalendarRepository,           HolidayCalendarRepository>();
+builder.Services.AddScoped<IHolidayAssignmentRepository,         HolidayAssignmentRepository>();
+builder.Services.AddScoped<IWorkWeekPolicyRepository,            WorkWeekPolicyRepository>();
+builder.Services.AddScoped<IWorkWeekPolicyAssignmentRepository,  WorkWeekPolicyAssignmentRepository>();
+builder.Services.AddScoped<IShiftSwapRepository,                 ShiftSwapRepository>();
+builder.Services.AddScoped<ICompOffRepository,                   CompOffRepository>();
+builder.Services.AddScoped<IAttendanceRegularizationRepository,  AttendanceRegularizationRepository>();
+builder.Services.AddScoped<IAttendanceStatusRepository,          AttendanceStatusRepository>();
+builder.Services.AddScoped<IOutboxRepository,                    OutboxRepository>();
 
 // Application services
-builder.Services.AddScoped<ILeaveService, LeaveService>();
-builder.Services.AddScoped<IAttendanceService, AttendanceService>();
-builder.Services.AddScoped<IShiftService, ShiftService>();
-builder.Services.AddScoped<IRosterService, RosterService>();
-builder.Services.AddScoped<IHolidayService, HolidayService>();
-builder.Services.AddScoped<IShiftSwapService, ShiftSwapService>();
-builder.Services.AddScoped<ICompOffService, CompOffService>();
+builder.Services.AddScoped<ILeaveService,           LeaveService>();
+builder.Services.AddScoped<IAttendanceService,      AttendanceService>();
+builder.Services.AddScoped<IShiftService,           ShiftService>();
+builder.Services.AddScoped<IRosterService,          RosterService>();
+builder.Services.AddScoped<IHolidayService,         HolidayService>();
+builder.Services.AddScoped<IShiftSwapService,       ShiftSwapService>();
+builder.Services.AddScoped<ICompOffService,         CompOffService>();
 builder.Services.AddScoped<IScopeResolutionService, ScopeResolutionService>();
 
+// Validators — registered automatically via FluentValidation assembly scan:
+builder.Services.AddValidatorsFromAssemblyContaining<CreateLeaveRequestRequestValidator>();
+
 // HTTP clients
-builder.Services.AddHttpClient<IEmployeeHttpClient, EmployeeHttpClient>(c =>
-    c.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Employee"]!));
-builder.Services.AddHttpClient<ITimeHttpClient, TimeHttpClient>(c =>
-    c.BaseAddress = new Uri(builder.Configuration["ServiceUrls:Time"]!));
+services.AddHttpClient<IEmployeeClient, EmployeeClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<ClientOptions>>().Value;
+    HttpClientConfigurator.Configure(client, options);
+})
+.AddHttpMessageHandler<InternalApiKeyHandler>();
+
+services.AddHttpClient<ITimeClient, TimeClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<ClientOptions>>().Value;
+    HttpClientConfigurator.Configure(client, options);
+})
+.AddHttpMessageHandler<InternalApiKeyHandler>();
 
 // Caching
-builder.Services.AddScoped<ICacheService, RedisCacheService>();
-builder.Services.AddScoped<ICacheKeyBuilder, CacheKeyBuilder>();
+// Register Caching
+builder.Services.AddSdxCoreCaching(builder.Configuration);
 
-// Messaging (includes OutboxProcessorBackgroundService)
+// Messaging — auto-registers OutboxProcessorBackgroundService
 builder.Services.AddSdxCoreAttendanceMessaging(builder.Configuration);
 
-// Middleware
 app.UseMiddleware<AttendanceExceptionMiddleware>();
 app.MapControllers();
+```
+### Employee Client
+
+```csharp
+using SdxCore.Attendance.Application.DTOs.Employee;
+
+namespace SdxCore.Attendance.Application.Abstractions.Clients;
+public interface IEmployeeClient
+{
+    Task<EmployeeSummaryResponse?> GetEmployeeeSummaryByIdAsync(Guid id, CancellationToken cancellationToken = default!);
+
+    Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(IEnumerable<Guid> designationIds, string? scopeCode,
+    Guid? scopeReferenceId, CancellationToken cancellationToken);
+}
+
+using Microsoft.AspNetCore.WebUtilities;
+using SdxCore.Common.Models;
+using SdxCore.Attendace.Application.Abstractions.Clients;
+using SdxCore.Attendace.Application.DTOs.Employee;
+using System.Net.Http.Json;
+
+namespace SdxCore.Attendace.Application.Clients;
+public class EmployeeClient : IEmployeeClient
+{
+    private readonly HttpClient _httpClient;
+
+    public EmployeeClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<EmployeeSummaryResponse?> GetEmployeeeSummaryByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default!)
+    {
+        var employee = await _httpClient.GetFromJsonAsync<EmployeeSummaryResponse>(
+           $"api/v1/employees/{id}/summary",
+           cancellationToken);
+
+        return employee;
+    }
+
+    public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
+            IEnumerable<Guid> designationIds,
+            string? scopeCode,
+            Guid? scopeReferenceId,
+            CancellationToken cancellationToken)
+    {
+        var queryParams = new List<KeyValuePair<string, string>>();
+
+        foreach (var designationId in designationIds)
+        {
+            queryParams.Add(new("designationIds", designationId.ToString()));
+        }
+
+        if (scopeCode is not null)
+        {
+            queryParams.Add(new("scopeCode", scopeCode));
+        }
+
+        if (scopeReferenceId.HasValue)
+            queryParams.Add(new("scopeReferenceId", scopeReferenceId.Value.ToString()));
+
+        var url = QueryHelpers.AddQueryString(
+            "api/v1/employees/by-designation",
+            queryParams!);
+
+        var response = await _httpClient.GetFromJsonAsync<
+            ApiResponse<IEnumerable<EmployeesByDesignationResponse>>>(
+            url,
+            cancellationToken);
+
+        return response?.Data ?? Enumerable.Empty<EmployeesByDesignationResponse>();
+    }
+}
+```
+
+### Time Client
+```csharp
+using SdxCore.Attendance.Application.DTOs.Time;
+
+namespace SdxCore.Attendance.Application.Abstractions.Clients;
+public interface ITimeClient
+{
+    Task<IEnumerable<ScopeTypeResponse>> GetAllScopeTypeAsync(CancellationToken cancellationToken = default!);
+}
+
+using MassTransit.Middleware;
+using SdxCore.Attendance.Application.Abstractions.Clients;
+using SdxCore.Attendance.Application.DTOs.Time;
+using System.Net.Http.Json;
+
+namespace SdxCore.Attendance.Application.Clients;
+public class TimeClient : ITimeClient
+{
+    private readonly HttpClient _httpClient;
+
+    public TimeClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<IEnumerable<ScopeTypeResponse>> GetAllScopeTypeAsync(CancellationToken cancellationToken = default!)
+    {
+        var scopeTypes = await _httpClient.GetFromJsonAsync<IEnumerable<ScopeTypeResponse>>(
+            $"api/v1/scope-types",
+            cancellationToken);
+
+        return scopeTypes ?? Enumerable.Empty<ScopeTypeResponse>();
+    }
+}
+```
+
+
+### Messaging Extension
+
+```csharp
+
+
+// Application/Extensions/ServiceCollectionExtensions.cs
+namespace SdxCore.Attendance.Application.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddSdxCoreWorkflowMessaging(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        string serviceName = configuration["ServiceName"]?.ToLowerInvariant() ?? "attendance";
+
+        services.AddSdxMessaging(
+            configuration,
+            endpointPrefix: serviceName,
+            configureBus =>
+            {
+                configureBus.AddConsumer<WorkflowInstanceStatusChangedConsumer>();
+            });
+
+        return services;
+    }
+}
 ```
 
 ---
@@ -798,29 +1528,43 @@ app.MapControllers();
 ```json
 {
   "ServiceName": "attendance",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
   "ConnectionStrings": {
-    "AttendanceDb": "Server=.;Database=SdxCoreDb;Trusted_Connection=True;"
+    "DefaultConnection": "Server=localhost,1434;Database=SdxCore;User Id=sa;Password=Office.1234!;TrustServerCertificate=True;MultipleActiveResultSets=true"
   },
-  "ServiceUrls": {
-    "Employee": "http://employee-service",
-    "Time":     "http://time-service",
-    "Workflow": "http://workflow-service"
-  },
-  "RabbitMq": {
-    "Host":     "localhost",
-    "Username": "guest",
-    "Password": "guest"
-  },
-  "Redis": {
-    "ConnectionString": "localhost:6379"
+  "Authentication": {
+    "InternalApiKey": "Gateway-Internal-Key-2024-SecureToken-DoNotExpose"
   },
   "OutboxSettings": {
-    "BatchSize":             50,
-    "MaxRetries":            3,
+    "BatchSize": 50,
+    "MaxRetries": 3,
     "PollingIntervalSeconds": 5
   },
-  "Gateway": {
-    "InternalApiKey": "your-internal-key"
+  "Redis": {
+    "ConnectionString": "localhost:6379,password=redis.1234",
+    "InstanceName": "sdxcore:attendance:"
+  },
+  "RabbitMQ": {
+    "Host": "localhost",
+    "Port": 5672,
+    "VirtualHost": "sdxcore",
+    "Username": "sdxcore",
+    "Password": "sdxcore_secret"
+  },
+  "TimeClient": {
+    "BaseUrl": "https://localhost:7003/",
+    "TimeoutSeconds": 10
+  },
+  "EmployeeClient": {
+    "BaseUrl": "https://localhost:7005/",
+    "TimeoutSeconds": 10
   }
 }
 ```
@@ -829,63 +1573,98 @@ app.MapControllers();
 
 ## Code Generation Rules
 
-Follow these rules exactly when generating code:
-
-1. **One class per file** — never put multiple classes in one `.cs` file.
-2. **Primary constructors** — use C# 12 primary constructors where practical.
-3. **No magic strings** — use constants from the status classes above.
-4. **No SaveChangesAsync in repositories** — repositories only call `AddAsync` / `Update` / `Remove`. Unit of work (`SaveChangesAsync`) is called in Application services.
-5. **Single SaveChangesAsync per service method** — stage all changes, then one commit at the end.
-6. **Outbox interceptor does NOT call SaveChangesAsync** — it stages outbox messages; the service owns the single commit.
-7. **Computed columns in EF**: `.HasComputedColumnSql("...", stored: true)` — never write to these.
-8. **All controllers use `[GatewayOnly]`** and inherit `SdxControllerBase`.
-9. **All IDs are `Guid`** — never `int` or `short` for attendance entities.
-10. **Caching**: Use `ICacheService.GetOrSetAsync` for all read operations in Application services. Cache keys via `ICacheKeyBuilder.BuildKey(entityName, id)`.
-11. **Exception middleware** — catch domain exceptions and return structured `ApiResponse<T>`.
-12. **Never reference Workflow DbContext directly** — communicate only via RabbitMQ events.
-13. **Never reference Employee/Time DbContext directly** — communicate only via HTTP clients.
-14. **WorkflowInstanceId is nullable** — not all leave types require approval (`LeaveType.RequiresApproval`).
+1. **One class per file.**
+2. **C# 12 primary constructors** where practical.
+3. **No magic strings** — use constants from `SdxCore.Common.Enum.Attendance.*`.
+4. **No `SaveChangesAsync` in repositories** — only `AddAsync`, `Update`, `Remove`.
+5. **Single `SaveChangesAsync` per service method** — stage all, one commit at end.
+6. **Outbox interceptors do NOT call `SaveChangesAsync`** — caller commits.
+7. **Computed columns** — `.HasComputedColumnSql(...)`. Never assign to computed properties.
+8. **All controllers** — inherit `SdxControllerBase`, `[GatewayOnly]`, use `IRequestContext`.
+9. **All PKs are `Guid`.**
+10. **Caching** — `ICacheService.GetOrSetAsync` for reads. `ICacheKeyBuilder.BuildKey(entity, id)`. Invalidate on write.
+11. **All DTO↔Entity mapping** via `PropertyMapper.Map<TSource, TDest>()`. No manual mapping.
+12. **DTOs** grouped as `Application/DTOs/{EntityName}/Request/` and `.../Response/`.
+13. **Validators** — one file per request DTO in `Application/Validators/{EntityName}/`.
+14. **Service interface namespace** — `SdxCore.Attendance.Application.Abstractions.Services`.
+15. **Domain service interface namespace** — `SdxCore.Attendance.Domain.Abstractions.Services`.
+16. **Never reference Workflow/Employee/Time DbContext** — HTTP for sync, RabbitMQ for async.
+17. **`WorkflowInstanceId` is nullable** — only set when `LeaveType.RequiresApproval = true`.
+18. **`IsLocked=true` protection** — never overwrite unless `ForceRegenerate=true`.
+19. **Night shift** — attendance credited to the date shift STARTED.
+20. **Consumers must be idempotent.** Always re-throw exceptions.
 
 ---
 
-## Integration Summary Diagram
+## Complete Integration Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    SdxCore.Attendance                           │
-│                                                                 │
-│  LeaveService.SubmitAsync()                                     │
-│    → AttendanceWorkflowOutboxInterceptor                        │
-│    → attendance.OutboxMessages (LeaveRequestSubmittedEvent)     │
-│    → OutboxProcessorBackgroundService                           │
-│    → RabbitMQ ──────────────────────────────────────────────►  │
-│                                                                 │
-│  WorkflowInstanceStatusChangedConsumer                          │
-│  ◄──────────────────────────────────────────  RabbitMQ          │
-│    → LeaveService.UpdateStatusFromWorkflowAsync()               │
-│    → LeaveRequest.LeaveStatus = "APPROVED"                      │
-│    → AttendanceDbContext.SaveChangesAsync()                     │
-└─────────────────────────────────────────────────────────────────┘
-         │ HTTP                              │ HTTP
-         ▼                                  ▼
-┌──────────────────┐              ┌──────────────────────┐
-│ Employee Service │              │    Time Service       │
-│                  │              │                      │
-│ GET /summary     │              │ GET /scope-types     │
-│ GET /by-desig.   │              │ GET /designations    │
-└──────────────────┘              └──────────────────────┘
+Admin/HR              SdxCore.Attendance               SdxCore.Workflow
+─────────            ────────────────────             ────────────────────
 
-         │ RabbitMQ Events
-         ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    SdxCore.Workflow                              │
-│                                                                  │
-│  LeaveRequestSubmittedConsumer                                   │
-│    → ResolveWorkflowDefinitionAsync(moduleCode, workflowCode,    │
-│                                     employeeSummary, scopeTypes) │
-│    → WorkflowEngine.SubmitAsync()                                │
-│    → Creates WorkflowInstance + WorkflowTasks                    │
-│    → workflow.OutboxMessages (WorkflowInstanceStatusChangedEvent)│
-│    → OutboxProcessorBackgroundService → RabbitMQ → Attendance   │
-└──────────────────────────────────────────────────────────────────┘
+POST /rosters/upload  RosterService.UploadAsync()
+(bi-weekly CSV)        → EmployeeShiftRoster (IsLocked=true)
+                       → Tracker (WEEKLY/ADHOC)
+                       → SaveChangesAsync() ✓
+
+POST /rosters/generate RosterService.GenerateAsync()
+(monthly job)          → employeeHttpClient.GetSummaryAsync()       ──HTTP──► Employee
+                       → ResolveHolidaysAsync()   ──────────────────────────────────────
+                       → ResolveWorkWeekPolicyAsync()
+                       → ResolveRotationAssignment OR ResolveShift
+                       → EmployeeShiftRoster rows (skip IsLocked=true)
+                       → Tracker (MONTHLY)
+                       → SaveChangesAsync() ✓
+
+POST /leaves          LeaveService.SubmitAsync()
+(employee submits)     → leaveRequestRepo.AddAsync()                 [staged]
+                       → AttendanceWorkflowOutboxInterceptor
+                            → OutboxMessage{LeaveRequestSubmittedEvent} [staged]
+                       → SaveChangesAsync() ✓ [single commit]
+                       → OutboxProcessorBackgroundService
+                       → RabbitMQ ──────────────────────────────────►
+                                                   LeaveRequestSubmittedConsumer
+                                                     → WorkflowEngine.SubmitAsync()
+                                                     → WorkflowInstance + Tasks created
+                                                     → OutboxMessage{StatusChangedEvent}
+                                                     → SaveChangesAsync() ✓
+                                                     → OutboxProcessorBackgroundService
+                       ◄────────────────────────── RabbitMQ (status_changed: IN_PROGRESS)
+WorkflowInstanceStatusChangedConsumer
+  → leaveService.UpdateStatusFromWorkflowAsync()
+  → LeaveRequest.LeaveStatus = "IN_PROGRESS"
+  → SaveChangesAsync() ✓
+
+(Approver approves)                                  WorkflowEngine.ProcessApproveAsync()
+                                                       → OutboxMessage{StatusChangedEvent: APPROVED}
+                                                       → SaveChangesAsync() ✓
+                       ◄────────────────────────── RabbitMQ (status_changed: APPROVED)
+WorkflowInstanceStatusChangedConsumer
+  → LeaveRequest.LeaveStatus = "APPROVED"
+  → ApprovedBy = actionBy, ApprovedAt = now
+  → SaveChangesAsync() ✓
+
+ProcessDailyAsync()   AttendanceService.ProcessDailyAsync()
+(cron 00:30)           → Get all EmployeeShiftRoster rows for date
+                       → For each employee:
+                            CheckApprovedLeave → IsOnLeave?
+                            GetWorkSession     → CheckIn/CheckOut?
+                            CalculateAttendance:
+                              IsHoliday  → HOLIDAY
+                              IsOffDay   → WEEKEND
+                              OnLeave    → ON_LEAVE
+                              NoCheckIn  → ABSENT
+                              Worked<half→ ABSENT/HALF_DAY
+                              Late       → LATE
+                              else       → PRESENT
+                       → Upsert AttendanceRecord
+                       → SaveChangesAsync() ✓ [bulk]
+
+                      Employee Service             Time Service
+                      ────────────────             ────────────
+                       ◄── HTTP GET /employees/{id}/summary
+                           returns: deptId, teamId, locationId,
+                                    managerId, designationId
+                                                    ◄── HTTP GET /api/v1/scope-types
+                                                        returns: hierarchy levels
 ```

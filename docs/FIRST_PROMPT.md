@@ -66,3 +66,16 @@ Also include plan for updating:
 * Gateway appsettings
 * Employee Microservice appsettings
 ```
+
+```
+Create a new Attendance Microservice following the same architecture, coding standards, naming conventions, folder structure, and design patterns used across the existing projects in the solution.
+
+Requirements:
+
+Set up the complete microservice structure aligned with the established project standards.
+Generate all Domain Entities in the Domain layer based on the attendance schema.
+Create corresponding Persistence/Data Entities in the Persistence project using Entity Framework Core.
+Configure entity mappings, relationships, keys, constraints, and navigation properties according to the schema.
+
+src\Database\Base\schema\05-attendance.sql
+```

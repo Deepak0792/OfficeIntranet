@@ -461,43 +461,6 @@ CREATE INDEX IX_EventFeedbackAnswer_Question ON event.EventFeedbackAnswer(Questi
 GO
 
 
--- BIRTHDAY & ANNIVERSARY STATUS CODES
-
--- Celebration Type
-IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'BIRTHDAY' AND StatusGroup = 'CELEBRATION_TYPE')
-BEGIN
-    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
-    VALUES
-    ('BIRTHDAY', 'CELEBRATION_TYPE', 'Birthday', 'Employee birthday celebration', 1, 0),
-    ('WORK_ANNIVERSARY', 'CELEBRATION_TYPE', 'Work Anniversary', 'Work anniversary celebration', 2, 0);
-END
-GO
-
--- Greeting Status
-IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'GENERATED' AND StatusGroup = 'GREETING_STATUS')
-BEGIN
-    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
-    VALUES
-    ('GENERATED', 'GREETING_STATUS', 'Generated', 'Greeting card generated', 1, 0),
-    ('SENT', 'GREETING_STATUS', 'Sent', 'Greeting sent successfully', 2, 0),
-    ('VIEWED', 'GREETING_STATUS', 'Viewed', 'Greeting viewed by recipient', 3, 1),
-    ('FAILED', 'GREETING_STATUS', 'Failed', 'Failed to send greeting', 4, 1);
-END
-GO
-
--- Reaction Type
-IF NOT EXISTS (SELECT 1 FROM shared.StatusLookup WHERE StatusCode = 'LIKE' AND StatusGroup = 'REACTION_TYPE')
-BEGIN
-    INSERT INTO shared.StatusLookup (StatusCode, StatusGroup, Label, Description, DisplayOrder, IsTerminal)
-    VALUES
-    ('LIKE', 'REACTION_TYPE', 'Like', 'Like the celebration', 1, 0),
-    ('LOVE', 'REACTION_TYPE', 'Love', 'Love the celebration', 2, 0),
-    ('CELEBRATE', 'REACTION_TYPE', 'Celebrate', 'Celebrate achievement', 3, 0),
-    ('CONGRATS', 'REACTION_TYPE', 'Congrats', 'Congratulations', 4, 0),
-    ('FIRE', 'REACTION_TYPE', 'Fire', 'On fire!', 5, 0),
-    ('PARTY', 'REACTION_TYPE', 'Party', 'Party time!', 6, 0);
-END
-GO
 
 
 -- CELEBRATION SCHEDULE - Daily schedule for birthdays and anniversaries
@@ -819,22 +782,6 @@ CREATE INDEX IX_BirthdayWallPost_Featured ON event.BirthdayWallPost(IsFeatured, 
 -- EmployeeBadge indexes
 CREATE INDEX IX_EmployeeBadge_Employee ON event.EmployeeBadge(EmployeeId);
 CREATE INDEX IX_EmployeeBadge_Badge ON event.EmployeeBadge(BadgeId);
-GO
-
-
--- SEED DEFAULT MILESTONE BADGES
-IF NOT EXISTS (SELECT 1 FROM event.MilestoneBadge WHERE BadgeCode = 'ONE_YEAR')
-BEGIN
-    INSERT INTO event.MilestoneBadge (Id, BadgeCode, BadgeName, Description, YearsRequired, IconUrl, BadgeColor)
-    VALUES
-    (NEWID(), 'ONE_YEAR', 'First Year', 'Completed 1 year at company', 1, NULL, '#CD7F32'),
-    (NEWID(), 'THREE_YEARS', 'Three Year Club', 'Completed 3 years at company', 3, NULL, '#C0C0C0'),
-    (NEWID(), 'FIVE_YEARS', 'Five Year Veteran', 'Completed 5 years at company', 5, NULL, '#FFD700'),
-    (NEWID(), 'SEVEN_YEARS', 'Seven Year Champion', 'Completed 7 years at company', 7, NULL, '#E5E4E2'),
-    (NEWID(), 'TEN_YEARS', 'Decade Master', 'Completed 10 years at company', 10, NULL, '#9966CC'),
-    (NEWID(), 'FIFTEEN_YEARS', 'Fifteen Year Legend', 'Completed 15 years at company', 15, NULL, '#333399'),
-    (NEWID(), 'TWENTY_YEARS', 'Twenty Year Icon', 'Completed 20 years at company', 20, NULL, '#FFD700');
-END
 GO
 
 PRINT 'Event schema created successfully';
