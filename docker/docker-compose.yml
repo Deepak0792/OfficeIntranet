@@ -378,6 +378,39 @@ services:
       retries: 3
       start_period: 20s
 
+  attendance-api:
+    build:
+      context: ..
+      dockerfile: src/Services/Attendance/SdxCore.Attendance.API/Dockerfile
+    container_name: sdxcore-attendance-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=SdxCore;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Authentication__InternalApiKey=${AUTH_GATEWAY_INTERNAL_API_KEY}
+      - Redis__ConnectionString=redis:6379
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__VirtualHost=sdxcore
+      - RabbitMQ__Username=${RABBITMQ_DEFAULT_USER:-sdxcore}
+      - RabbitMQ__Password=${RABBITMQ_DEFAULT_PASS:-sdxcore_secret}
+    ports:
+      - "5007:80"
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sdxcore-network
+    healthcheck:
+      test: curl --fail http://localhost:80/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
 volumes:
   sql-server-data:
     driver: local
