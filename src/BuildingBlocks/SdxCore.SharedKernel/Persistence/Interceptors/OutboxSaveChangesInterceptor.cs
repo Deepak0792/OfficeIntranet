@@ -88,6 +88,7 @@ public sealed class OutboxSaveChangesInterceptor : SaveChangesInterceptor
                 RoutingKey = $"sdxcore.events.{entity.GetType().Name.ToLower()}",
                 Status = OutboxStatus.Pending,
                 StatusGroup = "OUTBOX_STATUS",
+
                 IsActive = true,
                 RetryCount = 0,
                 CreatedAt = DateTime.UtcNow,

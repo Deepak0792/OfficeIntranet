@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SdxCore.Attendance.Domain\SdxCore.Attendance.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.SharedKernel\SdxCore.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Caching\SdxCore.Caching.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Messaging\SdxCore.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SdxCore.Common\SdxCore.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="9.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

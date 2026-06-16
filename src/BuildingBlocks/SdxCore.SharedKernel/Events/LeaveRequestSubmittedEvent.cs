@@ -8,9 +8,8 @@ public record LeaveRequestSubmittedEvent(
     Guid LeaveRequestId,
     Guid EmployeeId,
     string LeaveTypeCode,     // e.g. "ANNUAL", "SICK", "EMERGENCY"
-    string WorkflowCode,      // e.g. "STANDARD_LEAVE_V1", "EMERGENCY_LEAVE_V1"
     string ModuleCode,        // always "LEAVE_REQUEST"
-    DateOnly StartDate,
-    DateOnly EndDate,
+    DateOnly FromDate,
+    DateOnly ToDate,
     string? Remarks,
     DateTime CreatedAt);
