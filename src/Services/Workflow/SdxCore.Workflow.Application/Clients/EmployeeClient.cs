@@ -1,47 +1,49 @@
 ﻿using Microsoft.AspNetCore.WebUtilities;
-using SdxCore.Common.Models;
 using SdxCore.Workflow.Application.Abstractions.Clients;
 using SdxCore.Workflow.Application.DTOs.Employee;
-using System.Net.Http.Json;
 
 namespace SdxCore.Workflow.Application.Clients;
-public class EmployeeClient : IEmployeeClient
+
+public class EmployeeClient(HttpClient httpClient) : IEmployeeClient
 {
-    private readonly HttpClient _httpClient;
-
-    public EmployeeClient(HttpClient httpClient)
+    public async Task<EmployeeSummaryResponse?> GetEmployeeSummaryByIdAsync(
+    Guid id,
+    CancellationToken cancellationToken = default)
     {
-        _httpClient = httpClient;
+        var response = await httpClient.GetAsync(
+            $"api/v1/employees/{id}/summary",
+            cancellationToken);
+
+        return await response.ReadApiResponseAsync<EmployeeSummaryResponse>(
+            cancellationToken);
+    }
+    public async Task<IReadOnlyList<EmployeeSummaryResponse>> GetEmployeesAsync(
+    bool isActive = true,
+    CancellationToken cancellationToken = default)
+    {
+        var response = await httpClient.GetAsync(
+            $"api/v1/employees/active?isActive={isActive}",
+            cancellationToken);
+
+        return await response.ReadApiResponseAsync<List<EmployeeSummaryResponse>>(
+                   cancellationToken)
+               ?? [];
     }
 
-    public async Task<EmployeeSummaryResponse?> GetEmployeeeSummaryByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default!)
-    {
-        var employee = await _httpClient.GetFromJsonAsync<EmployeeSummaryResponse>(
-           $"api/v1/employees/{id}/summary",
-           cancellationToken);
-
-        return employee;
-    }
-
-    public async Task<IEnumerable<EmployeesByDesignationResponse>> GetEmployeesByDesignationInScopeAsync(
-            IEnumerable<Guid> designationIds,
-            string? scopeCode,
-            Guid? scopeReferenceId,
-            CancellationToken cancellationToken)
+    public async Task<IEnumerable<EmployeesByDesignationResponse>>
+     GetEmployeesByDesignationInScopeAsync(
+         IEnumerable<Guid> designationIds,
+         string? scopeCode,
+         Guid? scopeReferenceId,
+         CancellationToken cancellationToken = default)
     {
         var queryParams = new List<KeyValuePair<string, string>>();
 
-        foreach (var designationId in designationIds)
-        {
-            queryParams.Add(new("designationIds", designationId.ToString()));
-        }
+        foreach (var id in designationIds)
+            queryParams.Add(new("designationIds", id.ToString()));
 
-        if (scopeCode is not null)
-        {
+        if (!string.IsNullOrWhiteSpace(scopeCode))
             queryParams.Add(new("scopeCode", scopeCode));
-        }
 
         if (scopeReferenceId.HasValue)
             queryParams.Add(new("scopeReferenceId", scopeReferenceId.Value.ToString()));
@@ -50,11 +52,11 @@ public class EmployeeClient : IEmployeeClient
             "api/v1/employees/by-designation",
             queryParams!);
 
-        var response = await _httpClient.GetFromJsonAsync<
-            ApiResponse<IEnumerable<EmployeesByDesignationResponse>>>(
-            url,
-            cancellationToken);
+        var response = await httpClient.GetAsync(url, cancellationToken);
 
-        return response?.Data ?? Enumerable.Empty<EmployeesByDesignationResponse>();
+        return await response.ReadApiResponseAsync<
+            IEnumerable<EmployeesByDesignationResponse>>(
+            cancellationToken)
+            ?? [];
     }
 }

@@ -2,9 +2,11 @@ using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Attendance.Application.Abstractions.Clients;
+using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.Clients;
 using SdxCore.Attendance.Application.Consumers;
+using SdxCore.Attendance.Application.Resolvers;
 using SdxCore.Attendance.Application.Services;
 using SdxCore.Attendance.Application.Validators.Leave;
 using SdxCore.Messaging.BackgroundServices;
@@ -27,6 +29,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IShiftSwapService, ShiftSwapService>();
         services.AddScoped<ICompOffService, CompOffService>();
 
+        services.AddScoped<IEmployeeResolver, EmployeeResolver>();
+        services.AddScoped<ILeaveTypeResolver, LeaveTypeResolver>();
+        services.AddScoped<IShiftResolver, ShiftResolver>();
+        services.AddScoped<IHolidayResolver, HolidayResolver>();
+        services.AddScoped<IAttendanceResolver, AttendanceResolver>();
+        services.AddScoped<IScopeResolver, ScopeResolver>();
+        services.AddScoped<IHolidayCalendarResolver, HolidayCalendarResolver>();
+        services.AddScoped<IHolidayTypeResolver, HolidayTypeResolver>();
+        services.AddScoped<ICompOffTypeResolver, CompOffTypeResolver>();
+        services.AddScoped<ILeaveBalanceResolver, LeaveBalanceResolver>();
+        services.AddScoped<IWorkWeekPolicyResolver, WorkWeekPolicyResolver>();
         services.AddHostedService<OutboxProcessorBackgroundService>();
         services.AddTransient<InternalApiKeyHandler>();
 

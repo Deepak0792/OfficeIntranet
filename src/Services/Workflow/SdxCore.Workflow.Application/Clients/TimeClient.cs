@@ -1,24 +1,18 @@
 ﻿using MassTransit.Middleware;
+using SdxCore.Common.Models;
 using SdxCore.Workflow.Application.Abstractions.Clients;
 using SdxCore.Workflow.Application.DTOs.Time;
 using System.Net.Http.Json;
 
 namespace SdxCore.Workflow.Application.Clients;
-public class TimeClient : ITimeClient
+public class TimeClient(HttpClient httpClient) : ITimeClient
 {
-    private readonly HttpClient _httpClient;
-
-    public TimeClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<IEnumerable<ScopeTypeResponse>> GetAllScopeTypeAsync(CancellationToken cancellationToken = default!)
     {
-        var scopeTypes = await _httpClient.GetFromJsonAsync<IEnumerable<ScopeTypeResponse>>(
+        var response = await httpClient.GetFromJsonAsync<ApiResponse<IEnumerable<ScopeTypeResponse>>>(
             $"api/v1/scope-types",
             cancellationToken);
 
-        return scopeTypes ?? Enumerable.Empty<ScopeTypeResponse>();
+        return response?.Data ?? [];
     }
 }

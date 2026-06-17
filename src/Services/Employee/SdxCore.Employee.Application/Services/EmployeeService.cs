@@ -227,4 +227,14 @@ public class EmployeeService(
             PrimaryDepartmentId = e.PrimaryDepartmentId
         });
     }
+
+    public async Task<IReadOnlyList<EmployeeSummaryResponse>> GetAllEmployeesAsync(bool isActive = true, CancellationToken cancellationToken = default)
+    {
+        var cacheKey = _cacheKeyBuilder.BuildKey(nameof(EmployeeSummary), "active");
+        return await _cacheService.GetOrSetAsync(cacheKey, async (ct) =>
+        {
+            var profiles = await _viewRepository.FindAsync(e => e.IsActive == isActive, cancellationToken);
+            return profiles.Select(p => PropertyMapper.Map<EmployeeSummary, EmployeeSummaryResponse>(p)).ToList();
+        }, CacheOptions.Default, cancellationToken) ?? [];
+    }
 }

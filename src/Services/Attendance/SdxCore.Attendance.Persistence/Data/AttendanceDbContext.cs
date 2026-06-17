@@ -26,6 +26,8 @@ public class AttendanceDbContext(
     // Roster
     public DbSet<EmployeeShiftRoster> EmployeeShiftRosters { get; set; } = null!;
     public DbSet<EmployeeRosterGenerationTracker> EmployeeRosterGenerationTrackers { get; set; } = null!;
+    public DbSet<RosterGenerationPolicy> RosterGenerationPolicies { get; set; } = null!;
+    public DbSet<RosterGenerationPolicyAssignment> RosterGenerationPolicyAssignments { get; set; } = null!;
 
     // Attendance
     public DbSet<WorkSession> WorkSessions { get; set; } = null!;

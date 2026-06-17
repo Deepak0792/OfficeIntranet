@@ -1,3 +1,4 @@
+using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.DTOs.Leave.Request;
 using SdxCore.Attendance.Application.DTOs.Leave.Response;
@@ -13,27 +14,45 @@ namespace SdxCore.Attendance.Application.Services;
 
 public class LeaveService(
     ILeaveRequestRepository leaveRequestRepository,
-    ILeaveTypeRepository leaveTypeRepository,
     ILeaveBalanceRepository leaveBalanceRepository,
     IAttendanceUnitOfWork unitOfWork,
+    IEmployeeResolver employeeResolver,
+    ILeaveTypeResolver leaveTypeResolver,
+    ILeaveBalanceResolver leaveBalanceResolver,
     ICacheService cacheService,
     ICacheKeyBuilder cacheKeyBuilder) : ILeaveService
 {
     private readonly ICacheService _cache = cacheService;
     private readonly ICacheKeyBuilder _keyBuilder = cacheKeyBuilder;
 
-    public async Task<LeaveRequestResponse> SubmitAsync(CreateLeaveRequestRequest request, CancellationToken cancellationToken = default)
+    public async Task<LeaveRequestResponse> SubmitAsync(
+       CreateLeaveRequestRequest request,
+       CancellationToken cancellationToken = default)
     {
-        var leaveType = await leaveTypeRepository.GetByIdAsync(request.LeaveTypeId, cancellationToken)
-            ?? throw new InvalidOperationException($"LeaveType {request.LeaveTypeId} not found.");
+        _ = await employeeResolver.ResolveActiveEmployeeAsync(
+            request.EmployeeId,
+            cancellationToken);
+
+        var leaveType = await leaveTypeResolver.ResolveActiveLeaveTypeAsync(
+            request.LeaveTypeId,
+            cancellationToken);
+
+        await leaveBalanceResolver.ValidateLeaveBalanceAsync(
+            request.EmployeeId,
+            request.LeaveTypeId,
+            request.FromDate,
+            request.ToDate,
+            cancellationToken);
 
         var entity = PropertyMapper.Map<CreateLeaveRequestRequest, LeaveRequest>(request);
+
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
         entity.LeaveStatus = LeaveStatus.Pending;
         entity.LeaveType = leaveType;
 
         await leaveRequestRepository.AddAsync(entity, cancellationToken);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return BuildResponse(entity, leaveType.LeaveName);

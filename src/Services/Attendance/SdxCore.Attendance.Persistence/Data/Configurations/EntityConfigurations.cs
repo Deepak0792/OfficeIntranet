@@ -507,3 +507,53 @@ public sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outbox
         builder.Property(e => e.Status).HasMaxLength(50).IsRequired();
     }
 }
+
+public sealed class RosterGenerationPolicyConfiguration : IEntityTypeConfiguration<RosterGenerationPolicy>
+{
+    public void Configure(EntityTypeBuilder<RosterGenerationPolicy> builder)
+    {
+        builder.ToTable("RosterGenerationPolicy");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.PolicyCode).HasMaxLength(100).IsRequired();
+        builder.Property(e => e.PolicyName).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.GenerationType).HasMaxLength(50).IsRequired();
+
+        // GenerationTypeGroup is a persisted computed column — EF should not write to it
+        builder.Property(e => e.GenerationTypeGroup)
+            .HasComputedColumnSql("CAST('ROSTER_GENERATION_TYPE' AS NVARCHAR(50))", stored: true);
+
+        builder.HasIndex(e => e.PolicyCode).IsUnique();
+
+        // Intra-schema: one policy has many assignments
+        builder.HasMany(e => e.Assignments)
+            .WithOne(a => a.RosterGenerationPolicy)
+            .HasForeignKey(a => a.RosterGenerationPolicyId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public sealed class RosterGenerationPolicyAssignmentConfiguration
+    : IEntityTypeConfiguration<RosterGenerationPolicyAssignment>
+{
+    public void Configure(EntityTypeBuilder<RosterGenerationPolicyAssignment> builder)
+    {
+        builder.ToTable("RosterGenerationPolicyAssignment");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+
+        // Unique constraint matching UX_RosterGenerationPolicyAssignment_Scope in SQL DDL
+        builder.HasIndex(e => new { e.ScopeTypeId, e.ScopeReferenceId, e.EffectiveFrom }).IsUnique();
+
+        // Recommended indexes
+        builder.HasIndex(e => e.RosterGenerationPolicyId);
+        builder.HasIndex(e => e.ScopeTypeId);
+        builder.HasIndex(e => e.ScopeReferenceId);
+
+        // Intra-schema: RosterGenerationPolicyId → RosterGenerationPolicy
+        // (relationship configured from RosterGenerationPolicyConfiguration.HasMany)
+
+        // ScopeTypeId: cross-schema FK to time.ScopeType — no EF relationship
+    }
+}
+

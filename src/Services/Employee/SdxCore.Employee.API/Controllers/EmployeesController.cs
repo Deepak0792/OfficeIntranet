@@ -11,19 +11,10 @@ namespace SdxCore.Employee.API.Controllers;
 [ApiController]
 [Route("api/v1/employees")]
 [GatewayOnly]
-public class EmployeesController : SdxControllerBase
+public class EmployeesController(IEmployeeService service) : SdxControllerBase
 {
     protected override ErrorResponse NotFoundError =>
         new() { ErrorCode = "NOT_FOUND", ErrorMessage = "Employee not found." };
-
-    private readonly IEmployeeService _service;
-    private readonly ILogger<EmployeesController> _logger;
-
-    public EmployeesController(IEmployeeService service, ILogger<EmployeesController> logger)
-    {
-        _service = service;
-        _logger = logger;
-    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -35,9 +26,21 @@ public class EmployeesController : SdxControllerBase
         [FromQuery] bool? isActive,
         CancellationToken cancellationToken)
     {
-        var response = await _service.GetAllAsync(filter, departmentId, locationId, legalEntityId, employmentType, isActive, cancellationToken);
+        var response = await service.GetAllAsync(filter, departmentId, locationId, legalEntityId, employmentType, isActive, cancellationToken);
         response.Message = "Successfully fetched employees.";
         return Ok(response);
+    }
+
+    [HttpGet("active")]
+    public async Task<IActionResult> GetAllEmployees(
+    [FromQuery] bool isActive = true,
+    CancellationToken cancellationToken = default!)
+    {
+        var result = await service.GetAllEmployeesAsync(isActive, cancellationToken);
+
+        return Ok(new ApiResponse<IReadOnlyList<EmployeeSummaryResponse>>(
+            result,
+            "Active employees fetched."));
     }
 
     [HttpPost]
@@ -46,7 +49,7 @@ public class EmployeesController : SdxControllerBase
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
-        var result = await _service.CreateAsync(request, cancellationToken);
+        var result = await service.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetSummary), new { id = result.Id },
             new ApiResponse<EmployeeResponse>(result, "Employee created successfully."));
     }
@@ -54,14 +57,14 @@ public class EmployeesController : SdxControllerBase
     [HttpGet("{id:guid}/full-profile")]
     public async Task<IActionResult> GetFullProfile(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _service.GetFullProfileAsync(id, cancellationToken);
+        var result = await service.GetFullProfileAsync(id, cancellationToken);
         return OkOrNotFound(result, "Profile fetched successfully.");
     }
 
     [HttpGet("by-code/{code}")]
     public async Task<IActionResult> GetByCode(string code, CancellationToken cancellationToken)
     {
-        var result = await _service.GetByCodeAsync(code, cancellationToken);
+        var result = await service.GetByCodeAsync(code, cancellationToken);
         return OkOrNotFound(result, "Employee fetched successfully.");
     }
 
@@ -71,14 +74,14 @@ public class EmployeesController : SdxControllerBase
         if (string.IsNullOrWhiteSpace(email))
             return BadRequest(new ErrorResponse { ErrorCode = "BAD_REQUEST", ErrorMessage = "Email is required." });
 
-        var result = await _service.GetByEmailAsync(email, cancellationToken);
+        var result = await service.GetByEmailAsync(email, cancellationToken);
         return OkOrNotFound(result, "Employee fetched successfully.");
     }
 
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string q, [FromQuery] PaginationFilter filter, CancellationToken cancellationToken)
     {
-        var response = await _service.SearchAsync(q, filter, cancellationToken);
+        var response = await service.SearchAsync(q, filter, cancellationToken);
         response.Message = "Search results fetched successfully.";
         return Ok(response);
     }
@@ -86,7 +89,7 @@ public class EmployeesController : SdxControllerBase
     [HttpGet("{id:guid}/summary")]
     public async Task<IActionResult> GetSummary(Guid id, CancellationToken cancellationToken)
     {
-        var result = await _service.GetSummaryAsync(id, cancellationToken);
+        var result = await service.GetSummaryAsync(id, cancellationToken);
         return OkOrNotFound(result, "Summary fetched successfully.");
     }
 
@@ -96,7 +99,7 @@ public class EmployeesController : SdxControllerBase
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
-        var result = await _service.UpdateAsync(id, request, cancellationToken);
+        var result = await service.UpdateAsync(id, request, cancellationToken);
         return OkOrNotFound(result, "Employee updated successfully.");
     }
 
@@ -106,7 +109,7 @@ public class EmployeesController : SdxControllerBase
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
-        var result = await _service.ToggleStatusAsync(id, request, cancellationToken);
+        var result = await service.ToggleStatusAsync(id, request, cancellationToken);
         return OkOrNotFound(result, "Status updated successfully.");
     }
 
@@ -116,7 +119,7 @@ public class EmployeesController : SdxControllerBase
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
-        var result = await _service.UpdatePhotoAsync(id, request, cancellationToken);
+        var result = await service.UpdatePhotoAsync(id, request, cancellationToken);
         return OkOrNotFound(result, "Photo updated successfully.");
     }
 
@@ -126,7 +129,7 @@ public class EmployeesController : SdxControllerBase
         var validation = await ValidateAsync(request, cancellationToken);
         if (validation != null) return validation;
 
-        var result = await _service.UpdateAboutAsync(id, request, cancellationToken);
+        var result = await service.UpdateAboutAsync(id, request, cancellationToken);
         return OkOrNotFound(result, "About info updated successfully.");
     }
 
@@ -155,7 +158,7 @@ public class EmployeesController : SdxControllerBase
                 ErrorMessage = "At least one designationId is required."
             });
 
-        var result = await _service.GetEmployeesByDesignationInScopeAsync(
+        var result = await service.GetEmployeesByDesignationInScopeAsync(
             designationIds, scopeCode, scopeReferenceId, cancellationToken);
 
         return Ok(new ApiResponse<IEnumerable<EmployeesByDesignationResponse>>(

@@ -747,6 +747,51 @@ CREATE TABLE attendance.WorkWeekPolicyAssignment (
 );
 GO
 
+CREATE TABLE attendance.RosterGenerationPolicy
+(
+    Id                  UNIQUEIDENTIFIER NOT NULL,
+    PolicyCode          NVARCHAR(100) NOT NULL,
+    PolicyName          NVARCHAR(200) NOT NULL,
+    GenerationType      NVARCHAR(50) NOT NULL,
+    GenerationTypeGroup AS CAST('ROSTER_GENERATION_TYPE' AS NVARCHAR(50)) PERSISTED,
+    GenerateDaysBefore  SMALLINT NOT NULL DEFAULT 7,
+    AutoGenerate        BIT NOT NULL DEFAULT 1,
+    LockAfterGeneration BIT NOT NULL DEFAULT 0,
+    IsDefault           BIT NOT NULL DEFAULT 0,
+    IsActive            BIT NOT NULL DEFAULT 1,
+
+    CONSTRAINT PK_RosterGenerationPolicy
+        PRIMARY KEY (Id),
+
+    CONSTRAINT UQ_RosterGenerationPolicy_PolicyCode
+        UNIQUE (PolicyCode)
+);
+GO
+
+CREATE TABLE attendance.RosterGenerationPolicyAssignment
+(
+    Id                        UNIQUEIDENTIFIER NOT NULL,
+    RosterGenerationPolicyId  UNIQUEIDENTIFIER NOT NULL,
+    ScopeTypeId               UNIQUEIDENTIFIER NOT NULL,
+    ScopeReferenceId          UNIQUEIDENTIFIER NULL,
+    EffectiveFrom             DATE NOT NULL,
+    EffectiveTo               DATE NULL,
+    PriorityOrder             SMALLINT NOT NULL DEFAULT 1,
+    IsActive                  BIT NOT NULL DEFAULT 1,
+
+    CONSTRAINT PK_RosterGenerationPolicyAssignment
+        PRIMARY KEY (Id),
+
+    CONSTRAINT FK_RosterGenerationPolicyAssignment_RosterGenerationPolicy
+        FOREIGN KEY (RosterGenerationPolicyId)
+        REFERENCES attendance.RosterGenerationPolicy(Id),
+
+    CONSTRAINT FK_RosterGenerationPolicyAssignment_ScopeType
+        FOREIGN KEY (ScopeTypeId)
+        REFERENCES time.ScopeType(Id)
+);
+GO
+
 
 -- ==========================================================
 -- MESSAGE QUEUE (RABBITMQ PUBLISHING)
@@ -854,6 +899,28 @@ CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_RetryCount] ON [attendance].
 CREATE NONCLUSTERED INDEX [IX_OutboxMessages_PublishedAt] ON [attendance].[OutboxMessages] ([PublishedAt] ASC) WHERE [PublishedAt] IS NOT NULL;
 CREATE UNIQUE NONCLUSTERED INDEX [UX_OutboxMessages_Id_Status] ON [attendance].[OutboxMessages] ([Id], [Status]);
 
+-- Recommended indexes
+CREATE INDEX IX_RosterGenerationPolicyAssignment_RosterGenerationPolicyId
+    ON attendance.RosterGenerationPolicyAssignment (RosterGenerationPolicyId);
+GO
+
+CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeTypeId
+    ON attendance.RosterGenerationPolicyAssignment (ScopeTypeId);
+GO
+
+CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeReferenceId
+    ON attendance.RosterGenerationPolicyAssignment (ScopeReferenceId);
+GO
+
+-- Optional: Prevent overlapping active assignments for same scope
+CREATE UNIQUE INDEX UX_RosterGenerationPolicyAssignment_Scope
+ON attendance.RosterGenerationPolicyAssignment
+(
+    ScopeTypeId,
+    ScopeReferenceId,
+    EffectiveFrom
+);
+GO
 
 PRINT 'Attendance schema created successfully';
 

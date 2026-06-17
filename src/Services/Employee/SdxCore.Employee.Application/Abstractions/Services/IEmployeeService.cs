@@ -28,4 +28,6 @@ public interface IEmployeeService
         string? scopeCode,
         Guid? scopeReferenceId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EmployeeSummaryResponse>> GetAllEmployeesAsync(bool isActive = true, CancellationToken cancellationToken = default);
 }
