@@ -25,5 +25,5 @@ public class RosterGenerationPolicyAssignment : BaseAuditEntity<Guid>
     public bool IsActive { get; set; } = true;
 
     // Intra-schema navigation
-    public RosterGenerationPolicy? RosterGenerationPolicy { get; set; }
+    public RosterGenerationPolicy RosterGenerationPolicy { get; set; } = null!;
 }

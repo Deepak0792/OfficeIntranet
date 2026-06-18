@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SdxCore.Attendance.Domain.Abstractions.Repositories;
 using SdxCore.Attendance.Domain.Entities;
 using SdxCore.Attendance.Persistence.Data;
@@ -28,5 +29,14 @@ public class RosterGenerationPolicyAssignmentRepository(AttendanceDbContext dbCo
             cancellationToken);
 
         return results.OrderBy(a => a.PriorityOrder).FirstOrDefault();
+    }
+
+    public async Task<IEnumerable<RosterGenerationPolicyAssignment>> GetActiveAssignmentsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+             .Include(a => a.RosterGenerationPolicy)
+             .Where(a => a.IsActive)
+             .OrderBy(a => a.PriorityOrder)
+             .ToListAsync(cancellationToken);
     }
 }

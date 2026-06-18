@@ -22,7 +22,6 @@ public class RosterGenerationPolicy : BaseAuditEntity<Guid>
 
     /// <summary>How many days before the roster period to auto-generate.</summary>
     public short GenerateDaysBefore { get; set; } = 7;
-
     public bool AutoGenerate { get; set; } = true;
     public bool LockAfterGeneration { get; set; }
     public bool IsDefault { get; set; }

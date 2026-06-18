@@ -18,4 +18,6 @@ public interface IRosterGenerationPolicyAssignmentRepository : IRepository<Roste
     Task<RosterGenerationPolicyAssignment?> ResolveAsync(
         Guid scopeTypeId, Guid? scopeReferenceId, DateOnly onDate,
         CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<RosterGenerationPolicyAssignment>> GetActiveAssignmentsAsync(CancellationToken cancellationToken = default);
 }
