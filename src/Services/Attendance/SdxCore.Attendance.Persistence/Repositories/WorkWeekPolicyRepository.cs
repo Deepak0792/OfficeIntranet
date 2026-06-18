@@ -13,4 +13,5 @@ public class WorkWeekPolicyRepository(AttendanceDbContext dbContext)
         => await _dbSet
             .Include(p => p.Days.Where(d => d.IsActive).OrderBy(d => d.DayOfWeek))
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
 }

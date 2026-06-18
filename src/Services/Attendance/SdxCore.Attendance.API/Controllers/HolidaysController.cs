@@ -82,4 +82,21 @@ public class HolidaysController(IHolidayService service) : SdxControllerBase
         var result = await service.GetApplicableAsync(employeeId, from, to, cancellationToken);
         return Ok(new ApiResponse<IEnumerable<HolidayResponse>>(result, "Applicable holidays fetched."));
     }
+
+    [HttpGet("employee/{employeeId:guid}/holidays")]
+    public async Task<IActionResult> Get(
+        Guid employeeId,
+        [FromQuery] int year,
+        CancellationToken cancellationToken)
+    {
+        var result =
+            await service.GetEmployeeHolidayListAsync(
+                employeeId,
+                year,
+                cancellationToken);
+
+        return Ok(
+            new ApiResponse<EmployeeHolidaySummaryResponse>(
+                result));
+    }
 }

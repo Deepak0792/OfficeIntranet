@@ -40,6 +40,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICompOffTypeResolver, CompOffTypeResolver>();
         services.AddScoped<ILeaveBalanceResolver, LeaveBalanceResolver>();
         services.AddScoped<IWorkWeekPolicyResolver, WorkWeekPolicyResolver>();
+        services.AddScoped<IEmployeeScopeResolver, EmployeeScopeResolver>();
+        services.AddScoped<IRosterResolver, RosterResolver>();
+        services.AddScoped<IShiftSwapResolver, ShiftSwapResolver>();
+        services.AddScoped<IRegularizationResolver, RegularizationResolver>();
+        services.AddScoped<ICompOffBalanceResolver, CompOffBalanceResolver>();
+        services.AddScoped<IAttendanceStatusResolver, AttendanceStatusResolver>();
+
         services.AddHostedService<OutboxProcessorBackgroundService>();
         services.AddTransient<InternalApiKeyHandler>();
 

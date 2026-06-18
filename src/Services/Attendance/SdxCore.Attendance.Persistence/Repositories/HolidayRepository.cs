@@ -21,4 +21,24 @@ public class HolidayRepository(AttendanceDbContext dbContext)
             .Where(h => h.HolidayCalendarId == calendarId && h.IsActive && h.HolidayDate >= from && h.HolidayDate <= to)
             .OrderBy(h => h.HolidayDate)
             .ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<Holiday>> GetByDateAsync(
+        DateOnly date,
+        CancellationToken cancellationToken = default)
+        => await _dbSet
+            .Where(h => h.IsActive && h.HolidayDate == date)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Holiday>>
+    GetByCalendarsAsync(
+        IEnumerable<Guid> calendarIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(x => x.HolidayType)
+            .Where(x =>
+                x.IsActive &&
+                calendarIds.Contains(x.HolidayCalendarId))
+            .ToListAsync(cancellationToken);
+    }
 }

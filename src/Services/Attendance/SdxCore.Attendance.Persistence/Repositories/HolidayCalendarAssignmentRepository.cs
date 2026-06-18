@@ -16,4 +16,14 @@ public class HolidayCalendarAssignmentRepository(AttendanceDbContext dbContext)
             .Where(a => a.ScopeTypeId == scopeTypeId && a.ScopeReferenceId == scopeReferenceId && a.IsActive)
             .OrderBy(a => a.PriorityOrder)
             .ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<HolidayCalendarAssignment>> GetActiveAssignmentsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(a => a.HolidayCalendar)
+            .Where(a => a.IsActive)
+            .OrderBy(a => a.PriorityOrder)
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -1,3 +1,4 @@
+using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.DTOs.Holiday.Request;
 using SdxCore.Attendance.Application.DTOs.Holiday.Response;
@@ -11,6 +12,7 @@ namespace SdxCore.Attendance.Application.Services;
 
 public class HolidayService(
     IHolidayCalendarRepository calendarRepository,
+    IHolidayResolver holidayResolver,
     IHolidayRepository holidayRepository,
     IAttendanceUnitOfWork unitOfWork,
     ICacheService cacheService,
@@ -109,5 +111,38 @@ public class HolidayService(
             var holidays = await holidayRepository.GetByCalendarRangeAsync(defaultCalendar.Id, from, to, ct);
             return PropertyMapper.MapList<Holiday, HolidayResponse>(holidays);
         }, CacheOptions.Default, cancellationToken) ?? [];
+    }
+
+    public async Task<EmployeeHolidaySummaryResponse>
+       GetEmployeeHolidayListAsync(
+           Guid employeeId,
+           int year,
+           CancellationToken cancellationToken = default)
+    {
+        var holidays =
+            await holidayResolver.GetHolidaysAsync(
+                employeeId,
+                new DateOnly(year, 1, 1),
+                new DateOnly(year, 12, 31),
+                cancellationToken);
+
+        return new EmployeeHolidaySummaryResponse
+        {
+            TotalHolidays = holidays.Count,
+
+            NationalHolidays =
+                holidays.Count(x =>
+                    x.HolidayTypeCode == "NATIONAL"),
+
+            StateHolidays =
+                holidays.Count(x =>
+                    x.HolidayTypeCode == "STATE"),
+
+            ReligiousHolidays =
+                holidays.Count(x =>
+                    x.HolidayTypeCode == "RELIGIOUS"),
+
+            Holidays = holidays
+        };
     }
 }

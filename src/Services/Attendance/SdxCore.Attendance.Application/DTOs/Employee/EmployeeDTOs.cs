@@ -24,6 +24,7 @@ public class EmployeeSummaryResponse
     public Guid? PrimaryTeamId { get; set; }
     public Guid? DesignationId { get; set; }
     public Guid? PrimaryLocationId { get; set; }
+    public Guid? PrimaryCountryId { get; set; }
     public Guid? PrimaryLegalEntityId { get; set; }
 
     public Guid? DirectManagerId { get; set; }

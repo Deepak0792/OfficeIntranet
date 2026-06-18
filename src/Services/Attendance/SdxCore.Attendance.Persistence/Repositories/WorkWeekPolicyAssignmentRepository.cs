@@ -19,4 +19,13 @@ public class WorkWeekPolicyAssignmentRepository(AttendanceDbContext dbContext)
                 && (a.EffectiveTo == null || a.EffectiveTo >= date))
             .OrderByDescending(a => a.PriorityOrder)
             .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IEnumerable<WorkWeekPolicyAssignment>> GetActiveAssignmentsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(a => a.IsActive)
+            .OrderBy(a => a.PriorityOrder)
+            .ToListAsync(cancellationToken);
+    }
 }

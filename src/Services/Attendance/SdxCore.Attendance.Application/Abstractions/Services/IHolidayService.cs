@@ -13,4 +13,10 @@ public interface IHolidayService
     Task<HolidayResponse?> UpdateHolidayAsync(Guid id, UpdateHolidayRequest request, CancellationToken cancellationToken = default);
     Task<HolidayResponse?> ToggleHolidayStatusAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IEnumerable<HolidayResponse>> GetApplicableAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
+
+    Task<EmployeeHolidaySummaryResponse>
+        GetEmployeeHolidayListAsync(
+            Guid employeeId,
+            int year,
+            CancellationToken cancellationToken = default);
 }
