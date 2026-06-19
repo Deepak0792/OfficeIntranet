@@ -16,6 +16,7 @@ public class RotationShiftAssignment : BaseAuditEntity<Guid>
     public DateOnly RotationStartDate { get; set; }
     public DateOnly EffectiveFrom { get; set; }
     public DateOnly? EffectiveTo { get; set; }
+    public short PriorityOrder { get; set; }
     public bool IsActive { get; set; } = true;
 
     // Intra-schema navigation

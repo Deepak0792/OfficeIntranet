@@ -3,6 +3,7 @@ namespace SdxCore.Attendance.Application.DTOs.Shift.Request;
 public record CreateShiftRequest(
     string ShiftCode,
     string ShiftName,
+    Guid TimeZoneId,
     TimeOnly StartTime,
     TimeOnly EndTime,
     short BreakDurationMinutes,
@@ -19,6 +20,7 @@ public record CreateShiftRequest(
 
 public record UpdateShiftRequest(
     string? ShiftName,
+    Guid? TimeZoneId,
     TimeOnly? StartTime,
     TimeOnly? EndTime,
     short? BreakDurationMinutes,

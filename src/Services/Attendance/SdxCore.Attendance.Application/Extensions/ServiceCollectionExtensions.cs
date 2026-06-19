@@ -3,7 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Attendance.Application.Abstractions.Clients;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
+using SdxCore.Attendance.Application.Abstractions.Scheduler;
 using SdxCore.Attendance.Application.Abstractions.Services;
+using SdxCore.Attendance.Application.BackgroundServices;
 using SdxCore.Attendance.Application.Clients;
 using SdxCore.Attendance.Application.Consumers;
 using SdxCore.Attendance.Application.Resolvers;
@@ -46,8 +48,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRegularizationResolver, RegularizationResolver>();
         services.AddScoped<ICompOffBalanceResolver, CompOffBalanceResolver>();
         services.AddScoped<IAttendanceStatusResolver, AttendanceStatusResolver>();
+        services.AddScoped<IRosterGenerationScheduler, RosterGenerationScheduler>();
+        services.AddScoped<IRosterGenerationPolicyResolver, RosterGenerationPolicyResolver>();
+        services.AddScoped<IRosterGenerationService, RosterGenerationService>();
+        services.AddScoped<ITimeZoneResolver, TimeZoneResolver>();
 
         services.AddHostedService<OutboxProcessorBackgroundService>();
+        services.AddHostedService<RosterGenerationBackgroundService>();
         services.AddTransient<InternalApiKeyHandler>();
 
         return services;

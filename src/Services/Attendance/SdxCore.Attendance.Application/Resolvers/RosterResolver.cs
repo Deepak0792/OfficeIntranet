@@ -8,20 +8,10 @@ public class RosterResolver(
     IEmployeeShiftRosterRepository rosterRepository)
     : IRosterResolver
 {
-    public async Task<EmployeeShiftRoster> ResolveAsync(
-        Guid rosterId,
-        CancellationToken cancellationToken = default)
+    public async Task<EmployeeShiftRoster> ResolveAsync(Guid rosterId, CancellationToken cancellationToken = default)
     {
-        var roster =
-            await rosterRepository.GetByIdAsync(
-                rosterId,
-                cancellationToken);
-
-        if (roster is null)
-            throw new InvalidOperationException(
-                $"Roster '{rosterId}' not found.");
-
-        return roster;
+        return await rosterRepository.GetByIdAsync(rosterId, cancellationToken)
+            ?? throw new InvalidOperationException($"Roster not found for ID '{rosterId}'.");
     }
 
     public async Task<EmployeeShiftRoster> ResolveEmployeeRosterAsync(
@@ -29,16 +19,7 @@ public class RosterResolver(
         DateOnly date,
         CancellationToken cancellationToken = default)
     {
-        var roster =
-            await rosterRepository.GetByEmployeeAndDateAsync(
-                employeeId,
-                date,
-                cancellationToken);
-
-        if (roster is null)
-            throw new InvalidOperationException(
-                $"Roster not found for employee '{employeeId}' on '{date:yyyy-MM-dd}'.");
-
-        return roster;
+        return await rosterRepository.GetByEmployeeDateAsync(employeeId, date, cancellationToken)
+            ?? throw new InvalidOperationException($"Roster not found for employee '{employeeId}' on '{date}'.");
     }
 }

@@ -47,11 +47,16 @@ CREATE TABLE attendance.Shift (
     CrossesMidnight         BIT             NOT NULL DEFAULT 0,
     IsFlexible              BIT             NOT NULL DEFAULT 0,
     AllowOvertime           BIT             NOT NULL DEFAULT 1,
+    TimeZoneId              UNIQUEIDENTIFIER        NULL,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy               UNIQUEIDENTIFIER NULL,
     LastUpdatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     LastUpdatedBy           UNIQUEIDENTIFIER NULL
+
+    CONSTRAINT FK_Shift_TimeZone
+        FOREIGN KEY (TimeZoneId)
+        REFERENCES time.TimeZoneMaster(Id)
 );
 GO
 
@@ -63,6 +68,9 @@ CREATE TABLE attendance.EmployeeShiftRoster (
     ShiftId             UNIQUEIDENTIFIER      NULL,
     IsOffDay            BIT         NOT NULL DEFAULT 0,
     IsHoliday           BIT         NOT NULL DEFAULT 0,
+    RosterTimeZoneId    uniqueidentifier    NULL,
+    StartTimeLocal      DATETIME2   NULL,
+    EndTimeLocal        DATETIME2   NULL,
     PlannedStartTime    DATETIME2   NULL,
     PlannedEndTime      DATETIME2   NULL,
     ActualStartTime     DATETIME2   NULL,
@@ -75,15 +83,19 @@ CREATE TABLE attendance.EmployeeShiftRoster (
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
 
-    CONSTRAINT FK_Roster_Employee
+    CONSTRAINT FK_EmployeeShiftRoster_Employee
         FOREIGN KEY (EmployeeId)
         REFERENCES employee.Employee(Id),
 
-    CONSTRAINT FK_Roster_Shift
+    CONSTRAINT FK_EmployeeShiftRoster_Shift
         FOREIGN KEY (ShiftId)
         REFERENCES attendance.Shift(Id),
 
-    CONSTRAINT UQ_EmployeeRoster
+    CONSTRAINT FK_EmployeeShiftRoster_TimeZone
+        FOREIGN KEY (RosterTimeZoneId)
+        REFERENCES time.TimeZoneMaster(Id),
+
+    CONSTRAINT UQ_EmployeeShiftRoster
         UNIQUE (EmployeeId, RosterDate)
 );
 GO
@@ -526,6 +538,7 @@ CREATE TABLE attendance.RotationShiftAssignment (
     EffectiveFrom       DATE    NOT NULL,
     EffectiveTo         DATE    NULL,
     IsActive            BIT             NOT NULL DEFAULT 1,
+    PriorityOrder       SMALLINT NOT NULL DEFAULT 1,
     CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy           UNIQUEIDENTIFIER NULL,
     LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
@@ -760,6 +773,11 @@ CREATE TABLE attendance.RosterGenerationPolicy
     IsDefault           BIT NOT NULL DEFAULT 0,
     IsActive            BIT NOT NULL DEFAULT 1,
 
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
+
     CONSTRAINT PK_RosterGenerationPolicy
         PRIMARY KEY (Id),
 
@@ -778,6 +796,10 @@ CREATE TABLE attendance.RosterGenerationPolicyAssignment
     EffectiveTo               DATE NULL,
     PriorityOrder             SMALLINT NOT NULL DEFAULT 1,
     IsActive                  BIT NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
 
     CONSTRAINT PK_RosterGenerationPolicyAssignment
         PRIMARY KEY (Id),

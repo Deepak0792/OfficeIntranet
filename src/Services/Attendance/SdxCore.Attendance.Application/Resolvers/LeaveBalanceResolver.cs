@@ -8,31 +8,16 @@ public class LeaveBalanceResolver(
     ILeaveBalanceRepository repository)
     : ILeaveBalanceResolver
 {
-    public async Task ValidateLeaveBalanceAsync(
-        Guid employeeId,
-        Guid leaveTypeId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        CancellationToken cancellationToken = default)
+    public async Task ValidateLeaveBalanceAsync(Guid employeeId, Guid leaveTypeId, DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken = default)
     {
         var year = fromDate.Year;
 
-        var balance =
-            await repository.GetByEmployeeAndLeaveTypeAsync(
-                employeeId,
-                leaveTypeId,
-                year,
-                cancellationToken);
+        var balance = await repository.GetByEmployeeAndTypeAsync(employeeId, leaveTypeId, year, cancellationToken)
+            ?? throw new InvalidOperationException("Leave balance not found.");
 
-        if (balance is null)
-            throw new InvalidOperationException(
-                "Leave balance not found.");
+        var requestedDays = (toDate.DayNumber - fromDate.DayNumber) + 1;
 
-        var requestedDays =
-            (toDate.DayNumber - fromDate.DayNumber) + 1;
-
-        if (balance.BalanceDays < requestedDays)
-            throw new InvalidOperationException(
-                "Insufficient leave balance.");
+        if (balance.ClosingBalance < requestedDays)
+            throw new InvalidOperationException("Insufficient leave balance.");
     }
 }

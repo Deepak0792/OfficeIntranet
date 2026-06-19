@@ -7,6 +7,7 @@ public class Shift : BaseAuditEntity<Guid>, IPublishableEntity
 {
     public required string ShiftCode { get; set; }
     public required string ShiftName { get; set; }
+    public Guid TimeZoneId { get; set; }
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
     public short BreakDurationMinutes { get; set; }

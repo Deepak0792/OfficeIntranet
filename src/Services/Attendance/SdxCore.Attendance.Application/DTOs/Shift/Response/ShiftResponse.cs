@@ -4,6 +4,7 @@ public record ShiftResponse(
     Guid Id,
     string ShiftCode,
     string ShiftName,
+    Guid TimeZoneId,
     TimeOnly StartTime,
     TimeOnly EndTime,
     short BreakDurationMinutes,

@@ -5,4 +5,5 @@ namespace SdxCore.Attendance.Domain.Abstractions.Repositories;
 
 public interface IRotationShiftAssignmentRepository : IRepository<RotationShiftAssignment, Guid>
 {
+    Task<IEnumerable<RotationShiftAssignment>> GetActiveAssignmentsAsync(CancellationToken cancellationToken = default);
 }

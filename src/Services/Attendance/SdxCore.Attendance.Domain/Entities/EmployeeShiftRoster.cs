@@ -18,6 +18,9 @@ public class EmployeeShiftRoster : BaseAuditEntity<Guid>
 
     public bool IsOffDay { get; set; }
     public bool IsHoliday { get; set; }
+    public Guid? RosterTimeZoneId { get; set; }
+    public DateTime? StartTimeLocal { get; set; }
+    public DateTime? EndTimeLocal { get; set; }
     public DateTime? PlannedStartTime { get; set; }
     public DateTime? PlannedEndTime { get; set; }
     public DateTime? ActualStartTime { get; set; }
