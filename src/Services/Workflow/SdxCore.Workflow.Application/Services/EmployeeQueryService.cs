@@ -9,7 +9,7 @@ public class EmployeeQueryService(IEmployeeClient employeeClient) : IEmployeeQue
 {
     public async Task<EmployeeSummaryResponse?> GetEmployeeByIdAsync(Guid employeeId, CancellationToken cancellationToken = default!)
     {
-        return await employeeClient.GetEmployeeeSummaryByIdAsync(employeeId, cancellationToken);
+        return await employeeClient.GetEmployeeSummaryByIdAsync(employeeId, cancellationToken);
     }
 
     public async Task<EmployeeSummaryResponse?> GetReportingManagerAsync(Guid employeeId, CancellationToken cancellationToken = default!)
