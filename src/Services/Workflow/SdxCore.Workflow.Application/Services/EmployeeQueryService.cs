@@ -52,7 +52,7 @@ public class EmployeeQueryService(IEmployeeClient employeeClient) : IEmployeeQue
 
     public async Task<Guid?> GetScopeReferenceIdAsync(Guid employeeId, string? scopeCode, CancellationToken cancellationToken = default!)
     {
-        var employee = await employeeClient.GetEmployeeeSummaryByIdAsync(employeeId, cancellationToken);
+        var employee = await employeeClient.GetEmployeeSummaryByIdAsync(employeeId, cancellationToken);
 
         if (employee == null)
             return null;

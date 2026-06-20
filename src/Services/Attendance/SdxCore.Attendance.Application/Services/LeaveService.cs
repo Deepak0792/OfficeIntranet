@@ -1,3 +1,4 @@
+using SdxCore.Attendance.Application.Abstractions;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.DTOs.Leave.Request;
@@ -13,12 +14,11 @@ using SdxCore.Common.Models;
 namespace SdxCore.Attendance.Application.Services;
 
 public class LeaveService(
+    ILeaveRequestValidator leaveRequestValidator,
+    ICompOffConsumptionService compOffConsumptionService,
     ILeaveRequestRepository leaveRequestRepository,
     ILeaveBalanceRepository leaveBalanceRepository,
     IAttendanceUnitOfWork unitOfWork,
-    IEmployeeResolver employeeResolver,
-    ILeaveTypeResolver leaveTypeResolver,
-    ILeaveBalanceResolver leaveBalanceResolver,
     ICacheService cacheService,
     ICacheKeyBuilder cacheKeyBuilder) : ILeaveService
 {
@@ -26,36 +26,45 @@ public class LeaveService(
     private readonly ICacheKeyBuilder _keyBuilder = cacheKeyBuilder;
 
     public async Task<LeaveRequestResponse> SubmitAsync(
-       CreateLeaveRequestRequest request,
-       CancellationToken cancellationToken = default)
+    CreateLeaveRequestRequest request,
+    CancellationToken cancellationToken = default)
     {
-        _ = await employeeResolver.ResolveActiveEmployeeAsync(
-            request.EmployeeId,
-            cancellationToken);
+        var validationResult =
+            await leaveRequestValidator.ValidateAsync(
+                request,
+                cancellationToken);
 
-        var leaveType = await leaveTypeResolver.ResolveActiveLeaveTypeAsync(
-            request.LeaveTypeId,
-            cancellationToken);
-
-        await leaveBalanceResolver.ValidateLeaveBalanceAsync(
-            request.EmployeeId,
-            request.LeaveTypeId,
-            request.FromDate,
-            request.ToDate,
-            cancellationToken);
-
-        var entity = PropertyMapper.Map<CreateLeaveRequestRequest, LeaveRequest>(request);
+        var entity =
+            PropertyMapper.Map<CreateLeaveRequestRequest, LeaveRequest>(
+                request);
 
         entity.Id = Guid.NewGuid();
         entity.IsActive = true;
         entity.LeaveStatus = LeaveStatus.Pending;
-        entity.LeaveType = leaveType;
 
-        await leaveRequestRepository.AddAsync(entity, cancellationToken);
+        entity.TotalDays =
+            validationResult.TotalLeaveDays;
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        entity.LeaveTypeId =
+            validationResult.LeaveTypeId;
 
-        return BuildResponse(entity, leaveType.LeaveName);
+        await leaveRequestRepository.AddAsync(
+            entity,
+            cancellationToken);
+
+        if (validationResult.IsCompOff)
+        {
+            await compOffConsumptionService.ConsumeAsync(
+                request.EmployeeId,
+                entity.Id,
+                validationResult.TotalLeaveDays,
+                cancellationToken);
+        }
+
+        await unitOfWork.SaveChangesAsync(
+            cancellationToken);
+
+        return BuildResponse(entity, validationResult.LeaveTypeName);
     }
 
     public async Task<LeaveRequestResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

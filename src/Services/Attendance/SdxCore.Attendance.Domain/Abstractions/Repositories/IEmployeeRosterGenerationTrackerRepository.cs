@@ -7,4 +7,5 @@ public interface IEmployeeRosterGenerationTrackerRepository : IRepository<Employ
 {
     Task<EmployeeRosterGenerationTracker?> GetAsync(Guid employeeId, int year, int month, string generationType, CancellationToken cancellationToken = default);
     Task UpsertAsync(EmployeeRosterGenerationTracker tracker, CancellationToken cancellationToken = default);
+    Task<IReadOnlyCollection<EmployeeRosterGenerationTracker>> GetByEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default);
 }

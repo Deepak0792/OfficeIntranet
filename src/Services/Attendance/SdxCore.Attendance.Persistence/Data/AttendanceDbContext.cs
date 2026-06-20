@@ -43,6 +43,7 @@ public class AttendanceDbContext(
     // Comp-Off
     public DbSet<CompOffType> CompOffTypes { get; set; } = null!;
     public DbSet<CompOffBalance> CompOffBalances { get; set; } = null!;
+    public DbSet<CompOffAvailment> CompOffAvailments { get; set; } = null!;
 
     // Regularization
     public DbSet<AttendanceRegularization> AttendanceRegularizations { get; set; } = null!;

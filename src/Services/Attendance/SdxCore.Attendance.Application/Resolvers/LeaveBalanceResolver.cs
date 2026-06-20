@@ -3,21 +3,32 @@ using SdxCore.Attendance.Domain.Abstractions.Repositories;
 
 namespace SdxCore.Attendance.Application.Resolvers;
 
-
 public class LeaveBalanceResolver(
     ILeaveBalanceRepository repository)
     : ILeaveBalanceResolver
 {
-    public async Task ValidateLeaveBalanceAsync(Guid employeeId, Guid leaveTypeId, DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken = default)
+    public async Task ValidateLeaveBalanceAsync(
+        Guid employeeId,
+        Guid leaveTypeId,
+        int year,
+        decimal requestedDays,
+        CancellationToken cancellationToken = default)
     {
-        var year = fromDate.Year;
-
-        var balance = await repository.GetByEmployeeAndTypeAsync(employeeId, leaveTypeId, year, cancellationToken)
-            ?? throw new InvalidOperationException("Leave balance not found.");
-
-        var requestedDays = (toDate.DayNumber - fromDate.DayNumber) + 1;
+        var balance =
+            await repository.GetByEmployeeAndTypeAsync(employeeId, leaveTypeId, year, cancellationToken)
+                ?? throw new InvalidOperationException("Leave balance not found.");
 
         if (balance.ClosingBalance < requestedDays)
-            throw new InvalidOperationException("Insufficient leave balance.");
+            throw new InvalidOperationException($"Insufficient leave balance. Available={balance.ClosingBalance}, Requested={requestedDays}");
+    }
+
+    public async Task<decimal> GetAvailableBalanceAsync(
+        Guid employeeId,
+        Guid leaveTypeId,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        var balance = await repository.GetByEmployeeAndTypeAsync(employeeId, leaveTypeId, year, cancellationToken);
+        return balance?.ClosingBalance ?? 0;
     }
 }

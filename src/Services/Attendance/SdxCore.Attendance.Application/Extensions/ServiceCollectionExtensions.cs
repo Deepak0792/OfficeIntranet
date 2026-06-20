@@ -1,11 +1,13 @@
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SdxCore.Attendance.Application.Abstractions;
 using SdxCore.Attendance.Application.Abstractions.Clients;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Scheduler;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.BackgroundServices;
+using SdxCore.Attendance.Application.BackgroundServices.Scheduler;
 using SdxCore.Attendance.Application.Clients;
 using SdxCore.Attendance.Application.Consumers;
 using SdxCore.Attendance.Application.Resolvers;
@@ -30,6 +32,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHolidayService, HolidayService>();
         services.AddScoped<IShiftSwapService, ShiftSwapService>();
         services.AddScoped<ICompOffService, CompOffService>();
+        services.AddScoped<ICompOffConsumptionService, CompOffConsumptionService>();
+
 
         services.AddScoped<IEmployeeResolver, EmployeeResolver>();
         services.AddScoped<ILeaveTypeResolver, LeaveTypeResolver>();
@@ -43,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILeaveBalanceResolver, LeaveBalanceResolver>();
         services.AddScoped<IWorkWeekPolicyResolver, WorkWeekPolicyResolver>();
         services.AddScoped<IEmployeeScopeResolver, EmployeeScopeResolver>();
+        services.AddScoped<IEmployeeCalendarResolver, EmployeeCalendarResolver>();
         services.AddScoped<IRosterResolver, RosterResolver>();
         services.AddScoped<IShiftSwapResolver, ShiftSwapResolver>();
         services.AddScoped<IRegularizationResolver, RegularizationResolver>();
@@ -50,9 +55,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAttendanceStatusResolver, AttendanceStatusResolver>();
         services.AddScoped<IRosterGenerationScheduler, RosterGenerationScheduler>();
         services.AddScoped<IRosterGenerationPolicyResolver, RosterGenerationPolicyResolver>();
+        services.AddScoped<IRosterGenerationTrackerResolver, RosterGenerationTrackerResolver>();
         services.AddScoped<IRosterGenerationService, RosterGenerationService>();
+        services.AddScoped<ILeaveRequestValidator, LeaveRequestValidator>();
         services.AddScoped<ITimeZoneResolver, TimeZoneResolver>();
-
+        services.AddScoped<ILeaveDayCalculator, LeaveDayCalculator>();
         services.AddHostedService<OutboxProcessorBackgroundService>();
         services.AddHostedService<RosterGenerationBackgroundService>();
         services.AddTransient<InternalApiKeyHandler>();

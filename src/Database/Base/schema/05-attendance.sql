@@ -372,6 +372,26 @@ CREATE TABLE attendance.CompOffBalance (
 );
 GO
 
+CREATE TABLE attendance.CompOffAvailment (
+    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
+    LeaveRequestId      UNIQUEIDENTIFIER NOT NULL,   -- the COMP-OFF leave request
+    CompOffBalanceId    UNIQUEIDENTIFIER NOT NULL,   -- which earned balance to deduct from
+    DaysAvailed         DECIMAL(10,2)    NOT NULL,   -- how many days from this balance
+    IsActive            BIT              NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2        NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           UNIQUEIDENTIFIER             NULL,
+    LastUpdatedAt       DATETIME2        NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
+
+    CONSTRAINT FK_CompOffAvailment_LeaveRequest
+        FOREIGN KEY (LeaveRequestId)
+        REFERENCES attendance.LeaveRequest(Id),
+
+    CONSTRAINT FK_CompOffAvailment_CompOffBalance
+        FOREIGN KEY (CompOffBalanceId)
+        REFERENCES attendance.CompOffBalance(Id)
+);
+
 -- ATTENDANCE REGULARIZATION
 CREATE TABLE attendance.AttendanceRegularization (
     Id                                  UNIQUEIDENTIFIER PRIMARY KEY,

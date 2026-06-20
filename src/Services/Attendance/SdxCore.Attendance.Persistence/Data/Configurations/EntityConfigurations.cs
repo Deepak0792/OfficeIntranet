@@ -317,8 +317,8 @@ public sealed class CompOffBalanceConfiguration : IEntityTypeConfiguration<CompO
         builder.ToTable("CompOffBalance");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedNever();
-        builder.Property(e => e.TotalDays).HasPrecision(6, 2);
-        builder.Property(e => e.AvailedDays).HasPrecision(6, 2);
+        builder.Property(e => e.TotalDays).HasPrecision(10, 2);
+        builder.Property(e => e.AvailedDays).HasPrecision(10, 2);
 
         // RemainingDays is a non-stored computed column — EF should not write to it
         builder.Property(e => e.RemainingDays)
@@ -334,6 +334,27 @@ public sealed class CompOffBalanceConfiguration : IEntityTypeConfiguration<CompO
             .HasForeignKey(e => e.AttendanceRecordId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
+    }
+}
+
+public class CompOffAvailmentConfiguration : IEntityTypeConfiguration<CompOffAvailment>
+{
+    public void Configure(EntityTypeBuilder<CompOffAvailment> builder)
+    {
+        builder.ToTable("CompOffAvailment");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedNever();
+        builder.Property(e => e.DaysAvailed).HasPrecision(10, 2);
+
+        builder.HasOne(e => e.LeaveRequest)
+            .WithMany()
+            .HasForeignKey(e => e.LeaveRequestId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.CompOffBalance)
+            .WithMany()
+            .HasForeignKey(e => e.CompOffBalanceId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

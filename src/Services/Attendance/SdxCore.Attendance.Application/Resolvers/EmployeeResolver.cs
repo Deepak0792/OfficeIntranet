@@ -5,39 +5,23 @@ using SdxCore.Attendance.Application.Exceptions;
 
 namespace SdxCore.Attendance.Application.Resolvers;
 
-public class EmployeeResolver(
-    IEmployeeClient employeeClient)
-    : IEmployeeResolver
+public class EmployeeResolver(IEmployeeClient employeeClient) : IEmployeeResolver
 {
     public async Task<EmployeeSummaryResponse>
-        ResolveActiveEmployeeAsync(
-            Guid employeeId,
-            CancellationToken cancellationToken = default)
+        ResolveActiveEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default)
     {
         var employee =
-            await employeeClient.GetEmployeeSummaryByIdAsync(
-                employeeId,
-                cancellationToken);
-
-        if (employee is null)
-            throw ResolverException.NotFound(
-                "Employee",
-                employeeId);
+            await employeeClient.GetEmployeeSummaryByIdAsync(employeeId, cancellationToken)
+                ?? throw ResolverException.NotFound("Employee", employeeId);
 
         if (!employee.IsActive)
-            throw ResolverException.Inactive(
-                "Employee",
-                employeeId);
+            throw ResolverException.Inactive("Employee", employeeId);
 
         return employee;
     }
 
-    public async Task<IReadOnlyList<EmployeeSummaryResponse>>
-        ResolveActiveEmployeesAsync(
-            CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<EmployeeSummaryResponse>> ResolveActiveEmployeesAsync(CancellationToken cancellationToken = default)
     {
-        return await employeeClient.GetEmployeesAsync(
-            true,
-            cancellationToken);
+        return await employeeClient.GetEmployeesAsync(true, cancellationToken);
     }
 }

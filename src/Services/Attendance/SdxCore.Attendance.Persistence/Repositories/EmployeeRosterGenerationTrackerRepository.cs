@@ -29,4 +29,13 @@ public class EmployeeRosterGenerationTrackerRepository(AttendanceDbContext dbCon
             _dbSet.Update(existing);
         }
     }
+
+    public async Task<IReadOnlyCollection<EmployeeRosterGenerationTracker>> GetByEmployeeAsync(
+        Guid employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(x => x.EmployeeId == employeeId && x.IsActive)
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -11,10 +11,21 @@ public class CompOffBalanceRepository(AttendanceDbContext dbContext)
 {
     public async Task<IEnumerable<CompOffBalance>> GetByEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default)
         => await _dbSet.Include(b => b.CompOffType)
-            .Where(b => b.EmployeeId == employeeId && b.IsActive)
+            .Where(b => b.EmployeeId == employeeId)
             .OrderByDescending(b => b.EarnedDate)
             .ToListAsync(cancellationToken);
 
     public async Task<CompOffBalance?> GetByWorkflowInstanceIdAsync(Guid workflowInstanceId, CancellationToken cancellationToken = default)
         => await _dbSet.FirstOrDefaultAsync(b => b.WorkflowInstanceId == workflowInstanceId, cancellationToken);
+
+    public async Task<IReadOnlyList<CompOffBalance>> GetActiveBalancesAsync(Guid employeeId, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        return await _dbSet
+            .Where(x => x.IsActive && x.EmployeeId == employeeId && x.RemainingDays > 0 && x.ExpiryDate >= today)
+            .OrderBy(x => x.ExpiryDate)
+            .ThenBy(x => x.EarnedDate)
+            .ToListAsync(cancellationToken);
+    }
 }

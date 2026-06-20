@@ -7,4 +7,5 @@ public interface ICompOffBalanceRepository : IRepository<CompOffBalance, Guid>
 {
     Task<IEnumerable<CompOffBalance>> GetByEmployeeAsync(Guid employeeId, CancellationToken cancellationToken = default);
     Task<CompOffBalance?> GetByWorkflowInstanceIdAsync(Guid workflowInstanceId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<CompOffBalance>> GetActiveBalancesAsync(Guid employeeId, CancellationToken cancellationToken = default);
 }

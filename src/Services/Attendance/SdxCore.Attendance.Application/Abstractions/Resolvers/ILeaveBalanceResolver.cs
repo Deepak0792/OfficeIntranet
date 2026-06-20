@@ -5,7 +5,7 @@ public interface ILeaveBalanceResolver
     Task ValidateLeaveBalanceAsync(
         Guid employeeId,
         Guid leaveTypeId,
-        DateOnly fromDate,
-        DateOnly toDate,
+        int year,
+        decimal requestedDays,
         CancellationToken cancellationToken = default);
 }

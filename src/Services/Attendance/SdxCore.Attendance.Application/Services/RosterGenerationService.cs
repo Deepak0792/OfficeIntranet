@@ -1,6 +1,7 @@
 using SdxCore.Attendance.Application.Abstractions.Clients;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Services;
+using SdxCore.Attendance.Application.DTOs;
 using SdxCore.Attendance.Domain.Abstractions.Repositories;
 using SdxCore.Attendance.Domain.Entities;
 using SdxCore.Common.Helpers;
@@ -12,86 +13,217 @@ public class RosterGenerationService(
     IEmployeeClient employeeClient,
     IShiftResolver shiftResolver,
     ITimeZoneResolver timeZoneResolver,
-    IHolidayResolver holidayResolver,
-    IWorkWeekPolicyResolver workWeekPolicyResolver,
+    IEmployeeCalendarResolver employeeCalendarResolver,
     IEmployeeShiftRosterRepository rosterRepository,
+    IEmployeeRosterGenerationTrackerRepository trackerRepository,
     IUnitOfWork unitOfWork)
     : IRosterGenerationService
 {
-    public async Task GenerateForAllEmployeesAsync(DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken = default)
+    public async Task GenerateForAllEmployeesAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        string generationType = "MANUAL",
+        CancellationToken cancellationToken = default)
     {
-        var employees = await employeeClient.GetEmployeesAsync(true, cancellationToken);
+        var employees =
+            await employeeClient.GetEmployeesAsync(
+                true,
+                cancellationToken);
 
         foreach (var employee in employees)
-            await GenerateForEmployeeAsync(employee.EmployeeId, fromDate, toDate, cancellationToken);
+        {
+            await GenerateForEmployeeAsync(
+                employee.EmployeeId,
+                generationType,
+                fromDate,
+                toDate,
+                cancellationToken);
+        }
     }
 
-    public async Task GenerateForEmployeesAsync(IEnumerable<Guid> employeeIds, DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken = default)
+    public async Task GenerateForEmployeesAsync(
+        IEnumerable<Guid> employeeIds,
+        DateOnly fromDate,
+        DateOnly toDate,
+        string generationType = "MANUAL",
+        CancellationToken cancellationToken = default)
     {
         foreach (var employeeId in employeeIds)
-            await GenerateForEmployeeAsync(employeeId, fromDate, toDate, cancellationToken);
+        {
+            await GenerateForEmployeeAsync(
+                employeeId,
+                generationType,
+                fromDate,
+                toDate,
+                cancellationToken);
+        }
     }
 
-    public async Task GenerateForEmployeeAsync(Guid employeeId, DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken = default)
+    public async Task GenerateForEmployeeAsync(
+        Guid employeeId,
+        string generationType,
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default)
     {
-        for (var date = fromDate; date <= toDate; date = date.AddDays(1))
-            await GenerateRosterAsync(employeeId, date, cancellationToken);
+        var calendar =
+            await employeeCalendarResolver.ResolveAsync(
+                employeeId,
+                fromDate,
+                toDate,
+                cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        for (var date = fromDate;
+             date <= toDate;
+             date = date.AddDays(1))
+        {
+            await GenerateRosterAsync(
+                employeeId,
+                date,
+                calendar,
+                cancellationToken);
+        }
+
+        await CreateTrackerAsync(
+            employeeId,
+            fromDate,
+            toDate,
+            generationType,
+            cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(
+            cancellationToken);
     }
 
-    private async Task GenerateRosterAsync(Guid employeeId, DateOnly rosterDate, CancellationToken cancellationToken)
+    private async Task GenerateRosterAsync(
+        Guid employeeId,
+        DateOnly rosterDate,
+        EmployeeCalendarResult calendar,
+        CancellationToken cancellationToken)
     {
         var existing =
-            await rosterRepository.GetByEmployeeDateAsync(employeeId, rosterDate, cancellationToken);
+            await rosterRepository.GetByEmployeeDateAsync(
+                employeeId,
+                rosterDate,
+                cancellationToken);
 
         if (existing is not null)
             return;
 
-        var shift = await shiftResolver.ResolveAsync(employeeId, rosterDate, cancellationToken);
-        var isHoliday = await holidayResolver.IsHolidayAsync(employeeId, rosterDate, cancellationToken);
-        var isWeekend = await workWeekPolicyResolver.IsWeekendAsync(employeeId, rosterDate, cancellationToken);
+        var shift =
+            await shiftResolver.ResolveAsync(
+                employeeId,
+                rosterDate,
+                cancellationToken);
 
-        var shiftEntity = shift ?? throw new InvalidOperationException("Shift not found.");
+        if (shift is null)
+        {
+            throw new InvalidOperationException(
+                $"No shift resolved for Employee '{employeeId}' on '{rosterDate}'.");
+        }
 
-        var timeZone = await timeZoneResolver.GetTimeZoneAsync(shiftEntity.TimeZoneId, cancellationToken);
+        var isHoliday =
+            calendar.HolidayDays.Contains(rosterDate);
 
-        var ianaTimeZoneId = timeZone.IanaTimeZoneId
-            ?? throw new InvalidOperationException("Time zone IANA ID is missing.");
+        var isWeekend =
+            calendar.WeekendDays.Contains(rosterDate);
 
-        var localStart = rosterDate.ToDateTime(shiftEntity.StartTime);
-        var localEnd = rosterDate.ToDateTime(shiftEntity.EndTime);
+        var timeZone =
+            await timeZoneResolver.GetTimeZoneAsync(
+                shift.TimeZoneId,
+                cancellationToken);
 
-        if (shiftEntity.CrossesMidnight && shiftEntity.EndTime < shiftEntity.StartTime)
+        var ianaTimeZoneId =
+            timeZone.IanaTimeZoneId
+            ?? throw new InvalidOperationException(
+                "IANA TimeZone Id not configured.");
+
+        var localStart =
+            rosterDate.ToDateTime(
+                shift.StartTime);
+
+        var localEnd =
+            rosterDate.ToDateTime(
+                shift.EndTime);
+
+        if (shift.CrossesMidnight &&
+            shift.EndTime < shift.StartTime)
         {
             localEnd = localEnd.AddDays(1);
         }
 
-        var plannedStartUtc = TimeZoneHelper.ToUtc(localStart, ianaTimeZoneId);
-        var plannedEndUtc = TimeZoneHelper.ToUtc(localEnd, ianaTimeZoneId);
+        var plannedStartUtc =
+            TimeZoneHelper.ToUtc(
+                localStart,
+                ianaTimeZoneId);
+
+        var plannedEndUtc =
+            TimeZoneHelper.ToUtc(
+                localEnd,
+                ianaTimeZoneId);
 
         var roster = new EmployeeShiftRoster
         {
             Id = Guid.NewGuid(),
             EmployeeId = employeeId,
             RosterDate = rosterDate,
-            ShiftId = shiftEntity.ShiftId,
+
+            ShiftId = shift.ShiftId,
+
             IsHoliday = isHoliday,
-            IsOffDay = isWeekend || shiftEntity.IsOffDay,
-            RosterTimeZoneId = shiftEntity.TimeZoneId,
+
+            IsOffDay =
+                isWeekend ||
+                shift.IsOffDay,
+
+            RosterTimeZoneId = shift.TimeZoneId,
+
             StartTimeLocal = localStart,
             EndTimeLocal = localEnd,
+
             PlannedStartTime = plannedStartUtc,
             PlannedEndTime = plannedEndUtc,
+
             IsLocked = false,
             IsActive = true
         };
 
-        if (shift!.CrossesMidnight && roster.PlannedEndTime <= roster.PlannedStartTime)
-            roster.PlannedEndTime = roster.PlannedEndTime.Value.AddDays(1);
+        if (shift.CrossesMidnight &&
+            roster.PlannedEndTime <= roster.PlannedStartTime)
+        {
+            roster.PlannedEndTime =
+                roster.PlannedEndTime!.Value.AddDays(1);
+        }
 
         await rosterRepository.AddAsync(
             roster,
+            cancellationToken);
+    }
+
+    private async Task CreateTrackerAsync(
+        Guid employeeId,
+        DateOnly fromDate,
+        DateOnly toDate,
+        string generationType,
+        CancellationToken cancellationToken)
+    {
+        var tracker = new EmployeeRosterGenerationTracker
+        {
+            Id = Guid.NewGuid(),
+
+            EmployeeId = employeeId,
+            RosterYear = (short)fromDate.Year,
+            RosterMonth = (byte)fromDate.Month,
+            GenerationType = generationType,
+            GeneratedFromDate = fromDate,
+            GeneratedToDate = toDate,
+            LastGeneratedAt = DateTime.UtcNow,
+            IsLocked = false,
+            IsActive = true
+        };
+
+        await trackerRepository.AddAsync(
+            tracker,
             cancellationToken);
     }
 }

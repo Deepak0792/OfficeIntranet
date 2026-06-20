@@ -4,11 +4,12 @@ using SdxCore.Attendance.Application.Abstractions.Scheduler;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.DTOs.RosterPolicy.Response;
 
-namespace SdxCore.Attendance.Application.Services;
+namespace SdxCore.Attendance.Application.BackgroundServices.Scheduler;
 
 public class RosterGenerationScheduler(
     IEmployeeClient employeeClient,
     IRosterGenerationPolicyResolver policyResolver,
+    IRosterGenerationTrackerResolver trackerResolver,
     IRosterGenerationService rosterGenerationService)
     : IRosterGenerationScheduler
 {
@@ -26,7 +27,22 @@ public class RosterGenerationScheduler(
 
             var (fromDate, toDate) = BuildGenerationWindow(today, policy);
 
-            await rosterGenerationService.GenerateForEmployeeAsync(employee.EmployeeId, fromDate, toDate, cancellationToken);
+            var missingDates =
+                await trackerResolver.GetMissingDatesAsync(
+                    employee.EmployeeId,
+                    fromDate,
+                    toDate,
+                    cancellationToken);
+
+            if (missingDates.Count == 0)
+                continue;
+
+            await rosterGenerationService.GenerateForEmployeeAsync(
+                employee.EmployeeId,
+                policy.GenerationType,
+                missingDates.Min(),
+                missingDates.Max(),
+                cancellationToken);
         }
     }
 

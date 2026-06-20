@@ -4,6 +4,7 @@ public interface IRosterGenerationService
 {
     Task GenerateForEmployeeAsync(
         Guid employeeId,
+        string generationType,
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken cancellationToken = default);
@@ -12,10 +13,13 @@ public interface IRosterGenerationService
         IEnumerable<Guid> employeeIds,
         DateOnly fromDate,
         DateOnly toDate,
+        string generationType,
         CancellationToken cancellationToken = default);
 
     Task GenerateForAllEmployeesAsync(
+
         DateOnly fromDate,
         DateOnly toDate,
+        string generationType,
         CancellationToken cancellationToken = default);
 }

@@ -66,6 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IShiftSwapRequestRepository, ShiftSwapRequestRepository>();
         services.AddScoped<IRosterGenerationPolicyRepository, RosterGenerationPolicyRepository>();
         services.AddScoped<IRosterGenerationPolicyAssignmentRepository, RosterGenerationPolicyAssignmentRepository>();
+        services.AddScoped<ICompOffAvailmentRepository, CompOffAvailmentRepository>();
         services.AddScoped<IOutboxRepository, OutboxRepository>();
 
         return services;
