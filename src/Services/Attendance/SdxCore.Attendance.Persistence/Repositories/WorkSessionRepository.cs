@@ -22,4 +22,24 @@ public class WorkSessionRepository(AttendanceDbContext dbContext)
 
         return sessions;
     }
+
+    public async Task<WorkSession?> GetActiveSessionAsync(Guid employeeId, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.Where(w => w.EmployeeId == employeeId && w.IsActive && w.CheckOutTime == null)
+            .OrderByDescending(w => w.CheckInTime)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<WorkSession>> GetDueForAutoCheckoutAsync(
+        DateTime utcNow,
+        short batchSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(x => x.IsActive && !x.AutoCheckoutProcessed && x.CheckOutTime == null
+                && x.AutoCheckoutDueAt != null && x.AutoCheckoutDueAt <= utcNow)
+            .OrderBy(x => x.AutoCheckoutDueAt)
+            .Take(batchSize)
+            .ToListAsync(cancellationToken);
+    }
 }

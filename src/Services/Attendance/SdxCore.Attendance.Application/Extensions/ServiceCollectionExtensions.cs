@@ -3,11 +3,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SdxCore.Attendance.Application.Abstractions;
 using SdxCore.Attendance.Application.Abstractions.Clients;
+using SdxCore.Attendance.Application.Abstractions.Processor;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.Abstractions.Scheduler;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.BackgroundServices;
+using SdxCore.Attendance.Application.BackgroundServices.Processor;
 using SdxCore.Attendance.Application.BackgroundServices.Scheduler;
+using SdxCore.Attendance.Application.Calculator;
 using SdxCore.Attendance.Application.Clients;
 using SdxCore.Attendance.Application.Consumers;
 using SdxCore.Attendance.Application.Resolvers;
@@ -60,9 +63,20 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILeaveRequestValidator, LeaveRequestValidator>();
         services.AddScoped<ITimeZoneResolver, TimeZoneResolver>();
         services.AddScoped<ILeaveDayCalculator, LeaveDayCalculator>();
+        services.AddScoped<IAttendanceCalculator, AttendanceCalculator>();
+        services.AddScoped<IAutoCheckoutProcessor, AutoCheckoutProcessor>();
+        services.AddScoped<IAttendanceFinalizerProcessor, AttendanceFinalizerProcessor>();
+
+
+        services.AddTransient<InternalApiKeyHandler>();
+
         services.AddHostedService<OutboxProcessorBackgroundService>();
         services.AddHostedService<RosterGenerationBackgroundService>();
-        services.AddTransient<InternalApiKeyHandler>();
+        services.AddHostedService<AutoCheckoutBackgroundService>();
+        services.AddHostedService<AttendanceFinalizerBackgroundService>();
+        services.AddHostedService<AttendanceQueueProcessorBackgroundService>();
+
+
 
         return services;
     }

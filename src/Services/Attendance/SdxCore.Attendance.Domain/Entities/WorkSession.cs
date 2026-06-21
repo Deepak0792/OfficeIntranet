@@ -13,7 +13,9 @@ public class WorkSession : BaseAuditEntity<Guid>
     public DateTime? CheckOutTime { get; set; }
     public int? WorkedMinutes { get; set; }
     public bool IsActive { get; set; } = true;
-
+    public DateTime? AutoCheckoutDueAt { get; set; }
+    public bool AutoCheckoutProcessed { get; set; }
+    public bool IsAutoCheckout { get; set; }
     // Intra-schema navigation
     public EmployeeShiftRoster? EmployeeShiftRoster { get; set; }
 }

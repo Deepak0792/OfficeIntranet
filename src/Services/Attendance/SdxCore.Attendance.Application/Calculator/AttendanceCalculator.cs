@@ -4,7 +4,7 @@ using SdxCore.Attendance.Domain.Abstractions.Repositories;
 using SdxCore.Attendance.Domain.Entities;
 using SdxCore.Common.Enums.Attendance;
 
-namespace SdxCore.Attendance.Application.Services;
+namespace SdxCore.Attendance.Application.Calculator;
 
 public sealed class AttendanceCalculator(
     IAttendanceRecordRepository attendanceRepository,
@@ -41,6 +41,9 @@ public sealed class AttendanceCalculator(
             employeeId,
             attendanceDate,
             roster);
+
+        if (attendance.AttendanceState != AttendanceState.Draft)
+            return;
 
         var sessions = await workSessionRepository.GetByEmployeeDateAsync(
                 employeeId,
@@ -226,6 +229,30 @@ public sealed class AttendanceCalculator(
                 DetermineWorkingDayStatus(
                     attendance,
                     shift);
+        }
+
+        if (roster?.PlannedEndTime is not null)
+        {
+            attendance.FinalizeDueAt =
+                roster.PlannedEndTime.Value.AddMinutes(
+                    shift?.AttendanceFinalizeBufferMinutes ?? 240);
+        }
+        else if (attendance.CheckOutTime is not null)
+        {
+            attendance.FinalizeDueAt =
+                attendance.CheckOutTime.Value.AddHours(4);
+        }
+        else if (attendance.CheckInTime is not null)
+        {
+            attendance.FinalizeDueAt =
+                attendance.CheckInTime.Value.AddHours(16);
+        }
+        else
+        {
+            attendance.FinalizeDueAt =
+                attendance.AttendanceDate
+                    .ToDateTime(TimeOnly.MinValue)
+                    .AddDays(1);
         }
 
         var attendanceStatus =

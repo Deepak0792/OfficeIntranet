@@ -1,0 +1,55 @@
+using Microsoft.Extensions.Logging;
+using SdxCore.Attendance.Application.Abstractions.Processor;
+using SdxCore.Attendance.Domain.Abstractions;
+using SdxCore.Attendance.Domain.Abstractions.Repositories;
+using SdxCore.Attendance.Domain.Entities;
+using SdxCore.Common.Enums.Attendance;
+
+namespace SdxCore.Attendance.Application.BackgroundServices.Processor;
+
+public class AttendanceFinalizerProcessor(
+    IAttendanceRecordRepository attendanceRecordRepository,
+    IAttendanceUnitOfWork unitOfWork,
+    ILogger<AttendanceFinalizerProcessor> logger)
+    : IAttendanceFinalizerProcessor
+{
+    public async Task FinalizeAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var utcNow = DateTime.UtcNow;
+
+        var records = await attendanceRecordRepository.GetPendingFinalizationAsync(utcNow, cancellationToken);
+
+        if (records.Count == 0)
+            return;
+
+        foreach (var attendance in records)
+        {
+            try
+            {
+                FinalizeAttendance(attendance, utcNow);
+                attendanceRecordRepository.Update(attendance);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to finalize attendance. Employee={EmployeeId}, Date={AttendanceDate}",
+                    attendance.EmployeeId,
+                    attendance.AttendanceDate);
+            }
+        }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void FinalizeAttendance(AttendanceRecord attendance, DateTime finalizedAt)
+    {
+        if (attendance.AttendanceState != AttendanceState.Draft)
+            return;
+
+        if (attendance.LockedAt.HasValue)
+            return;
+
+        attendance.AttendanceState = AttendanceState.Finalized;
+        attendance.FinalizedAt = finalizedAt;
+    }
+}

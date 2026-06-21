@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SdxCore.Attendance.Domain.Abstractions.Repositories;
 using SdxCore.Attendance.Domain.Entities;
 using SdxCore.Attendance.Persistence.Data;
+using SdxCore.Common.Enums.Attendance;
 using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Attendance.Persistence.Repositories;
@@ -44,10 +45,23 @@ public class AttendanceRecordRepository(AttendanceDbContext dbContext)
             existing.OvertimeMinutes = record.OvertimeMinutes;
             existing.CheckInTime = record.CheckInTime;
             existing.CheckOutTime = record.CheckOutTime;
-            existing.IsOnLeave = record.IsOnLeave;
             existing.IsAutoProcessed = record.IsAutoProcessed;
-            existing.WorkSessionId = record.WorkSessionId;
             _dbSet.Update(existing);
         }
     }
+
+    public async Task<IReadOnlyCollection<AttendanceRecord>> GetPendingFinalizationAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.AttendanceRecords
+            .Where(x =>
+                x.IsActive &&
+                x.AttendanceState == AttendanceState.Draft &&
+                x.FinalizedAt == null &&
+                x.LockedAt == null &&
+                x.FinalizeDueAt <= utcNow)
+            .ToListAsync(cancellationToken);
+    }
+
 }

@@ -53,7 +53,7 @@ public class AttendanceRecord : BaseAuditEntity<Guid>
     /// References shared.StatusLookup(StatusCode)
     /// where StatusGroup = 'ATTENDANCE_STATE'.
     /// </summary>
-    public required string AttendanceState { get; set; }
+    public string? AttendanceState { get; set; }
 
     public string? Remarks { get; set; }
 
@@ -63,6 +63,8 @@ public class AttendanceRecord : BaseAuditEntity<Guid>
     public Guid? ApprovedBy { get; set; }
 
     public DateTime? ApprovedAt { get; set; }
+
+    public DateTime FinalizeDueAt { get; set; }
 
     public DateTime? FinalizedAt { get; set; }
 

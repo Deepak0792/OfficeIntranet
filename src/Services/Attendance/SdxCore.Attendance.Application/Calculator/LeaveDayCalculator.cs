@@ -1,7 +1,7 @@
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.DTOs;
 
-namespace SdxCore.Attendance.Application.Resolvers;
+namespace SdxCore.Attendance.Application.Calculator;
 
 public class LeaveDayCalculator(
     IEmployeeCalendarResolver employeeCalendarResolver)
