@@ -961,6 +961,8 @@ CREATE UNIQUE INDEX UX_RosterGenerationPolicyAssignment_Scope ON attendance.Rost
 CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_Pending ON attendance.AttendanceCalculationQueue (ProcessedAt, Priority, CreatedAt) INCLUDE (EmployeeId, AttendanceDate, ReasonCode);
 CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_EmployeeDate ON attendance.AttendanceCalculationQueue (EmployeeId, AttendanceDate);
 CREATE NONCLUSTERED INDEX IX_WorkSession_AutoCheckout ON attendance.WorkSession (AutoCheckoutProcessed, AutoCheckoutDueAt) INCLUDE (EmployeeId, SessionDate, CheckInTime);
+CREATE NONCLUSTERED INDEX IX_AttendanceRecord_Finalization ON attendance.AttendanceRecord(AttendanceState, FinalizeDueAt) INCLUDE(EmployeeId, AttendanceDate, FinalizedAt, LockedAt);
+
 PRINT 'Attendance schema created successfully';
 
 GO
