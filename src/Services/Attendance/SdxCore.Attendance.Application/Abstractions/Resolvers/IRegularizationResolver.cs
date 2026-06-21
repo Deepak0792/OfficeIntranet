@@ -4,7 +4,13 @@ namespace SdxCore.Attendance.Application.Abstractions.Resolvers;
 
 public interface IRegularizationResolver
 {
-    Task<AttendanceRegularization> ResolveAsync(
-        Guid regularizationId,
+    Task<AttendanceRegularization?> ResolveApprovedAsync(
+        Guid employeeId,
+        DateOnly attendanceDate,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> IsRegularizedAsync(
+        Guid employeeId,
+        DateOnly attendanceDate,
         CancellationToken cancellationToken = default);
 }

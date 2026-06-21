@@ -68,6 +68,7 @@ CREATE TABLE attendance.EmployeeShiftRoster (
     ShiftId             UNIQUEIDENTIFIER      NULL,
     IsOffDay            BIT         NOT NULL DEFAULT 0,
     IsHoliday           BIT         NOT NULL DEFAULT 0,
+    IsWeekend           BIT         NOT NULL DEFAULT 0,    
     RosterTimeZoneId    uniqueidentifier    NULL,
     StartTimeLocal      DATETIME2   NULL,
     EndTimeLocal        DATETIME2   NULL,
@@ -127,38 +128,43 @@ GO
 
 PRINT 'Creating AttendanceRecord...';
 
-CREATE TABLE attendance.AttendanceRecord (
-    Id                                  UNIQUEIDENTIFIER PRIMARY KEY,
-    EmployeeId                          UNIQUEIDENTIFIER NOT NULL,
-    EmployeeShiftRosterId               UNIQUEIDENTIFIER    NULL,
-    WorkSessionId                       UNIQUEIDENTIFIER    NULL,
-    AttendanceDate                      DATE                NOT NULL,
-    ShiftId                             UNIQUEIDENTIFIER    NULL,
-    AttendanceStatusId                  UNIQUEIDENTIFIER        NULL,
-    CheckInTime                         DATETIME2           NULL,
-    CheckOutTime                        DATETIME2           NULL,
-    LateByMinutes                       SMALLINT            NULL,
-    EarlyExitMinutes                    SMALLINT            NULL,
-    WorkedMinutes                       SMALLINT            NULL,
-    BreakMinutes                        SMALLINT            NOT NULL DEFAULT 0,
-    OvertimeMinutes                     SMALLINT            NOT NULL DEFAULT 0,
-    IsNightShift                        BIT                 NOT NULL DEFAULT 0,
-    IsCrossDayAttendance                BIT                 NOT NULL DEFAULT 0,
-    IsWeeklyOff                         BIT                 NOT NULL DEFAULT 0,
-    IsHoliday                           BIT                 NOT NULL DEFAULT 0,
-    IsOnLeave                           BIT                 NOT NULL DEFAULT 0,
-    IsManualEntry                       BIT                 NOT NULL DEFAULT 0,
-    IsAutoProcessed                     BIT                 NOT NULL DEFAULT 1,
-    IsAttendanceLocked                  BIT                 NOT NULL DEFAULT 0,
+CREATE TABLE attendance.AttendanceRecord
+(
+    Id                          UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                  UNIQUEIDENTIFIER NOT NULL,
+    EmployeeShiftRosterId       UNIQUEIDENTIFIER NULL,
+    AttendanceDate              DATE NOT NULL,
+    ShiftId                     UNIQUEIDENTIFIER NULL,
+    AttendanceStatusId          UNIQUEIDENTIFIER NULL,
+    LeaveRequestId              UNIQUEIDENTIFIER NULL,
+    RegularizationRequestId     UNIQUEIDENTIFIER NULL,
+    SessionCount                SMALLINT NOT NULL DEFAULT 0,
+    CheckInTime                 DATETIME2 NULL,
+    CheckOutTime                DATETIME2 NULL,
+    WorkedMinutes               SMALLINT NULL,
+    BreakMinutes                SMALLINT NOT NULL DEFAULT 0,
+    MinimumWorkingMinutes      SMALLINT NOT NULL DEFAULT 0,
+    LateByMinutes               SMALLINT NULL,
+    EarlyExitMinutes            SMALLINT NULL,
+    OvertimeMinutes             SMALLINT NOT NULL DEFAULT 0,
+    IsRegularized              BIT NOT NULL DEFAULT 0,
+    IsManualEntry              BIT NOT NULL DEFAULT 0,
+    IsAutoProcessed            BIT NOT NULL DEFAULT 1,
+    AttendanceState            NVARCHAR(50) NOT NULL,
+    AttendanceStateGroup       AS CAST('ATTENDANCE_STATE' AS NVARCHAR(50)) PERSISTED,
+    Remarks                    NVARCHAR(1000) NULL,
+    ApprovedBy                 UNIQUEIDENTIFIER NULL,
+    ApprovedAt                 DATETIME2 NULL,
+    FinalizedAt                DATETIME2 NULL,
+    LockedAt                   DATETIME2 NULL,
+    IsActive                   BIT NOT NULL DEFAULT 1,
+    CreatedAt                  DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                  UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt              DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy              UNIQUEIDENTIFIER NULL,
 
-    Remarks                             NVARCHAR(1000)      NULL,
-    ApprovedBy                          UNIQUEIDENTIFIER    NULL,
-    ApprovedAt                          DATETIME2           NULL,
-    IsActive                            BIT                 NOT NULL DEFAULT 1,
-    CreatedAt                           DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy                           UNIQUEIDENTIFIER    NULL,
-    LastUpdatedAt                       DATETIME2           NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy                       UNIQUEIDENTIFIER    NULL,
+    CONSTRAINT UQ_AttendanceRecord
+        UNIQUE(EmployeeId, AttendanceDate),
 
     CONSTRAINT FK_AttendanceRecord_Employee
         FOREIGN KEY (EmployeeId)
@@ -168,10 +174,6 @@ CREATE TABLE attendance.AttendanceRecord (
         FOREIGN KEY (EmployeeShiftRosterId)
         REFERENCES attendance.EmployeeShiftRoster(Id),
 
-    CONSTRAINT FK_AttendanceRecord_WorkSession
-        FOREIGN KEY (WorkSessionId)
-        REFERENCES attendance.WorkSession(Id),
-
     CONSTRAINT FK_AttendanceRecord_Shift
         FOREIGN KEY (ShiftId)
         REFERENCES attendance.Shift(Id),
@@ -180,9 +182,11 @@ CREATE TABLE attendance.AttendanceRecord (
         FOREIGN KEY (AttendanceStatusId)
         REFERENCES attendance.AttendanceStatus(Id),
 
-    CONSTRAINT UQ_AttendanceRecord
-        UNIQUE (EmployeeId, AttendanceDate)
+    CONSTRAINT FK_AttendanceRecord_AttendanceState
+        FOREIGN KEY (AttendanceState, AttendanceStateGroup)
+        REFERENCES shared.StatusLookup (StatusCode, StatusGroup)
 );
+
 GO
 
 -- ATTENDANCE LOG - Raw biometric punches
@@ -229,6 +233,35 @@ CREATE TABLE attendance.MobileAttendanceLog (
     CONSTRAINT FK_MobileAttendanceLog_GeoFence
         FOREIGN KEY (GeoFenceId)
         REFERENCES time.GeoFence(Id)
+);
+GO
+
+CREATE TABLE attendance.AttendanceCalculationQueue
+(
+    Id                  UNIQUEIDENTIFIER NOT NULL
+        CONSTRAINT PK_AttendanceCalculationQueue
+        PRIMARY KEY,
+
+    EmployeeId          UNIQUEIDENTIFIER NOT NULL,
+    AttendanceDate      DATE NOT NULL,
+    ReasonCode          SMALLINT,
+    Priority            TINYINT NOT NULL DEFAULT 1,
+    RetryCount          SMALLINT NOT NULL DEFAULT 0,
+    LastAttemptAt       DATETIME2 NULL,
+    ProcessedAt         DATETIME2 NULL,
+    ErrorMessage        NVARCHAR(2000) NULL,
+    IsActive            BIT NOT NULL DEFAULT 1,
+    CreatedAt           DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy           UNIQUEIDENTIFIER NULL,
+    LastUpdatedAt       DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy       UNIQUEIDENTIFIER NULL,
+	
+    CONSTRAINT FK_AttendanceCalculationQueue_Employee
+        FOREIGN KEY (EmployeeId)
+        REFERENCES employee.Employee(Id),
+
+    CONSTRAINT UQ_AttendanceCalculationQueue
+        UNIQUE (EmployeeId, AttendanceDate)
 );
 GO
 
@@ -885,54 +918,29 @@ CREATE INDEX IX_AttendanceRecord_EmployeeId ON attendance.AttendanceRecord(Emplo
 CREATE INDEX IX_AttendanceRecord_AttendanceDate ON attendance.AttendanceRecord(AttendanceDate);
 CREATE INDEX IX_AttendanceRecord_ShiftId ON attendance.AttendanceRecord(ShiftId);
 CREATE INDEX IX_AttendanceRecord_Employee_Date ON attendance.AttendanceRecord(EmployeeId, AttendanceDate);
-
 CREATE INDEX IX_AttendanceLog_Employee_Time   ON attendance.AttendanceLog (EmployeeId, PunchTime);
-
 CREATE INDEX IX_MobileAttendanceLog_Employee   ON attendance.MobileAttendanceLog (EmployeeId, PunchTime);
-
 CREATE INDEX IX_LeaveRequest_Employee           ON attendance.LeaveRequest (EmployeeId, FromDate, ToDate);
 CREATE INDEX IX_LeaveRequest_LeaveType         ON attendance.LeaveRequest (LeaveTypeId);
 CREATE INDEX IX_LeaveRequest_WorkflowInstance  ON attendance.LeaveRequest (WorkflowInstanceId);
-
-CREATE UNIQUE INDEX UIX_LeaveRequest_WorkflowInstance
-    ON attendance.LeaveRequest (WorkflowInstanceId)
-    WHERE WorkflowInstanceId IS NOT NULL;
-
+CREATE UNIQUE INDEX UIX_LeaveRequest_WorkflowInstance ON attendance.LeaveRequest (WorkflowInstanceId) WHERE WorkflowInstanceId IS NOT NULL;
 CREATE INDEX IX_LeaveBalance_Employee           ON attendance.LeaveBalance (EmployeeId, LeaveTypeId);
-
 CREATE INDEX IX_CompOffBalance_Employee         ON attendance.CompOffBalance (EmployeeId, CompOffTypeId);
 CREATE INDEX IX_CompOffBalance_WorkflowInstance ON attendance.CompOffBalance (WorkflowInstanceId);
-
-CREATE UNIQUE INDEX UIX_CompOffBalance_WorkflowInstance
-    ON attendance.CompOffBalance (WorkflowInstanceId)
-    WHERE WorkflowInstanceId IS NOT NULL;
-
+CREATE UNIQUE INDEX UIX_CompOffBalance_WorkflowInstance ON attendance.CompOffBalance (WorkflowInstanceId) WHERE WorkflowInstanceId IS NOT NULL;
 CREATE INDEX IX_AttendanceRegularization_Employee   ON attendance.AttendanceRegularization (EmployeeId, AttendanceDate);
 CREATE INDEX IX_AttendanceRegularization_WorkflowInstance ON attendance.AttendanceRegularization (WorkflowInstanceId);
-
-CREATE UNIQUE INDEX UIX_AttendanceRegularization_WorkflowInstance
-    ON attendance.AttendanceRegularization (WorkflowInstanceId)
-    WHERE WorkflowInstanceId IS NOT NULL;
-
+CREATE UNIQUE INDEX UIX_AttendanceRegularization_WorkflowInstance ON attendance.AttendanceRegularization (WorkflowInstanceId) WHERE WorkflowInstanceId IS NOT NULL;
 CREATE INDEX IX_ShiftAssignment_Scope            ON attendance.ShiftAssignment (ScopeTypeId, ScopeReferenceId);
-
 CREATE INDEX IX_ShiftSwapRequest_Requester       ON attendance.ShiftSwapRequest (RequesterEmployeeId, RequestedAt);
 CREATE INDEX IX_ShiftSwapRequest_Target          ON attendance.ShiftSwapRequest (TargetEmployeeId);
 CREATE INDEX IX_ShiftSwapRequest_WorkflowInstance ON attendance.ShiftSwapRequest (WorkflowInstanceId);
-
-CREATE UNIQUE INDEX UIX_ShiftSwapRequest_WorkflowInstance
-    ON attendance.ShiftSwapRequest (WorkflowInstanceId)
-    WHERE WorkflowInstanceId IS NOT NULL;
-
+CREATE UNIQUE INDEX UIX_ShiftSwapRequest_WorkflowInstance ON attendance.ShiftSwapRequest (WorkflowInstanceId) WHERE WorkflowInstanceId IS NOT NULL;
 CREATE INDEX IX_RotationAssignment_Scope        ON attendance.RotationShiftAssignment (ScopeTypeId, ScopeReferenceId);
-
 CREATE INDEX IX_EmployeeShiftRoster_Employee_Date ON attendance.EmployeeShiftRoster (EmployeeId, RosterDate);
-
 CREATE INDEX IX_Holiday_Date                      ON attendance.Holiday (HolidayDate);
 CREATE INDEX IX_Holiday_Calendar                 ON attendance.Holiday (HolidayCalendarId);
-
 CREATE INDEX IX_HolidayAssignment_Scope         ON attendance.HolidayCalendarAssignment (ScopeTypeId, ScopeReferenceId);
-
 -- Fast lookup for pending messages to publish
 CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_CreatedAt] ON [attendance].[OutboxMessages] ([Status] ASC, [CreatedAt] ASC) INCLUDE ([Exchange], [RoutingKey], [RetryCount]);
 -- Efficient retry processing
@@ -940,29 +948,14 @@ CREATE NONCLUSTERED INDEX [IX_OutboxMessages_Status_RetryCount] ON [attendance].
 -- Query published history efficiently
 CREATE NONCLUSTERED INDEX [IX_OutboxMessages_PublishedAt] ON [attendance].[OutboxMessages] ([PublishedAt] ASC) WHERE [PublishedAt] IS NOT NULL;
 CREATE UNIQUE NONCLUSTERED INDEX [UX_OutboxMessages_Id_Status] ON [attendance].[OutboxMessages] ([Id], [Status]);
-
 -- Recommended indexes
-CREATE INDEX IX_RosterGenerationPolicyAssignment_RosterGenerationPolicyId
-    ON attendance.RosterGenerationPolicyAssignment (RosterGenerationPolicyId);
-GO
-
-CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeTypeId
-    ON attendance.RosterGenerationPolicyAssignment (ScopeTypeId);
-GO
-
-CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeReferenceId
-    ON attendance.RosterGenerationPolicyAssignment (ScopeReferenceId);
-GO
-
+CREATE INDEX IX_RosterGenerationPolicyAssignment_RosterGenerationPolicyId ON attendance.RosterGenerationPolicyAssignment (RosterGenerationPolicyId);
+CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeTypeId ON attendance.RosterGenerationPolicyAssignment (ScopeTypeId);
+CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeReferenceId ON attendance.RosterGenerationPolicyAssignment (ScopeReferenceId);
 -- Optional: Prevent overlapping active assignments for same scope
-CREATE UNIQUE INDEX UX_RosterGenerationPolicyAssignment_Scope
-ON attendance.RosterGenerationPolicyAssignment
-(
-    ScopeTypeId,
-    ScopeReferenceId,
-    EffectiveFrom
-);
-GO
+CREATE UNIQUE INDEX UX_RosterGenerationPolicyAssignment_Scope ON attendance.RosterGenerationPolicyAssignment(ScopeTypeId, ScopeReferenceId, EffectiveFrom);
+CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_Pending ON attendance.AttendanceCalculationQueue (ProcessedAt, Priority, CreatedAt) INCLUDE (EmployeeId, AttendanceDate, ReasonCode);
+CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_EmployeeDate ON attendance.AttendanceCalculationQueue (EmployeeId, AttendanceDate);
 
 PRINT 'Attendance schema created successfully';
 

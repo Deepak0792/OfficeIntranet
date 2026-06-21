@@ -4,23 +4,32 @@ using SdxCore.Attendance.Domain.Entities;
 
 namespace SdxCore.Attendance.Application.Resolvers;
 
-public class RegularizationResolver(
+public sealed class RegularizationResolver(
     IAttendanceRegularizationRepository repository)
     : IRegularizationResolver
 {
-    public async Task<AttendanceRegularization> ResolveAsync(
-        Guid regularizationId,
+    public async Task<AttendanceRegularization?>
+        ResolveApprovedAsync(
+            Guid employeeId,
+            DateOnly attendanceDate,
+            CancellationToken cancellationToken = default)
+    {
+        return await repository
+            .GetApprovedByEmployeeDateAsync(
+                employeeId,
+                attendanceDate,
+                cancellationToken);
+    }
+
+    public async Task<bool> IsRegularizedAsync(
+        Guid employeeId,
+        DateOnly attendanceDate,
         CancellationToken cancellationToken = default)
     {
-        var entity =
-            await repository.GetByIdAsync(
-                regularizationId,
-                cancellationToken);
-
-        if (entity is null)
-            throw new InvalidOperationException(
-                $"Regularization '{regularizationId}' not found.");
-
-        return entity;
+        return await ResolveApprovedAsync(
+                   employeeId,
+                   attendanceDate,
+                   cancellationToken)
+               is not null;
     }
 }

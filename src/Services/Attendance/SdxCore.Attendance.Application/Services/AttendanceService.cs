@@ -11,6 +11,7 @@ using SdxCore.Common.Models;
 namespace SdxCore.Attendance.Application.Services;
 
 public class AttendanceService(
+    IAttendanceCalculationQueueService queueService,
     IAttendanceRecordRepository recordRepository,
     IWorkSessionRepository sessionRepository,
     IAttendanceRegularizationRepository regularizationRepository,
@@ -31,82 +32,108 @@ public class AttendanceService(
         return new PagedResponse<IEnumerable<AttendanceRecordResponse>>(items.Select(MapResponse), page, pageSize, total);
     }
 
-    public async Task<AttendanceRecordResponse?> CheckInAsync(CheckInRequest request, CancellationToken cancellationToken = default)
+    public async Task<AttendanceRecordResponse?> CheckInAsync(
+    CheckInRequest request,
+    CancellationToken cancellationToken = default)
     {
-        var date = DateOnly.FromDateTime(request.CheckInTime);
-        var roster = await rosterRepository.GetByEmployeeDateAsync(request.EmployeeId, date, cancellationToken);
+        var attendanceDate =
+            DateOnly.FromDateTime(request.CheckInTime);
 
-        var session = await sessionRepository.GetByEmployeeDateAsync(request.EmployeeId, date, cancellationToken);
+        var roster =
+            await rosterRepository.GetByEmployeeDateAsync(
+                request.EmployeeId,
+                attendanceDate,
+                cancellationToken);
+
+        var session =
+            await sessionRepository.GetByEmployeeDateAsync(
+                request.EmployeeId,
+                attendanceDate,
+                cancellationToken);
+
         if (session is null)
         {
-            session = PropertyMapper.Map<CheckInRequest, WorkSession>(request);
+            session = PropertyMapper.Map<
+                CheckInRequest,
+                WorkSession>(request);
+
             session.Id = Guid.NewGuid();
             session.EmployeeShiftRosterId = roster?.Id;
-            session.SessionDate = date;
+            session.SessionDate = attendanceDate;
             session.IsActive = true;
-            await sessionRepository.AddAsync(session, cancellationToken);
+
+            await sessionRepository.AddAsync(
+                session,
+                cancellationToken);
         }
         else
         {
             session.CheckInTime = request.CheckInTime;
+
             sessionRepository.Update(session);
         }
 
-        var record = await recordRepository.GetByEmployeeDateAsync(request.EmployeeId, date, cancellationToken);
-        if (record is null)
-        {
-            record = PropertyMapper.Map<CheckInRequest, AttendanceRecord>(request);
-            record.Id = Guid.NewGuid();
-            record.AttendanceDate = date;
-            record.EmployeeShiftRosterId = roster?.Id;
-            record.ShiftId = roster?.ShiftId;
-            record.IsActive = true;
-            await recordRepository.AddAsync(record, cancellationToken);
-        }
-        else
-        {
-            record.CheckInTime = request.CheckInTime;
-            recordRepository.Update(record);
-        }
+        await queueService.EnqueueAsync(
+            request.EmployeeId,
+            attendanceDate,
+            AttendanceCalculationReason.PunchReceived,
+            priority: 5,
+            cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        return MapResponse(record);
+        await unitOfWork.SaveChangesAsync(
+            cancellationToken);
+
+        return null;
     }
 
-    public async Task<AttendanceRecordResponse?> CheckOutAsync(CheckOutRequest request, CancellationToken cancellationToken = default)
+    public async Task<AttendanceRecordResponse?> CheckOutAsync(
+    CheckOutRequest request,
+    CancellationToken cancellationToken = default)
     {
-        var date = DateOnly.FromDateTime(request.CheckOutTime);
-        var session = await sessionRepository.GetByEmployeeDateAsync(request.EmployeeId, date, cancellationToken);
-        if (session is not null)
+        var attendanceDate =
+            DateOnly.FromDateTime(request.CheckOutTime);
+
+        var session =
+            await sessionRepository.GetByEmployeeDateAsync(
+                request.EmployeeId,
+                attendanceDate,
+                cancellationToken)
+            ?? throw new InvalidOperationException("Check-in not found.");
+
+        session.CheckOutTime = request.CheckOutTime;
+
+        if (session.CheckInTime != default)
         {
-            session.CheckOutTime = request.CheckOutTime;
-            if (session.CheckInTime != default)
-                session.WorkedMinutes = (int)(request.CheckOutTime - session.CheckInTime).TotalMinutes;
-            sessionRepository.Update(session);
+            session.WorkedMinutes =
+                (int)(request.CheckOutTime -
+                      session.CheckInTime)
+                .TotalMinutes;
         }
 
-        var record = await recordRepository.GetByEmployeeDateAsync(request.EmployeeId, date, cancellationToken);
-        if (record is not null)
-        {
-            record.CheckOutTime = request.CheckOutTime;
-            if (record.CheckInTime.HasValue)
-                record.WorkedMinutes = (short)(request.CheckOutTime - record.CheckInTime.Value).TotalMinutes;
-            recordRepository.Update(record);
-        }
+        sessionRepository.Update(session);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        return record is null ? null : MapResponse(record);
+        await queueService.EnqueueAsync(
+            request.EmployeeId,
+            attendanceDate,
+            AttendanceCalculationReason.PunchReceived,
+            priority: 5,
+            cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(
+            cancellationToken);
+
+        return null;
     }
 
     public async Task ProcessDailyAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
         var rosters = await rosterRepository.GetByDateAsync(date, cancellationToken);
         var presentStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Present, cancellationToken);
-        var absentStatusId  = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Absent, cancellationToken);
-        var leaveStatusId   = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.OnLeave, cancellationToken);
+        var absentStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Absent, cancellationToken);
+        var leaveStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.OnLeave, cancellationToken);
         var holidayStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Holiday, cancellationToken);
         var weekendStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Weekend, cancellationToken);
-        var lateStatusId    = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Late, cancellationToken);
+        var lateStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Late, cancellationToken);
 
         foreach (var roster in rosters)
         {
@@ -117,14 +144,14 @@ public class AttendanceService(
             bool isOnLeave = false, isHoliday = roster.IsHoliday, isWeeklyOff = roster.IsOffDay;
             short? workedMinutes = (short?)session?.WorkedMinutes;
 
-            if (roster.IsHoliday)       statusId = holidayStatusId;
-            else if (roster.IsOffDay)   statusId = weekendStatusId;
+            if (roster.IsHoliday) statusId = holidayStatusId;
+            else if (roster.IsOffDay) statusId = weekendStatusId;
             else if (approvedLeave is not null) { statusId = leaveStatusId; isOnLeave = true; }
-            else if (session is null)   statusId = absentStatusId;
+            else if (session is null) statusId = absentStatusId;
             else if (roster.Shift is not null && session.CheckInTime != default
                      && session.CheckInTime.TimeOfDay > roster.Shift.StartTime.ToTimeSpan().Add(TimeSpan.FromMinutes(roster.Shift.GraceInMinutes)))
-                                        statusId = lateStatusId;
-            else                        statusId = presentStatusId;
+                statusId = lateStatusId;
+            else statusId = presentStatusId;
 
             var record = new AttendanceRecord
             {

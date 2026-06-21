@@ -184,12 +184,6 @@ public sealed class AttendanceRecordConfiguration : IEntityTypeConfiguration<Att
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
-        builder.HasOne(e => e.WorkSession)
-            .WithMany()
-            .HasForeignKey(e => e.WorkSessionId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .IsRequired(false);
-
         builder.HasOne(e => e.Shift)
             .WithMany()
             .HasForeignKey(e => e.ShiftId)

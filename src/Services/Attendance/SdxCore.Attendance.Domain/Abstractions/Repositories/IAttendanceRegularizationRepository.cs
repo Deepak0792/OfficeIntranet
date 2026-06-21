@@ -7,4 +7,5 @@ public interface IAttendanceRegularizationRepository : IRepository<AttendanceReg
 {
     Task<AttendanceRegularization?> GetByWorkflowInstanceIdAsync(Guid workflowInstanceId, CancellationToken cancellationToken = default);
     Task<(IEnumerable<AttendanceRegularization> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, Guid? employeeId, CancellationToken cancellationToken = default);
+    Task<AttendanceRegularization?> GetApprovedByEmployeeDateAsync(Guid employeeId, DateOnly attendanceDate, CancellationToken cancellationToken = default);
 }

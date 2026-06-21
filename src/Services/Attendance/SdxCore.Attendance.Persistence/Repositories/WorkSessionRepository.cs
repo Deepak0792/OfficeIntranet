@@ -12,6 +12,14 @@ public class WorkSessionRepository(AttendanceDbContext dbContext)
     public async Task<WorkSession?> GetByRosterAsync(Guid rosterId, CancellationToken cancellationToken = default)
         => await _dbSet.FirstOrDefaultAsync(w => w.EmployeeShiftRosterId == rosterId, cancellationToken);
 
-    public async Task<WorkSession?> GetByEmployeeDateAsync(Guid employeeId, DateOnly date, CancellationToken cancellationToken = default)
-        => await _dbSet.FirstOrDefaultAsync(w => w.EmployeeId == employeeId && w.SessionDate == date, cancellationToken);
+    public async Task<IReadOnlyCollection<WorkSession>> GetByEmployeeDateAsync(Guid employeeId, DateOnly date, CancellationToken cancellationToken = default)
+    {
+        var sessions =
+            await _dbSet
+                .AsNoTracking()
+                .Where(w => w.EmployeeId == employeeId && w.SessionDate == date)
+                .ToListAsync(cancellationToken);
+
+        return sessions;
+    }
 }

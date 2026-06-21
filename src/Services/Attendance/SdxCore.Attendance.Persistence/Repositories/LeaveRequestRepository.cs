@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SdxCore.Attendance.Domain.Abstractions.Repositories;
 using SdxCore.Attendance.Domain.Entities;
 using SdxCore.Attendance.Persistence.Data;
+using SdxCore.Common.Enums.Attendance;
 using SdxCore.SharedKernel.Persistence.Repositories;
 
 namespace SdxCore.Attendance.Persistence.Repositories;
@@ -22,10 +23,17 @@ public class LeaveRequestRepository(AttendanceDbContext dbContext)
     public async Task<LeaveRequest?> GetApprovedLeaveForDateAsync(Guid employeeId, DateOnly date, CancellationToken cancellationToken = default)
         => await _dbSet.FirstOrDefaultAsync(
             r => r.EmployeeId == employeeId
-              && r.LeaveStatus == Common.Enums.Attendance.LeaveStatus.Approved
+              && r.LeaveStatus == LeaveStatus.Approved
               && r.FromDate <= date
               && r.ToDate >= date,
             cancellationToken);
+
+    public async Task<IReadOnlyCollection<LeaveRequest>> GetApprovedLeaveForDateAsync(Guid employeeId, DateOnly fromDate, DateOnly toDate, CancellationToken cancellationToken = default)
+    => await _dbSet.Where(
+        r => r.EmployeeId == employeeId
+          && r.LeaveStatus == LeaveStatus.Approved
+          && r.FromDate <= toDate
+          && r.ToDate >= fromDate).ToListAsync(cancellationToken);
 
     public async Task<(IEnumerable<LeaveRequest> Items, int TotalCount)> GetPagedAsync(
         int page, int pageSize, Guid? employeeId, string? status, CancellationToken cancellationToken = default)

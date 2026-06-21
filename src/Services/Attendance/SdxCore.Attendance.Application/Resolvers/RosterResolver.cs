@@ -14,7 +14,7 @@ public class RosterResolver(
             ?? throw new InvalidOperationException($"Roster not found for ID '{rosterId}'.");
     }
 
-    public async Task<EmployeeShiftRoster> ResolveEmployeeRosterAsync(
+    public async Task<EmployeeShiftRoster> ResolveByEmployeeAsync(
         Guid employeeId,
         DateOnly date,
         CancellationToken cancellationToken = default)

@@ -2,6 +2,8 @@ using SdxCore.Attendance.Application.Abstractions.Resolvers;
 using SdxCore.Attendance.Application.DTOs.Employee;
 using SdxCore.Attendance.Application.DTOs.Shift.Response;
 using SdxCore.Attendance.Domain.Abstractions.Repositories;
+using SdxCore.Attendance.Domain.Entities;
+using SdxCore.Caching;
 using SdxCore.Common.Enums.Workflow;
 
 namespace SdxCore.Attendance.Application.Resolvers;
@@ -12,7 +14,9 @@ public class ShiftResolver(
     IShiftRepository shiftRepository,
     IShiftAssignmentRepository shiftAssignmentRepository,
     IRotationShiftAssignmentRepository rotationAssignmentRepository,
-    IRotationShiftDetailRepository rotationDetailRepository)
+    IRotationShiftDetailRepository rotationDetailRepository,
+    ICacheService cache,
+    ICacheKeyBuilder keyBuilder)
     : IShiftResolver
 {
     public async Task<ResolvedShiftResponse?> ResolveAsync(
@@ -49,6 +53,11 @@ public class ShiftResolver(
         return shift?.IsOffDay ?? true;
     }
 
+    public async Task<Shift?> ResolveShiftByIdAsync(Guid shiftId, CancellationToken cancellationToken)
+    {
+        return (await GetAllShiftAsync(cancellationToken))?.FirstOrDefault(s => s.Id == shiftId);
+    }
+
     private async Task<ResolvedShiftResponse?> ResolveFixedShiftAsync(
         Guid employeeId,
         DateOnly rosterDate,
@@ -78,17 +87,10 @@ public class ShiftResolver(
                     assignment.ScopeTypeId,
                     cancellationToken);
 
-            if (!IsMatch(
-                    scopeCode,
-                    assignment.ScopeReferenceId,
-                    employeeId,
-                    scope))
+            if (!IsMatch(scopeCode, assignment.ScopeReferenceId, employeeId, scope))
                 continue;
 
-            var shift =
-                await shiftRepository.GetByIdAsync(
-                    assignment.ShiftId,
-                    cancellationToken);
+            var shift = await shiftRepository.GetByIdAsync(assignment.ShiftId, cancellationToken);
 
             if (shift is null)
                 continue;
@@ -112,9 +114,9 @@ public class ShiftResolver(
     }
 
     private async Task<ResolvedShiftResponse?> ResolveRotationShiftAsync(
-        Guid employeeId,
-        DateOnly rosterDate,
-        CancellationToken cancellationToken)
+    Guid employeeId,
+    DateOnly rosterDate,
+    CancellationToken cancellationToken)
     {
         var scope =
             await employeeScopeResolver.ResolveAsync(
@@ -134,18 +136,16 @@ public class ShiftResolver(
                     assignment.EffectiveFrom,
                     assignment.EffectiveTo,
                     rosterDate))
+            {
                 continue;
+            }
 
             var scopeCode =
                 await scopeResolver.GetScopeCodeByIdAsync(
                     assignment.ScopeTypeId,
                     cancellationToken);
 
-            if (!IsMatch(
-                    scopeCode,
-                    assignment.ScopeReferenceId,
-                    employeeId,
-                    scope))
+            if (!IsMatch(scopeCode, assignment.ScopeReferenceId, employeeId, scope))
                 continue;
 
             var details =
@@ -173,7 +173,7 @@ public class ShiftResolver(
             var cycleDay =
                 daysElapsed % cycleLength;
 
-            int runningDays = 0;
+            var runningDays = 0;
 
             foreach (var detail in details)
             {
@@ -182,25 +182,23 @@ public class ShiftResolver(
                 if (cycleDay >= runningDays)
                     continue;
 
-                if (detail.IsOffDay)
+                // OFF DAY
+                if (detail.ShiftId is null)
                 {
                     return new ResolvedShiftResponse
                     {
                         IsOffDay = true,
                         IsRotationShift = true,
-                        RotationShiftId =
-                            assignment.RotationShiftId,
+                        RotationShiftId = assignment.RotationShiftId,
                         RosterDate = rosterDate
                     };
                 }
 
                 var shift =
                     await shiftRepository.GetByIdAsync(
-                        detail.ShiftId!.Value,
-                        cancellationToken);
-
-                if (shift is null)
-                    return null;
+                        detail.ShiftId.Value,
+                        cancellationToken)
+                    ?? throw new InvalidOperationException($"Shift '{detail.ShiftId}' not found.");
 
                 return new ResolvedShiftResponse
                 {
@@ -210,11 +208,19 @@ public class ShiftResolver(
                     TimeZoneId = shift.TimeZoneId,
                     StartTime = shift.StartTime,
                     EndTime = shift.EndTime,
+                    GraceInMinutes = shift.GraceInMinutes,
+                    GraceOutMinutes = shift.GraceOutMinutes,
+                    MinimumWorkingMinutes = shift.MinimumWorkingMinutes,
+                    MaximumWorkingMinutes = shift.MaximumWorkingMinutes,
+                    AttendanceFinalizeBufferMinutes = shift.AttendanceFinalizeBufferMinutes,
+                    MaxAllowedCheckoutDelayMinutes = shift.MaxAllowedCheckoutDelayMinutes,
                     CrossesMidnight = shift.CrossesMidnight,
+                    IsNightShift = shift.IsNightShift,
+                    IsFlexible = shift.IsFlexible,
+                    AllowOvertime = shift.AllowOvertime,
                     IsOffDay = false,
                     IsRotationShift = true,
-                    RotationShiftId =
-                        assignment.RotationShiftId,
+                    RotationShiftId = assignment.RotationShiftId,
                     RosterDate = rosterDate
                 };
             }
@@ -269,5 +275,16 @@ public class ShiftResolver(
 
             _ => false
         };
+    }
+
+    private async Task<IEnumerable<Shift>> GetAllShiftAsync(CancellationToken cancellationToken)
+    {
+        var key = keyBuilder.BuildKey(nameof(Shift), "all");
+
+        return await cache.GetOrSetAsync(key, async ct =>
+        {
+            var result = await shiftRepository.GetAllAsync(ct);
+            return result?.ToList() ?? [];
+        }, CacheOptions.StaticMasterData, cancellationToken) ?? [];
     }
 }

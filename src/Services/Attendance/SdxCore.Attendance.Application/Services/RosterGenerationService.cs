@@ -171,6 +171,7 @@ public class RosterGenerationService(
             ShiftId = shift.ShiftId,
 
             IsHoliday = isHoliday,
+            IsWeekend = isWeekend,
 
             IsOffDay =
                 isWeekend ||

@@ -11,10 +11,10 @@ public record AttendanceRecordResponse(
     short? WorkedMinutes,
     short? LateByMinutes,
     short OvertimeMinutes,
-    bool IsOnLeave,
-    bool IsHoliday,
-    bool IsWeeklyOff,
-    bool IsAttendanceLocked);
+    bool IsRegularized,
+    bool IsManualEntry,
+    bool IsAutoProcessed,
+    DateTime? LockedAt);
 
 public record RegularizationResponse(
     Guid Id,

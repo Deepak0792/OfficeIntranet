@@ -8,7 +8,7 @@ public interface IRosterResolver
         Guid rosterId,
         CancellationToken cancellationToken = default);
 
-    Task<EmployeeShiftRoster> ResolveEmployeeRosterAsync(
+    Task<EmployeeShiftRoster> ResolveByEmployeeAsync(
         Guid employeeId,
         DateOnly date,
         CancellationToken cancellationToken = default);
