@@ -110,6 +110,9 @@ CREATE TABLE attendance.WorkSession (
     CheckInTime             DATETIME2       NOT NULL,
     CheckOutTime            DATETIME2       NULL,
     WorkedMinutes           INT             NULL,
+    AutoCheckoutDueAt       DATETIME2       NULL,
+    AutoCheckoutProcessed   BIT             NOT NULL DEFAULT 0,
+    IsAutoCheckout          BIT             NOT NULL DEFAULT 0,
     IsActive                BIT             NOT NULL DEFAULT 1,
     CreatedAt               DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     CreatedBy               UNIQUEIDENTIFIER NULL,
@@ -155,6 +158,7 @@ CREATE TABLE attendance.AttendanceRecord
     Remarks                    NVARCHAR(1000) NULL,
     ApprovedBy                 UNIQUEIDENTIFIER NULL,
     ApprovedAt                 DATETIME2 NULL,
+    FinalizeDueAt              DATETIME2 NOT NULL,
     FinalizedAt                DATETIME2 NULL,
     LockedAt                   DATETIME2 NULL,
     IsActive                   BIT NOT NULL DEFAULT 1,
@@ -956,7 +960,7 @@ CREATE INDEX IX_RosterGenerationPolicyAssignment_ScopeReferenceId ON attendance.
 CREATE UNIQUE INDEX UX_RosterGenerationPolicyAssignment_Scope ON attendance.RosterGenerationPolicyAssignment(ScopeTypeId, ScopeReferenceId, EffectiveFrom);
 CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_Pending ON attendance.AttendanceCalculationQueue (ProcessedAt, Priority, CreatedAt) INCLUDE (EmployeeId, AttendanceDate, ReasonCode);
 CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_EmployeeDate ON attendance.AttendanceCalculationQueue (EmployeeId, AttendanceDate);
-
+CREATE NONCLUSTERED INDEX IX_WorkSession_AutoCheckout ON attendance.WorkSession (AutoCheckoutProcessed, AutoCheckoutDueAt) INCLUDE (EmployeeId, SessionDate, CheckInTime);
 PRINT 'Attendance schema created successfully';
 
 GO
