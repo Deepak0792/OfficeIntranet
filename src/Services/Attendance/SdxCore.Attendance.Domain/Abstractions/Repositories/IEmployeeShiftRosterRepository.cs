@@ -8,4 +8,5 @@ public interface IEmployeeShiftRosterRepository : IRepository<EmployeeShiftRoste
     Task<EmployeeShiftRoster?> GetByEmployeeDateAsync(Guid employeeId, DateOnly date, CancellationToken cancellationToken = default);
     Task<IEnumerable<EmployeeShiftRoster>> GetByDateAsync(DateOnly date, CancellationToken cancellationToken = default);
     Task<IEnumerable<EmployeeShiftRoster>> GetByEmployeeRangeAsync(Guid employeeId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<EmployeeShiftRoster>> GetPendingAttendanceCalculationAsync(DateTime dueAt, int batchSize, CancellationToken cancellationToken = default);
 }

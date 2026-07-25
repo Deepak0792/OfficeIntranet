@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,27 +7,32 @@ using SdxCore.Attendance.Application.Configuration;
 
 namespace SdxCore.Attendance.Application.BackgroundServices;
 
-public sealed class RosterGenerationBackgroundService(
+public sealed class AttendanceLogProcessorBackgroundService(
     IServiceScopeFactory serviceScopeFactory,
     IOptions<AttendanceProcessingOptions> options,
-    ILogger<RosterGenerationBackgroundService> logger)
+    ILogger<AttendanceLogProcessorBackgroundService> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        var settings = options.Value.RosterGeneration;
+        var settings = options.Value.AttendanceLogProcessor;
 
         if (!settings.Enabled)
         {
             logger.LogInformation(
-                "Roster Generation Background Service is disabled.");
+                "Attendance Log Processor Background Service is disabled.");
 
             return;
         }
 
+        if (!settings.BatchSize.HasValue)
+        {
+            throw new InvalidOperationException("BatchSize must be configured for AttendanceProcessing.");
+        }
+
         logger.LogInformation(
-            "Roster Generation Background Service started.");
+            "Attendance Log Processor Background Service started.");
 
         using var timer = new PeriodicTimer(
             TimeSpan.FromSeconds(settings.PollingIntervalSeconds));
@@ -38,18 +43,10 @@ public sealed class RosterGenerationBackgroundService(
             {
                 using var scope = serviceScopeFactory.CreateScope();
 
-                var scheduler =
-                    scope.ServiceProvider
-                        .GetRequiredService<IRosterGenerationProcessor>();
+                var processor = scope.ServiceProvider
+                    .GetRequiredService<IAttendanceLogProcessor>();
 
-                logger.LogInformation(
-                    "Roster generation started.");
-
-                await scheduler.ExecuteAsync(
-                    stoppingToken);
-
-                logger.LogInformation(
-                    "Roster generation completed.");
+                await processor.ProcessPendingLogsAsync(settings.BatchSize.Value, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -59,11 +56,11 @@ public sealed class RosterGenerationBackgroundService(
             {
                 logger.LogError(
                     ex,
-                    "Roster Generation Background Service execution failed.");
+                    "Error occurred while processing attendance logs.");
             }
         }
 
         logger.LogInformation(
-            "Roster Generation Background Service stopped.");
+            "Attendance Log Processor Background Service stopped.");
     }
 }

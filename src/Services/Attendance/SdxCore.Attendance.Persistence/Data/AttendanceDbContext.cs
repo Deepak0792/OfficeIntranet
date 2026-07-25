@@ -62,6 +62,8 @@ public class AttendanceDbContext(
     // Shift Swap
     public DbSet<ShiftSwapRequest> ShiftSwapRequests { get; set; } = null!;
 
+    public DbSet<AttendanceCalculationQueue> AttendanceCalculationQueues { get; set; } = null!;
+
     // Outbox
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
 

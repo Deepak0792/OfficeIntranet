@@ -53,13 +53,6 @@ public class AttendanceController(IAttendanceService service) : SdxControllerBas
         return OkOrNotFound(result, "Check-out recorded.");
     }
 
-    [HttpPost("process-daily")]
-    public async Task<IActionResult> ProcessDaily([FromQuery] DateOnly date, CancellationToken cancellationToken)
-    {
-        await service.ProcessDailyAsync(date, cancellationToken);
-        return Ok(new ApiResponse<bool>(true, $"Daily attendance processed for {date:yyyy-MM-dd}."));
-    }
-
     [HttpPatch("{id:guid}/lock")]
     public async Task<IActionResult> Lock(Guid id, CancellationToken cancellationToken)
     {

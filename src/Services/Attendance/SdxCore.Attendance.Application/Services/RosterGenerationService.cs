@@ -178,12 +178,13 @@ public class RosterGenerationService(
                 shift.IsOffDay,
 
             RosterTimeZoneId = shift.TimeZoneId,
-
+            
             StartTimeLocal = localStart,
             EndTimeLocal = localEnd,
 
             PlannedStartTime = plannedStartUtc,
             PlannedEndTime = plannedEndUtc,
+            AttendanceCalculationDueAt = plannedStartUtc.AddMinutes(shift.GraceInMinutes),
 
             IsLocked = false,
             IsActive = true

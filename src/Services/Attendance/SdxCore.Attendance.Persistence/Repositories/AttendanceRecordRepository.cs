@@ -51,17 +51,19 @@ public class AttendanceRecordRepository(AttendanceDbContext dbContext)
     }
 
     public async Task<IReadOnlyCollection<AttendanceRecord>> GetPendingFinalizationAsync(
-        DateTime utcNow,
-        CancellationToken cancellationToken = default)
+    DateTime utcNow,
+    int batchSize,
+    CancellationToken cancellationToken = default)
     {
-        return await dbContext.AttendanceRecords
+        return await _dbSet
             .Where(x =>
                 x.IsActive &&
                 x.AttendanceState == AttendanceState.Draft &&
                 x.FinalizedAt == null &&
                 x.LockedAt == null &&
                 x.FinalizeDueAt <= utcNow)
+            .OrderBy(x => x.FinalizeDueAt)
+            .Take(batchSize)
             .ToListAsync(cancellationToken);
     }
-
 }

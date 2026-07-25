@@ -1,17 +1,17 @@
 using SdxCore.Attendance.Application.Abstractions.Clients;
+using SdxCore.Attendance.Application.Abstractions.Processor;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
-using SdxCore.Attendance.Application.Abstractions.Scheduler;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.DTOs.RosterPolicy.Response;
 
-namespace SdxCore.Attendance.Application.BackgroundServices.Scheduler;
+namespace SdxCore.Attendance.Application.BackgroundServices.Processor;
 
-public class RosterGenerationScheduler(
+public class RosterGenerationProcessor(
     IEmployeeClient employeeClient,
     IRosterGenerationPolicyResolver policyResolver,
     IRosterGenerationTrackerResolver trackerResolver,
     IRosterGenerationService rosterGenerationService)
-    : IRosterGenerationScheduler
+    : IRosterGenerationProcessor
 {
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {

@@ -13,4 +13,6 @@ public class AttendanceLog : BaseAuditEntity<Guid>
     public string? Location { get; set; }
     public bool IsProcessed { get; set; }
     public bool IsActive { get; set; } = true;
+    public short RetryCount { get; set; }
+    public string? ErrorMessage { get; set; }
 }

@@ -26,10 +26,10 @@ public class EmployeeShiftRoster : BaseAuditEntity<Guid>
     public DateTime? PlannedEndTime { get; set; }
     public DateTime? ActualStartTime { get; set; }
     public DateTime? ActualEndTime { get; set; }
+    public DateTime? AttendanceCalculationDueAt { get; set; }
     public string? Remarks { get; set; }
     public bool IsLocked { get; set; }
     public bool IsActive { get; set; } = true;
-
     // Intra-schema navigation
     public Shift? Shift { get; set; }
 }

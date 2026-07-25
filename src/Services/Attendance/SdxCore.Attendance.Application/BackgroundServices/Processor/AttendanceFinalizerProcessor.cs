@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using SdxCore.Attendance.Application.Abstractions.Processor;
 using SdxCore.Attendance.Domain.Abstractions;
 using SdxCore.Attendance.Domain.Abstractions.Repositories;
@@ -6,19 +6,18 @@ using SdxCore.Attendance.Domain.Entities;
 using SdxCore.Common.Enums.Attendance;
 
 namespace SdxCore.Attendance.Application.BackgroundServices.Processor;
-
 public class AttendanceFinalizerProcessor(
     IAttendanceRecordRepository attendanceRecordRepository,
     IAttendanceUnitOfWork unitOfWork,
     ILogger<AttendanceFinalizerProcessor> logger)
     : IAttendanceFinalizerProcessor
 {
-    public async Task FinalizeAsync(
+    public async Task FinalizeAsync(int batchSize,
         CancellationToken cancellationToken = default)
     {
         var utcNow = DateTime.UtcNow;
 
-        var records = await attendanceRecordRepository.GetPendingFinalizationAsync(utcNow, cancellationToken);
+        var records = await attendanceRecordRepository.GetPendingFinalizationAsync(utcNow, batchSize, cancellationToken);
 
         if (records.Count == 0)
             return;

@@ -62,27 +62,28 @@ GO
 
 -- EMPLOYEE SHIFT ROSTER
 CREATE TABLE attendance.EmployeeShiftRoster (
-    Id                  UNIQUEIDENTIFIER PRIMARY KEY,
-    EmployeeId          UNIQUEIDENTIFIER      NOT NULL,
-    RosterDate          DATE        NOT NULL,
-    ShiftId             UNIQUEIDENTIFIER      NULL,
-    IsOffDay            BIT         NOT NULL DEFAULT 0,
-    IsHoliday           BIT         NOT NULL DEFAULT 0,
-    IsWeekend           BIT         NOT NULL DEFAULT 0,    
-    RosterTimeZoneId    uniqueidentifier    NULL,
-    StartTimeLocal      DATETIME2   NULL,
-    EndTimeLocal        DATETIME2   NULL,
-    PlannedStartTime    DATETIME2   NULL,
-    PlannedEndTime      DATETIME2   NULL,
-    ActualStartTime     DATETIME2   NULL,
-    ActualEndTime       DATETIME2   NULL,
-    Remarks             NVARCHAR(1000) NULL,
-    IsLocked            BIT         NOT NULL DEFAULT 0,
-    IsActive            BIT             NOT NULL DEFAULT 1,
-    CreatedAt           DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    CreatedBy           UNIQUEIDENTIFIER             NULL,
-    LastUpdatedAt       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
-    LastUpdatedBy       UNIQUEIDENTIFIER             NULL,
+    Id                              UNIQUEIDENTIFIER PRIMARY KEY,
+    EmployeeId                      UNIQUEIDENTIFIER      NOT NULL,
+    RosterDate                      DATE        NOT NULL,
+    ShiftId                         UNIQUEIDENTIFIER      NULL,
+    IsOffDay                        BIT         NOT NULL DEFAULT 0,
+    IsHoliday                       BIT         NOT NULL DEFAULT 0,
+    IsWeekend                       BIT         NOT NULL DEFAULT 0,    
+    RosterTimeZoneId                uniqueidentifier    NULL,
+    StartTimeLocal                  DATETIME2   NULL,
+    EndTimeLocal                    DATETIME2   NULL,
+    PlannedStartTime                DATETIME2   NULL,
+    PlannedEndTime                  DATETIME2   NULL,
+    AttendanceCalculationDueAt      DATETIME2   NULL,
+    ActualStartTime                 DATETIME2   NULL,
+    ActualEndTime                   DATETIME2   NULL,
+    Remarks                         NVARCHAR(1000) NULL,
+    IsLocked                        BIT         NOT NULL DEFAULT 0,
+    IsActive                        BIT             NOT NULL DEFAULT 1,
+    CreatedAt                       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    CreatedBy                       UNIQUEIDENTIFIER             NULL,
+    LastUpdatedAt                   DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+    LastUpdatedBy                   UNIQUEIDENTIFIER             NULL,
 
     CONSTRAINT FK_EmployeeShiftRoster_Employee
         FOREIGN KEY (EmployeeId)
@@ -962,7 +963,9 @@ CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_Pending ON attendance.At
 CREATE NONCLUSTERED INDEX IX_AttendanceCalculationQueue_EmployeeDate ON attendance.AttendanceCalculationQueue (EmployeeId, AttendanceDate);
 CREATE NONCLUSTERED INDEX IX_WorkSession_AutoCheckout ON attendance.WorkSession (AutoCheckoutProcessed, AutoCheckoutDueAt) INCLUDE (EmployeeId, SessionDate, CheckInTime);
 CREATE NONCLUSTERED INDEX IX_AttendanceRecord_Finalization ON attendance.AttendanceRecord(AttendanceState, FinalizeDueAt) INCLUDE(EmployeeId, AttendanceDate, FinalizedAt, LockedAt);
-
+CREATE INDEX IX_EmployeeShiftRoster_CalculationDueAt ON attendance.EmployeeShiftRoster ( AttendanceCalculationDueAt,  IsActive);
+CREATE INDEX IX_AttendanceRecord_Employee_Date ON attendance.AttendanceRecord ( EmployeeId, AttendanceDate);
+CREATE INDEX IX_AttendanceCalculationQueue_Pending ON attendance.AttendanceCalculationQueue ( EmployeeId, AttendanceDate, ProcessedAt);
 PRINT 'Attendance schema created successfully';
 
 GO

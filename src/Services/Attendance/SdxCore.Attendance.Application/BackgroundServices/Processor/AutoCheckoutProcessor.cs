@@ -15,7 +15,7 @@ public class AutoCheckoutProcessor(
     ILogger<AutoCheckoutProcessor> logger)
     : IAutoCheckoutProcessor
 {
-    public async Task ProcessAsync(
+    public async Task ProcessAsync(int batchSize,
         CancellationToken cancellationToken = default)
     {
         var utcNow = DateTime.UtcNow;
@@ -24,7 +24,7 @@ public class AutoCheckoutProcessor(
             await workSessionRepository
                 .GetDueForAutoCheckoutAsync(
                     utcNow,
-                    batchSize: 50,
+                    batchSize,
                     cancellationToken);
 
         if (sessions.Count == 0)

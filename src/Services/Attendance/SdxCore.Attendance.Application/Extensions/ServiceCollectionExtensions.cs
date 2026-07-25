@@ -5,13 +5,12 @@ using SdxCore.Attendance.Application.Abstractions;
 using SdxCore.Attendance.Application.Abstractions.Clients;
 using SdxCore.Attendance.Application.Abstractions.Processor;
 using SdxCore.Attendance.Application.Abstractions.Resolvers;
-using SdxCore.Attendance.Application.Abstractions.Scheduler;
 using SdxCore.Attendance.Application.Abstractions.Services;
 using SdxCore.Attendance.Application.BackgroundServices;
 using SdxCore.Attendance.Application.BackgroundServices.Processor;
-using SdxCore.Attendance.Application.BackgroundServices.Scheduler;
 using SdxCore.Attendance.Application.Calculator;
 using SdxCore.Attendance.Application.Clients;
+using SdxCore.Attendance.Application.Configuration;
 using SdxCore.Attendance.Application.Consumers;
 using SdxCore.Attendance.Application.Resolvers;
 using SdxCore.Attendance.Application.Services;
@@ -23,10 +22,19 @@ namespace SdxCore.Attendance.Application.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddSdxCoreAttendanceApplication(this IServiceCollection services)
+    public static IServiceCollection AddSdxCoreAttendanceApplication(this IServiceCollection services,
+        IConfiguration configuration)
     {
-        services.AddValidatorsFromAssemblyContaining<CreateLeaveRequestRequestValidator>();
+        services.Configure<AttendanceProcessingOptions>(
+            configuration.GetSection(AttendanceProcessingOptions.SectionName));
 
+        services.AddTransient<InternalApiKeyHandler>();
+
+        // Validators
+        services.AddValidatorsFromAssemblyContaining<CreateLeaveRequestRequestValidator>();
+        services.AddScoped<ILeaveRequestValidator, LeaveRequestValidator>();
+
+        // Services
         services.AddScoped<ILeaveTypeService, LeaveTypeService>();
         services.AddScoped<ILeaveService, LeaveService>();
         services.AddScoped<IShiftService, ShiftService>();
@@ -36,8 +44,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IShiftSwapService, ShiftSwapService>();
         services.AddScoped<ICompOffService, CompOffService>();
         services.AddScoped<ICompOffConsumptionService, CompOffConsumptionService>();
-
-
+        services.AddScoped<IRosterGenerationService, RosterGenerationService>();
+        
+        // Resolvers
         services.AddScoped<IEmployeeResolver, EmployeeResolver>();
         services.AddScoped<ILeaveTypeResolver, LeaveTypeResolver>();
         services.AddScoped<IShiftResolver, ShiftResolver>();
@@ -56,27 +65,30 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRegularizationResolver, RegularizationResolver>();
         services.AddScoped<ICompOffBalanceResolver, CompOffBalanceResolver>();
         services.AddScoped<IAttendanceStatusResolver, AttendanceStatusResolver>();
-        services.AddScoped<IRosterGenerationScheduler, RosterGenerationScheduler>();
+        services.AddScoped<ITimeZoneResolver, TimeZoneResolver>();
         services.AddScoped<IRosterGenerationPolicyResolver, RosterGenerationPolicyResolver>();
         services.AddScoped<IRosterGenerationTrackerResolver, RosterGenerationTrackerResolver>();
-        services.AddScoped<IRosterGenerationService, RosterGenerationService>();
-        services.AddScoped<ILeaveRequestValidator, LeaveRequestValidator>();
-        services.AddScoped<ITimeZoneResolver, TimeZoneResolver>();
+
+        // Calculators
         services.AddScoped<ILeaveDayCalculator, LeaveDayCalculator>();
         services.AddScoped<IAttendanceCalculator, AttendanceCalculator>();
+        
+        // Processors
+        services.AddScoped<IRosterGenerationProcessor, RosterGenerationProcessor>();
+        services.AddScoped<IAttendancePendingProcessor, AttendancePendingProcessor>();
         services.AddScoped<IAutoCheckoutProcessor, AutoCheckoutProcessor>();
         services.AddScoped<IAttendanceFinalizerProcessor, AttendanceFinalizerProcessor>();
+        services.AddScoped<IAttendanceLogProcessor, AttendanceLogProcessor>();
+        services.AddScoped<ICheckInProcessor, CheckInProcessor>();
+        services.AddScoped<ICheckOutProcessor, CheckOutProcessor>();
 
-
-        services.AddTransient<InternalApiKeyHandler>();
-
+        // Background Services
         services.AddHostedService<OutboxProcessorBackgroundService>();
         services.AddHostedService<RosterGenerationBackgroundService>();
         services.AddHostedService<AutoCheckoutBackgroundService>();
         services.AddHostedService<AttendanceFinalizerBackgroundService>();
-        services.AddHostedService<AttendanceQueueProcessorBackgroundService>();
-
-
+        services.AddHostedService<AttendanceCalculationBackgroundService>();
+        services.AddHostedService<AttendanceLogProcessorBackgroundService>();
 
         return services;
     }

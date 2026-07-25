@@ -18,5 +18,7 @@ public enum AttendanceCalculationReason
 
     CompOffApproved = 8,
 
-    ManualReprocess = 9
+    ManualReprocess = 9,
+
+    MissingPunch = 10,
 }

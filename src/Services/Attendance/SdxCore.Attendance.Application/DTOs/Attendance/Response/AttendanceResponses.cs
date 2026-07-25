@@ -28,3 +28,14 @@ public record RegularizationResponse(
     Guid? ApprovedBy,
     DateTime? ApprovedAt,
     string? Remarks);
+
+public sealed class AttendanceResponse
+{
+    public Guid EmployeeId { get; set; }
+
+    public DateTime PunchTime { get; set; }
+
+    public string PunchType { get; set; } = string.Empty;
+
+    public string Message { get; set; } = string.Empty;
+}

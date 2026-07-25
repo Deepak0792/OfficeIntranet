@@ -11,13 +11,9 @@ using SdxCore.Common.Models;
 namespace SdxCore.Attendance.Application.Services;
 
 public class AttendanceService(
-    IAttendanceCalculationQueueService queueService,
+    IAttendanceLogRepository attendanceLogRepository,
     IAttendanceRecordRepository recordRepository,
-    IWorkSessionRepository sessionRepository,
     IAttendanceRegularizationRepository regularizationRepository,
-    IAttendanceStatusRepository statusRepository,
-    IEmployeeShiftRosterRepository rosterRepository,
-    ILeaveRequestRepository leaveRequestRepository,
     IAttendanceUnitOfWork unitOfWork) : IAttendanceService
 {
     public async Task<AttendanceRecordResponse?> GetByEmployeeDateAsync(Guid employeeId, DateOnly date, CancellationToken cancellationToken = default)
@@ -32,143 +28,59 @@ public class AttendanceService(
         return new PagedResponse<IEnumerable<AttendanceRecordResponse>>(items.Select(MapResponse), page, pageSize, total);
     }
 
-    public async Task<AttendanceRecordResponse?> CheckInAsync(
-    CheckInRequest request,
-    CancellationToken cancellationToken = default)
+    public async Task<AttendanceResponse> CheckInAsync(
+        CheckInRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var attendanceDate =
-            DateOnly.FromDateTime(request.CheckInTime);
+        var log = PropertyMapper.Map<CheckInRequest, AttendanceLog>(request);
 
-        var roster =
-            await rosterRepository.GetByEmployeeDateAsync(
-                request.EmployeeId,
-                attendanceDate,
-                cancellationToken);
+        log.Id = Guid.NewGuid();
+        log.PunchTime = request.CheckInTime;
+        log.PunchType = AttendancePunchType.CheckIn;
+        log.IsProcessed = false;
+        log.IsActive = true;
 
-
-        var session = PropertyMapper.Map<CheckInRequest, WorkSession>(request);
-
-        session.Id = Guid.NewGuid();
-        session.CheckInTime = request.CheckInTime;
-        session.IsAutoCheckout = false;
-        session.AutoCheckoutProcessed = false;
-
-        session.EmployeeShiftRosterId = roster?.Id;
-        session.SessionDate = attendanceDate;
-        session.IsActive = true;
-
-        if (roster?.ShiftId != null && roster.PlannedEndTime != null)
-        {
-            session.AutoCheckoutDueAt = roster.PlannedEndTime.Value.AddMinutes(roster.Shift?.MaxAllowedCheckoutDelayMinutes ?? 0);
-        }
-        else
-        {   // Off day / holiday duty / weekend duty
-            session.AutoCheckoutDueAt = request.CheckInTime.AddHours(12);
-        }
-
-        await sessionRepository.AddAsync(
-            session,
+        await attendanceLogRepository.AddAsync(
+            log,
             cancellationToken);
-
-
-        await queueService.EnqueueAsync(
-            request.EmployeeId,
-            attendanceDate,
-            AttendanceCalculationReason.PunchReceived,
-            priority: 5,
-            cancellationToken);
-
-        await unitOfWork.SaveChangesAsync(
-            cancellationToken);
-
-        return null;
-    }
-
-    public async Task<AttendanceRecordResponse?> CheckOutAsync(
-    CheckOutRequest request,
-    CancellationToken cancellationToken = default)
-    {
-        var attendanceDate =
-            DateOnly.FromDateTime(request.CheckOutTime);
-
-        var session =
-            await sessionRepository.GetActiveSessionAsync(request.EmployeeId, cancellationToken)
-                ?? throw new InvalidOperationException("Active check-in session not found.");
-
-        if (request.CheckOutTime <= session.CheckInTime)
-        {
-            throw new InvalidOperationException("Check-out time must be greater than check-in time.");
-        }
-
-        session.CheckOutTime = request.CheckOutTime;
-
-        session.WorkedMinutes = (int)(request.CheckOutTime - session.CheckInTime).TotalMinutes;
-
-        session.AutoCheckoutProcessed = true;
-
-        sessionRepository.Update(session);
-
-        await queueService.EnqueueAsync(
-            request.EmployeeId,
-            attendanceDate,
-            AttendanceCalculationReason.PunchReceived,
-            priority: 5,
-            cancellationToken);
-
-        await unitOfWork.SaveChangesAsync(
-            cancellationToken);
-
-        return null;
-    }
-
-    public async Task ProcessDailyAsync(DateOnly date, CancellationToken cancellationToken = default)
-    {
-        var rosters = await rosterRepository.GetByDateAsync(date, cancellationToken);
-        var presentStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Present, cancellationToken);
-        var absentStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Absent, cancellationToken);
-        var leaveStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.OnLeave, cancellationToken);
-        var holidayStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Holiday, cancellationToken);
-        var weekendStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Weekend, cancellationToken);
-        //var lateStatusId = await statusRepository.GetIdByCodeAsync(AttendanceStatusCodes.Late, cancellationToken);
-
-        foreach (var roster in rosters)
-        {
-            var session = await sessionRepository.GetByRosterAsync(roster.Id, cancellationToken);
-            var approvedLeave = await leaveRequestRepository.GetApprovedLeaveForDateAsync(roster.EmployeeId, date, cancellationToken);
-
-            Guid? statusId;
-            bool isOnLeave = false, isHoliday = roster.IsHoliday, isWeeklyOff = roster.IsOffDay;
-            short? workedMinutes = (short?)session?.WorkedMinutes;
-
-            if (roster.IsHoliday) statusId = holidayStatusId;
-            else if (roster.IsOffDay) statusId = weekendStatusId;
-            else if (approvedLeave is not null) { statusId = leaveStatusId; isOnLeave = true; }
-            else if (session is null) statusId = absentStatusId;
-            // else if (roster.Shift is not null && session.CheckInTime != default
-            //          && session.CheckInTime.TimeOfDay > roster.Shift.StartTime.ToTimeSpan().Add(TimeSpan.FromMinutes(roster.Shift.GraceInMinutes)))
-            //     statusId = lateStatusId;
-            else statusId = presentStatusId;
-
-            var record = new AttendanceRecord
-            {
-                Id = Guid.NewGuid(),
-                EmployeeId = roster.EmployeeId,
-                AttendanceDate = date,
-                EmployeeShiftRosterId = roster.Id,
-                SessionCount = 1,
-                ShiftId = roster.ShiftId,
-                AttendanceStatusId = statusId,
-                CheckInTime = session?.CheckInTime,
-                CheckOutTime = session?.CheckOutTime,
-                WorkedMinutes = workedMinutes,
-                IsAutoProcessed = true,
-                IsActive = true
-            };
-            await recordRepository.UpsertAsync(record, cancellationToken);
-        }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new AttendanceResponse
+        {
+            EmployeeId = request.EmployeeId,
+            PunchTime = log.PunchTime,
+            PunchType = log.PunchType,
+            Message = "Check-in recorded successfully."
+        };
     }
+
+    public async Task<AttendanceResponse> CheckOutAsync(
+        CheckOutRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var log = PropertyMapper.Map<CheckOutRequest, AttendanceLog>(request);
+
+        log.Id = Guid.NewGuid();
+        log.PunchTime = request.CheckOutTime;
+        log.PunchType = AttendancePunchType.CheckOut;
+        log.IsProcessed = false;
+        log.IsActive = true;
+
+        await attendanceLogRepository.AddAsync(
+            log,
+            cancellationToken);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new AttendanceResponse
+        {
+            EmployeeId = request.EmployeeId,
+            PunchTime = log.PunchTime,
+            PunchType = log.PunchType,
+            Message = "Check-out recorded successfully."
+        };
+    }    
 
     public async Task<bool> LockAsync(Guid id, CancellationToken cancellationToken = default)
     {

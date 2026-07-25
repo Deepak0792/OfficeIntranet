@@ -32,7 +32,7 @@ public class WorkSessionRepository(AttendanceDbContext dbContext)
 
     public async Task<IReadOnlyCollection<WorkSession>> GetDueForAutoCheckoutAsync(
         DateTime utcNow,
-        short batchSize = 50,
+        int batchSize,
         CancellationToken cancellationToken = default)
     {
         return await _dbSet

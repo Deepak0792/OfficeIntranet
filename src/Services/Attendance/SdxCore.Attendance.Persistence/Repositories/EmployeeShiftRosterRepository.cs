@@ -26,4 +26,25 @@ public class EmployeeShiftRosterRepository(AttendanceDbContext dbContext)
             .Where(r => r.EmployeeId == employeeId && r.RosterDate >= from && r.RosterDate <= to)
             .OrderBy(r => r.RosterDate)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<EmployeeShiftRoster>> GetPendingAttendanceCalculationAsync(
+        DateTime dueAt, int batchSize, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.EmployeeShiftRosters
+            .Where(r =>
+                r.IsActive &&
+                r.AttendanceCalculationDueAt <= dueAt)
+            .Where(r =>
+                !_dbContext.AttendanceRecords.Any(a =>
+                    a.EmployeeId == r.EmployeeId &&
+                    a.AttendanceDate == r.RosterDate))
+            .Where(r =>
+                !_dbContext.AttendanceCalculationQueues.Any(q =>
+                    q.EmployeeId == r.EmployeeId &&
+                    q.AttendanceDate == r.RosterDate &&
+                    q.ProcessedAt == null))
+            .OrderBy(r => r.AttendanceCalculationDueAt)
+            .Take(batchSize)
+            .ToListAsync(cancellationToken);
+    }
 }

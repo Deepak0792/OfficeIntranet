@@ -1,30 +1,67 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SdxCore.Attendance.Application.Abstractions.Processor;
+using SdxCore.Attendance.Application.Configuration;
 
 namespace SdxCore.Attendance.Application.BackgroundServices;
 
-public class AutoCheckoutBackgroundService(
-    IServiceProvider serviceProvider,
-    ILogger<AutoCheckoutBackgroundService> logger) : BackgroundService
+public sealed class AutoCheckoutBackgroundService(
+    IServiceScopeFactory serviceScopeFactory,
+    IOptions<AttendanceProcessingOptions> options,
+    ILogger<AutoCheckoutBackgroundService> logger)
+    : BackgroundService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(
+        CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        var settings = options.Value.AutoCheckout;
+
+        if (!settings.Enabled)
+        {
+            logger.LogInformation(
+                "Auto Checkout Background Service is disabled.");
+
+            return;
+        }
+
+        if (!settings.BatchSize.HasValue)
+        {
+            throw new InvalidOperationException("BatchSize must be configured for AttendanceCalculation.");
+        }
+
+        logger.LogInformation(
+            "Auto Checkout Background Service started.");
+
+        using var timer = new PeriodicTimer(
+            TimeSpan.FromSeconds(settings.PollingIntervalSeconds));
+
+        while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
-                using var scope = serviceProvider.CreateAsyncScope();
-                var processor = scope.ServiceProvider.GetRequiredService<IAutoCheckoutProcessor>();
-                await processor.ProcessAsync(stoppingToken);
+                using var scope = serviceScopeFactory.CreateScope();
+
+                var processor =
+                    scope.ServiceProvider
+                        .GetRequiredService<IAutoCheckoutProcessor>();
+
+                await processor.ProcessAsync(settings.BatchSize.Value, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Auto checkout background service failed.");
+                logger.LogError(
+                    ex,
+                    "Auto Checkout Background Service execution failed.");
             }
-
-            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
         }
+
+        logger.LogInformation(
+            "Auto Checkout Background Service stopped.");
     }
 }

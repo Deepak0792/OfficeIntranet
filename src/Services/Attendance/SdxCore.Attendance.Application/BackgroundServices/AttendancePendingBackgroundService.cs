@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,49 +7,51 @@ using SdxCore.Attendance.Application.Configuration;
 
 namespace SdxCore.Attendance.Application.BackgroundServices;
 
-public sealed class AttendanceFinalizerBackgroundService(
-    IServiceProvider serviceProvider,
+public sealed class AttendancePendingBackgroundService(
+    IServiceScopeFactory serviceScopeFactory,
     IOptions<AttendanceProcessingOptions> options,
-    ILogger<AttendanceFinalizerBackgroundService> logger)
+    ILogger<AttendancePendingBackgroundService> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        var settings = options.Value.AttendanceFinalizer;
+        var settings =
+            options.Value.AttendancePending;
 
         if (!settings.Enabled)
         {
             logger.LogInformation(
-                "Attendance Finalizer Background Service is disabled.");
+                "Attendance Pending Background Service is disabled.");
 
             return;
         }
 
         if (!settings.BatchSize.HasValue)
         {
-            throw new InvalidOperationException("BatchSize must be configured for AttendanceFinalizer.");
+            throw new InvalidOperationException("BatchSize must be configured for AttendancePending.");
         }
 
         logger.LogInformation(
-            "Attendance Finalizer Background Service started.");
+            "Attendance Pending Background Service started.");
 
         using var timer =
             new PeriodicTimer(
-                TimeSpan.FromSeconds(settings.PollingIntervalSeconds));
+                TimeSpan.FromSeconds(
+                    settings.PollingIntervalSeconds));
 
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
                 using var scope =
-                    serviceProvider.CreateScope();
+                    serviceScopeFactory.CreateScope();
 
-                var finalizer =
+                var processor =
                     scope.ServiceProvider
-                        .GetRequiredService<IAttendanceFinalizerProcessor>();
+                        .GetRequiredService<IAttendancePendingProcessor>();
 
-                await finalizer.FinalizeAsync(settings.BatchSize.Value, stoppingToken);
+                await processor.ProcessAsync(settings.BatchSize.Value, stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -57,13 +59,10 @@ public sealed class AttendanceFinalizerBackgroundService(
             }
             catch (Exception ex)
             {
-                logger.LogError(
-                    ex,
-                    "Attendance finalizer execution failed.");
+                logger.LogError(ex, "Attendance Pending Processor execution failed.");
             }
         }
 
-        logger.LogInformation(
-            "Attendance Finalizer Background Service stopped.");
+        logger.LogInformation("Attendance Pending Background Service stopped.");
     }
 }

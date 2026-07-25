@@ -20,7 +20,7 @@ builder.Services.AddSdxCoreCaching(builder.Configuration);
 
 // Attendance layers
 builder.Services.AddSdxCoreAttendancePersistence(builder.Configuration);
-builder.Services.AddSdxCoreAttendanceApplication();
+builder.Services.AddSdxCoreAttendanceApplication(builder.Configuration);
 builder.Services.AddSdxCoreAttendanceMessaging(builder.Configuration);
 builder.Services.AddSdxCoreAttendanceHttpClients(builder.Configuration);
 
